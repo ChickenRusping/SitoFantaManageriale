@@ -1590,56 +1590,6 @@ export async function applicaIscrizioneATutti() {
   return results;
 }
 
-// ─── DEPOSITO FIDUCIARIO (art. 10.6) ─────────────────────────────────────────
-// Scaglioni: 10M (+10% → 11M il 01/08), 15M (+12% → 16.8M il 15/08), 20M (+15% → 23M il 01/09)
-export const DEPOSITO_SCAGLIONI = [
-  { importo: 10, bonus: 10, totale: 11,   rimborso: '01/08', label: '10M → 11M (+10%) il 01/08' },
-  { importo: 15, bonus: 12, totale: 16.8, rimborso: '15/08', label: '15M → 16.8M (+12%) il 15/08' },
-  { importo: 20, bonus: 15, totale: 23,   rimborso: '01/09', label: '20M → 23M (+15%) il 01/09' },
-];
-
-// Apertura deposito: 08/01 → 15/01
-export function isDepositoAperto() {
-  const oggi = new Date();
-  const m = oggi.getMonth() + 1, d = oggi.getDate();
-  return m === 1 && d >= 8 && d <= 15;
-}
-
-export async function effettuaDeposito(squadra, importo) {
-  const scaglione = DEPOSITO_SCAGLIONI.find(s => s.importo === importo);
-  if (!scaglione) throw new Error('Importo non valido. Scegli tra 10M, 15M o 20M.');
-  if (!isDepositoAperto()) throw new Error('Il deposito fiduciario è disponibile solo dall\'08/01 al 15/01.');
-
-  const oggi = new Date().toISOString().slice(0, 10);
-  const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadra).single();
-  if ((sq?.bilancio || 0) < importo) throw new Error(`Bilancio insufficiente: servono ${importo}M`);
-
-  const nuovoBilancio = parseFloat(((sq?.bilancio || 0) - importo).toFixed(2));
-  await supabase.from('squadre').update({ bilancio: nuovoBilancio }).eq('name', squadra);
-  await supabase.from('movimenti').insert({
-    squadra, data: oggi,
-    descrizione: `Deposito fiduciario: ${importo}M (rimborso ${scaglione.totale}M il ${scaglione.rimborso})`,
-    uscita: importo,
-  });
-  // Registra come investimento per tracciarlo
-  await supabase.from('investimenti').insert({
-    squadra, nome: `Deposito Fiduciario ${importo}M`, categoria: 'deposito',
-    costo: importo, data_acquisto: oggi,
-    dati: { importo, bonus_perc: scaglione.bonus, totale: scaglione.totale, rimborso: scaglione.rimborso },
-    note: scaglione.label,
-  });
-  return { nuovoBilancio, scaglione };
-}
-
-export async function rimborsoDeposito(squadra, investimentoId, totale) {
-  const oggi = new Date().toISOString().slice(0, 10);
-  const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadra).single();
-  const nuovoBilancio = parseFloat(((sq?.bilancio || 0) + totale).toFixed(2));
-  await supabase.from('squadre').update({ bilancio: nuovoBilancio }).eq('name', squadra);
-  await supabase.from('movimenti').insert({ squadra, data: oggi, descrizione: `Rimborso deposito fiduciario: +${totale}M`, entrata: totale });
-  await supabase.from('investimenti').update({ completato: true, valore_accumulato: totale }).eq('id', investimentoId);
-  return nuovoBilancio;
-}
 
 // ─── AUDIT LOG ────────────────────────────────────────────────────────────────
 
@@ -1685,7 +1635,6 @@ export async function effettuaRollback(logId, utente) {
     case 'premio_applicato':
     case 'iscrizione_campionato':
     case 'euro_extra_investiti':
-    case 'deposito_fiduciario':
     case 'svincolo':
     case 'investimento_acquisto': {
       // Ripristina il bilancio

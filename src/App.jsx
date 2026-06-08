@@ -37,8 +37,6 @@ const DEADLINE_CALENDARIO = [
   { id: 'ribasso_stipendi',       month: 1,  day: 5,  hour: 20, type: 'stipendi', label: 'Scadenza ribasso stipendi' },
   { id: 'rinnovo_contratti',      month: 5,  day: 31, hour: 23, minute: 59, type: 'contratti', label: 'Scadenza rinnovo contratti' },
   { id: 'iscrizione_campionato',  month: 7,  day: 31, hour: 23, minute: 59, type: 'quote', label: 'Iscrizione campionato (30M)' },
-  { id: 'deposito_inv_open',      month: 1,  day: 8,  hour: 0,  type: 'deposito', label: 'Apertura deposito fiduciario' },
-  { id: 'deposito_inv_close',     month: 1,  day: 15, hour: 24, type: 'deposito', label: 'Chiusura deposito fiduciario' },
 ];
 
 function getNextOccurrence(def) {
@@ -150,7 +148,7 @@ async function cachedFetch(key, fetcher, ttl = 90000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, DEPOSITO_SCAGLIONI, isDepositoAperto, effettuaDeposito, rimborsoDeposito, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento,
   getBonusTrattativa, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -3364,85 +3362,6 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
 
 
 
-/* ─── DEPOSITO FIDUCIARIO ────────────────────────────────────────────────────── */
-function DepositoFiduciarioSection({ team, isAdmin, investimenti, onRefresh }) {
-  const [saving, setSaving] = useState(false);
-  const depositoAperto = isDepositoAperto();
-  const depositiAttivi = investimenti.filter(i => i.categoria === 'deposito' && !i.completato);
-
-  async function handleDeposita(importo) {
-    const sc = DEPOSITO_SCAGLIONI.find(s => s.importo === importo);
-    if (!window.confirm(`Depositare ${importo}M?\n\nRimborso: ${sc.totale}M (+${sc.bonus}%) il ${sc.rimborso}\n\nI soldi escono dal bilancio ora e non sono tassati settimanalmente.`)) return;
-    setSaving(true);
-    try { await effettuaDeposito(team.name, importo); onRefresh(); }
-    catch(e) { alert(e.message); } finally { setSaving(false); }
-  }
-
-  async function handleRimborsa(inv) {
-    const dati = inv.dati || {};
-    if (!window.confirm(`Accreditare rimborso di ${dati.totale}M a ${team.name}?`)) return;
-    setSaving(true);
-    try { await rimborsoDeposito(team.name, inv.id, dati.totale); onRefresh(); }
-    catch(e) { alert(e.message); } finally { setSaving(false); }
-  }
-
-  function isRimborsabile(inv) {
-    const dati = inv.dati || {};
-    if (!dati.rimborso) return false;
-    const [dd, mm] = dati.rimborso.split('/').map(Number);
-    const oggi = new Date();
-    return oggi >= new Date(oggi.getFullYear(), mm - 1, dd);
-  }
-
-  return (
-    <div style={{ background: "#10b98108", border: "1.5px solid #10b98125", borderRadius: 14, padding: 16, marginTop: 12 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#10b981", letterSpacing: "0.08em", marginBottom: 12 }}>🏦 DEPOSITO FIDUCIARIO (art. 10.6)</div>
-      <div style={{ fontSize: 10, color: "#555", marginBottom: 12, lineHeight: 1.6 }}>
-        Disponibile <b>08/01–15/01</b>. I M depositati escono dal bilancio e non sono soggetti alla tassa settimanale. Rimborso con bonus a fine estate.
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-        {DEPOSITO_SCAGLIONI.map(sc => {
-          const giàDep = depositiAttivi.some(d => (d.dati?.importo || d.costo) === sc.importo);
-          return (
-            <div key={sc.importo} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderRadius: 9, background: giàDep ? "#10b98115" : "#ffffff08", border: `1px solid ${giàDep ? "#10b98130" : "#ffffff10"}` }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: giàDep ? "#10b981" : "#ddd" }}>{sc.label}</div>
-                <div style={{ fontSize: 9, color: "#555" }}>Rimborso il {sc.rimborso} · esenzione tassa settimanale</div>
-              </div>
-              {giàDep
-                ? <Badge color="#10b981">✓ Depositato</Badge>
-                : depositoAperto && isAdmin
-                  ? <button onClick={() => handleDeposita(sc.importo)} disabled={saving} style={{ padding: "5px 12px", borderRadius: 7, border: "none", background: "#10b98122", color: "#10b981", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Deposita</button>
-                  : <span style={{ fontSize: 10, color: "#444" }}>{depositoAperto ? "Solo admin" : "Finestra: 08–15 gen"}</span>
-              }
-            </div>
-          );
-        })}
-      </div>
-      {depositiAttivi.length > 0 && (
-        <div>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#555", letterSpacing: "0.06em", marginBottom: 8 }}>DEPOSITI ATTIVI</div>
-          {depositiAttivi.map(inv => {
-            const dati = inv.dati || {}, puoRimb = isRimborsabile(inv);
-            return (
-              <div key={inv.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 10px", borderRadius: 8, background: "#10b98110", border: "1px solid #10b98125", marginBottom: 6 }}>
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#10b981" }}>{inv.costo}M depositati → rimborso {dati.totale}M</div>
-                  <div style={{ fontSize: 9, color: "#555" }}>Rimborso il {dati.rimborso} · {inv.data_acquisto}</div>
-                </div>
-                {isAdmin && puoRimb
-                  ? <button onClick={() => handleRimborsa(inv)} disabled={saving} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "#10b981", color: "#000", fontSize: 10, fontWeight: 800, cursor: "pointer" }}>Rimborsa</button>
-                  : <span style={{ fontSize: 9, color: "#444" }}>Rimborso il {dati.rimborso}</span>
-                }
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ─── CATALOGO INVESTIMENTI (art. 10) ──────────────────────────────────────── */
 const CATALOGO_INVESTIMENTI = [
   // Piccoli (art. 10.2)
@@ -3855,7 +3774,6 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
             )}
           </div>
         )}
-        <DepositoFiduciarioSection team={team} isAdmin={isAdmin} investimenti={investimenti} onRefresh={loadInv}/>
       </div>
 
     </div>
@@ -7342,7 +7260,6 @@ function AdminLogPage({ profile }) {
     rosa_rimuovi:         { icon: "➖", color: "#ef4444", label: "Rosa rim." },
     iscrizione_campionato:{ icon: "📋", color: "#f97316", label: "Iscrizione" },
     euro_extra_investiti: { icon: "💶", color: "#818cf8", label: "Euro extra" },
-    deposito_fiduciario:  { icon: "🏦", color: "#10b981", label: "Deposito" },
     investimento_acquisto:{ icon: "📈", color: "#3b82f6", label: "Investimento" },
     allenatore_scelto:    { icon: "🎩", color: "#a855f7", label: "Allenatore" },
     classifica_modifica:  { icon: "📊", color: "#f59e0b", label: "Classifica" },
