@@ -3280,17 +3280,17 @@ function DepositoFiduciarioSection({ team, isAdmin, investimenti, onRefresh }) {
 /* ─── CATALOGO INVESTIMENTI (art. 10) ──────────────────────────────────────── */
 const CATALOGO_INVESTIMENTI = [
   // Piccoli
-  { nome: "Scouting Estero",         categoria: "piccolo",   costo: 2,    desc: "Diritto esclusivo su 1 giocatore estero se arriva in Serie A entro 2 anni." },
-  { nome: "Scommessa Rendimento",     categoria: "piccolo",   costo: 2,    desc: "2 giocatori: se migliorano Q di 7+, ottieni 2.5M per ognuno." },
+  { nome: "Scouting Estero",         categoria: "piccolo",   costo: 2,    desc: "Diritto esclusivo su 1 giocatore estero se arriva in Serie A entro 2 anni.", richiedeNote: true, notePlaceholder: "Nome del giocatore estero selezionato:" },
+  { nome: "Scommessa Rendimento",     categoria: "piccolo",   costo: 2,    desc: "2 giocatori: se migliorano Q di 7+, ottieni 2.5M per ognuno.", richiedeNote: true, notePlaceholder: "Nomi dei 2 giocatori puntati (es. Barella, Vlahovic):" },
   { nome: "Preparatore Atletico",     categoria: "piccolo",   costo: 3,    desc: "+1M ogni giornata in cui 7+ giocatori prendono voto ≥6.5." },
   { nome: "Ufficio Stampa",           categoria: "piccolo",   costo: 3,    desc: "2 volte/stagione annulli una penalità minore." },
   { nome: "Avvocato",                 categoria: "piccolo",   costo: 4,    desc: "Ogni 5 ammonizioni dei tuoi titolari/subentrati → +0.5M." },
   { nome: "Vice Allenatore Premium",  categoria: "piccolo",   costo: 5,    desc: "3 volte/stagione modifichi un giocatore dopo il fischio d'inizio." },
-  { nome: "Medico di Base",           categoria: "piccolo",   costo: 5,    desc: "Scegli 5 giocatori: +2M per ognuno che salta 5+ giornate per infortunio." },
+  { nome: "Medico di Base",           categoria: "piccolo",   costo: 5,    desc: "Scegli 5 giocatori: +2M per ognuno che salta 5+ giornate per infortunio.", richiedeNote: true, notePlaceholder: "Nomi dei 5 giocatori selezionati (separati da virgola):" },
   { nome: "Ricapitalizzazione",       categoria: "piccolo",   costo: 5,    desc: "Abbassa il Fair Play Finanziario di 3M. Solo entro il 05/09." },
   // Medi
   { nome: "Settore Giovanile Avanzato", categoria: "medio",  costo: 6,    desc: "Alza il limite vivaio da 2 a 4 per l'anno seguente." },
-  { nome: "Scommessa Serie B",          categoria: "medio",  costo: 6,    desc: "Indovina la promossa dalla B: acquista 1 suo giocatore a ¼ Qi." },
+  { nome: "Scommessa Serie B",          categoria: "medio",  costo: 6,    desc: "Indovina la promossa dalla B: acquista 1 suo giocatore a ¼ Qi.", richiedeNote: true, notePlaceholder: "Squadra di Serie B selezionata:" },
   { nome: "Meno è meglio",            categoria: "medio",    costo: 7,    desc: "SC nella TOP-3 più bassi + TOP-4 campionato → +10M." },
   { nome: "SuperClub",                categoria: "medio",    costo: 7,    desc: "+3M al tuo Salary Cap per la stagione." },
   { nome: "Accordi TV",               categoria: "medio",    costo: 8,    desc: "Ogni partita con 2+ gol segnati → +0.5M extra." },
@@ -3307,7 +3307,7 @@ const CATALOGO_INVESTIMENTI = [
   { nome: "Fondo Pensione Atleti",    categoria: "grande",   costo: 15,   desc: "Per giocatori ≥32 anni lo stipendio si calcola Q/7 invece di Q/5. Dura 1 anno." },
   { nome: "Abbonamenti Premium",      categoria: "grande",   costo: 15,   desc: "Vittoria in casa: +1.5M (scarto ≥2: +2M). Pareggio in casa: +1M." },
   // Invernali (24/12-31/12, max 10M)
-  { nome: "Rientro in Grande",        categoria: "invernale", costo: 3,   desc: "1 infortunato: se nelle 5 giornate dal rientro prende voto ≥6 → +1.2M." },
+  { nome: "Rientro in Grande",        categoria: "invernale", costo: 3,   desc: "1 infortunato: se nelle 5 giornate dal rientro prende voto ≥6 → +1.2M.", richiedeNote: true, notePlaceholder: "Nome del giocatore infortunato selezionato:" },
   { nome: "Deroga U-21",              categoria: "invernale", costo: 4,   desc: "Fino al 01/06: puoi avere 30 giocatori con solo 1 U21." },
   { nome: "Clausola Segreta",         categoria: "invernale", costo: 4,   desc: "Clausola rescissoria: da 1.75× a 2.0× la quotazione fino al 31/05." },
   { nome: "Scouting Rapido",          categoria: "invernale", costo: 5,   desc: "+1 svincolo straordinario extra nella sessione invernale." },
@@ -3428,11 +3428,15 @@ Gli obiettivi verranno azzerati.`;
   useEffect(() => { loadInv(); }, [loadInv]);
 
   async function handleAcquista(item) {
-    if (!window.confirm(`Acquistare "${item.nome}" per ${item.costo}M?
-
-${item.desc}`)) return;
+    if (!window.confirm(`Acquistare "${item.nome}" per ${item.costo}M?\n\n${item.desc}`)) return;
+    let note = '';
+    if (item.richiedeNote) {
+      const risposta = window.prompt(item.notePlaceholder);
+      if (risposta === null) return;
+      note = risposta.trim();
+    }
     setSavingInv(true);
-    try{cacheInvalidate('investimenti_'+team.name);await acquistaInvestimento({squadra:team.name,nome:item.nome,categoria:item.categoria,costo:item.costo});await loadInv();}
+    try{cacheInvalidate('investimenti_'+team.name);await acquistaInvestimento({squadra:team.name,nome:item.nome,categoria:item.categoria,costo:item.costo,note});await loadInv();}
     catch(e){alert(e.message);}finally{setSavingInv(false);}
   }
   async function handleGuadagno(invId) {
@@ -3646,6 +3650,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:12,fontWeight:700,color:"#e0e0e0" }}>{inv.nome}</div>
                   <div style={{ fontSize:9,color:"#555" }}><span style={{ color:ccol[inv.categoria]||"#888" }}>{inv.categoria}</span> · {inv.data_acquisto}</div>
+                  {inv.note&&<div style={{ fontSize:10,color:"#818cf8",marginTop:2 }}>📝 {inv.note}</div>}
                 </div>
                 <Badge color="#ef4444">−{inv.costo}M</Badge>
                 {inv.valore_accumulato>0&&<Badge color="#10b981">+{Number(inv.valore_accumulato).toFixed(1)}M</Badge>}
@@ -6836,12 +6841,24 @@ function PenalitaPage({ isAdmin, teams = [] }) {
 }
 
 /* ─── PREMI PAGE ─────────────────────────────────────────────────────────────── */
+const PREMI_INDIVIDUALI_DEF = [
+  { key: 'gol_schierati',     label: '⚽ Primo in gol schierati',           importo:  1, tipo: 'premio_indiv', color: '#10b981' },
+  { key: 'gol_contro',        label: '🥅 Primo in gol schierati contro',     importo:  2, tipo: 'premio_indiv', color: '#10b981' },
+  { key: 'miglior_marcatore', label: '🎯 Miglior marcatore in rosa',         importo:  1, tipo: 'premio_indiv', color: '#10b981' },
+  { key: 'miglior_assist',    label: '🤝 Miglior assist man in rosa',        importo:  1, tipo: 'premio_indiv', color: '#10b981' },
+  { key: 'clean_sheets',      label: '🧤 Maggior porte inviolate schierate', importo:  1, tipo: 'premio_indiv', color: '#10b981' },
+  { key: 'ammonizioni',       label: '🟨 Maggior ammonizioni in campo',      importo: -1, tipo: 'malus_indiv',  color: '#ef4444' },
+  { key: 'espulsioni',        label: '🟥 Maggior espulsioni in campo',       importo: -1, tipo: 'malus_indiv',  color: '#ef4444' },
+];
+
 function PremiPage({ isAdmin, teams = [] }) {
   const [premi, setPremi] = useState([]);
   const [classifica, setClassifica] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [montepremi, setMontepremi] = useState(0);
+  const [premiIndiv, setPremiIndiv] = useState({});
+  const [savingIndiv, setSavingIndiv] = useState(false);
   const STAGIONE = '2026-27';
 
   const loadAll = useCallback(async () => {
@@ -6904,9 +6921,25 @@ function PremiPage({ isAdmin, teams = [] }) {
     finally { setSaving(false); }
   }
 
+  async function handleApplicaPremiIndividuali() {
+    const entries = PREMI_INDIVIDUALI_DEF.map(d => ({ ...d, squadra: premiIndiv[d.key] })).filter(d => d.squadra);
+    if (!entries.length) { alert("Seleziona almeno una squadra vincitrice."); return; }
+    if (!window.confirm(`Applicare ${entries.length} premi/malus individuali?\n\n${entries.map(e => `${e.label}: ${e.importo > 0 ? '+' : ''}${e.importo}M → ${e.squadra}`).join('\n')}`)) return;
+    setSavingIndiv(true);
+    try {
+      for (const e of entries) {
+        const rec = await insertPremio({ squadra: e.squadra, tipo: e.tipo, importo: e.importo, posizione: null, stagione: STAGIONE, data_premio: new Date().toISOString().slice(0,10) });
+        await applicaPremio(e.squadra, e.importo, e.label, rec.id);
+      }
+      await loadAll();
+    } catch(err) { alert(err.message); }
+    finally { setSavingIndiv(false); }
+  }
+
   const premiApplicati = {
     p19: premi.some(p => p.tipo === 'premio_19a'),
     finale: premi.some(p => p.tipo === 'premio_finale'),
+    individuali: premi.some(p => p.tipo === 'premio_indiv' || p.tipo === 'malus_indiv'),
   };
 
   const inp = { padding: "7px 10px", borderRadius: 7, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12, width: "100%" };
@@ -6998,9 +7031,53 @@ function PremiPage({ isAdmin, teams = [] }) {
         </div>
       </div>
 
-      {/* ── 4. PREMI IN € (art. 12.4) ── */}
+      {/* ── 4. PREMI INDIVIDUALI (art. 12.4 + 12.5) ── */}
+      <div style={{ background: "#a855f708", border: "1.5px solid #a855f725", borderRadius: 16, padding: 18 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#a855f7", letterSpacing: "0.1em" }}>🏅 PREMI INDIVIDUALI (art. 12.4–12.5)</div>
+            <div style={{ fontSize: 10, color: "#555", marginTop: 2 }}>Premi e malus di fine stagione per record individuali</div>
+          </div>
+          {isAdmin && !premiApplicati.individuali && (
+            <button onClick={handleApplicaPremiIndividuali} disabled={savingIndiv}
+              style={{ padding: "7px 14px", borderRadius: 9, border: "none", background: "#a855f722", color: "#a855f7", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+              {savingIndiv ? "..." : "✅ Applica selezionati"}
+            </button>
+          )}
+          {premiApplicati.individuali && <Badge color="#10b981">✓ Applicati</Badge>}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {PREMI_INDIVIDUALI_DEF.map(d => {
+            const teamNames = teams.map(t => t.name);
+            const sel = premiIndiv[d.key] || '';
+            return (
+              <div key={d.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #ffffff08" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12, color: "#ddd", fontWeight: 600 }}>{d.label}</div>
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 900, color: d.color, fontFamily: "'Bebas Neue',sans-serif", minWidth: 36, textAlign: "right" }}>
+                  {d.importo > 0 ? "+" : ""}{d.importo}M
+                </span>
+                {isAdmin && !premiApplicati.individuali ? (
+                  <select value={sel} onChange={e => setPremiIndiv(v => ({ ...v, [d.key]: e.target.value }))}
+                    style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 11, minWidth: 130 }}>
+                    <option value="">— Scegli squadra —</option>
+                    {teamNames.map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                ) : (
+                  <span style={{ fontSize: 11, color: sel ? "#ddd" : "#444", minWidth: 130, textAlign: "right" }}>
+                    {sel || <span style={{ color: "#333" }}>—</span>}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── 5. PREMI IN € (art. 12.6) ── */}
       <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 16, padding: 18 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em", marginBottom: 12 }}>💶 PREMI IN EURO REALI (art. 12.4)</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em", marginBottom: 12 }}>💶 PREMI IN EURO REALI (art. 12.6)</div>
         <div style={{ marginBottom: 12 }}>
           <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>MONTEPREMI TOTALE (€)</div>
           <input style={{ ...inp, width: "auto" }} type="number" placeholder="es. 120" value={montepremi || ""} onChange={e => setMontepremi(parseFloat(e.target.value) || 0)} />
@@ -7033,7 +7110,7 @@ function PremiPage({ isAdmin, teams = [] }) {
         <div style={{ fontSize: 10, color: "#444", marginTop: 10 }}>Il Vincitore Supercoppa riceve i 5€ extra pagati dall'ultimo in classifica.</div>
       </div>
 
-      {/* ── 5. STORICO PREMI APPLICATI ── */}
+      {/* ── 6. STORICO PREMI APPLICATI ── */}
       {premi.length > 0 && (
         <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 16, padding: 18 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em", marginBottom: 12 }}>📋 STORICO PREMI ASSEGNATI</div>
