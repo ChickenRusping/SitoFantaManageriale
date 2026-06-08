@@ -1079,8 +1079,12 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
 // ─── TASSE SETTIMANALI (art. 7.1) ─────────────────────────────────────────────
 
 // Calcola la tassa settimanale per un dato bilancio
+// art. 7.1 + 7.1.2: tassa sempre attiva, ma giu-ago = 1% flat per tutti
 export function calcolaTassa(bilancio) {
-  if (bilancio <= 0)   return { perc: 0, importo: 0 };
+  if (bilancio <= 0) return { perc: 0, importo: 0 };
+  const m = new Date().getMonth(); // 0-based
+  const isPeriodoFlat = m === 5 || m === 6 || m === 7; // giu(5), lug(6), ago(7 = 01/08)
+  if (isPeriodoFlat) return { perc: 1, importo: parseFloat((bilancio * 0.01).toFixed(2)), flat: true };
   if (bilancio <= 20)  return { perc: 1,  importo: parseFloat((bilancio * 0.01).toFixed(2)) };
   if (bilancio <= 40)  return { perc: 2,  importo: parseFloat((bilancio * 0.02).toFixed(2)) };
   if (bilancio <= 60)  return { perc: 3,  importo: parseFloat((bilancio * 0.03).toFixed(2)) };
@@ -1089,10 +1093,9 @@ export function calcolaTassa(bilancio) {
   return               { perc: 10, importo: parseFloat((bilancio * 0.10).toFixed(2)) };
 }
 
-// Periodo di applicazione tasse: 01/08 → 31/05
+// Tassa sempre attiva (art. 7.1 + 7.1.2: giu-ago = 1% flat, resto = scaglioni)
 export function isTassaAttiva() {
-  const m = new Date().getMonth(); // 0-based
-  return m >= 7 || m <= 4; // ago(7)-dic(11) o gen(0)-mag(4)
+  return true;
 }
 
 export async function getTassePagate(squadra) {
@@ -1104,7 +1107,6 @@ export async function getTassePagate(squadra) {
 
 // Applica la tassa settimanale (chiamato dall'admin ogni lunedì sera)
 export async function applicaTassaSettimana(squadra, bilancioCorrente) {
-  if (!isTassaAttiva()) return { skip: true, motivo: 'Fuori periodo (giu-lug)' };
   const { perc, importo } = calcolaTassa(bilancioCorrente);
   if (importo <= 0) return { skip: true, motivo: 'Bilancio 0 o negativo' };
 

@@ -3120,12 +3120,12 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
       {/* ── 2. TASSA SETTIMANALE (art. 7.1) ── */}
       <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 14, padding: 16 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.08em", marginBottom: 12 }}>📊 TASSA SETTIMANALE (art. 7.1)</div>
-        {!tasseAttive ? (
-          <div style={{ fontSize: 12, color: "#555", fontStyle: "italic" }}>Sospesa: periodo giugno/luglio (01/06–31/07)</div>
-        ) : bilancio <= 0 ? (
+        {bilancio <= 0 ? (
           <div style={{ fontSize: 12, color: "#555" }}>Bilancio negativo — nessuna tassa applicabile</div>
         ) : (
           <>
+            {tassa.flat && <div style={{ fontSize: 11, color: "#818cf8", marginBottom: 8 }}>📌 Periodo giu–ago: tassazione flat 1% per tutti (art. 7.1.2)</div>}
+            {!tassa.flat && (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
               {[
                 { r: "1–20M", p: "1%" }, { r: "21–40M", p: "2%" }, { r: "41–60M", p: "3%" },
@@ -3145,6 +3145,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
                 );
               })}
             </div>
+            )}
             <div style={{ background: "#f59e0b10", borderRadius: 10, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <span style={{ fontSize: 12, color: "#888" }}>Tassa prossimo lunedì</span>
               <span style={{ fontSize: 18, fontWeight: 900, color: "#f59e0b", fontFamily: "'Bebas Neue',sans-serif" }}>−{tassa.importo}M <span style={{ fontSize: 12 }}>({tassa.perc}%)</span></span>
@@ -3444,40 +3445,30 @@ function DepositoFiduciarioSection({ team, isAdmin, investimenti, onRefresh }) {
 
 /* ─── CATALOGO INVESTIMENTI (art. 10) ──────────────────────────────────────── */
 const CATALOGO_INVESTIMENTI = [
-  // Piccoli
-  { nome: "Scouting Estero",         categoria: "piccolo",   costo: 2,    desc: "Diritto esclusivo su 1 giocatore estero se arriva in Serie A entro 2 anni.", richiedeNote: true, notePlaceholder: "Nome del giocatore estero selezionato:" },
-  { nome: "Scommessa Rendimento",     categoria: "piccolo",   costo: 2,    desc: "2 giocatori: se migliorano Q di 7+, ottieni 2.5M per ognuno.", richiedeNote: true, notePlaceholder: "Nomi dei 2 giocatori puntati (es. Barella, Vlahovic):" },
-  { nome: "Preparatore Atletico",     categoria: "piccolo",   costo: 3,    desc: "+1M ogni giornata in cui 7+ giocatori prendono voto ≥6.5." },
-  { nome: "Ufficio Stampa",           categoria: "piccolo",   costo: 3,    desc: "2 volte/stagione annulli una penalità minore." },
-  { nome: "Avvocato",                 categoria: "piccolo",   costo: 4,    desc: "Ogni 5 ammonizioni dei tuoi titolari/subentrati → +0.5M." },
-  { nome: "Vice Allenatore Premium",  categoria: "piccolo",   costo: 5,    desc: "3 volte/stagione modifichi un giocatore dopo il fischio d'inizio." },
-  { nome: "Medico di Base",           categoria: "piccolo",   costo: 5,    desc: "Scegli 5 giocatori: +2M per ognuno che salta 5+ giornate per infortunio.", richiedeNote: true, notePlaceholder: "Nomi dei 5 giocatori selezionati (separati da virgola):" },
-  { nome: "Ricapitalizzazione",       categoria: "piccolo",   costo: 5,    desc: "Abbassa il Fair Play Finanziario di 3M. Solo entro il 05/09." },
-  // Medi
-  { nome: "Settore Giovanile Avanzato", categoria: "medio",  costo: 6,    desc: "Alza il limite vivaio da 2 a 4 per l'anno seguente." },
-  { nome: "Scommessa Serie B",          categoria: "medio",  costo: 6,    desc: "Indovina la promossa dalla B: acquista 1 suo giocatore a ¼ Qi.", richiedeNote: true, notePlaceholder: "Squadra di Serie B selezionata:" },
-  { nome: "Meno è meglio",            categoria: "medio",    costo: 7,    desc: "SC nella TOP-3 più bassi + TOP-4 campionato → +10M." },
+  // Piccoli (art. 10.2)
+  { nome: "Scouting Estero",         categoria: "piccolo",   costo: 2,    desc: "Diritto esclusivo su 1 giocatore estero se arriva in Serie A entro 2 anni. Periodo 01/09–20/09.", richiedeNote: true, notePlaceholder: "Nome del giocatore estero selezionato:" },
+  { nome: "Scommessa Rendimento",     categoria: "piccolo",   costo: 2,    desc: "Seleziona 2 giocatori della tua rosa: se uno migliora Q di ≥7, ottieni +2.5M per ognuno.", richiedeNote: true, notePlaceholder: "Nomi dei 2 giocatori puntati (es. Barella, Vlahovic):" },
+  { nome: "Avvocato",                 categoria: "piccolo",   costo: 3,    desc: "Ogni 5 ammonizioni dei tuoi giocatori titolari o subentrati → +0.5M. Doppio giallo = 1 ammonizione." },
+  { nome: "Vice Allenatore Premium",  categoria: "piccolo",   costo: 5,    desc: "3 volte/stagione puoi modificare un giocatore dopo il fischio d'inizio (il sostituto non deve aver giocato)." },
+  { nome: "Ricapitalizzazione",       categoria: "piccolo",   costo: 5,    desc: "Abbassa il Fair Play Finanziario di 3M. Attivabile solo entro il 05/09." },
+  // Medi (art. 10.3)
+  { nome: "Settore Giovanile Avanzato", categoria: "medio",  costo: 6,    desc: "Alza il limite vivaio da 2 a 4 giocatori per l'anno seguente e il successivo." },
   { nome: "SuperClub",                categoria: "medio",    costo: 7,    desc: "+3M al tuo Salary Cap per la stagione." },
-  { nome: "Accordi TV",               categoria: "medio",    costo: 8,    desc: "Ogni partita con 2+ gol segnati → +0.5M extra." },
-  { nome: "Jolly della Stagione",     categoria: "medio",    costo: 8,    desc: "4 volte/stagione raddoppi i guadagni di una singola giornata." },
-  { nome: "Clean Sheet",              categoria: "medio",    costo: 9,    desc: "+1M per ogni giornata in cui la squadra avversaria fa <66 punti." },
-  { nome: "The MVP",                  categoria: "medio",    costo: 9,    desc: "Ogni MVP di un tuo giocatore → +0.4M." },
-  // Grandi
-  { nome: "Ristrutturazione Stadio",  categoria: "grande",   costo: 10,   desc: "+1.5M/mese dallo stadio dalla stagione successiva (min. 3 anni tra investimenti)." },
-  { nome: "Branding Internazionale",  categoria: "grande",   costo: 10,   desc: "1°: +20M · 2°: +15M · 3°: +12M · 4°: +8M · Coppa: +5M." },
-  { nome: "DS Masterclass",           categoria: "grande",   costo: 10,   desc: "Nelle aste svincolati: 2 volte/stagione conosci l'offerta più alta prima di formalizzare la tua." },
-  { nome: "Centro Giovani U21",       categoria: "grande",   costo: 12,   desc: "1 giocatore U21 svincolato/stagione a ¼ Qi. Mantenimento 1M/anno." },
-  { nome: "Fondo Speculativo",        categoria: "grande",   costo: 12,   desc: "Ogni giornata >75: +1M al fondo. <60: -0.3M. Ricevi tutto a fine stagione." },
-  { nome: "Centro Analisi Tattica",   categoria: "grande",   costo: 13.5, desc: "Ogni giornata col modulo principale del tuo allenatore → +0.5M." },
-  { nome: "Fondo Pensione Atleti",    categoria: "grande",   costo: 15,   desc: "Per giocatori ≥32 anni lo stipendio si calcola Q/7 invece di Q/5. Dura 1 anno." },
-  { nome: "Abbonamenti Premium",      categoria: "grande",   costo: 15,   desc: "Vittoria in casa: +1.5M (scarto ≥2: +2M). Pareggio in casa: +1M." },
-  // Invernali (24/12-31/12, max 10M)
-  { nome: "Rientro in Grande",        categoria: "invernale", costo: 3,   desc: "1 infortunato: se nelle 5 giornate dal rientro prende voto ≥6 → +1.2M.", richiedeNote: true, notePlaceholder: "Nome del giocatore infortunato selezionato:" },
-  { nome: "Deroga U-21",              categoria: "invernale", costo: 4,   desc: "Fino al 01/06: puoi avere 30 giocatori con solo 1 U21." },
-  { nome: "Clausola Segreta",         categoria: "invernale", costo: 4,   desc: "Clausola rescissoria: da 1.75× a 2.0× la quotazione fino al 31/05." },
-  { nome: "Scouting Rapido",          categoria: "invernale", costo: 5,   desc: "+1 svincolo straordinario extra nella sessione invernale." },
-  { nome: "Re del Girone di Ritorno", categoria: "invernale", costo: 7,   desc: "7+ punti in più nella seconda metà vs prima metà → +10M a fine anno." },
-  { nome: "Corso Analisi Video",      categoria: "invernale", costo: 10,  desc: "1 sostituzione extra (non nelle ultime 3 giornate o finale Coppa)." },
+  { nome: "Accordi TV",               categoria: "medio",    costo: 8,    desc: "Ogni qualvolta segni almeno 2 gol in una partita → +0.5M extra." },
+  { nome: "Clean Sheet",              categoria: "medio",    costo: 9,    desc: "+1.5M per ogni giornata in cui la squadra avversaria totalizza <66 punti fantacalcistici." },
+  { nome: "The MVP",                  categoria: "medio",    costo: 9,    desc: "Ogni qualvolta un tuo giocatore titolare o subentrato prende l'MVP → +0.5M." },
+  // Grandi (art. 10.4)
+  { nome: "Ristrutturazione Stadio",  categoria: "grande",   costo: 10,   desc: "Dalla stagione successiva +1.5M/mese dallo stadio. Devono passare 3 anni tra investimenti." },
+  { nome: "Branding Internazionale",  categoria: "grande",   costo: 10,   desc: "1°: +20M · 2°: +15M · 3°: +12M · 4°: +8M · Coppa: +5M · Finalista Coppa: +1M." },
+  { nome: "DS Masterclass",           categoria: "grande",   costo: 12,   desc: "Aste svincolati: 2 volte/stagione conosci l'offerta più alta prima di formalizzare la tua." },
+  { nome: "Centro Giovani U21",       categoria: "grande",   costo: 14,   desc: "1 giocatore U21 svincolato/stagione a ¼ Q. Scelta entro 15/08, in ordine di classifica precedente." },
+  { nome: "Abbonamenti Premium",      categoria: "grande",   costo: 15,   desc: "Vittoria in casa: +1.5M (scarto ≥2 gol: +2M). Pareggio in casa: +1M. Valido 1 stagione." },
+  // Invernali — 24/12–31/12, max 10M (art. 10.5)
+  { nome: "Rientro in Grande",        categoria: "invernale", costo: 3,   desc: "1 infortunato: se nelle 5 giornate dal rientro prende voto ≥6 → +1.2M extra.", richiedeNote: true, notePlaceholder: "Nome del giocatore infortunato selezionato:" },
+  { nome: "Deroga U-21",              categoria: "invernale", costo: 4,   desc: "Fino al 01/06: puoi avere 30 giocatori in rosa con solo 1 Under-21." },
+  { nome: "Clausola Segreta",         categoria: "invernale", costo: 4,   desc: "Clausola rescissoria dei tuoi giocatori: da 1.75× a 2.0× la quotazione fino al 31/05." },
+  { nome: "Re del Girone di Ritorno", categoria: "invernale", costo: 7,   desc: "Dalla 19ª giornata: se ottieni ≥10 punti in più rispetto alla prima metà → +10M a fine anno." },
+  { nome: "Corso Analisi Video",      categoria: "invernale", costo: 10,  desc: "1 sostituzione extra rispetto alla formazione originaria. Non nelle ultime 3 giornate né in finale/semifinale Coppa. Usabile una volta." },
 ];
 
 /* ─── ALLENATORE TAB ─────────────────────────────────────────────────────────── */
