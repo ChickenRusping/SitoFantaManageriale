@@ -6085,47 +6085,60 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
         />
       </div>
 
-      {/* ── FORM CHIAMATA ── */}
+      {/* ── FORM CHIAMATA (modal overlay) ── */}
       {showCallForm && (
-        <div style={{ background: "#f59e0b0f", border: "1.5px solid #f59e0b33", borderRadius: 14, padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 13, color: "#e0e0e0", fontWeight: 600, flex: 1 }}>
-              📞 Chiama <b style={{ color: "#f59e0b" }}>{showCallForm.nome}</b>
-              <span style={{ fontSize: 10, color: "#888", marginLeft: 6 }}>Q{showCallForm.quot} · {showCallForm.ruolo} · {showCallForm.anni}aa</span>
-            </span>
-            {isAdmin
-              ? <select style={inpStyle} value={callTeam} onChange={e => setCallTeam(e.target.value)}>
-                  {TEAMS.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
-                </select>
-              : <span style={{ fontSize: 13, color: "#f59e0b", fontWeight: 700 }}>{mySquadra}</span>}
-          </div>
-          {showCallForm.isVivaio && (
-            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12, color: "#10b981" }}>
-              <input type="checkbox" checked={callVivaio} onChange={e => setCallVivaio(e.target.checked)}
-                style={{ width: 16, height: 16, accentColor: "#10b981" }} />
-              🌱 Acquisto per il <b>Vivaio</b>
-            </label>
-          )}
-          {/* Preview scadenze */}
-          <div style={{ fontSize: 10, color: "#555", background: "#ffffff06", borderRadius: 8, padding: "8px 10px", lineHeight: 1.7 }}>
-            {(() => {
-              const scInt = calcolaScadenzaInteresse();
-              const scOff = calcolaScadenzaOfferte(scInt);
-              const minOfferta = parseFloat((showCallForm.quot * 0.75).toFixed(2));
-              return <>
-                📅 Interesse aperto fino a: <b style={{ color: "#f59e0b" }}>{scInt.toLocaleString("it-IT", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</b><br/>
-                🏷️ Se più interessati → asta busta chiusa, scadenza offerte: <b style={{ color: "#818cf8" }}>{scOff.toLocaleString("it-IT", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</b> (slot scalare)<br/>
-                <span style={{ color: "#10b981" }}>✓ Se solo tu sei interessato → giocatore a <b>¾Q = {minOfferta}M</b> automaticamente</span>
-              </>;
-            })()}
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => chiamaGiocatore(showCallForm, callVivaio)}
-              style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: "#f59e0b", color: "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-              ✓ Manifesta interesse
-            </button>
-            <button onClick={() => { setShowCallForm(null); setCallVivaio(false); }}
-              style={{ padding: "8px 12px", borderRadius: 9, border: "none", background: "#ffffff10", color: "#888", fontSize: 13, cursor: "pointer" }}>✕</button>
+        <div onClick={() => { setShowCallForm(null); setCallVivaio(false); }}
+          style={{ position: "fixed", inset: 0, zIndex: 9000, background: "#00000088", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: "#1a1d26", border: "1.5px solid #f59e0b44", borderRadius: 16, padding: 22, width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 14, boxShadow: "0 12px 48px #00000099" }}>
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#f59e0b" }}>📞 {showCallForm.nome}</div>
+                <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>Q{showCallForm.quot} · {showCallForm.ruolo} · {showCallForm.anni}aa</div>
+              </div>
+              <button onClick={() => { setShowCallForm(null); setCallVivaio(false); }}
+                style={{ background: "none", border: "none", color: "#555", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: "0 4px" }}>✕</button>
+            </div>
+            {/* Squadra */}
+            <div>
+              <div style={{ fontSize: 10, color: "#555", marginBottom: 4 }}>SQUADRA INTERESSATA</div>
+              {isAdmin
+                ? <select style={{ ...inpStyle, width: "100%" }} value={callTeam} onChange={e => setCallTeam(e.target.value)}>
+                    {TEAMS.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                  </select>
+                : <span style={{ fontSize: 13, color: "#f59e0b", fontWeight: 700 }}>{mySquadra}</span>}
+            </div>
+            {/* Vivaio checkbox */}
+            {showCallForm.isVivaio && (
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12, color: "#10b981", background: "#10b98110", borderRadius: 8, padding: "8px 12px" }}>
+                <input type="checkbox" checked={callVivaio} onChange={e => setCallVivaio(e.target.checked)}
+                  style={{ width: 16, height: 16, accentColor: "#10b981" }} />
+                🌱 Acquisto per il <b>Vivaio</b>
+              </label>
+            )}
+            {/* Preview scadenze */}
+            <div style={{ fontSize: 10, color: "#666", background: "#ffffff06", borderRadius: 8, padding: "10px 12px", lineHeight: 1.8 }}>
+              {(() => {
+                const scInt = calcolaScadenzaInteresse();
+                const scOff = calcolaScadenzaOfferte(scInt);
+                const minOfferta = parseFloat((showCallForm.quot * 0.75).toFixed(2));
+                return <>
+                  📅 Interesse aperto fino a: <b style={{ color: "#f59e0b" }}>{scInt.toLocaleString("it-IT", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</b><br/>
+                  🏷️ Se più interessati → asta busta chiusa<br/>
+                  <span style={{ color: "#10b981" }}>✓ Se solo tu → giocatore a <b>¾Q = {minOfferta}M</b> automaticamente</span>
+                </>;
+              })()}
+            </div>
+            {/* Azioni */}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => chiamaGiocatore(showCallForm, callVivaio)}
+                style={{ flex: 1, padding: "11px", borderRadius: 10, border: "none", background: "#f59e0b", color: "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                ✓ Manifesta interesse
+              </button>
+              <button onClick={() => { setShowCallForm(null); setCallVivaio(false); }}
+                style={{ padding: "11px 16px", borderRadius: 10, border: "none", background: "#ffffff10", color: "#888", fontSize: 13, cursor: "pointer" }}>✕</button>
+            </div>
           </div>
         </div>
       )}
