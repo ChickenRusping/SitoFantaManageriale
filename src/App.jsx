@@ -217,13 +217,13 @@ function useSortableTable(data, defaultKey, defaultDir = "asc") {
 /* ─── SHARED UI ─────────────────────────────────────────────────────────────── */
 // Calcola lo stipendio corretto in base a quotazione, anno contratto ed età (art. 4.8 + 4.8.1)
 function calcolaStipCorretto(quot, anniContratto, anni) {
-  const base = parseFloat((Number(quot || 0) / 5).toFixed(2));
+  const base = parseFloat((Number(quot || 0) / 5).toFixed(3));
   const isU21 = anni > 0 && anni <= 21;
   const ac = anniContratto || 0;
   if (isU21 || ac <= 1) return base;
-  if (ac === 2) return parseFloat((base * 1.1).toFixed(2));
-  if (ac === 3) return parseFloat((base * 1.2).toFixed(2));
-  return parseFloat((base * 0.9).toFixed(2)); // anno 4+: Bonus Fedeltà
+  if (ac === 2) return parseFloat((base * 1.1).toFixed(3));
+  if (ac === 3) return parseFloat((base * 1.2).toFixed(3));
+  return parseFloat((base * 0.9).toFixed(3)); // anno 4+: Bonus Fedeltà
 }
 
 function Badge({ children, color }) {
@@ -278,12 +278,12 @@ function TeamCard({ team, onClick }) {
 
   // FPF = netto speso semestre corrente (uscite − entrate, escl. stipendi), passato da mergedTeams
   const fpf = team.fpf ?? null;
-  const fpfDisplay = fpf !== null ? `${fpf.toFixed(1)}M` : "—";
+  const fpfDisplay = fpf !== null ? `${fpf.toFixed(3)}M` : "—";
   const fpfColor = fpf === null ? "#555" : fpf > 70 ? "#ef4444" : fpf > 65 ? "#f97316" : fpf > 60 ? "#f59e0b" : fpf > 50 ? "#fbbf24" : fpf > 35 ? "#888" : "#10b981";
   const scColor = scLive > 75 ? "#ef4444" : scLive > 74 ? "#f97316" : scLive > 70 ? "#f59e0b" : scLive > 65 ? "#fbbf24" : scLive > 60 ? "#888" : "#10b981";
-  const scLibero = parseFloat((75 - scLive).toFixed(1));
+  const scLibero = parseFloat((75 - scLive).toFixed(3));
   const scLiberoColor = scLibero >= 10 ? "#10b981" : scLibero >= 3 ? "#6ee7b7" : scLibero >= 0 ? "#888" : scLibero >= -5 ? "#f59e0b" : scLibero >= -10 ? "#f97316" : "#ef4444";
-  const scLiberoStr = scLibero > 0 ? `+${scLibero.toFixed(1)}M` : `${scLibero.toFixed(1)}M`;
+  const scLiberoStr = scLibero > 0 ? `+${scLibero.toFixed(3)}M` : `${scLibero.toFixed(3)}M`;
   const giocatori = team.giocatori || 0;
   const u21 = team.u21 || 0;
   const rosaColor = giocatori > 30 || giocatori < 25 ? "#ef4444" : giocatori >= 28 ? "#10b981" : "#888";
@@ -308,8 +308,8 @@ function TeamCard({ team, onClick }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 10 }}>
         {[
-          { label: "BILANCIO",  value: `${team.bilancio.toFixed(1)}M`, color: bilColor },
-          { label: "SC USATO",  value: `${scLive.toFixed(1)}M`,        color: scColor },
+          { label: "BILANCIO",  value: `${team.bilancio.toFixed(3)}M`, color: bilColor },
+          { label: "SC USATO",  value: `${scLive.toFixed(3)}M`,        color: scColor },
           { label: "SC LIBERO", value: scLiberoStr,                     color: scLiberoColor },
         ].map(s => (
           <div key={s.label}>
@@ -481,7 +481,7 @@ function CalcolatoreGiornata({ profile, teams }) {
     + costiGiocatori.golSubitiGioc * 0.1
     + costiGiocatori.autogol * 0.5
     + costiGiocatori.rigoriSbagliati * 0.5
-  ).toFixed(2));
+  ).toFixed(3));
 
   // Stadio (4M se 1° del mese)
   const guadagnoStadio = stadioPagato ? 4 : 0;
@@ -489,13 +489,13 @@ function CalcolatoreGiornata({ profile, teams }) {
   // Totale grezzo
   let totale = parseFloat((
     guadagnoGolSegnati + guadagnoGolSubiti + guadagnoRisultato + costoGiocatori + guadagnoStadio
-  ).toFixed(2));
+  ).toFixed(3));
 
   // Se formazione non schierata: perdite doppie, guadagni 0
   if (!formazione) {
     const perdite = Math.min(totale, 0) * 2;
     const guadagni = 0;
-    totale = parseFloat((perdite + guadagni).toFixed(2));
+    totale = parseFloat((perdite + guadagni).toFixed(3));
   }
 
   const color = totale >= 0 ? "#10b981" : "#ef4444";
@@ -745,7 +745,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
   const scUsato = myRosa.filter(p=>!p.in_vivaio).reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
   // FPF = netto speso semestre corrente, calcolato centralmente e passato via myTeam.fpf
   const fpf = myTeam?.fpf ?? null;
-  const fpfDisplay = fpf !== null ? `${fpf.toFixed(1)}M` : "—";
+  const fpfDisplay = fpf !== null ? `${fpf.toFixed(3)}M` : "—";
   const fpfColor = fpf === null ? "#555" : fpf > 40 ? "#ef4444" : fpf > 25 ? "#f59e0b" : fpf < 0 ? "#10b981" : "#888";
 
   const inp = { padding: "4px 6px", borderRadius: 5, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 11, width: "100%" };
@@ -771,8 +771,8 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
             {/* Bilancio + SC + FPF */}
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
               {[
-                { label: "BILANCIO", value: `${myTeam.bilancio?.toFixed(1)}M`, color: myTeam.bilancio < 10 ? "#f97316" : "#10b981" },
-                { label: "SALARY CAP", value: `${scUsato.toFixed(1)} / 75M`, color: scUsato > 75 ? "#ef4444" : scUsato > 65 ? "#f59e0b" : "#10b981" },
+                { label: "BILANCIO", value: `${myTeam.bilancio?.toFixed(3)}M`, color: myTeam.bilancio < 10 ? "#f97316" : "#10b981" },
+                { label: "SALARY CAP", value: `${scUsato.toFixed(3)} / 75M`, color: scUsato > 75 ? "#ef4444" : scUsato > 65 ? "#f59e0b" : "#10b981" },
                 { label: "FPF", value: fpfDisplay, color: fpfColor },
               ].map(s => (
                 <div key={s.label} style={{ textAlign: "right" }}>
@@ -1136,7 +1136,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
             {montepremi>0&&[["½",montepremi/2,"1° posto"],["¼",montepremi/4,"2° posto"],["⅛",montepremi/8,"3° posto"],["⅛",montepremi/8,"Coppa"]].map(([fraz,imp,label],i) => (
               <div key={i} style={{ display:"flex",justifyContent:"space-between",padding:"3px 0",borderBottom:"1px solid #ffffff08" }}>
                 <span style={{ fontSize:10,color:"#888" }}>{fraz} {label}</span>
-                <span style={{ fontSize:12,fontWeight:900,color:"#f59e0b",fontFamily:"'Bebas Neue',sans-serif" }}>{parseFloat(imp.toFixed(2))}€</span>
+                <span style={{ fontSize:12,fontWeight:900,color:"#f59e0b",fontFamily:"'Bebas Neue',sans-serif" }}>{parseFloat(imp.toFixed(3))}€</span>
               </div>
             ))}
           </div>
@@ -1607,15 +1607,15 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
       const penale=quot<=10?0.5:quot<=20?1:quot<=30?1.5:2;
       const df=new Date(oggi.getFullYear(),5,1); if(df<oggi)df.setFullYear(oggi.getFullYear()+1);
       const mesi=Math.ceil((df-oggi)/(30.44*86400000));
-      const costoStip=parseFloat((mesi*stip/12).toFixed(2));
-      return {label:"Costo totale",value:parseFloat((penale+costoStip).toFixed(2)),color:"#ef4444",dettaglio:`Penale ${penale}M + ${mesi} mens. (${costoStip}M)`,positivo:false};
+      const costoStip=parseFloat((mesi*stip/12).toFixed(3));
+      return {label:"Costo totale",value:parseFloat((penale+costoStip).toFixed(3)),color:"#ef4444",dettaglio:`Penale ${penale}M + ${mesi} mens. (${costoStip}M)`,positivo:false};
     }
     if (tipo==='straordinario_u21_nc') return {label:"Costo/Guadagno",value:0,color:"#888",dettaglio:"U21 nc — costo e guadagno 0",positivo:true};
-    const ind=estero?parseFloat((quot/2).toFixed(2)):parseFloat((quot/4).toFixed(2));
+    const ind=estero?parseFloat((quot/2).toFixed(3)):parseFloat((quot/4).toFixed(3));
     const ag=new Date(oggi.getMonth()>=8?oggi.getFullYear():oggi.getFullYear()-1,7,1);
     const mr=Math.max(0,Math.floor((oggi-ag)/(30.44*86400000)));
-    const rimb=parseFloat((mr*stip/12).toFixed(2));
-    return {label:"Indennizzo + rimborso",value:parseFloat((ind+rimb).toFixed(2)),color:"#10b981",dettaglio:`Ind. ${ind}M${estero?' (estero ½)':' (¼)'} + ${mr} mens. (${rimb}M)`,positivo:true};
+    const rimb=parseFloat((mr*stip/12).toFixed(3));
+    return {label:"Indennizzo + rimborso",value:parseFloat((ind+rimb).toFixed(3)),color:"#10b981",dettaglio:`Ind. ${ind}M${estero?' (estero ½)':' (¼)'} + ${mr} mens. (${rimb}M)`,positivo:true};
   }
 
   function getValidazioni(player, tipo) {
@@ -1652,7 +1652,7 @@ ${pe>0?`⚠️ Penale extra +${pe}M
 
   async function handleRinnovo(player) {
     const isU21=player.anni>0&&player.anni<=21, perc=isU21?0:20;
-    const ns=parseFloat((Number(player.stip)*(1+perc/100)).toFixed(2));
+    const ns=parseFloat((Number(player.stip)*(1+perc/100)).toFixed(3));
     if(!window.confirm(`Rinnovare contratto di ${player.nome}?
 ${isU21?'U21 — nessun aumento':`+20% → ${ns}M`}
 Passa all'anno 3.`))return;
@@ -1702,7 +1702,7 @@ Passa all'anno 3.`))return;
   async function handlePromuoviVivaio(p) {
     if(players.length>=30){alert(`Rosa piena (${players.length}/30)`);return;}
     if(!window.confirm(`Promuovere ${p.nome} in rosa?
-Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
+Stipendio: ${(p.quot/5).toFixed(3)}M`))return;
     setSaving(true);
     try{cacheInvalidate('rosa_'+teamName);cacheInvalidate('vivaio_'+teamName);await promuoviDaVivaio(p.id,teamName);await loadAll();}
     catch(e){alert(e.message);}finally{setSaving(false);}
@@ -1793,8 +1793,8 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                   <td style={{ padding:"7px 8px",textAlign:"center",fontWeight:800,color:p.quot>=20?"#f59e0b":"#ccc",fontFamily:"'Bebas Neue',sans-serif",fontSize:14 }}>{p.quot}</td>
                   <td style={{ padding:"7px 8px",textAlign:"center" }}>
                     <span style={{ color: p._stipDiff ? "#f59e0b" : "#aaa", fontWeight: p._stipDiff ? 700 : 400 }}
-                      title={p._stipDiff ? `Stip. salvato: ${Number(p.stip).toFixed(2)}M · Calcolato: ${p._stipCorretto.toFixed(2)}M` : `Q${p.quot}/5${p._acNum>=2&&!(p.anni>0&&p.anni<=21)?" +incremento contratto":""}`}>
-                      {p._stipCorretto.toFixed(2)}M{p._stipDiff ? " ⚠" : ""}
+                      title={p._stipDiff ? `Stip. salvato: ${Number(p.stip).toFixed(3)}M · Calcolato: ${p._stipCorretto.toFixed(3)}M` : `Q${p.quot}/5${p._acNum>=2&&!(p.anni>0&&p.anni<=21)?" +incremento contratto":""}`}>
+                      {p._stipCorretto.toFixed(3)}M{p._stipDiff ? " ⚠" : ""}
                     </span>
                   </td>
                   <td style={{ padding:"7px 8px",textAlign:"center" }}>
@@ -1802,8 +1802,8 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                     return <span style={{ background:color+"22",color,border:`1px solid ${color}44`,borderRadius:5,padding:"1px 6px",fontSize:10,fontWeight:700 }}>{ac||"—"}</span>;})()}
                   </td>
                   <td style={{ padding:"7px 8px",textAlign:"center",color:"#666" }}>{p.clausola}M</td>
-                  <td style={{ padding:"7px 8px",textAlign:"center",color:p.media_voto>=6.5?"#10b981":p.media_voto>=6?"#f59e0b":"#888" }}>{p.media_voto>0?Number(p.media_voto).toFixed(2):"—"}</td>
-                  <td style={{ padding:"7px 8px",textAlign:"center",color:p.media_fantavoto>=7?"#10b981":p.media_fantavoto>=6?"#f59e0b":"#888" }}>{p.media_fantavoto>0?Number(p.media_fantavoto).toFixed(2):"—"}</td>
+                  <td style={{ padding:"7px 8px",textAlign:"center",color:p.media_voto>=6.5?"#10b981":p.media_voto>=6?"#f59e0b":"#888" }}>{p.media_voto>0?Number(p.media_voto).toFixed(3):"—"}</td>
+                  <td style={{ padding:"7px 8px",textAlign:"center",color:p.media_fantavoto>=7?"#10b981":p.media_fantavoto>=6?"#f59e0b":"#888" }}>{p.media_fantavoto>0?Number(p.media_fantavoto).toFixed(3):"—"}</td>
                   <td style={{ padding:"7px 8px",textAlign:"center",color:p.gol>0?"#10b981":"#555" }}>{p.gol>0?p.gol:"—"}</td>
                   <td style={{ padding:"7px 8px",textAlign:"center",color:p.assist>0?"#60a5fa":"#555" }}>{p.assist>0?p.assist:"—"}</td>
                 </tr>
@@ -1815,8 +1815,8 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
 
       {players.length>0&&(
         <div style={{ marginTop:10,paddingTop:10,borderTop:"1px solid #ffffff10",display:"flex",gap:16,flexWrap:"wrap" }}>
-          <span style={{ fontSize:11,color:"#888" }}>Stipendi: <b style={{ color:"#ccc" }}>{playersRich.reduce((s,p)=>s+p._stipCorretto,0).toFixed(2)}M</b></span>
-          <span style={{ fontSize:11,color:"#888" }}>Q media: <b style={{ color:"#ccc" }}>{(players.reduce((s,p)=>s+Number(p.quot),0)/players.length).toFixed(1)}</b></span>
+          <span style={{ fontSize:11,color:"#888" }}>Stipendi: <b style={{ color:"#ccc" }}>{playersRich.reduce((s,p)=>s+p._stipCorretto,0).toFixed(3)}M</b></span>
+          <span style={{ fontSize:11,color:"#888" }}>Q media: <b style={{ color:"#ccc" }}>{(players.reduce((s,p)=>s+Number(p.quot),0)/players.length).toFixed(3)}</b></span>
         </div>
       )}
 
@@ -1830,7 +1830,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
           <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14 }}>
             <div>
               <div style={{ fontSize:14,fontWeight:800,color:"#f0f0f0" }}>{popup.player.nome}</div>
-              <div style={{ fontSize:11,color:"#888" }}>Q{popup.player.quot} · {popup.player.ruolo} · {popup.player.anni}aa · {calcolaStipCorretto(Number(popup.player.quot||0),Number(popup.player.anni_contratto||0),Number(popup.player.anni||0)).toFixed(2)}M</div>
+              <div style={{ fontSize:11,color:"#888" }}>Q{popup.player.quot} · {popup.player.ruolo} · {popup.player.anni}aa · {calcolaStipCorretto(Number(popup.player.quot||0),Number(popup.player.anni_contratto||0),Number(popup.player.anni||0)).toFixed(3)}M</div>
             </div>
             <button onClick={()=>setPopup(null)} style={{ background:"none",border:"none",color:"#555",fontSize:18,cursor:"pointer",padding:"0 4px",lineHeight:1 }}>✕</button>
           </div>
@@ -1881,7 +1881,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                 <div style={{ borderTop:"1px solid #ffffff10",paddingTop:10 }}>
                   <div style={{ fontSize:9,color:"#666",marginBottom:5 }}>RINNOVO CONTRATTO (anno 2→3)</div>
                   <div style={{ fontSize:11,color:"#aaa",marginBottom:6 }}>
-                    {popup.player.anni<=21?"U21 — nessun aumento":`+20% → ${parseFloat((calcolaStipCorretto(Number(popup.player.quot||0),Number(popup.player.anni_contratto||0),Number(popup.player.anni||0))*1.2).toFixed(2))}M`}
+                    {popup.player.anni<=21?"U21 — nessun aumento":`+20% → ${parseFloat((calcolaStipCorretto(Number(popup.player.quot||0),Number(popup.player.anni_contratto||0),Number(popup.player.anni||0))*1.2).toFixed(3))}M`}
                   </div>
                   <button onClick={()=>handleRinnovo(popup.player)} disabled={saving}
                     style={{ width:"100%",padding:"8px",borderRadius:8,border:"none",background:"#10b98122",color:"#10b981",fontSize:12,fontWeight:700,cursor:"pointer" }}>
@@ -1919,8 +1919,8 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
             <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
               <div style={{ fontSize:10,color:"#818cf8" }}>MANDA OFFERTA — ti reindirizzerà a Mercato</div>
               {[
-                {val:'cessione',label:'💰 Acquisto diretto',desc:`Min ${(popup.player.quot/2).toFixed(1)}M`},
-                {val:'clausola',label:'⚡ Clausola rescissoria',desc:`${(popup.player.quot*1.75).toFixed(1)}M`},
+                {val:'cessione',label:'💰 Acquisto diretto',desc:`Min ${(popup.player.quot/2).toFixed(3)}M`},
+                {val:'clausola',label:'⚡ Clausola rescissoria',desc:`${(popup.player.quot*1.75).toFixed(3)}M`},
                 {val:'prestito',label:'🔄 Proponi prestito',desc:'50–150% Q come costo di riscatto'},
               ].map(opt=>(
                 <button key={opt.val} onClick={()=>setOfferMode(opt.val)}
@@ -2030,10 +2030,10 @@ function SvincoliTab({ team, isAdmin }) {
       const dataFine = new Date(oggi.getFullYear(), 5, 1);
       if (dataFine < oggi) dataFine.setFullYear(oggi.getFullYear() + 1);
       const mesi = Math.ceil((dataFine - oggi) / (30.44 * 86400000));
-      const costoStip = parseFloat((mesi * stip / 12).toFixed(2));
+      const costoStip = parseFloat((mesi * stip / 12).toFixed(3));
       return {
         label: "Costo totale",
-        value: parseFloat((penale + costoStip).toFixed(2)),
+        value: parseFloat((penale + costoStip).toFixed(3)),
         color: "#ef4444",
         dettaglio: `Penale ${penale}M + ${mesi} mensilità (${costoStip}M)`,
         positivo: false,
@@ -2043,11 +2043,11 @@ function SvincoliTab({ team, isAdmin }) {
       return { label: "Costo/Guadagno", value: 0, color: "#888", dettaglio: "Svincolo U21 non conteggiato — costo e guadagno 0", positivo: true };
     }
     // Straordinario
-    const ind = estero ? parseFloat((quot / 2).toFixed(2)) : parseFloat((quot / 4).toFixed(2));
+    const ind = estero ? parseFloat((quot / 2).toFixed(3)) : parseFloat((quot / 4).toFixed(3));
     const agostoPagato = new Date(oggi.getMonth() >= 8 ? oggi.getFullYear() : oggi.getFullYear() - 1, 7, 1);
     const mesiRimb = Math.max(0, Math.floor((oggi - agostoPagato) / (30.44 * 86400000)));
-    const rimb = parseFloat((mesiRimb * stip / 12).toFixed(2));
-    const totale = parseFloat((ind + rimb).toFixed(2));
+    const rimb = parseFloat((mesiRimb * stip / 12).toFixed(3));
+    const totale = parseFloat((ind + rimb).toFixed(3));
     return {
       label: "Indennizzo + rimborso",
       value: totale,
@@ -2377,8 +2377,8 @@ function ClausoleTab({ team, isAdmin }) {
 
   const rescissorie = rosaPlayers.map(p => ({
     nome: p.nome, quot: p.quot, ruolo: p.ruolo,
-    clausola: parseFloat((p.quot * 1.75).toFixed(2)),
-    nettoCedente: parseFloat((p.quot * 1.75 * 5 / 7).toFixed(2)),
+    clausola: parseFloat((p.quot * 1.75).toFixed(3)),
+    nettoCedente: parseFloat((p.quot * 1.75 * 5 / 7).toFixed(3)),
     fuori_lista: p.fuori_lista,
   })).sort((a, b) => b.clausola - a.clausola);
 
@@ -2399,7 +2399,7 @@ function ClausoleTab({ team, isAdmin }) {
 
   async function handleRescissione(player, chiPaga) {
     const pct = chiPaga === 'ricevente' ? 0.25 : 0.50;
-    const ind = parseFloat((Number(player.quot) * pct).toFixed(2));
+    const ind = parseFloat((Number(player.quot) * pct).toFixed(3));
     const label = chiPaga === 'ricevente'
       ? `${team.name} paga ${ind}M a ${player.squadra_originale}`
       : `${player.squadra_originale} paga ${ind}M a ${team.name}`;
@@ -2432,7 +2432,7 @@ function ClausoleTab({ team, isAdmin }) {
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <div style={{ fontSize: 11, color: "#6366f1" }}>Q{p.quot}</div>
-                      {p.stip > 0 && <div style={{ fontSize: 10, color: "#888" }}>stip: {Number(p.stip).toFixed(1)}M</div>}
+                      {p.stip > 0 && <div style={{ fontSize: 10, color: "#888" }}>stip: {Number(p.stip).toFixed(3)}M</div>}
                     </div>
                   </div>
                   {/* Rescissione anticipata — chi riceve paga 25%Q (art. 5.8.1) */}
@@ -2441,11 +2441,11 @@ function ClausoleTab({ team, isAdmin }) {
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <button onClick={() => handleRescissione(p, 'ricevente')} disabled={rescindendo === p.id}
                         style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid #f97316aa", background: "#f9731618", color: "#f97316", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                        Pago io {parseFloat((p.quot * 0.25).toFixed(2))}M (25%Q)
+                        Pago io {parseFloat((p.quot * 0.25).toFixed(3))}M (25%Q)
                       </button>
                       <button onClick={() => handleRescissione(p, 'cedente')} disabled={rescindendo === p.id}
                         style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid #6366f1aa", background: "#6366f118", color: "#818cf8", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                        Paga {p.squadra_originale} {parseFloat((p.quot * 0.50).toFixed(2))}M (50%Q)
+                        Paga {p.squadra_originale} {parseFloat((p.quot * 0.50).toFixed(3))}M (50%Q)
                       </button>
                     </div>
                   </div>
@@ -2466,7 +2466,7 @@ function ClausoleTab({ team, isAdmin }) {
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <div style={{ fontSize: 11, color: "#6366f1" }}>Q{p.quot}</div>
-                      {p.stip_prestito_cedente > 0 && <div style={{ fontSize: 10, color: "#f97316" }}>stip tuo: {Number(p.stip_prestito_cedente).toFixed(1)}M</div>}
+                      {p.stip_prestito_cedente > 0 && <div style={{ fontSize: 10, color: "#f97316" }}>stip tuo: {Number(p.stip_prestito_cedente).toFixed(3)}M</div>}
                     </div>
                   </div>
                   {/* Cedente paga 50%Q per rescissione (art. 5.8.1) */}
@@ -2475,11 +2475,11 @@ function ClausoleTab({ team, isAdmin }) {
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <button onClick={() => handleRescissione(p, 'cedente')} disabled={rescindendo === p.id}
                         style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid #f97316aa", background: "#f9731618", color: "#f97316", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                        Pago io {parseFloat((p.quot * 0.50).toFixed(2))}M (50%Q)
+                        Pago io {parseFloat((p.quot * 0.50).toFixed(3))}M (50%Q)
                       </button>
                       <button onClick={() => handleRescissione(p, 'ricevente')} disabled={rescindendo === p.id}
                         style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid #6366f1aa", background: "#6366f118", color: "#818cf8", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                        Paga {p.squadra} {parseFloat((p.quot * 0.25).toFixed(2))}M (25%Q)
+                        Paga {p.squadra} {parseFloat((p.quot * 0.25).toFixed(3))}M (25%Q)
                       </button>
                     </div>
                   </div>
@@ -2536,7 +2536,7 @@ function ContrattoRinnovoRow({ p, team, isAdmin, mySquadra, onRefresh }) {
   const isU21 = p.anni > 0 && p.anni <= 21;
   // Sempre anno 2 → rinnovo biennale: +20% (U21: nessun aumento, art. 4.8.1)
   const percAumento = isU21 ? 0 : 20;
-  const nuovoStip = parseFloat((Number(p.stip) * (1 + percAumento / 100)).toFixed(2));
+  const nuovoStip = parseFloat((Number(p.stip) * (1 + percAumento / 100)).toFixed(3));
 
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #ffffff08", flexWrap: "wrap", gap: 8 }}>
@@ -2551,7 +2551,7 @@ function ContrattoRinnovoRow({ p, team, isAdmin, mySquadra, onRefresh }) {
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 12, color: "#aaa" }}>{Number(p.stip).toFixed(2)}M</div>
+          <div style={{ fontSize: 12, color: "#aaa" }}>{Number(p.stip).toFixed(3)}M</div>
           {!isU21 && <div style={{ fontSize: 11, fontWeight: 700, color: "#f97316" }}>→ {nuovoStip}M</div>}
         </div>
         {(isAdmin || team.name === mySquadra) && (
@@ -2610,7 +2610,7 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
   async function handleRialzo(p) {
     const stip = nuoviStip[p.id];
     if (!stip || parseFloat(stip) <= Number(p.stip)) {
-      alert(`Inserisci un valore maggiore dello stipendio attuale (${Number(p.stip).toFixed(2)}M)`);
+      alert(`Inserisci un valore maggiore dello stipendio attuale (${Number(p.stip).toFixed(3)}M)`);
       return;
     }
     setSaving(p.id);
@@ -2625,7 +2625,7 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
   async function handleRibasso(p) {
     const stip = nuoviStip[p.id];
     if (!stip || parseFloat(stip) >= Number(p.stip)) {
-      alert(`Inserisci un valore minore dello stipendio attuale (${Number(p.stip).toFixed(2)}M)`);
+      alert(`Inserisci un valore minore dello stipendio attuale (${Number(p.stip).toFixed(3)}M)`);
       return;
     }
     if (!finestraRibasso) {
@@ -2645,7 +2645,7 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
   // Mostra la sezione solo a gennaio o se ci sono rinnovi pending
   if (!isGennaio && !hasDaCedere && storico.length === 0) return null;
 
-  const stipDefault = (p) => nuoviStip[p.id] ?? parseFloat((p.quot / 5).toFixed(2));
+  const stipDefault = (p) => nuoviStip[p.id] ?? parseFloat((p.quot / 5).toFixed(3));
 
   return (
     <div style={{ background: "#f59e0b08", border: "1.5px solid #f59e0b25", borderRadius: 14, overflow: "hidden" }}>
@@ -2677,7 +2677,7 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
                 </div>
                 <div style={{ fontSize: 10, color: "#555", marginBottom: 8 }}>
                   I 5 giocatori con maggior aumento di quotazione devono ricevere un aumento di stipendio.
-                  Nuovo stipendio minimo: Q attuale / 5 = {dati.rialzi[0] ? `${(dati.rialzi[0].quot/5).toFixed(2)}M` : "—"}
+                  Nuovo stipendio minimo: Q attuale / 5 = {dati.rialzi[0] ? `${(dati.rialzi[0].quot/5).toFixed(3)}M` : "—"}
                 </div>
                 {dati.rialzi.length === 0 ? (
                   <div style={{ fontSize: 11, color: "#444", fontStyle: "italic" }}>Nessun incremento rilevato — aggiornare quot_precedente prima</div>
@@ -2693,7 +2693,7 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
                         <div style={{ fontSize: 10, color: "#888" }}>
                           Q precedente: {p.quot_precedente} → Q attuale: {p.quot}
                           <span style={{ color: "#10b981", marginLeft: 4 }}>Δ+{p.delta}</span>
-                          · Stip attuale: {Number(p.stip).toFixed(2)}M
+                          · Stip attuale: {Number(p.stip).toFixed(3)}M
                         </div>
                       </div>
                       {gia ? (
@@ -2701,7 +2701,7 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
                       ) : isAdmin ? (
                         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                           <input
-                            type="number" step="0.01" placeholder={`min ${(p.quot/5).toFixed(2)}`}
+                            type="number" step="0.01" placeholder={`min ${(p.quot/5).toFixed(3)}`}
                             value={nuoviStip[p.id] ?? ""}
                             onChange={e => setNuoviStip(s => ({...s, [p.id]: e.target.value}))}
                             style={{ width: 72, padding: "4px 6px", borderRadius: 6, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 11 }}
@@ -2749,7 +2749,7 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
                         <div style={{ fontSize: 10, color: "#888" }}>
                           Q: {p.quot_precedente} → {p.quot}
                           <span style={{ color: "#ef4444", marginLeft: 4 }}>Δ{p.delta}</span>
-                          · Stip attuale: {Number(p.stip).toFixed(2)}M · Min ribasso: {(p.quot/5).toFixed(2)}M
+                          · Stip attuale: {Number(p.stip).toFixed(3)}M · Min ribasso: {(p.quot/5).toFixed(3)}M
                         </div>
                       </div>
                       {gia ? (
@@ -2759,7 +2759,7 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
                       ) : isAdmin && finestraRibasso ? (
                         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                           <input
-                            type="number" step="0.01" placeholder={`max ${(p.quot/5).toFixed(2)}`}
+                            type="number" step="0.01" placeholder={`max ${(p.quot/5).toFixed(3)}`}
                             value={nuoviStip[p.id] ?? ""}
                             onChange={e => setNuoviStip(s => ({...s, [p.id]: e.target.value}))}
                             style={{ width: 72, padding: "4px 6px", borderRadius: 6, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 11 }}
@@ -2821,7 +2821,7 @@ function FairSpendingSection({ team, isAdmin }) {
   useEffect(() => { carica(); }, [team.name]);
 
   const movimentiInclusi = (movimenti || []).filter(m => !m.escluso);
-  const nettoCalcolato   = parseFloat(movimentiInclusi.reduce((acc, m) => acc + m.contributo, 0).toFixed(2));
+  const nettoCalcolato   = parseFloat(movimentiInclusi.reduce((acc, m) => acc + m.contributo, 0).toFixed(3));
   const nettoSpeso       = override !== "" && !isNaN(parseFloat(override)) ? parseFloat(override) : nettoCalcolato;
   const fairResult       = calcolaFairSpending(nettoSpeso);
   const coloreFPF        = nettoSpeso > 50 ? "#ef4444" : nettoSpeso < 0 ? "#10b981" : "#f0f0f0";
@@ -2854,7 +2854,7 @@ function FairSpendingSection({ team, isAdmin }) {
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, alignItems: "baseline" }}>
               <span style={{ fontSize: 12, color: "#888" }}>Netto speso (uscite − entrate)</span>
               <span style={{ fontSize: 17, fontWeight: 900, color: coloreFPF, fontFamily: "'Bebas Neue',sans-serif" }}>
-                {nettoSpeso.toFixed(2)}M <span style={{ fontSize: 11, color: "#555", fontFamily: "Inter,sans-serif", fontWeight: 400 }}>/ 50M</span>
+                {nettoSpeso.toFixed(3)}M <span style={{ fontSize: 11, color: "#555", fontFamily: "Inter,sans-serif", fontWeight: 400 }}>/ 50M</span>
               </span>
             </div>
             <StatBar value={Math.min(Math.max(nettoSpeso, 0), 75)} max={75} color={nettoSpeso > 65 ? "#ef4444" : nettoSpeso > 50 ? "#f59e0b" : "#10b981"} height={10} />
@@ -2920,11 +2920,11 @@ function FairSpendingSection({ team, isAdmin }) {
                           {m.manuale && <span style={{ fontSize: 8, color: "#6366f1", marginRight: 3 }}>●</span>}
                           {m.descrizioneDisplay}
                         </td>
-                        <td style={{ padding: "4px 6px", textAlign: "center", color: "#10b981" }}>{m.entrata ? `+${Number(m.entrata).toFixed(2)}` : "—"}</td>
-                        <td style={{ padding: "4px 6px", textAlign: "center", color: "#f97316" }}>{m.uscita  ? `−${Number(m.uscita).toFixed(2)}`  : "—"}</td>
+                        <td style={{ padding: "4px 6px", textAlign: "center", color: "#10b981" }}>{m.entrata ? `+${Number(m.entrata).toFixed(3)}` : "—"}</td>
+                        <td style={{ padding: "4px 6px", textAlign: "center", color: "#f97316" }}>{m.uscita  ? `−${Number(m.uscita).toFixed(3)}`  : "—"}</td>
                         <td style={{ padding: "4px 6px", textAlign: "center", fontWeight: 700,
                           color: m.escluso ? "#333" : m.contributo > 0 ? "#f97316" : m.contributo < 0 ? "#10b981" : "#555" }}>
-                          {m.escluso ? <span style={{ fontSize: 8, color: "#444" }}>excl.</span> : `${m.contributo > 0 ? "+" : ""}${m.contributo.toFixed(2)}`}
+                          {m.escluso ? <span style={{ fontSize: 8, color: "#444" }}>excl.</span> : `${m.contributo > 0 ? "+" : ""}${m.contributo.toFixed(3)}`}
                         </td>
                         {isAdmin && (
                           <td style={{ padding: "2px 4px", textAlign: "center" }}>
@@ -2948,7 +2948,7 @@ function FairSpendingSection({ team, isAdmin }) {
                   <tfoot>
                     <tr style={{ borderTop: "2px solid #ffffff20" }}>
                       <td colSpan={isAdmin ? 5 : 4} style={{ padding: "5px 6px", fontSize: 10, color: "#888", fontWeight: 700 }}>TOTALE</td>
-                      <td style={{ padding: "5px 6px", textAlign: "center", fontWeight: 900, fontSize: 13, color: coloreFPF, fontFamily: "'Bebas Neue',sans-serif" }}>{nettoCalcolato.toFixed(2)}M</td>
+                      <td style={{ padding: "5px 6px", textAlign: "center", fontWeight: 900, fontSize: 13, color: coloreFPF, fontFamily: "'Bebas Neue',sans-serif" }}>{nettoCalcolato.toFixed(3)}M</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -2987,7 +2987,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
   const euroDisponibili = Math.max(0, 10 - (team.euroBiennio || 0));
   const maxEuroInvestibili = euroDisponibili; // quelli rimasti nel biennio
   const mlnOttenuti = team.mlnExtra || 0;
-  const costoRitiro = parseFloat((mlnOttenuti * 2).toFixed(2));
+  const costoRitiro = parseFloat((mlnOttenuti * 2).toFixed(3));
   // Finestra ritiro: 05/01 → martedì dopo 19ª (approssimato qui come 05/01-28/02)
   const oggi = new Date();
   const meseOggi = oggi.getMonth() + 1;
@@ -3000,7 +3000,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
     const euro = parseFloat(euroInput);
     if (!euro || euro < 1) return;
     if (euro > maxEuroInvestibili) { alert(`Puoi investire al massimo ${maxEuroInvestibili}€ nel biennio ${BIENNIO}`); return; }
-    if (!window.confirm(`Investire ${euro}€ extra per +${(euro*2.5).toFixed(1)}M al bilancio?\n\nAttenzione: gli €${euro} saranno conteggiati sul biennio ${BIENNIO} e non recuperabili senza pagare il doppio.`)) return;
+    if (!window.confirm(`Investire ${euro}€ extra per +${(euro*2.5).toFixed(3)}M al bilancio?\n\nAttenzione: gli €${euro} saranno conteggiati sul biennio ${BIENNIO} e non recuperabili senza pagare il doppio.`)) return;
     setSavingQuote(true);
     try {
       await investiEuroExtra(team.name, euro);
@@ -3037,7 +3037,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
     setApplicandoTassa(true);
     try {
       await applicaTassaSettimana(team.name, bilancio);
-      await logAzione({ utente: 'admin', squadra: team.name, azione: 'tassa_settimanale', entita: 'squadre', descrizione: `Tassa settimanale ${tassa.perc}% −${tassa.importo}M (bilancio era ${bilancio.toFixed(2)}M)`, dataPrima: { bilancio }, dataDopo: { bilancio: bilancio - tassa.importo }, rollbackPossibile: true });
+      await logAzione({ utente: 'admin', squadra: team.name, azione: 'tassa_settimanale', entita: 'squadre', descrizione: `Tassa settimanale ${tassa.perc}% −${tassa.importo}M (bilancio era ${bilancio.toFixed(3)}M)`, dataPrima: { bilancio }, dataDopo: { bilancio: bilancio - tassa.importo }, rollbackPossibile: true });
       getTassePagate(team.name).then(setTasse);
     } catch(e) { alert(e.message); }
     finally { setApplicandoTassa(false); }
@@ -3059,7 +3059,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <div>
             <div style={{ fontSize: 30, fontWeight: 900, color: bilancio < 0 ? "#ef4444" : bilancio < 8 ? "#f97316" : "#10b981", fontFamily: "'Bebas Neue',sans-serif", lineHeight: 1 }}>
-              {bilancio.toFixed(2)} M
+              {bilancio.toFixed(3)} M
             </div>
             {bilancio < 0 && settNeg > 0 && (
               <div style={{ fontSize: 11, color: "#ef4444", marginTop: 4 }}>
@@ -3176,27 +3176,27 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
             <span style={{ fontSize: 12, color: "#888" }}>Salary Cap usato (live)</span>
-            <span style={{ fontSize: 13, fontWeight: 800, color: salaryCapSforato ? "#ef4444" : "#10b981" }}>{salaryCapUsato.toFixed(1)}M / 75M</span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: salaryCapSforato ? "#ef4444" : "#10b981" }}>{salaryCapUsato.toFixed(3)}M / 75M</span>
           </div>
           <StatBar value={Math.min(salaryCapUsato, 75)} max={75} color={salaryCapSforato ? "#ef4444" : "#10b981"} height={10} />
           {salaryCapSforato
-            ? <div style={{ marginTop: 4, fontSize: 11, color: "#ef4444", fontWeight: 700 }}>⛔ Sforato di {(salaryCapUsato - 75).toFixed(1)}M{scEsenteGiuLug ? " (esenzione giu/lug)" : ""}</div>
-            : <div style={{ marginTop: 4, fontSize: 11, color: "#10b981" }}>✅ +{(75 - salaryCapUsato).toFixed(1)}M disponibile</div>}
+            ? <div style={{ marginTop: 4, fontSize: 11, color: "#ef4444", fontWeight: 700 }}>⛔ Sforato di {(salaryCapUsato - 75).toFixed(3)}M{scEsenteGiuLug ? " (esenzione giu/lug)" : ""}</div>
+            : <div style={{ marginTop: 4, fontSize: 11, color: "#10b981" }}>✅ +{(75 - salaryCapUsato).toFixed(3)}M disponibile</div>}
         </div>
         {/* Breakdown: rosa + staff allenatore */}
         {scAllenatore > 0 && (
           <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 12px", marginBottom: 10, display: "flex", flexDirection: "column", gap: 4 }}>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#888" }}>
               <span>Stipendi rosa</span>
-              <span>{salaryCapRosa.toFixed(1)}M</span>
+              <span>{salaryCapRosa.toFixed(3)}M</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#f59e0b" }}>
               <span>👔 Staff allenatore (fisso)</span>
-              <span>+{scAllenatore.toFixed(1)}M</span>
+              <span>+{scAllenatore.toFixed(3)}M</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 700, color: "#ccc", borderTop: "1px solid #ffffff10", paddingTop: 4 }}>
               <span>Totale SC</span>
-              <span>{salaryCapUsato.toFixed(1)}M</span>
+              <span>{salaryCapUsato.toFixed(3)}M</span>
             </div>
           </div>
         )}
@@ -3207,11 +3207,11 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
             {giorniSCNeg >= 15 && <span> — penalità: <b>{giorniSCNeg * 2}gg</b> bloccato + <b>multa 5€</b></span>}
           </div>
         )}
-        <Row label="Rata mensile (1° del mese)" value={`−${(salaryCapUsato/12).toFixed(2)}M`} color="#f97316" large />
-        <Row label="Totale annuale stipendi" value={`−${salaryCapUsato.toFixed(1)}M`} color="#f97316" large />
+        <Row label="Rata mensile (1° del mese)" value={`−${(salaryCapUsato/12).toFixed(3)}M`} color="#f97316" large />
+        <Row label="Totale annuale stipendi" value={`−${salaryCapUsato.toFixed(3)}M`} color="#f97316" large />
         {isAdmin && (
           <button onClick={handlePagaStipendi} disabled={pagandoStipendi} style={{ width: "100%", marginTop: 12, padding: "9px", borderRadius: 9, border: "1px solid #f9731633", background: "#f9731618", color: "#f97316", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-            {pagandoStipendi ? "Pagamento in corso..." : `💸 Paga stipendi (−${(salaryCapUsato/12).toFixed(2)}M)`}
+            {pagandoStipendi ? "Pagamento in corso..." : `💸 Paga stipendi (−${(salaryCapUsato/12).toFixed(3)}M)`}
           </button>
         )}
       </div>
@@ -3267,7 +3267,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
           </div>
           <StatBar value={team.euroBiennio || 0} max={10} color="#6366f1" height={8} />
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-            <span style={{ fontSize: 10, color: "#555" }}>Questa stagione: {team.euroInvestiti || 0}€ → +{((team.euroInvestiti||0)*2.5).toFixed(1)}M</span>
+            <span style={{ fontSize: 10, color: "#555" }}>Questa stagione: {team.euroInvestiti || 0}€ → +{((team.euroInvestiti||0)*2.5).toFixed(3)}M</span>
             <span style={{ fontSize: 10, color: euroDisponibili > 0 ? "#818cf8" : "#555" }}>Residuo: {euroDisponibili}€</span>
           </div>
           <div style={{ fontSize: 9, color: "#444", marginTop: 4 }}>Reset biennio all'inizio della stagione 2027-28</div>
@@ -3278,7 +3278,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
           <div style={{ background: "#10b98110", border: "1px solid #10b98125", borderRadius: 10, padding: "10px 12px", marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
               <span style={{ fontSize: 12, color: "#888" }}>Milioni extra attivi</span>
-              <span style={{ fontSize: 16, fontWeight: 900, color: "#10b981", fontFamily: "'Bebas Neue',sans-serif" }}>+{mlnOttenuti.toFixed(1)}M</span>
+              <span style={{ fontSize: 16, fontWeight: 900, color: "#10b981", fontFamily: "'Bebas Neue',sans-serif" }}>+{mlnOttenuti.toFixed(3)}M</span>
             </div>
             <div style={{ fontSize: 10, color: "#666" }}>
               Ritiro: spendi <b style={{ color: "#f59e0b" }}>{costoRitiro}M</b> (2×) tra 05/01 e martedì post 19ª giornata.
@@ -3306,12 +3306,12 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
                   {n}€
                 </button>
               ))}
-              {euroInput && <span style={{ fontSize: 11, color: "#10b981", fontWeight: 700 }}>→ +{(parseFloat(euroInput)*2.5).toFixed(1)}M</span>}
+              {euroInput && <span style={{ fontSize: 11, color: "#10b981", fontWeight: 700 }}>→ +{(parseFloat(euroInput)*2.5).toFixed(3)}M</span>}
             </div>
             {isAdmin && euroInput && (
               <button onClick={handleInvesti} disabled={savingQuote}
                 style={{ marginTop: 8, padding: "5px 12px", borderRadius: 7, border: "none", background: "#6366f122", color: "#818cf8", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                {savingQuote ? "..." : `✓ Investi ${euroInput}€ → +${(parseFloat(euroInput)*2.5).toFixed(1)}M`}
+                {savingQuote ? "..." : `✓ Investi ${euroInput}€ → +${(parseFloat(euroInput)*2.5).toFixed(3)}M`}
               </button>
             )}
           </div>
@@ -3348,7 +3348,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
             <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #ffffff08" }}>
               <div>
                 <span style={{ fontSize: 12, color: "#f0f0f0", fontWeight: 600 }}>{p.nome}</span>
-                <span style={{ fontSize: 10, color: "#888", marginLeft: 8 }}>{p.anni}aa · Q{p.quot} · {Number(p.stip).toFixed(2)}M</span>
+                <span style={{ fontSize: 10, color: "#888", marginLeft: 8 }}>{p.anni}aa · Q{p.quot} · {Number(p.stip).toFixed(3)}M</span>
               </div>
               <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 700 }}>⛔ cedere entro 15/09</span>
             </div>
@@ -3535,7 +3535,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
     try {
       if (conRimborso) {
         const {data:sq} = await supabase.from('squadre').select('bilancio').eq('name',team.name).single();
-        const nuovoBil = parseFloat(((sq?.bilancio||0) + inv.costo).toFixed(2));
+        const nuovoBil = parseFloat(((sq?.bilancio||0) + inv.costo).toFixed(3));
         await supabase.from('squadre').update({bilancio:nuovoBil}).eq('name',team.name);
         await supabase.from('movimenti').insert({
           squadra: team.name,
@@ -3584,7 +3584,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                     <div style={{ fontSize:11,color:"#888",marginTop:2 }}>{getLabelBonus(bonus.tipo_bonus)} ≥ {soglia} · {ioPago?"⬆️ Tu paghi":"⬇️ Tu ricevi"}</div>
                   </div>
                   <div style={{ textAlign:"right",flexShrink:0 }}>
-                    <div style={{ fontSize:16,fontWeight:900,color:ioPago?"#ef4444":"#10b981",fontFamily:"'Bebas Neue',sans-serif" }}>{ioPago?"-":"+"}{Number(bonus.valore_mln).toFixed(1)}M</div>
+                    <div style={{ fontSize:16,fontWeight:900,color:ioPago?"#ef4444":"#10b981",fontFamily:"'Bebas Neue',sans-serif" }}>{ioPago?"-":"+"}{Number(bonus.valore_mln).toFixed(3)}M</div>
                     {valoreAttuale!==null&&<div style={{ fontSize:10,color:"#555" }}>{val}/{soglia}</div>}
                   </div>
                 </div>
@@ -3708,7 +3708,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
       <div>
         <div style={{ fontSize:11,fontWeight:700,color:"#f59e0b",letterSpacing:"0.1em",marginBottom:12 }}>💼 INVESTIMENTI</div>
         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12 }}>
-          {[{label:"USATO",value:`${totInv.toFixed(1)}M`,sub:"/ 30M",color:totInv>30?"#ef4444":"#f59e0b"},{label:"LIBERO",value:`${(30-totInv).toFixed(1)}M`,sub:"",color:(30-totInv)<5?"#ef4444":"#10b981"},{label:"GUADAGNI",value:`+${totGuad.toFixed(1)}M`,sub:"",color:"#10b981"}].map(s=>(
+          {[{label:"USATO",value:`${totInv.toFixed(3)}M`,sub:"/ 30M",color:totInv>30?"#ef4444":"#f59e0b"},{label:"LIBERO",value:`${(30-totInv).toFixed(3)}M`,sub:"",color:(30-totInv)<5?"#ef4444":"#10b981"},{label:"GUADAGNI",value:`+${totGuad.toFixed(3)}M`,sub:"",color:"#10b981"}].map(s=>(
             <div key={s.label} style={{ background:"#ffffff08",borderRadius:10,padding:"10px 12px",textAlign:"center" }}>
               <div style={{ fontSize:8,color:"#555",letterSpacing:"0.06em",marginBottom:3 }}>{s.label}</div>
               <div style={{ fontSize:16,fontWeight:900,color:s.color,fontFamily:"'Bebas Neue',sans-serif" }}>{s.value}</div>
@@ -3728,7 +3728,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                   {inv.note&&<div style={{ fontSize:10,color:"#818cf8",marginTop:2 }}>📝 {inv.note}</div>}
                 </div>
                 <Badge color="#ef4444">−{inv.costo}M</Badge>
-                {inv.valore_accumulato>0&&<Badge color="#10b981">+{Number(inv.valore_accumulato).toFixed(1)}M</Badge>}
+                {inv.valore_accumulato>0&&<Badge color="#10b981">+{Number(inv.valore_accumulato).toFixed(3)}M</Badge>}
                 {isAdmin&&(editGuad?.id===inv.id?(
                   <div style={{ display:"flex",gap:4 }}>
                     <input style={{ padding:"3px 6px",borderRadius:5,border:"1px solid #ffffff18",background:"#0d0f14",color:"#f0f0f0",fontSize:11,width:56 }} type="number" step="0.1" value={editGuad.val} onChange={e=>setEditGuad(g=>({...g,val:e.target.value}))}/>
@@ -3815,7 +3815,7 @@ function VivaiTab({ team, isAdmin }) {
       alert(`Rosa piena (${rosaCount}/30) — libera uno slot prima di promuovere ${p.nome}`);
       return;
     }
-    if (!window.confirm(`Promuovere ${p.nome} dalla vivaio alla rosa?\n\nIl suo stipendio diventerà ${(p.quot/5).toFixed(2)}M (Q${p.quot}/5) e verrà conteggiato nel salary cap.`)) return;
+    if (!window.confirm(`Promuovere ${p.nome} dalla vivaio alla rosa?\n\nIl suo stipendio diventerà ${(p.quot/5).toFixed(3)}M (Q${p.quot}/5) e verrà conteggiato nel salary cap.`)) return;
     setSaving(true);
     try {
       await promuoviDaVivaio(p.id, team.name);
@@ -4022,7 +4022,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
 
   // Salary cap: stipendi rosa + 5M staff allenatore (se carta scelta)
   const salaryCapRosa = rosaPlayers.reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
-  const salaryCapUsato = parseFloat((salaryCapRosa + scAllenatore).toFixed(2));
+  const salaryCapUsato = parseFloat((salaryCapRosa + scAllenatore).toFixed(3));
   const salaryCapSforato = salaryCapUsato > 75;
   const oggi = new Date().toISOString().slice(0, 10);
   const mese = new Date().getMonth();
@@ -4082,13 +4082,13 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
     if (!isAdmin) return;
     setPagandoStipendi(true);
     try {
-      const rata = parseFloat((salaryCapUsato / 12).toFixed(2));
+      const rata = parseFloat((salaryCapUsato / 12).toFixed(3));
       const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', team.name).single();
       const bilPrima = sq?.bilancio || 0;
-      const nuoviBilancio = parseFloat((bilPrima - rata).toFixed(2));
+      const nuoviBilancio = parseFloat((bilPrima - rata).toFixed(3));
       await updateSquadra(team.name, { bilancio: nuoviBilancio, salary_used: salaryCapUsato });
       await insertMovimento({ squadra: team.name, descrizione: `Stipendi mensili (${new Date().toLocaleString('it-IT',{month:'long'})})`, uscita: rata, data: oggi });
-      await logAzione({ utente: 'admin', squadra: team.name, azione: 'stipendi_pagati', entita: 'squadre', descrizione: `Stipendi pagati −${rata}M (SC: ${salaryCapUsato.toFixed(1)}M)`, dataPrima: { bilancio: bilPrima }, dataDopo: { bilancio: nuoviBilancio }, rollbackPossibile: true });
+      await logAzione({ utente: 'admin', squadra: team.name, azione: 'stipendi_pagati', entita: 'squadre', descrizione: `Stipendi pagati −${rata}M (SC: ${salaryCapUsato.toFixed(3)}M)`, dataPrima: { bilancio: bilPrima }, dataDopo: { bilancio: nuoviBilancio }, rollbackPossibile: true });
     } catch(e) { alert(`Errore: ${e.message}`); }
     finally { setPagandoStipendi(false); }
   }
@@ -4116,7 +4116,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
     });
     // Ricalcola bilancio come somma di tutti i movimenti
     const nuovi = [...movimenti, { entrata, uscita }];
-    const nuovoBilancio = parseFloat(nuovi.reduce((s, m) => s + (m.entrata || 0) - (m.uscita || 0), 0).toFixed(2));
+    const nuovoBilancio = parseFloat(nuovi.reduce((s, m) => s + (m.entrata || 0) - (m.uscita || 0), 0).toFixed(3));
     await updateSquadra(team.name, { bilancio: nuovoBilancio });
     setShowMovForm(false);
     setMovForm({ descrizione: "", entrata: "", uscita: "", data: new Date().toISOString().slice(0, 10) });
@@ -4125,7 +4125,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
 
   async function rimuoviMovimento(id) {
     const rimanenti = movimenti.filter(m => m.id !== id);
-    const nuovoBilancio = parseFloat(rimanenti.reduce((s, m) => s + (m.entrata || 0) - (m.uscita || 0), 0).toFixed(2));
+    const nuovoBilancio = parseFloat(rimanenti.reduce((s, m) => s + (m.entrata || 0) - (m.uscita || 0), 0).toFixed(3));
     await updateSquadra(team.name, { bilancio: nuovoBilancio });
     await deleteMovimento(id);
     await loadMovimenti();
@@ -4155,9 +4155,9 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
       {/* Quick stats strip */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 20 }}>
         {[
-          { label: "Bilancio",  value: `${team.bilancio.toFixed(1)}M`,            color: team.bilancio < 10 ? "#f97316" : "#f0f0f0" },
-          { label: "SC Usato",  value: `${salaryCapUsato.toFixed(1)}M / 75M`,     color: salaryCapSforato ? "#ef4444" : "#10b981" },
-          { label: "SC Libero", value: `+${(75 - salaryCapUsato).toFixed(1)}M`,   color: salaryCapSforato ? "#ef4444" : "#10b981" },
+          { label: "Bilancio",  value: `${team.bilancio.toFixed(3)}M`,            color: team.bilancio < 10 ? "#f97316" : "#f0f0f0" },
+          { label: "SC Usato",  value: `${salaryCapUsato.toFixed(3)}M / 75M`,     color: salaryCapSforato ? "#ef4444" : "#10b981" },
+          { label: "SC Libero", value: `+${(75 - salaryCapUsato).toFixed(3)}M`,   color: salaryCapSforato ? "#ef4444" : "#10b981" },
         ].map(s => (
           <div key={s.label} style={{ background: "#ffffff08", borderRadius: 12, padding: "10px 12px", textAlign: "center" }}>
             <div style={{ fontSize: 9, color: "#777", letterSpacing: "0.06em", marginBottom: 4 }}>{s.label.toUpperCase()}</div>
@@ -4580,10 +4580,10 @@ function getMercatoStatus() {
 }
 
 // Calcola prezzo minimo offerta (art. 5.4): ≥ quot/2
-function prezzoMinimo(quot) { return parseFloat((quot / 2).toFixed(2)); }
+function prezzoMinimo(quot) { return parseFloat((quot / 2).toFixed(3)); }
 
 // Calcola clausola rescissoria (art. 5.5): quot × 1.75
-function valoreClausola(quot) { return parseFloat((quot * 1.75).toFixed(2)); }
+function valoreClausola(quot) { return parseFloat((quot * 1.75).toFixed(3)); }
 
 // Calcola scadenza prestito: prossima data 01/01 o 01/06 + mesi (art. 5.8)
 function scadenzaPrestito(mesi) {
@@ -4608,8 +4608,8 @@ function scadenzaPrestito(mesi) {
 function prezzoDiscesaLive(quotBase, avviataAt) {
   const minutiPassati = (new Date() - new Date(avviataAt)) / 60000;
   const riduzioni = Math.floor(minutiPassati / 30);
-  const prezzo = parseFloat((quotBase - riduzioni * 0.25).toFixed(2));
-  const minimo = parseFloat((quotBase / 2).toFixed(2));
+  const prezzo = parseFloat((quotBase - riduzioni * 0.25).toFixed(3));
+  const minimo = parseFloat((quotBase / 2).toFixed(3));
   return Math.max(prezzo, minimo);
 }
 
@@ -4740,7 +4740,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       giocatoreId: playerId,
       giocatoreNome: player.nome,
       quot: player.quot,
-      prezzo: String(parseFloat((player.quot / 2).toFixed(2))),
+      prezzo: String(parseFloat((player.quot / 2).toFixed(3))),
       tipo: tipoForzato,
     }));
   }
@@ -4771,12 +4771,12 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       }
       if (form.tipo.startsWith('prestito') && form.tipo !== 'prestito_secco') {
         if (prezzo < quot * 0.5 || prezzo > quot * 1.5) {
-          alert(`Riscatto prestito: tra ${(quot*0.5).toFixed(1)}M e ${(quot*1.5).toFixed(1)}M`);
+          alert(`Riscatto prestito: tra ${(quot*0.5).toFixed(3)}M e ${(quot*1.5).toFixed(3)}M`);
           return;
         }
       }
       if (form.tipo === 'prestito_secco' && prezzo < quot * 0.1) {
-        alert(`Prestito secco: minimo ${(quot*0.1).toFixed(2)}M`);
+        alert(`Prestito secco: minimo ${(quot*0.1).toFixed(3)}M`);
         return;
       }
     }
@@ -4854,7 +4854,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     const nuovoPrezzo = parseFloat(controffertaPrezzo);
     if (!nuovoPrezzo || nuovoPrezzo <= 0) { alert("Inserisci un prezzo valido"); return; }
     const quot = t.quot_giocatore || 0;
-    if (nuovoPrezzo < quot / 2) { alert(`Prezzo minimo: ${(quot/2).toFixed(2)}M (½ della quotazione)`); return; }
+    if (nuovoPrezzo < quot / 2) { alert(`Prezzo minimo: ${(quot/2).toFixed(3)}M (½ della quotazione)`); return; }
     // Scambia le parti e incrementa n_rifiuti; reset deadline a now+24h
     await updateTrattativa(t.id, {
       stato: 'in attesa',
@@ -4874,7 +4874,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   // ── Asta tra presidenti ───────────────────────────────────────────────────
   async function salvaAsta() {
     const quot = parseFloat(astaForm.quot) || 0;
-    const prezzoBase = parseFloat((quot / 2).toFixed(2));
+    const prezzoBase = parseFloat((quot / 2).toFixed(3));
     await insertAsta({
       proprietario: mySquadra || TEAMS[0].name,
       giocatore: astaForm.giocatore,
@@ -4893,7 +4893,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
   // ── Offerta su asta a rialzo ───────────────────────────────────────────────
   async function faiOffertaRialzo(asta) {
-    const nuova = parseFloat((asta.offerta_attuale + 0.1).toFixed(2));
+    const nuova = parseFloat((asta.offerta_attuale + 0.1).toFixed(3));
     // Controlla orario (21:00-09:00 congelato, art. 5.11)
     const ora = now.getHours();
     if (ora >= 21 || ora < 9) {
@@ -5147,8 +5147,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                     <div>
                       <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>
                         {form.tipo === 'clausola' ? `PREZZO CLAUSOLA (=${valoreClausola(form.quot)}M)` :
-                         form.tipo === 'prestito_secco' ? `PREZZO PRESTITO (min ${(form.quot*0.1).toFixed(2)}M)` :
-                         form.tipo.startsWith('prestito') ? `PREZZO RISCATTO (${(form.quot*0.5).toFixed(1)}–${(form.quot*1.5).toFixed(1)}M)` :
+                         form.tipo === 'prestito_secco' ? `PREZZO PRESTITO (min ${(form.quot*0.1).toFixed(3)}M)` :
+                         form.tipo.startsWith('prestito') ? `PREZZO RISCATTO (${(form.quot*0.5).toFixed(3)}–${(form.quot*1.5).toFixed(3)}M)` :
                          `PREZZO (min ${prezzoMinimo(form.quot)}M)`}
                       </div>
                       <input style={inp} type="number" step="0.1"
@@ -5312,11 +5312,11 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                                 {Number(t.n_rifiuti||0) >= 2 ? ` (${t.n_rifiuti} rifiuti/controfferte)` : " (48h trascorse)"}
                               </div>
                               <div style={{ fontSize: 10, color: "#888", marginBottom: 6 }}>
-                                Valore: {(Number(t.quot_giocatore) * 1.75).toFixed(2)}M · Al venditore: {(Number(t.quot_giocatore) * 1.75 * 3/4).toFixed(2)}M (art. 5.5.2)
+                                Valore: {(Number(t.quot_giocatore) * 1.75).toFixed(3)}M · Al venditore: {(Number(t.quot_giocatore) * 1.75 * 3/4).toFixed(3)}M (art. 5.5.2)
                               </div>
                               <button onClick={async () => {
-                                const prezzoClaus = parseFloat((Number(t.quot_giocatore) * 1.75).toFixed(2));
-                                if (!window.confirm(`Attivare clausola rescissoria per ${t.giocatore}?\nCosto: ${prezzoClaus}M (al venditore: ${(prezzoClaus*3/4).toFixed(2)}M)\nIl proprietario non può rifiutarsi.`)) return;
+                                const prezzoClaus = parseFloat((Number(t.quot_giocatore) * 1.75).toFixed(3));
+                                if (!window.confirm(`Attivare clausola rescissoria per ${t.giocatore}?\nCosto: ${prezzoClaus}M (al venditore: ${(prezzoClaus*3/4).toFixed(3)}M)\nIl proprietario non può rifiutarsi.`)) return;
                                 try {
                                   await rispondi({ ...t, tipo: 'clausola', prezzo: prezzoClaus }, 'accettata');
                                 } catch(e) { alert(e.message); }
@@ -5348,7 +5348,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                                 <div style={{ background: "#f59e0b0a", border: "1px solid #f59e0b25", borderRadius: 9, padding: "10px 12px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                                   <span style={{ fontSize: 11, color: "#f59e0b", fontWeight: 700 }}>Proponi:</span>
                                   <input
-                                    type="number" step="0.5" placeholder={`min ${(t.quot_giocatore/2).toFixed(2)}M`}
+                                    type="number" step="0.5" placeholder={`min ${(t.quot_giocatore/2).toFixed(3)}M`}
                                     value={controffertaPrezzo}
                                     onChange={e => setControffertaPrezzo(e.target.value)}
                                     style={{ width: 80, padding: "4px 8px", borderRadius: 6, border: "1px solid #f59e0b33", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}
@@ -5360,7 +5360,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                                   <button onClick={() => { setControffertaId(null); setControffertaPrezzo(""); }} style={{ padding: "4px 8px", borderRadius: 7, border: "none", background: "#ffffff10", color: "#888", fontSize: 11, cursor: "pointer" }}>
                                     ✕
                                   </button>
-                                  <span style={{ fontSize: 9, color: "#555" }}>min {(t.quot_giocatore/2).toFixed(2)}M · scambia le parti</span>
+                                  <span style={{ fontSize: 9, color: "#555" }}>min {(t.quot_giocatore/2).toFixed(3)}M · scambia le parti</span>
                                 </div>
                               )}
                             </div>
@@ -5414,8 +5414,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                 {astaForm.quot && (
                   <div style={{ gridColumn: "1 / -1", background: "#ffffff06", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#888" }}>
                     {astaForm.tipo_asta === 'rialzo'
-                      ? `📈 Parte da ${(parseFloat(astaForm.quot)/2).toFixed(2)}M · si aggiudica 2h dopo l'ultima offerta`
-                      : `📉 Parte da ${parseFloat(astaForm.quot).toFixed(2)}M · scende a ${(parseFloat(astaForm.quot)/2).toFixed(2)}M · chiunque può comprare in qualsiasi momento`}
+                      ? `📈 Parte da ${(parseFloat(astaForm.quot)/2).toFixed(3)}M · si aggiudica 2h dopo l'ultima offerta`
+                      : `📉 Parte da ${parseFloat(astaForm.quot).toFixed(3)}M · scende a ${(parseFloat(astaForm.quot)/2).toFixed(3)}M · chiunque può comprare in qualsiasi momento`}
                   </div>
                 )}
               </div>
@@ -5429,7 +5429,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
             : astePending.map(a => {
               const prezzoLive = a.tipo_asta === 'discesa' ? prezzoDiscesaLive(a.quot_giocatore, a.avviata_at) : a.offerta_attuale;
               const isFloor = prezzoLive <= a.quot_giocatore / 2;
-              const minRilancio = parseFloat((a.offerta_attuale + 0.1).toFixed(2));
+              const minRilancio = parseFloat((a.offerta_attuale + 0.1).toFixed(3));
               const minsPassati = Math.floor((now - new Date(a.avviata_at)) / 60000);
               const scadFra = a.scadenza_asta ? Math.max(0, Math.round((new Date(a.scadenza_asta) - now) / 60000)) : null;
 
@@ -5444,7 +5444,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                       <div style={{ fontSize: 11, color: "#888" }}>indetta da {a.proprietario} · Q{a.quot_giocatore}</div>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 28, fontWeight: 900, color: isFloor ? "#ef4444" : "#f59e0b", fontFamily: "'Bebas Neue',sans-serif", lineHeight: 1 }}>{prezzoLive.toFixed(2)}M</div>
+                      <div style={{ fontSize: 28, fontWeight: 900, color: isFloor ? "#ef4444" : "#f59e0b", fontFamily: "'Bebas Neue',sans-serif", lineHeight: 1 }}>{prezzoLive.toFixed(3)}M</div>
                       <div style={{ fontSize: 10, color: "#555" }}>
                         {a.tipo_asta === 'rialzo' && a.miglior_offerente ? `Miglior offerta: ${a.miglior_offerente}` : ""}
                         {a.tipo_asta === 'discesa' ? `− ${Math.floor(minsPassati/30) * 0.25}M in ${minsPassati}min` : ""}
@@ -5469,7 +5469,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                         ? <div style={{ fontSize: 11, color: "#ef4444", fontWeight: 700 }}>⛔ Asta scaduta — prezzo minimo raggiunto</div>
                         : a.proprietario !== mySquadra && !isAdmin && (
                           <button onClick={() => acquistaDiscesa(a)} style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: "#f59e0b", color: "#000", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
-                            🛒 Acquista ora a {prezzoLive.toFixed(2)}M
+                            🛒 Acquista ora a {prezzoLive.toFixed(3)}M
                           </button>
                         )
                       }
@@ -5668,7 +5668,7 @@ function OffertaInlineForm({ asta, squadra, onRefresh }) {
   }, [asta?.id, squadra]);
 
   if (!asta) return null;
-  const minOfferta = parseFloat((Number(asta.quot) * 0.75).toFixed(2));
+  const minOfferta = parseFloat((Number(asta.quot) * 0.75).toFixed(3));
   const miaOffertaInviata = offerta.find(o => o.squadra === squadra);
   const scaduta = asta.scadenza ? new Date() > new Date(asta.scadenza) : false;
 
@@ -5700,7 +5700,7 @@ function OffertaInlineForm({ asta, squadra, onRefresh }) {
         {saving ? "..." : miaOffertaInviata ? "↻ Aggiorna" : "📨 Invia"}
       </button>
       {miaOffertaInviata && !miaOffertaInviata.assente && (
-        <span style={{ fontSize: 10, color: "#10b981" }}>✅ {Number(miaOffertaInviata.importo).toFixed(2)}M inviata</span>
+        <span style={{ fontSize: 10, color: "#10b981" }}>✅ {Number(miaOffertaInviata.importo).toFixed(3)}M inviata</span>
       )}
       <span style={{ fontSize: 9, color: "#444" }}>Le altre offerte sono nascoste · max = tuo bilancio</span>
     </div>
@@ -5721,7 +5721,7 @@ function RisultatoAstaCard({ asta, isAdmin }) {
       <div onClick={() => setOpen(v => !v)} style={{ padding: "10px 14px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <span style={{ fontSize: 12, fontWeight: 700, color: "#10b981" }}>✅ {asta.giocatore}</span>
-          <span style={{ fontSize: 11, color: "#888", marginLeft: 8 }}>→ {asta.vincitore} · {Number(asta.prezzo_finale).toFixed(2)}M{asta.per_vivaio ? " 🌱" : ""}</span>
+          <span style={{ fontSize: 11, color: "#888", marginLeft: 8 }}>→ {asta.vincitore} · {Number(asta.prezzo_finale).toFixed(3)}M{asta.per_vivaio ? " 🌱" : ""}</span>
         </div>
         <span style={{ fontSize: 10, color: "#555" }}>{open ? "▲" : "▼"}</span>
       </div>
@@ -5733,7 +5733,7 @@ function RisultatoAstaCard({ asta, isAdmin }) {
                 {o.squadra === asta.vincitore ? "🏆 " : ""}{o.squadra}
                 {o.assente ? <span style={{ fontSize: 9, color: "#555", marginLeft: 4 }}>(assenza)</span> : null}
               </span>
-              <span style={{ color: o.squadra === asta.vincitore ? "#f59e0b" : "#555" }}>{Number(o.importo).toFixed(2)}M</span>
+              <span style={{ color: o.squadra === asta.vincitore ? "#f59e0b" : "#555" }}>{Number(o.importo).toFixed(3)}M</span>
             </div>
           ))}
         </div>
@@ -5802,7 +5802,7 @@ function SvincolatiTable({ filtered, chiamateAttive, mySquadra, isAdmin, setShow
                 </td>
                 <td style={{ padding: "7px 8px", textAlign: "center", fontWeight: 800, color: p.quot >= 20 ? "#f59e0b" : "#ccc", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14 }}>{p.quot}</td>
                 <td style={{ padding: "7px 8px", textAlign: "center", color: "#aaa" }}>{p.stip}M</td>
-                <td style={{ padding: "7px 8px", textAlign: "center", color: "#666" }}>{Number(p.clausola || 0).toFixed(1)}M</td>
+                <td style={{ padding: "7px 8px", textAlign: "center", color: "#666" }}>{Number(p.clausola || 0).toFixed(3)}M</td>
                 <td style={{ padding: "7px 8px", textAlign: "center" }}>
                   <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
                     <button
@@ -5975,7 +5975,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
   }).map(p => ({
     ...p,
     fuoriLista: p.fuori_lista,
-    clausola: p.clausola || parseFloat((p.quot * 1.75).toFixed(2)),
+    clausola: p.clausola || parseFloat((p.quot * 1.75).toFixed(3)),
     isVivaio: p.anni <= 23 && p.quot <= 3 && (p.partite === 0 || p.partite == null),
     isChiamato: giocatoriChiamati.has(p.nome),
   }));
@@ -6111,7 +6111,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
             {(() => {
               const scInt = calcolaScadenzaInteresse();
               const scOff = calcolaScadenzaOfferte(scInt);
-              const minOfferta = parseFloat((showCallForm.quot * 0.75).toFixed(2));
+              const minOfferta = parseFloat((showCallForm.quot * 0.75).toFixed(3));
               return <>
                 📅 Interesse aperto fino a: <b style={{ color: "#f59e0b" }}>{scInt.toLocaleString("it-IT", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</b><br/>
                 🏷️ Se più interessati → asta busta chiusa, scadenza offerte: <b style={{ color: "#818cf8" }}>{scOff.toLocaleString("it-IT", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</b> (slot scalare)<br/>
@@ -6204,18 +6204,18 @@ function ModificaRosaTable({ rosa, editGiocatore, setEditGiocatore, salvaGiocato
                 </td>
                 <td style={{ padding: "6px 8px", textAlign: "center", color: "#f59e0b", fontWeight: 800, fontFamily: "'Bebas Neue',sans-serif", fontSize: 14 }}>
                   {isEdit
-                    ? <input style={{ ...inp, width: 60 }} type="number" step="0.5" value={editGiocatore.quot} onChange={e => setEditGiocatore(f => ({ ...f, quot: e.target.value, stip: parseFloat((e.target.value/5).toFixed(2)) }))} />
+                    ? <input style={{ ...inp, width: 60 }} type="number" step="0.5" value={editGiocatore.quot} onChange={e => setEditGiocatore(f => ({ ...f, quot: e.target.value, stip: parseFloat((e.target.value/5).toFixed(3)) }))} />
                     : p.quot}
                 </td>
                 <td style={{ padding: "6px 8px", textAlign: "center", color: "#aaa" }}>
                   {isEdit
                     ? <input style={{ ...inp, width: 70 }} type="number" step="0.01" value={editGiocatore.stip} onChange={e => setEditGiocatore(f => ({ ...f, stip: e.target.value }))} />
-                    : `${Number(p.stip).toFixed(2)}M`}
+                    : `${Number(p.stip).toFixed(3)}M`}
                 </td>
                 <td style={{ padding: "6px 8px", textAlign: "center", color: "#666" }}>
                   {isEdit
                     ? <input style={{ ...inp, width: 70 }} type="number" step="0.01" value={editGiocatore.clausola} onChange={e => setEditGiocatore(f => ({ ...f, clausola: e.target.value }))} />
-                    : `${Number(p.clausola || 0).toFixed(2)}M`}
+                    : `${Number(p.clausola || 0).toFixed(3)}M`}
                 </td>
                 <td style={{ padding: "6px 8px", textAlign: "center" }}>
                   {isEdit ? (
@@ -6298,7 +6298,7 @@ function AggiornamentoContrattiSection({ onRefresh }) {
                   <div style={{ fontSize: 10, color: "#f59e0b", fontWeight: 700, marginBottom: 4 }}>STIPENDI AGGIORNATI:</div>
                   {risultato.aggiornati.filter(p => p.percAumento !== 0).map((p, i) => (
                     <div key={i} style={{ fontSize: 11, color: "#aaa", marginLeft: 8 }}>
-                      • {p.nome} ({p.squadra}) — anno {p.acPrima}→{p.acDopo} · {p.stipPrima.toFixed(2)}M → {p.stipDopo.toFixed(2)}M ({p.percAumento > 0 ? "+" : ""}{p.percAumento}%)
+                      • {p.nome} ({p.squadra}) — anno {p.acPrima}→{p.acDopo} · {p.stipPrima.toFixed(3)}M → {p.stipDopo.toFixed(3)}M ({p.percAumento > 0 ? "+" : ""}{p.percAumento}%)
                     </div>
                   ))}
                 </div>
@@ -6588,9 +6588,9 @@ function ModificaRosePage({ teams, onRefresh, isAdmin = true }) {
                           <td style={{ padding: "5px 8px", fontWeight: 700, color: p.delta > 0 ? "#10b981" : p.delta < 0 ? "#ef4444" : "#555" }}>
                             {p.delta > 0 ? "+" : ""}{p.delta}
                           </td>
-                          <td style={{ padding: "5px 8px", color: "#888" }}>{p.stipPrima.toFixed(2)}M</td>
+                          <td style={{ padding: "5px 8px", color: "#888" }}>{p.stipPrima.toFixed(3)}M</td>
                           <td style={{ padding: "5px 8px", fontWeight: 700, color: p.delta > 0 ? "#10b981" : p.delta < 0 ? "#ef4444" : "#888" }}>
-                            {p.stipDopo.toFixed(2)}M
+                            {p.stipDopo.toFixed(3)}M
                           </td>
                         </tr>
                       ))}
@@ -6873,7 +6873,7 @@ function PenalitaPage({ isAdmin, teams = [] }) {
                   <div style={{ fontSize: 11, color: "#666" }}>{pens.length} sanzioni · {STAGIONE}</div>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  {multeTot > 0 && <Badge color="#ef4444">−{multeTot.toFixed(1)}M</Badge>}
+                  {multeTot > 0 && <Badge color="#ef4444">−{multeTot.toFixed(3)}M</Badge>}
                   {puntiTot > 0 && <Badge color="#f59e0b">−{puntiTot}pt</Badge>}
                 </div>
               </div>
@@ -6962,10 +6962,10 @@ function PremiPage({ isAdmin, teams = [] }) {
   // Premi in euro (art. 12.4)
   function calcolaPremiEuro(pos, hasVintatoCoppa) {
     const mp = montepremi;
-    if (pos === 1) return parseFloat((mp / 2).toFixed(2));
-    if (pos === 2) return parseFloat((mp / 4).toFixed(2));
-    if (pos === 3) return parseFloat((mp / 8).toFixed(2));
-    if (hasVintatoCoppa) return parseFloat((mp / 8).toFixed(2));
+    if (pos === 1) return parseFloat((mp / 2).toFixed(3));
+    if (pos === 2) return parseFloat((mp / 4).toFixed(3));
+    if (pos === 3) return parseFloat((mp / 8).toFixed(3));
+    if (hasVintatoCoppa) return parseFloat((mp / 8).toFixed(3));
     return 0;
   }
 
@@ -7175,7 +7175,7 @@ function PremiPage({ isAdmin, teams = [] }) {
                     <div style={{ fontSize: 12, color: cl ? "#ddd" : "#888" }}>{label}</div>
                     {cl && <div style={{ fontSize: 10, color: "#555" }}>{cl.squadra}</div>}
                   </div>
-                  <span style={{ fontSize: 16, fontWeight: 900, color: "#f59e0b", fontFamily: "'Bebas Neue',sans-serif" }}>{parseFloat(importo.toFixed(2))}€</span>
+                  <span style={{ fontSize: 16, fontWeight: 900, color: "#f59e0b", fontFamily: "'Bebas Neue',sans-serif" }}>{parseFloat(importo.toFixed(3))}€</span>
                 </div>
               );
             })}
