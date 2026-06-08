@@ -1538,8 +1538,8 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
     const ac = anniContratto || 0;
     if (isU21 || ac <= 1) return base;
     if (ac === 2) return parseFloat((base * 1.1).toFixed(2));
-    if (ac === 3) return parseFloat((base * 1.1 * 1.2).toFixed(2));
-    return parseFloat((base * 1.1 * 1.2 * 0.9).toFixed(2)); // anno 4+: Bonus Fedeltà
+    if (ac === 3) return parseFloat((base * 1.2).toFixed(2));
+    return parseFloat((base * 0.9).toFixed(2)); // anno 4+: Bonus Fedeltà
   }
 
   const roleOrder = ["Por","Dc","Dd","Ds","B","E","M","C","T","W","A","Pc"];
