@@ -280,7 +280,12 @@ function isFPFEscluso(descrizione) {
     d.startsWith('penalit') ||     // variante senza à
     d.startsWith('multa') ||       // multa giornata, multa regolamento...
     d.startsWith('sanzione') ||
-    d.includes('penalizzazione')
+    d.includes('penalizzazione') ||
+    // Premi e rimborsi obiettivi (non sono operazioni di mercato)
+    d.startsWith('premio ') ||     // Premio 19ª, Premio finale, Premio coppa, Premio indiv...
+    d.includes('obiettivo') ||     // guadagno/penale obiettivo allenatore, ds, dg
+    d.startsWith('riscossione invest') || // Riscossione investimento
+    d.startsWith('guadagno invest')       // Guadagno investimento
   );
 }
 

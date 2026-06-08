@@ -1041,7 +1041,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
               {isAdmin&&!premiApp.finale&&<button onClick={handlePrFinali} disabled={savingPr} style={{ padding:"5px 10px",borderRadius:7,border:"none",background:"#f59e0b22",color:"#f59e0b",fontSize:10,fontWeight:700,cursor:"pointer" }}>{savingPr?"...":"✅ Applica"}</button>}
               {premiApp.finale&&<Badge color="#10b981">✓ Applicati</Badge>}
             </div>
-            {[[1,22],[2,26],[3,30],[4,34],[5,38],[6,42],[7,46],[8,50]].map(([pos,mln]) => { const cl=classPr[pos-1]; const team=cl?teams.find(t=>t.name===cl.squadra):null; return (
+            {[[1,20],[2,25],[3,30],[4,35],[5,40],[6,45],[7,50],[8,55]].map(([pos,mln]) => { const cl=classPr[pos-1]; const team=cl?teams.find(t=>t.name===cl.squadra):null; return (
               <div key={pos} style={{ display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid #ffffff08" }}>
                 <span style={{ fontSize:11,color:"#555",minWidth:18,fontWeight:700 }}>{pos}°</span>
                 {team?<TeamAvatar team={team} size={22}/>:<div style={{ width:22,height:22,borderRadius:5,background:"#ffffff10" }}/>}
@@ -2380,7 +2380,7 @@ function ClausoleTab({ team, isAdmin }) {
       {/* ── CLAUSOLE RESCISSORIE STANDARD ── */}
       <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 14, padding: 16 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.08em", marginBottom: 4 }}>⚡ CLAUSOLE RESCISSORIE (quot × 1.75)</div>
-        <div style={{ fontSize: 10, color: "#555", marginBottom: 12 }}>Il cedente riceve 5/7 del valore · attivabile dopo 2 rifiuti o 48h dalla prima offerta (art. 5.5)</div>
+        <div style={{ fontSize: 10, color: "#555", marginBottom: 12 }}>Il cedente riceve 3/4 del valore · attivabile dopo 2 rifiuti o 48h dalla prima offerta (art. 5.5)</div>
         <div style={{ overflowX: "auto" }}>
           <ClausoleRescissorieTable rescissorie={rescissorie} />
         </div>
@@ -2683,7 +2683,7 @@ function FairSpendingSection({ team, isAdmin }) {
   const nettoCalcolato   = parseFloat(movimentiInclusi.reduce((acc, m) => acc + m.contributo, 0).toFixed(2));
   const nettoSpeso       = override !== "" && !isNaN(parseFloat(override)) ? parseFloat(override) : nettoCalcolato;
   const fairResult       = calcolaFairSpending(nettoSpeso);
-  const coloreFPF        = nettoSpeso > 40 ? "#ef4444" : nettoSpeso < 0 ? "#10b981" : "#f0f0f0";
+  const coloreFPF        = nettoSpeso > 50 ? "#ef4444" : nettoSpeso < 0 ? "#10b981" : "#f0f0f0";
 
   return (
     <div style={{ background: fairResult?.zona === 'sicura' ? "#10b98108" : "#ef444408", border: `1.5px solid ${fairResult?.zona === 'sicura' ? "#10b98125" : "#ef444425"}`, borderRadius: 14, padding: 16 }}>
@@ -2713,11 +2713,11 @@ function FairSpendingSection({ team, isAdmin }) {
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, alignItems: "baseline" }}>
               <span style={{ fontSize: 12, color: "#888" }}>Netto speso (uscite − entrate)</span>
               <span style={{ fontSize: 17, fontWeight: 900, color: coloreFPF, fontFamily: "'Bebas Neue',sans-serif" }}>
-                {nettoSpeso.toFixed(2)}M <span style={{ fontSize: 11, color: "#555", fontFamily: "Inter,sans-serif", fontWeight: 400 }}>/ 40M</span>
+                {nettoSpeso.toFixed(2)}M <span style={{ fontSize: 11, color: "#555", fontFamily: "Inter,sans-serif", fontWeight: 400 }}>/ 50M</span>
               </span>
             </div>
-            <StatBar value={Math.min(Math.max(nettoSpeso, 0), 60)} max={60} color={nettoSpeso > 55 ? "#ef4444" : nettoSpeso > 40 ? "#f59e0b" : "#10b981"} height={10} />
-            <div style={{ fontSize: 10, color: "#444", marginTop: 4 }}>Esclusi: pagamenti stipendi mensili · guadagni giornata</div>
+            <StatBar value={Math.min(Math.max(nettoSpeso, 0), 75)} max={75} color={nettoSpeso > 65 ? "#ef4444" : nettoSpeso > 50 ? "#f59e0b" : "#10b981"} height={10} />
+            <div style={{ fontSize: 10, color: "#444", marginTop: 4 }}>Esclusi: stipendi · guadagni giornata · premi · obiettivi · guadagni investimenti</div>
           </div>
           {isAdmin && (
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}>
@@ -2731,18 +2731,18 @@ function FairSpendingSection({ team, isAdmin }) {
           )}
           <div style={{ display: "flex", flexDirection: "column", gap: 3, marginBottom: 10 }}>
             {[
-              { soglia: "≤ 40M",  zona: "sicura", multa: "—",   giorni: "—",  pt: "—", euro: "—" },
-              { soglia: "40–45M", zona: "40-45",  multa: "5M",  giorni: "—",  pt: "—", euro: "—" },
-              { soglia: "45–50M", zona: "45-50",  multa: "10M", giorni: "7",  pt: "—", euro: "—" },
-              { soglia: "50–55M", zona: "50-55",  multa: "15M", giorni: "14", pt: "2", euro: "—" },
-              { soglia: "55–60M", zona: "55-60",  multa: "20M", giorni: "21", pt: "4", euro: "5€" },
-              { soglia: ">60M",   zona: ">60",    multa: "25M", giorni: "28", pt: "6", euro: "10€" },
+              { soglia: "≤ 50M",  zona: "sicura", multa: "—",   pt: "—", euro: "—" },
+              { soglia: "50–55M", zona: "50-55",  multa: "5M",  pt: "—", euro: "—" },
+              { soglia: "55–60M", zona: "55-60",  multa: "10M", pt: "—", euro: "—" },
+              { soglia: "60–65M", zona: "60-65",  multa: "15M", pt: "2", euro: "—" },
+              { soglia: "65–70M", zona: "65-70",  multa: "20M", pt: "4", euro: "5€" },
+              { soglia: ">70M",   zona: ">70",    multa: "25M", pt: "6", euro: "10€" },
             ].map(r => {
               const active = fairResult?.zona === r.zona;
               return (
                 <div key={r.zona} style={{ display: "flex", gap: 6, padding: "4px 8px", borderRadius: 7, background: active ? "#ef444418" : "#ffffff05", border: `1px solid ${active ? "#ef444430" : "#ffffff08"}`, alignItems: "center" }}>
                   <span style={{ fontSize: 10, fontWeight: 700, color: active ? "#f0f0f0" : "#555", minWidth: 52 }}>{r.soglia}</span>
-                  <span style={{ flex: 1, fontSize: 10, color: active ? "#ef4444" : "#444" }}>{active && "▶ "}Multa {r.multa} · Blocco {r.giorni}gg · −{r.pt}pt · {r.euro}</span>
+                  <span style={{ flex: 1, fontSize: 10, color: active ? "#ef4444" : "#444" }}>{active && "▶ "}Multa {r.multa} · −{r.pt}pt · {r.euro}</span>
                 </div>
               );
             })}
@@ -5238,11 +5238,11 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                                 {Number(t.n_rifiuti||0) >= 2 ? ` (${t.n_rifiuti} rifiuti/controfferte)` : " (48h trascorse)"}
                               </div>
                               <div style={{ fontSize: 10, color: "#888", marginBottom: 6 }}>
-                                Valore: {(Number(t.quot_giocatore) * 1.75).toFixed(2)}M · Al venditore: {(Number(t.quot_giocatore) * 1.75 * 5/7).toFixed(2)}M (art. 5.5.2)
+                                Valore: {(Number(t.quot_giocatore) * 1.75).toFixed(2)}M · Al venditore: {(Number(t.quot_giocatore) * 1.75 * 3/4).toFixed(2)}M (art. 5.5.2)
                               </div>
                               <button onClick={async () => {
                                 const prezzoClaus = parseFloat((Number(t.quot_giocatore) * 1.75).toFixed(2));
-                                if (!window.confirm(`Attivare clausola rescissoria per ${t.giocatore}?\nCosto: ${prezzoClaus}M (al venditore: ${(prezzoClaus*5/7).toFixed(2)}M)\nIl proprietario non può rifiutarsi.`)) return;
+                                if (!window.confirm(`Attivare clausola rescissoria per ${t.giocatore}?\nCosto: ${prezzoClaus}M (al venditore: ${(prezzoClaus*3/4).toFixed(2)}M)\nIl proprietario non può rifiutarsi.`)) return;
                                 try {
                                   await rispondi({ ...t, tipo: 'clausola', prezzo: prezzoClaus }, 'accettata');
                                 } catch(e) { alert(e.message); }
