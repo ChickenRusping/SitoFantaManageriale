@@ -2916,7 +2916,8 @@ export async function calcolaPremiIndividuali(stagione = '2026-27') {
 // ─── NOTIZIE ──────────────────────────────────────────────────────────────────
 
 export async function getNotizie(stagione = '2026-27', limit = 50) {
-  const { data, error } = await supabase.from('notizie').select('*').eq('stagione', stagione).order('pinnata', { ascending: false }).order('created_at', { ascending: false }).limit(limit);
+  const { data, error } = await supabase.from('notizie').select('*, commenti_notizie(count)').eq('stagione', stagione).order('pinnata', { ascending: false }).order('created_at', { ascending: false }).limit(limit);
+  if (!error && data) data.forEach(n => { n.commenti_count = n.commenti_notizie?.[0]?.count ?? 0; delete n.commenti_notizie; });
   if (error) throw error;
   return data || [];
 }

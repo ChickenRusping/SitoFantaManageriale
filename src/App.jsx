@@ -7663,7 +7663,7 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onPin, teams, p
         {/* Bottone commenti */}
         <button onClick={() => setShowComments(v=>!v)}
           style={{ display:"flex",alignItems:"center",gap:6,padding:"5px 12px",borderRadius:20,border:`1px solid ${showComments?"#6366f160":"#ffffff10"}`,background:showComments?"#6366f115":"transparent",color:showComments?"#818cf8":"#555",fontSize:13,cursor:"pointer",transition:"all 0.12s",fontWeight:showComments?700:400 }}>
-          💬 {notizia.commenti_count > 0 ? notizia.commenti_count : commenti.length > 0 ? commenti.length : ""}
+          💬{(() => { const n = commenti.length > 0 ? commenti.length : (notizia.commenti_count || 0); return n > 0 ? <span style={{ fontSize:11 }}>{n}</span> : null; })()}
         </button>
 
         <div style={{ marginLeft:"auto", display:"flex", gap:6 }}>
