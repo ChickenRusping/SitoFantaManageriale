@@ -911,6 +911,8 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
   const [classPr, setClassPr] = useState([]);
   const [montepremi, setMontepremi] = useState(0);
   const [savingPr, setSavingPr] = useState(false);
+  const [premiIndivLega, setPremiIndivLega] = useState({});
+  const [savingIndivLega, setSavingIndivLega] = useState(false);
   const loadPremi = useCallback(async () => {
     const [p, cl] = await Promise.all([getPremi(STAGIONE), getClassifica()]);
     setPremi(p || []); setClassPr((cl||[]).sort((a,b) => b.pt - a.pt || b.pt_totali - a.pt_totali));
@@ -919,7 +921,21 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
   const primoPoints = classPr[0]?.pt || 0;
   const premi19a = classPr.map((r,i) => ({ squadra: r.squadra, posizione: i+1, importo: calcolaPremio19a(primoPoints, r.pt) }));
   const premiFinali = classPr.map((r,i) => ({ squadra: r.squadra, posizione: i+1, importo: calcolaPremiFinali(i+1) }));
-  const premiApp = { p19: premi.some(p => p.tipo==='premio_19a'), finale: premi.some(p => p.tipo==='premio_finale') };
+  const premiApp = { p19: premi.some(p => p.tipo==='premio_19a'), finale: premi.some(p => p.tipo==='premio_finale'), individuali: premi.some(p => p.tipo==='premio_indiv' || p.tipo==='malus_indiv') };
+  async function handleIndivLega() {
+    const entries = PREMI_INDIVIDUALI_DEF.map(d => ({ ...d, squadra: premiIndivLega[d.key] })).filter(d => d.squadra);
+    if (!entries.length) { alert("Seleziona almeno una squadra."); return; }
+    if (!window.confirm(`Applicare ${entries.length} premi/malus individuali?`)) return;
+    setSavingIndivLega(true);
+    try {
+      for (const e of entries) {
+        const rec = await insertPremio({ squadra: e.squadra, tipo: e.tipo, importo: e.importo, posizione: null, stagione: STAGIONE, data_premio: new Date().toISOString().slice(0,10) });
+        await applicaPremio(e.squadra, e.importo, e.label, rec.id);
+      }
+      await loadPremi();
+    } catch(err) { alert(err.message); }
+    finally { setSavingIndivLega(false); }
+  }
   async function handlePr19() {
     if (!window.confirm("Applicare i premi 19ª giornata?")) return;
     setSavingPr(true);
@@ -1071,6 +1087,32 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
                 </div>
               ))}
             </div>
+          </div>
+          {/* Premi Individuali */}
+          <div style={{ background:"#a855f708",border:"1.5px solid #a855f725",borderRadius:12,padding:14 }}>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:6 }}>
+              <div style={{ fontSize:10,fontWeight:700,color:"#a855f7" }}>🏅 PREMI INDIVIDUALI (art. 12.4–12.5)</div>
+              {isAdmin&&!premiApp.individuali&&<button onClick={handleIndivLega} disabled={savingIndivLega} style={{ padding:"5px 10px",borderRadius:7,border:"none",background:"#a855f722",color:"#a855f7",fontSize:10,fontWeight:700,cursor:"pointer" }}>{savingIndivLega?"...":"✅ Applica"}</button>}
+              {premiApp.individuali&&<Badge color="#10b981">✓ Applicati</Badge>}
+            </div>
+            {PREMI_INDIVIDUALI_DEF.map(d => {
+              const sel = premiIndivLega[d.key] || '';
+              return (
+                <div key={d.key} style={{ display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid #ffffff08" }}>
+                  <div style={{ flex:1,fontSize:11,color:"#ccc" }}>{d.label}</div>
+                  <span style={{ fontSize:13,fontWeight:900,color:d.color,fontFamily:"'Bebas Neue',sans-serif",minWidth:32,textAlign:"right" }}>{d.importo>0?"+":""}{d.importo}M</span>
+                  {isAdmin&&!premiApp.individuali ? (
+                    <select value={sel} onChange={e=>setPremiIndivLega(v=>({...v,[d.key]:e.target.value}))}
+                      style={{ padding:"3px 6px",borderRadius:5,border:"1px solid #ffffff18",background:"#0d0f14",color:"#f0f0f0",fontSize:10,minWidth:120 }}>
+                      <option value="">— Squadra —</option>
+                      {teams.map(t=><option key={t.name} value={t.name}>{t.name}</option>)}
+                    </select>
+                  ) : (
+                    <span style={{ fontSize:10,color:sel?"#ddd":"#333",minWidth:120,textAlign:"right" }}>{sel||"—"}</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
