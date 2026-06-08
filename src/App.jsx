@@ -150,7 +150,7 @@ async function cachedFetch(key, fetcher, ttl = 90000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, DEPOSITO_SCAGLIONI, isDepositoAperto, effettuaDeposito, rimborsoDeposito, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, DEPOSITO_SCAGLIONI, isDepositoAperto, effettuaDeposito, rimborsoDeposito, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento,
   getBonusTrattativa, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -2800,33 +2800,55 @@ function FairSpendingSection({ team, isAdmin }) {
           }
           {showDetail && movimenti && (
             <div style={{ marginTop: 12, borderTop: "1px solid #ffffff10", paddingTop: 10 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#555", marginBottom: 8 }}>MOVIMENTI {inizioStr} → {fineStr}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#555", marginBottom: 8 }}>
+                MOVIMENTI {inizioStr} → {fineStr}
+                {isAdmin && <span style={{ color: "#444", fontWeight: 400, marginLeft: 6 }}>· clicca 🚫 per escludere/includere manualmente dal FPF</span>}
+              </div>
               <div style={{ maxHeight: 300, overflowY: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 10 }}>
                   <thead style={{ position: "sticky", top: 0, background: "#0d0f14" }}>
                     <tr style={{ borderBottom: "1px solid #ffffff12" }}>
-                      {["Data","Descrizione","Entrata","Uscita","FPF"].map(h => (
+                      {["Data","Descrizione","Entrata","Uscita","FPF", ...(isAdmin?[""]:[])].map(h => (
                         <th key={h} style={{ padding: "4px 6px", textAlign: h==="Descrizione"?"left":"center", color: "#555", fontWeight: 700, fontSize: 9 }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {movimenti.map((m, i) => (
-                      <tr key={i} style={{ borderBottom: "1px solid #ffffff06", opacity: m.escluso ? 0.3 : 1 }}>
+                      <tr key={i} style={{ borderBottom: "1px solid #ffffff06", opacity: m.escluso ? 0.35 : 1 }}>
                         <td style={{ padding: "4px 6px", color: "#666", whiteSpace: "nowrap" }}>{m.data}</td>
-                        <td style={{ padding: "4px 6px", color: m.escluso ? "#444" : "#ccc", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={m.descrizione}>{m.descrizione}</td>
+                        <td style={{ padding: "4px 6px", color: m.escluso ? "#444" : "#ccc", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={m.descrizioneDisplay}>
+                          {m.manuale && <span style={{ fontSize: 8, color: "#6366f1", marginRight: 3 }}>●</span>}
+                          {m.descrizioneDisplay}
+                        </td>
                         <td style={{ padding: "4px 6px", textAlign: "center", color: "#10b981" }}>{m.entrata ? `+${Number(m.entrata).toFixed(2)}` : "—"}</td>
                         <td style={{ padding: "4px 6px", textAlign: "center", color: "#f97316" }}>{m.uscita  ? `−${Number(m.uscita).toFixed(2)}`  : "—"}</td>
                         <td style={{ padding: "4px 6px", textAlign: "center", fontWeight: 700,
                           color: m.escluso ? "#333" : m.contributo > 0 ? "#f97316" : m.contributo < 0 ? "#10b981" : "#555" }}>
                           {m.escluso ? <span style={{ fontSize: 8, color: "#444" }}>excl.</span> : `${m.contributo > 0 ? "+" : ""}${m.contributo.toFixed(2)}`}
                         </td>
+                        {isAdmin && (
+                          <td style={{ padding: "2px 4px", textAlign: "center" }}>
+                            <button
+                              title={m.manuale ? "Rimuovi esclusione manuale" : (m.escluso ? "Già escluso automaticamente" : "Escludi dal FPF")}
+                              disabled={m.escluso && !m.manuale}
+                              onClick={async () => {
+                                await toggleFPFEsclusione(m.id, m.descrizione, !m.manuale);
+                                carica();
+                              }}
+                              style={{ padding: "2px 5px", borderRadius: 4, border: "none", fontSize: 9, cursor: m.escluso && !m.manuale ? "default" : "pointer",
+                                background: m.manuale ? "#6366f122" : m.escluso ? "#ffffff08" : "#ef444415",
+                                color: m.manuale ? "#818cf8" : m.escluso ? "#333" : "#ef4444" }}>
+                              {m.manuale ? "↩" : m.escluso ? "—" : "🚫"}
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr style={{ borderTop: "2px solid #ffffff20" }}>
-                      <td colSpan={4} style={{ padding: "5px 6px", fontSize: 10, color: "#888", fontWeight: 700 }}>TOTALE</td>
+                      <td colSpan={isAdmin ? 5 : 4} style={{ padding: "5px 6px", fontSize: 10, color: "#888", fontWeight: 700 }}>TOTALE</td>
                       <td style={{ padding: "5px 6px", textAlign: "center", fontWeight: 900, fontSize: 13, color: coloreFPF, fontFamily: "'Bebas Neue',sans-serif" }}>{nettoCalcolato.toFixed(2)}M</td>
                     </tr>
                   </tfoot>

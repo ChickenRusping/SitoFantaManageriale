@@ -257,6 +257,7 @@ export async function getMovimenti(squadra) {
 // Art. 7.3: esclusi stipendi mensili e guadagni giornata.
 // Escluse anche penalità legate alla giornata (non sono operazioni di mercato).
 function isFPFEscluso(descrizione) {
+  if ((descrizione || '').startsWith('[~FPF]')) return true;
   const d = (descrizione || '').toLowerCase().trim();
   return (
     // Stipendi mensili
@@ -298,17 +299,28 @@ function isFPFEscluso(descrizione) {
 export async function getMovimentiFPF(squadra, inizioStr, fineStr) {
   const { data } = await supabase
     .from('movimenti')
-    .select('data, descrizione, entrata, uscita')
+    .select('id, data, descrizione, entrata, uscita')
     .eq('squadra', squadra)
     .gte('data', inizioStr)
     .lte('data', fineStr)
     .order('data', { ascending: false });
 
   return (data || []).map(m => {
+    const manuale = (m.descrizione || '').startsWith('[~FPF]');
     const escluso = isFPFEscluso(m.descrizione);
     const contributo = escluso ? 0 : parseFloat((Number(m.uscita || 0) - Number(m.entrata || 0)).toFixed(2));
-    return { ...m, escluso, contributo };
+    const descrizioneDisplay = manuale ? m.descrizione.replace('[~FPF] ', '').replace('[~FPF]', '') : m.descrizione;
+    return { ...m, escluso, manuale, contributo, descrizioneDisplay };
   });
+}
+
+export async function toggleFPFEsclusione(id, descrizione, escludi) {
+  const nuova = escludi
+    ? '[~FPF] ' + descrizione.replace('[~FPF] ', '').replace('[~FPF]', '').trim()
+    : descrizione.replace('[~FPF] ', '').replace('[~FPF]', '').trim();
+  const { error } = await supabase.from('movimenti').update({ descrizione: nuova }).eq('id', id);
+  if (error) throw error;
+  return nuova;
 }
 
 export async function insertMovimento(movimento) {
