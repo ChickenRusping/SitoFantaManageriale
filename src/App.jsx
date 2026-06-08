@@ -1532,14 +1532,29 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
   }, [loadAll, teamName]);
 
   const comp = checkRosaCompliance(players);
+  function calcolaStipCorretto(quot, anniContratto, anni) {
+    const base = parseFloat((quot / 5).toFixed(2));
+    const isU21 = anni > 0 && anni <= 21;
+    const ac = anniContratto || 0;
+    if (isU21 || ac <= 1) return base;
+    if (ac === 2) return parseFloat((base * 1.1).toFixed(2));
+    if (ac === 3) return parseFloat((base * 1.1 * 1.2).toFixed(2));
+    return parseFloat((base * 1.1 * 1.2 * 0.9).toFixed(2)); // anno 4+: Bonus Fedeltà
+  }
+
   const roleOrder = ["Por","Dc","Dd","Ds","B","E","M","C","T","W","A","Pc"];
-  const playersRich = players.map(p => ({
-    ...p,
-    _ruoloOrd: (() => { const i = roleOrder.indexOf(p.ruolo.split(";")[0]); return i<0?99:i; })(),
-    _stipNum: Number(p.stip||0), _quotNum: Number(p.quot||0), _anniNum: Number(p.anni||0),
-    _mvNum: Number(p.media_voto||0), _mfvNum: Number(p.media_fantavoto||0),
-    _golNum: Number(p.gol||0), _assNum: Number(p.assist||0), _acNum: Number(p.anni_contratto||0),
-  }));
+  const playersRich = players.map(p => {
+    const stipCorretto = calcolaStipCorretto(Number(p.quot||0), Number(p.anni_contratto||0), Number(p.anni||0));
+    return {
+      ...p,
+      _ruoloOrd: (() => { const i = roleOrder.indexOf(p.ruolo.split(";")[0]); return i<0?99:i; })(),
+      _stipNum: stipCorretto, _quotNum: Number(p.quot||0), _anniNum: Number(p.anni||0),
+      _mvNum: Number(p.media_voto||0), _mfvNum: Number(p.media_fantavoto||0),
+      _golNum: Number(p.gol||0), _assNum: Number(p.assist||0), _acNum: Number(p.anni_contratto||0),
+      _stipCorretto: stipCorretto,
+      _stipDiff: Math.abs(stipCorretto - Number(p.stip||0)) > 0.01,
+    };
+  });
   const { sorted, SortTh } = useSortableTable(playersRich, "_ruoloOrd", "asc");
 
   function calcolaPreview(player, tipo, estero) {
@@ -1722,7 +1737,12 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                   </td>
                   <td style={{ padding:"7px 8px",color:"#666",fontSize:11 }}>{p.squadra_serie_a||"—"}</td>
                   <td style={{ padding:"7px 8px",textAlign:"center",fontWeight:800,color:p.quot>=20?"#f59e0b":"#ccc",fontFamily:"'Bebas Neue',sans-serif",fontSize:14 }}>{p.quot}</td>
-                  <td style={{ padding:"7px 8px",textAlign:"center",color:"#aaa" }}>{Number(p.stip).toFixed(1)}M</td>
+                  <td style={{ padding:"7px 8px",textAlign:"center" }}>
+                    <span style={{ color: p._stipDiff ? "#f59e0b" : "#aaa", fontWeight: p._stipDiff ? 700 : 400 }}
+                      title={p._stipDiff ? `Stip. salvato: ${Number(p.stip).toFixed(2)}M · Calcolato: ${p._stipCorretto.toFixed(2)}M` : `Q${p.quot}/5${p._acNum>=2&&!(p.anni>0&&p.anni<=21)?" +incremento contratto":""}`}>
+                      {p._stipCorretto.toFixed(2)}M{p._stipDiff ? " ⚠" : ""}
+                    </span>
+                  </td>
                   <td style={{ padding:"7px 8px",textAlign:"center" }}>
                     {(()=>{const ac=p.anni_contratto||0,isU21=p.anni>0&&p.anni<=21,color=ac===0?"#555":ac>=4?"#10b981":ac>=3?"#f59e0b":"#818cf8";
                     return <span style={{ background:color+"22",color,border:`1px solid ${color}44`,borderRadius:5,padding:"1px 6px",fontSize:10,fontWeight:700 }}>{ac||"—"}</span>;})()}
@@ -1741,7 +1761,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
 
       {players.length>0&&(
         <div style={{ marginTop:10,paddingTop:10,borderTop:"1px solid #ffffff10",display:"flex",gap:16,flexWrap:"wrap" }}>
-          <span style={{ fontSize:11,color:"#888" }}>Stipendi: <b style={{ color:"#ccc" }}>{players.reduce((s,p)=>s+Number(p.stip),0).toFixed(1)}M</b></span>
+          <span style={{ fontSize:11,color:"#888" }}>Stipendi: <b style={{ color:"#ccc" }}>{playersRich.reduce((s,p)=>s+p._stipCorretto,0).toFixed(2)}M</b></span>
           <span style={{ fontSize:11,color:"#888" }}>Q media: <b style={{ color:"#ccc" }}>{(players.reduce((s,p)=>s+Number(p.quot),0)/players.length).toFixed(1)}</b></span>
         </div>
       )}
@@ -1756,7 +1776,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
           <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14 }}>
             <div>
               <div style={{ fontSize:14,fontWeight:800,color:"#f0f0f0" }}>{popup.player.nome}</div>
-              <div style={{ fontSize:11,color:"#888" }}>Q{popup.player.quot} · {popup.player.ruolo} · {popup.player.anni}aa · {Number(popup.player.stip).toFixed(1)}M</div>
+              <div style={{ fontSize:11,color:"#888" }}>Q{popup.player.quot} · {popup.player.ruolo} · {popup.player.anni}aa · {calcolaStipCorretto(Number(popup.player.quot||0),Number(popup.player.anni_contratto||0),Number(popup.player.anni||0)).toFixed(2)}M</div>
             </div>
             <button onClick={()=>setPopup(null)} style={{ background:"none",border:"none",color:"#555",fontSize:18,cursor:"pointer",padding:"0 4px",lineHeight:1 }}>✕</button>
           </div>
@@ -1807,7 +1827,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                 <div style={{ borderTop:"1px solid #ffffff10",paddingTop:10 }}>
                   <div style={{ fontSize:9,color:"#666",marginBottom:5 }}>RINNOVO CONTRATTO (anno 2→3)</div>
                   <div style={{ fontSize:11,color:"#aaa",marginBottom:6 }}>
-                    {popup.player.anni<=21?"U21 — nessun aumento":`+20% → ${parseFloat((Number(popup.player.stip)*1.2).toFixed(2))}M`}
+                    {popup.player.anni<=21?"U21 — nessun aumento":`+20% → ${parseFloat((calcolaStipCorretto(Number(popup.player.quot||0),Number(popup.player.anni_contratto||0),Number(popup.player.anni||0))*1.2).toFixed(2))}M`}
                   </div>
                   <button onClick={()=>handleRinnovo(popup.player)} disabled={saving}
                     style={{ width:"100%",padding:"8px",borderRadius:8,border:"none",background:"#10b98122",color:"#10b981",fontSize:12,fontWeight:700,cursor:"pointer" }}>
