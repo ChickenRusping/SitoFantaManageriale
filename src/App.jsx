@@ -217,6 +217,17 @@ function useSortableTable(data, defaultKey, defaultDir = "asc") {
 }
 
 /* ─── SHARED UI ─────────────────────────────────────────────────────────────── */
+// Calcola lo stipendio corretto in base a quotazione, anno contratto ed età (art. 4.8 + 4.8.1)
+function calcolaStipCorretto(quot, anniContratto, anni) {
+  const base = parseFloat((Number(quot || 0) / 5).toFixed(2));
+  const isU21 = anni > 0 && anni <= 21;
+  const ac = anniContratto || 0;
+  if (isU21 || ac <= 1) return base;
+  if (ac === 2) return parseFloat((base * 1.1).toFixed(2));
+  if (ac === 3) return parseFloat((base * 1.2).toFixed(2));
+  return parseFloat((base * 0.9).toFixed(2)); // anno 4+: Bonus Fedeltà
+}
+
 function Badge({ children, color }) {
   return (
     <span style={{ background: color + "22", color, border: `1px solid ${color}44`, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>
@@ -257,10 +268,10 @@ function TeamCard({ team, onClick }) {
 
   useEffect(() => {
     getRosa(team.name).then(data => {
-      if (data) setScLive(data.reduce((s, p) => s + Number(p.stip), 0));
+      if (data) setScLive(data.filter(p=>!p.in_vivaio).reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0));
     });
     const sub = subscribeRosa(team.name, () => {
-      getRosa(team.name).then(data => { if (data) setScLive(data.reduce((s, p) => s + Number(p.stip), 0)); });
+      getRosa(team.name).then(data => { if (data) setScLive(data.filter(p=>!p.in_vivaio).reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0)); });
     });
     return () => supabase.removeChannel(sub);
   }, [team.name]);
@@ -719,7 +730,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
     else if (['E','M','C'].some(r => p.ruolo.includes(r))) ruoliCount.Cen++;
     else ruoliCount.Att++;
   });
-  const scUsato = myRosa.reduce((s, p) => s + Number(p.stip || 0), 0);
+  const scUsato = myRosa.filter(p=>!p.in_vivaio).reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
   // FPF = netto speso semestre corrente, calcolato centralmente e passato via myTeam.fpf
   const fpf = myTeam?.fpf ?? null;
   const fpfDisplay = fpf !== null ? `${fpf.toFixed(1)}M` : "—";
@@ -1532,16 +1543,6 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
   }, [loadAll, teamName]);
 
   const comp = checkRosaCompliance(players);
-  function calcolaStipCorretto(quot, anniContratto, anni) {
-    const base = parseFloat((quot / 5).toFixed(2));
-    const isU21 = anni > 0 && anni <= 21;
-    const ac = anniContratto || 0;
-    if (isU21 || ac <= 1) return base;
-    if (ac === 2) return parseFloat((base * 1.1).toFixed(2));
-    if (ac === 3) return parseFloat((base * 1.2).toFixed(2));
-    return parseFloat((base * 0.9).toFixed(2)); // anno 4+: Bonus Fedeltà
-  }
-
   const roleOrder = ["Por","Dc","Dd","Ds","B","E","M","C","T","W","A","Pc"];
   const playersRich = players.map(p => {
     const stipCorretto = calcolaStipCorretto(Number(p.quot||0), Number(p.anni_contratto||0), Number(p.anni||0));
@@ -1559,7 +1560,7 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
 
   function calcolaPreview(player, tipo, estero) {
     if (!player) return null;
-    const quot=Number(player.quot||0), stip=Number(player.stip||0), oggi=new Date();
+    const quot=Number(player.quot||0), stip=calcolaStipCorretto(player.quot,player.anni_contratto,player.anni), oggi=new Date();
     if (tipo==='ordinario') {
       const penale=quot<=10?0.5:quot<=20?1:quot<=30?1.5:2;
       const df=new Date(oggi.getFullYear(),5,1); if(df<oggi)df.setFullYear(oggi.getFullYear()+1);
@@ -1942,7 +1943,7 @@ function SvincoliTab({ team, isAdmin }) {
   function calcolaPreview(player, tipo, estero) {
     if (!player) return null;
     const quot = Number(player.quot || 0);
-    const stip = Number(player.stip || 0);
+    const stip = calcolaStipCorretto(player.quot, player.anni_contratto, player.anni);
     const oggi = new Date();
     const isU21 = player.anni > 0 && player.anni <= 21;
 
@@ -4031,7 +4032,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
   const canEditMovimenti = isAdmin || mySquadra === team.name;
 
   // Salary cap: stipendi rosa + 5M staff allenatore (se carta scelta)
-  const salaryCapRosa = rosaPlayers.reduce((s, p) => s + Number(p.stip), 0);
+  const salaryCapRosa = rosaPlayers.reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
   const salaryCapUsato = parseFloat((salaryCapRosa + scAllenatore).toFixed(2));
   const salaryCapSforato = salaryCapUsato > 75;
   const oggi = new Date().toISOString().slice(0, 10);
@@ -4054,7 +4055,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
     if (data) {
       const rosaAttiva = data.filter(p => !p.in_vivaio);
       setRosaPlayers(rosaAttiva);
-      const sc = rosaAttiva.reduce((s, p) => s + Number(p.stip), 0);
+      const sc = rosaAttiva.reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
       if (!scEsenteGiuLug) await aggiornaSCNegativo(team.name, sc, oggi);
     }
   }, [team.name]);
