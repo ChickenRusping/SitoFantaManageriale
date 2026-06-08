@@ -1589,6 +1589,7 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
   const roleOrder = ["Por","Dc","Dd","Ds","B","E","M","C","T","W","A","Pc"];
   const playersRich = players.map(p => {
     const stipCorretto = calcolaStipCorretto(Number(p.quot||0), Number(p.anni_contratto||0), Number(p.anni||0));
+    const isU21 = Number(p.anni||0) > 0 && Number(p.anni||0) <= 21;
     return {
       ...p,
       _ruoloOrd: (() => { const i = roleOrder.indexOf(p.ruolo.split(";")[0]); return i<0?99:i; })(),
@@ -1596,7 +1597,7 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
       _mvNum: Number(p.media_voto||0), _mfvNum: Number(p.media_fantavoto||0),
       _golNum: Number(p.gol||0), _assNum: Number(p.assist||0), _acNum: Number(p.anni_contratto||0),
       _stipCorretto: stipCorretto,
-      _stipDiff: Math.abs(stipCorretto - Number(p.stip||0)) > 0.01,
+      _stipDiff: !isU21 && Math.abs(stipCorretto - Number(p.stip||0)) > 0.01,
     };
   });
   const { sorted, SortTh } = useSortableTable(playersRich, "_ruoloOrd", "asc");
@@ -1668,11 +1669,22 @@ Passa all'anno 3.`))return;
     e.stopPropagation();
     setTipoSvincolo('ordinario'); setEstero(false); setOfferMode('cessione');
     const rect = e.currentTarget.getBoundingClientRect();
-    const scrollY = window.scrollY || document.documentElement.scrollTop;
-    // posizione sotto la riga, clampata alla viewport
-    const x = Math.max(8, Math.min(rect.left, window.innerWidth - 328));
-    const y = rect.bottom + scrollY + 4;
+    const popupW = 310, popupEstH = 420;
+    const x = Math.max(8, Math.min(rect.left, window.innerWidth - popupW - 8));
+    const belowY = rect.bottom + 4;
+    const aboveY = rect.top - popupEstH - 4;
+    const y = belowY + popupEstH < window.innerHeight ? belowY : Math.max(8, aboveY);
     setPopup({ player, mode, x, y });
+  }
+
+  async function handleDemoteToVivaio(player) {
+    if (!window.confirm(`Spostare ${player.nome} al Vivaio?\n\nRequisiti: Under-23, Q≤3, 0 presenze.`)) return;
+    setSaving(true);
+    try {
+      await supabase.from('rosa').update({ in_vivaio: true, vivaio_presenze: 0, data_entrata_vivaio: new Date().toISOString().slice(0,10) }).eq('id', player.id);
+      await loadAll(); setPopup(null);
+    } catch(e) { alert(e.message); }
+    finally { setSaving(false); }
   }
 
   const oggi = new Date();
@@ -1815,7 +1827,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
         <div
           onClick={e=>e.stopPropagation()}
           onTouchEnd={e=>e.stopPropagation()}
-          style={{ position:"absolute",zIndex:999,left:popup.x,top:popup.y,width:310,background:"#1a1d26",border:"1.5px solid #ffffff18",borderRadius:14,boxShadow:"0 8px 32px #00000099",padding:16 }}>
+          style={{ position:"fixed",zIndex:9999,left:popup.x,top:popup.y,width:310,background:"#1a1d26",border:"1.5px solid #ffffff18",borderRadius:14,boxShadow:"0 8px 32px #00000099",padding:16,maxHeight:"90vh",overflowY:"auto" }}>
           {/* Header */}
           <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14 }}>
             <div>
@@ -1879,6 +1891,31 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                   </button>
                 </div>
               )}
+              {/* ── Vivaio ── */}
+              {canEdit && (() => {
+                const p = popup.player;
+                if (p.in_vivaio) return (
+                  <div style={{ borderTop:"1px solid #ffffff10",paddingTop:10 }}>
+                    <div style={{ fontSize:9,color:"#10b981",marginBottom:5 }}>VIVAIO → ROSA</div>
+                    <button onClick={()=>{ handlePromuoviVivaio(p); setPopup(null); }} disabled={saving}
+                      style={{ width:"100%",padding:"8px",borderRadius:8,border:"none",background:"#10b98122",color:"#10b981",fontSize:12,fontWeight:700,cursor:"pointer" }}>
+                      ↑ Promuovi in Rosa
+                    </button>
+                  </div>
+                );
+                const eligibile = p.anni > 0 && p.anni <= 23 && Number(p.quot||0) <= 3 && (p.partite||0) === 0 && vivaio.length < maxVivaio;
+                if (!eligibile) return null;
+                return (
+                  <div style={{ borderTop:"1px solid #ffffff10",paddingTop:10 }}>
+                    <div style={{ fontSize:9,color:"#6366f1",marginBottom:5 }}>ROSA → VIVAIO</div>
+                    <div style={{ fontSize:10,color:"#555",marginBottom:6 }}>Under-23 · Q≤3 · 0 presenze · slot vivaio: {vivaio.length}/{maxVivaio}</div>
+                    <button onClick={()=>handleDemoteToVivaio(p)} disabled={saving}
+                      style={{ width:"100%",padding:"8px",borderRadius:8,border:"none",background:"#6366f115",color:"#818cf8",fontSize:12,fontWeight:700,cursor:"pointer" }}>
+                      ↓ Sposta al Vivaio
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
           ):(
             <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
