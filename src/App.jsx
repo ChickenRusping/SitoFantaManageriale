@@ -281,12 +281,18 @@ function TeamCard({ team, onClick }) {
   // FPF = netto speso semestre corrente (uscite − entrate, escl. stipendi), passato da mergedTeams
   const fpf = team.fpf ?? null;
   const fpfDisplay = fpf !== null ? `${fpf.toFixed(1)}M` : "—";
-  const fpfColor = fpf === null ? "#555" : fpf > 40 ? "#ef4444" : fpf > 25 ? "#f59e0b" : fpf < 0 ? "#10b981" : "#888";
-  const scColor = scLive > 75 ? "#ef4444" : scLive > 65 ? "#f59e0b" : "#10b981";
+  const fpfColor = fpf === null ? "#555" : fpf > 70 ? "#ef4444" : fpf > 65 ? "#f97316" : fpf > 60 ? "#f59e0b" : fpf > 50 ? "#fbbf24" : fpf > 35 ? "#888" : "#10b981";
+  const scColor = scLive > 75 ? "#ef4444" : scLive > 74 ? "#f97316" : scLive > 70 ? "#f59e0b" : scLive > 65 ? "#fbbf24" : scLive > 60 ? "#888" : "#10b981";
   const scLibero = parseFloat((75 - scLive).toFixed(1));
   const scLiberoColor = scLibero >= 10 ? "#10b981" : scLibero >= 3 ? "#6ee7b7" : scLibero >= 0 ? "#888" : scLibero >= -5 ? "#f59e0b" : scLibero >= -10 ? "#f97316" : "#ef4444";
   const scLiberoStr = scLibero > 0 ? `+${scLibero.toFixed(1)}M` : `${scLibero.toFixed(1)}M`;
-  const hasAlert = team.u21 < 2 || team.bilancio < 8 || scLive > 75 || (fpf !== null && fpf > 45);
+  const giocatori = team.giocatori || 0;
+  const u21 = team.u21 || 0;
+  const rosaColor = giocatori > 30 || giocatori < 25 ? "#ef4444" : giocatori >= 28 ? "#10b981" : "#888";
+  const u21Required = giocatori >= 30 ? 3 : giocatori >= 29 ? 2 : giocatori >= 28 ? 1 : 0;
+  const u21Color = u21Required === 0 ? "#888" : u21 >= u21Required ? "#10b981" : u21 === u21Required - 1 ? "#f59e0b" : "#ef4444";
+  const bilColor = team.bilancio >= 20 ? "#10b981" : team.bilancio >= 10 ? "#888" : team.bilancio >= 5 ? "#fbbf24" : team.bilancio >= 0 ? "#f97316" : "#ef4444";
+  const hasAlert = u21 < u21Required || team.bilancio < 5 || scLive > 75 || (fpf !== null && fpf > 50);
 
   return (
     <div onClick={onClick} style={{ background: "#ffffff08", border: "1.5px solid #ffffff12", borderRadius: 16, padding: "16px 18px", cursor: "pointer", position: "relative", overflow: "hidden", transition: "all 0.15s" }}
@@ -304,7 +310,7 @@ function TeamCard({ team, onClick }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 10 }}>
         {[
-          { label: "BILANCIO",  value: `${team.bilancio.toFixed(1)}M`, color: team.bilancio < 10 ? "#f97316" : "#f0f0f0" },
+          { label: "BILANCIO",  value: `${team.bilancio.toFixed(1)}M`, color: bilColor },
           { label: "SC USATO",  value: `${scLive.toFixed(1)}M`,        color: scColor },
           { label: "SC LIBERO", value: scLiberoStr,                     color: scLiberoColor },
         ].map(s => (
@@ -319,9 +325,9 @@ function TeamCard({ team, onClick }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 14 }}>
         {[
-          { label: "ROSA", value: String(team.giocatori), color: team.giocatori < 25 || team.giocatori > 30 ? "#ef4444" : "#f0f0f0" },
-          { label: "U-21", value: String(team.u21),       color: team.u21 < 2 ? "#ef4444" : team.u21 < 3 ? "#f59e0b" : "#10b981" },
-          { label: "FPF",  value: fpfDisplay, color: fpfColor },
+          { label: "ROSA", value: String(giocatori), color: rosaColor },
+          { label: "U-21", value: String(u21),       color: u21Color },
+          { label: "FPF",  value: fpfDisplay,        color: fpfColor },
         ].map(s => (
           <div key={s.label} style={{ textAlign: "center" }}>
             <div style={{ fontSize: 9, color: "#777", marginBottom: 2, letterSpacing: "0.06em" }}>{s.label}</div>
@@ -932,6 +938,8 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
   const [savingPr, setSavingPr] = useState(false);
   const [premiIndivLega, setPremiIndivLega] = useState({});
   const [savingIndivLega, setSavingIndivLega] = useState(false);
+  const [coppaSelezionata, setCoppaSelezionata] = useState({ 1: '', 2: '', 3: '', 4: '' });
+  const [savingCoppa, setSavingCoppa] = useState(false);
   const loadPremi = useCallback(async () => {
     const [p, cl] = await Promise.all([getPremi(STAGIONE), getClassifica()]);
     setPremi(p || []); setClassPr((cl||[]).sort((a,b) => b.pt - a.pt || b.pt_totali - a.pt_totali));
@@ -940,7 +948,22 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
   const primoPoints = classPr[0]?.pt || 0;
   const premi19a = classPr.map((r,i) => ({ squadra: r.squadra, posizione: i+1, importo: calcolaPremio19a(primoPoints, r.pt) }));
   const premiFinali = classPr.map((r,i) => ({ squadra: r.squadra, posizione: i+1, importo: calcolaPremiFinali(i+1) }));
-  const premiApp = { p19: premi.some(p => p.tipo==='premio_19a'), finale: premi.some(p => p.tipo==='premio_finale'), individuali: premi.some(p => p.tipo==='premio_indiv' || p.tipo==='malus_indiv') };
+  const premiApp = { p19: premi.some(p => p.tipo==='premio_19a'), finale: premi.some(p => p.tipo==='premio_finale'), individuali: premi.some(p => p.tipo==='premio_indiv' || p.tipo==='malus_indiv'), coppa: premi.some(p => p.tipo==='premio_coppa') };
+  async function handleApplicaPremiCoppa() {
+    const COPPA_DEF = [[1,5,'Vincitore Coppa'],[2,3,'Finalista Coppa'],[3,1,'Semifinalista Coppa'],[4,1,'Semifinalista Coppa']];
+    const entries = COPPA_DEF.map(([pos,mln,label]) => ({ pos, mln, label, squadra: coppaSelezionata[pos] })).filter(e => e.squadra);
+    if (!entries.length) { alert('Seleziona almeno una squadra.'); return; }
+    if (!window.confirm(`Applicare premi Coppa Italia?\n\n${entries.map(e => `${e.label}: +${e.mln}M → ${e.squadra}`).join('\n')}`)) return;
+    setSavingCoppa(true);
+    try {
+      for (const e of entries) {
+        const rec = await insertPremio({ squadra: e.squadra, tipo: 'premio_coppa', importo: e.mln, posizione: e.pos, stagione: STAGIONE, data_premio: new Date().toISOString().slice(0,10) });
+        await applicaPremio(e.squadra, e.mln, e.label, rec.id);
+      }
+      await loadPremi();
+    } catch(err) { alert(err.message); }
+    finally { setSavingCoppa(false); }
+  }
   async function handleIndivLega() {
     const entries = PREMI_INDIVIDUALI_DEF.map(d => ({ ...d, squadra: premiIndivLega[d.key] })).filter(d => d.squadra);
     if (!entries.length) { alert("Seleziona almeno una squadra."); return; }
@@ -1085,27 +1108,39 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
               </div>
             );})}
           </div>
-          {/* Coppa + € */}
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10 }}>
-            <div style={{ background:"#10b98108",border:"1.5px solid #10b98120",borderRadius:12,padding:14 }}>
-              <div style={{ fontSize:10,fontWeight:700,color:"#10b981",marginBottom:8 }}>🥇 COPPA</div>
-              {[[1,5,"Vincitore"],[2,3,"Finalista"],[3,1,"Semifin."],[4,1,"Semifin."]].map(([pos,mln,label]) => (
-                <div key={pos} style={{ display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid #ffffff08" }}>
-                  <span style={{ fontSize:11,color:"#888" }}>{pos}° {label}</span>
-                  <span style={{ fontSize:13,fontWeight:900,color:"#10b981",fontFamily:"'Bebas Neue',sans-serif" }}>+{mln}M</span>
-                </div>
-              ))}
+          {/* Coppa Italia */}
+          <div style={{ background:"#10b98108",border:"1.5px solid #10b98120",borderRadius:12,padding:14 }}>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:6 }}>
+              <div style={{ fontSize:10,fontWeight:700,color:"#10b981" }}>🥇 PREMI COPPA ITALIA (art. 12.3)</div>
+              {isAdmin&&!premiApp.coppa&&<button onClick={handleApplicaPremiCoppa} disabled={savingCoppa} style={{ padding:"5px 10px",borderRadius:7,border:"none",background:"#10b98122",color:"#10b981",fontSize:10,fontWeight:700,cursor:"pointer" }}>{savingCoppa?"...":"✅ Applica"}</button>}
+              {premiApp.coppa&&<Badge color="#10b981">✓ Applicati</Badge>}
             </div>
-            <div style={{ background:"#ffffff06",border:"1.5px solid #ffffff10",borderRadius:12,padding:14 }}>
-              <div style={{ fontSize:10,fontWeight:700,color:"#888",marginBottom:8 }}>💶 MONTEPREMI €</div>
-              <input style={{ ...inp,width:"100%",marginBottom:8 }} type="number" placeholder="Inserisci €" value={montepremi||""} onChange={e=>setMontepremi(parseFloat(e.target.value)||0)}/>
-              {montepremi>0&&[["½",montepremi/2,"1° posto"],["¼",montepremi/4,"2° posto"],["⅛",montepremi/8,"3° posto"],["⅛",montepremi/8,"Coppa"]].map(([fraz,imp,label],i) => (
-                <div key={i} style={{ display:"flex",justifyContent:"space-between",padding:"3px 0",borderBottom:"1px solid #ffffff08" }}>
-                  <span style={{ fontSize:10,color:"#888" }}>{fraz} {label}</span>
-                  <span style={{ fontSize:12,fontWeight:900,color:"#f59e0b",fontFamily:"'Bebas Neue',sans-serif" }}>{parseFloat(imp.toFixed(2))}€</span>
-                </div>
-              ))}
-            </div>
+            {[[1,5,"🏆 Vincitore"],[2,3,"🥈 Finalista"],[3,1,"🥉 Semifinalista"],[4,1,"🥉 Semifinalista"]].map(([pos,mln,label]) => (
+              <div key={pos} style={{ display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid #ffffff08" }}>
+                <div style={{ flex:1,fontSize:11,color:"#ccc" }}>{label}</div>
+                <span style={{ fontSize:13,fontWeight:900,color:"#10b981",fontFamily:"'Bebas Neue',sans-serif",minWidth:32,textAlign:"right" }}>+{mln}M</span>
+                {isAdmin&&!premiApp.coppa ? (
+                  <select value={coppaSelezionata[pos]||''} onChange={e=>setCoppaSelezionata(v=>({...v,[pos]:e.target.value}))}
+                    style={{ padding:"3px 6px",borderRadius:5,border:"1px solid #ffffff18",background:"#0d0f14",color:"#f0f0f0",fontSize:10,minWidth:120 }}>
+                    <option value="">— Squadra —</option>
+                    {teams.map(t=><option key={t.name} value={t.name}>{t.name}</option>)}
+                  </select>
+                ) : (
+                  <span style={{ fontSize:10,color:coppaSelezionata[pos]?"#ddd":"#333",minWidth:120,textAlign:"right" }}>{coppaSelezionata[pos]||"—"}</span>
+                )}
+              </div>
+            ))}
+          </div>
+          {/* Montepremi € */}
+          <div style={{ background:"#ffffff06",border:"1.5px solid #ffffff10",borderRadius:12,padding:14 }}>
+            <div style={{ fontSize:10,fontWeight:700,color:"#888",marginBottom:8 }}>💶 MONTEPREMI €</div>
+            <input style={{ ...inp,width:"100%",marginBottom:8 }} type="number" placeholder="Inserisci €" value={montepremi||""} onChange={e=>setMontepremi(parseFloat(e.target.value)||0)}/>
+            {montepremi>0&&[["½",montepremi/2,"1° posto"],["¼",montepremi/4,"2° posto"],["⅛",montepremi/8,"3° posto"],["⅛",montepremi/8,"Coppa"]].map(([fraz,imp,label],i) => (
+              <div key={i} style={{ display:"flex",justifyContent:"space-between",padding:"3px 0",borderBottom:"1px solid #ffffff08" }}>
+                <span style={{ fontSize:10,color:"#888" }}>{fraz} {label}</span>
+                <span style={{ fontSize:12,fontWeight:900,color:"#f59e0b",fontFamily:"'Bebas Neue',sans-serif" }}>{parseFloat(imp.toFixed(2))}€</span>
+              </div>
+            ))}
           </div>
           {/* Premi Individuali */}
           <div style={{ background:"#a855f708",border:"1.5px solid #a855f725",borderRadius:12,padding:14 }}>
