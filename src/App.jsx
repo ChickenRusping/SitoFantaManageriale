@@ -265,11 +265,13 @@ function TeamAvatar({ team, size = 38 }) {
 /* ─── TEAM CARD ─────────────────────────────────────────────────────────────── */
 function TeamCard({ team, onClick }) {
   const [scLive, setScLive] = useState(team.salaryUsed || 0);
+  const [allenatoreReale, setAllenatoreReale] = useState(null);
 
   useEffect(() => {
     getRosa(team.name).then(data => {
       if (data) setScLive(data.filter(p=>!p.in_vivaio).reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0));
     });
+    getAllenatoreBySquadra(team.name, '2026-27').then(all => setAllenatoreReale(all?.nome || null));
     const sub = subscribeRosa(team.name, () => {
       getRosa(team.name).then(data => { if (data) setScLive(data.filter(p=>!p.in_vivaio).reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0)); });
     });
@@ -281,6 +283,9 @@ function TeamCard({ team, onClick }) {
   const fpfDisplay = fpf !== null ? `${fpf.toFixed(1)}M` : "—";
   const fpfColor = fpf === null ? "#555" : fpf > 40 ? "#ef4444" : fpf > 25 ? "#f59e0b" : fpf < 0 ? "#10b981" : "#888";
   const scColor = scLive > 75 ? "#ef4444" : scLive > 65 ? "#f59e0b" : "#10b981";
+  const scLibero = parseFloat((75 - scLive).toFixed(1));
+  const scLiberoColor = scLibero >= 10 ? "#10b981" : scLibero >= 3 ? "#6ee7b7" : scLibero >= 0 ? "#888" : scLibero >= -5 ? "#f59e0b" : scLibero >= -10 ? "#f97316" : "#ef4444";
+  const scLiberoStr = scLibero > 0 ? `+${scLibero.toFixed(1)}M` : `${scLibero.toFixed(1)}M`;
   const hasAlert = team.u21 < 2 || team.bilancio < 8 || scLive > 75 || (fpf !== null && fpf > 45);
 
   return (
@@ -293,15 +298,15 @@ function TeamCard({ team, onClick }) {
         <TeamAvatar team={team} size={44} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: "#f0f0f0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team.name}</div>
-          <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>{team.allenatore}</div>
+          <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>{allenatoreReale || "—"}</div>
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 10 }}>
         {[
-          { label: "BILANCIO",  value: `${team.bilancio.toFixed(1)}M`,  color: team.bilancio < 10 ? "#f97316" : "#f0f0f0" },
-          { label: "SC USATO",  value: `${scLive.toFixed(1)}M`,         color: scColor },
-          { label: "SC LIBERO", value: `+${(75 - scLive).toFixed(1)}M`, color: scColor },
+          { label: "BILANCIO",  value: `${team.bilancio.toFixed(1)}M`, color: team.bilancio < 10 ? "#f97316" : "#f0f0f0" },
+          { label: "SC USATO",  value: `${scLive.toFixed(1)}M`,        color: scColor },
+          { label: "SC LIBERO", value: scLiberoStr,                     color: scLiberoColor },
         ].map(s => (
           <div key={s.label}>
             <div style={{ fontSize: 9, color: "#777", marginBottom: 2, letterSpacing: "0.06em" }}>{s.label}</div>
@@ -661,6 +666,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
 
   const [classifica, setClassifica] = useState([]);
   const [myRosa, setMyRosa] = useState([]);
+  const [myAllenatore, setMyAllenatore] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [editRow, setEditRow] = useState(null); // { squadra, g, v, n, p, gf, gs, dr, pt, pt_totali }
   const [saving, setSaving] = useState(false);
@@ -692,7 +698,9 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
   }, []);
 
   useEffect(() => {
-    if (mySquadra) getRosa(mySquadra).then(d => setMyRosa(d || []));
+    if (!mySquadra) return;
+    getRosa(mySquadra).then(d => setMyRosa(d || []));
+    getAllenatoreBySquadra(mySquadra, '2026-27').then(all => setMyAllenatore(all?.nome || null));
   }, [mySquadra]);
 
   // Merge classifica con colori/loghi delle squadre
@@ -754,7 +762,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
             <TeamAvatar team={myTeam} size={52} />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 20, fontWeight: 900, color: "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "1px" }}>{myTeam.name}</div>
-              <div style={{ fontSize: 12, color: "#888" }}>{myTeam.allenatore}</div>
+              <div style={{ fontSize: 12, color: "#888" }}>{myAllenatore || "—"}</div>
             </div>
             {/* Bilancio + SC + FPF */}
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
