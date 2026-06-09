@@ -561,7 +561,8 @@ export function subscribeAste(callback) {
 // Per prestiti: tiene traccia della scadenza, non sposta definitivamente
 export async function eseguiTrasferimento(trattativa) {
   const { da_squadra, a_squadra, giocatore, prezzo, tipo, quota_giocatore,
-          scadenza_prestito, stipendio_a_chi, fuori_mercato, id } = trattativa;
+          scadenza_prestito, stipendio_a_chi, fuori_mercato, id,
+          giocatore_scambio } = trattativa;
 
   const oggi = new Date().toISOString().slice(0, 10);
   const tipoLabel = {
@@ -611,6 +612,21 @@ export async function eseguiTrasferimento(trattativa) {
       }).eq('id', player.id);
     }
   }
+  // ── 2b. Per scambio: muovi anche il giocatore di contropartita ─────────────
+  if (tipo === 'scambio' && giocatore_scambio) {
+    const { data: rows2 } = await supabase.from('rosa').select('*')
+      .eq('squadra', a_squadra).ilike('nome', `%${giocatore_scambio}%`);
+    const p2 = rows2?.[0];
+    if (p2) {
+      const nuovoStip2 = parseFloat((Number(p2.quot || 0) / 5).toFixed(2));
+      await supabase.from('rosa').update({
+        squadra: da_squadra, stip: nuovoStip2, stip_originale: nuovoStip2,
+        anni_contratto: 1, data_acquisto: oggi,
+        in_prestito: false, squadra_originale: null, scadenza_prestito: null,
+      }).eq('id', p2.id);
+    }
+  }
+
   // Se il giocatore non è trovato nella rosa (es. svincolato), non sposta nulla
   // ma registra comunque i movimenti finanziari
 
@@ -655,15 +671,13 @@ export async function eseguiTrasferimento(trattativa) {
     },
   ]);
 
-  // Per clausola: registra anche la differenza trattenuta (2/7)
+  // Per clausola: registra la quota trattenuta (1/4 del valore — art. 5.5.2)
   if (tipo === 'clausola') {
     const diff = parseFloat((prezzo - importoCedente).toFixed(2));
-    await supabase.from('movimenti').insert({
+    if (diff > 0) await supabase.from('movimenti').insert({
       squadra: da_squadra,
-      descrizione: `Ritenuta clausola rescissoria (2/7): ${giocatore}`,
-      entrata: null,
-      uscita: diff,
-      data: oggi,
+      descrizione: `Ritenuta clausola rescissoria (1/4): ${giocatore}`,
+      entrata: null, uscita: diff, data: oggi,
     });
   }
 
@@ -734,12 +748,76 @@ export async function eseguiRientroPrestito(playerId, squadraOriginale) {
   const { data: player } = await supabase.from('rosa').select('*').eq('id', playerId).single();
   if (!player) return;
 
+  // Ripristina stipendio corretto (Q/5) per la squadra cedente
+  const nuovoStip = parseFloat((Number(player.quot || 0) / 5).toFixed(2));
   await supabase.from('rosa').update({
     squadra: squadraOriginale,
     in_prestito: false,
     squadra_originale: null,
     scadenza_prestito: null,
+    stip: nuovoStip,
+    stip_prestito_cedente: 0,
   }).eq('id', playerId);
+
+  await supabase.from('movimenti').insert({
+    squadra: squadraOriginale,
+    descrizione: `Rientro da prestito: ${player.nome}`,
+    entrata: null, uscita: null, data: oggi,
+  });
+}
+
+// ── Controllo e gestione prestiti scaduti (art. 5.8) ─────────────────────────
+export async function getPrestitiScaduti() {
+  const oggi = new Date().toISOString().slice(0, 10);
+  const { data } = await supabase.from('rosa')
+    .select('id, nome, squadra, squadra_originale, quot, scadenza_prestito')
+    .eq('in_prestito', true)
+    .lte('scadenza_prestito', oggi);
+  if (!data?.length) return [];
+
+  // Per ogni prestito scaduto, cerca la trattativa originale per il tipo
+  const results = [];
+  for (const p of data) {
+    const { data: tratt } = await supabase.from('trattative')
+      .select('tipo, prezzo, id')
+      .eq('giocatore', p.nome)
+      .in('tipo', ['prestito_secco', 'prestito_diritto', 'prestito_obbligo'])
+      .order('created_at', { ascending: false })
+      .limit(1);
+    const t = tratt?.[0];
+    results.push({ player: p, tipo: t?.tipo || 'prestito_secco', prezzo: t?.prezzo || 0, trattativaId: t?.id });
+  }
+  return results;
+}
+
+export async function eseguiScadenzaPrestito(item) {
+  const { player, tipo, prezzo } = item;
+  const oggi = new Date().toISOString().slice(0, 10);
+
+  if (tipo === 'prestito_obbligo') {
+    // Obbligo di riscatto: il giocatore passa definitivamente al ricevente
+    const nuovoStip = parseFloat((Number(player.quot || 0) / 5).toFixed(2));
+    await supabase.from('rosa').update({
+      squadra: player.squadra, // rimane al ricevente
+      in_prestito: false, squadra_originale: null, scadenza_prestito: null,
+      stip: nuovoStip, stip_originale: nuovoStip, anni_contratto: 1,
+    }).eq('id', player.id);
+    // Pagamento riscatto
+    if (prezzo > 0) {
+      const { data: sqs } = await supabase.from('squadre').select('name,bilancio').in('name', [player.squadra, player.squadra_originale]);
+      const bilRic = sqs?.find(s => s.name === player.squadra)?.bilancio || 0;
+      const bilCed = sqs?.find(s => s.name === player.squadra_originale)?.bilancio || 0;
+      await supabase.from('squadre').update({ bilancio: parseFloat((bilRic - prezzo).toFixed(2)) }).eq('name', player.squadra);
+      await supabase.from('squadre').update({ bilancio: parseFloat((bilCed + prezzo).toFixed(2)) }).eq('name', player.squadra_originale);
+      await supabase.from('movimenti').insert([
+        { squadra: player.squadra, descrizione: `Riscatto obbligo ${player.nome}`, uscita: prezzo, data: oggi },
+        { squadra: player.squadra_originale, descrizione: `Riscatto obbligo ${player.nome} (incasso)`, entrata: prezzo, data: oggi },
+      ]);
+    }
+  } else {
+    // Secco o diritto non esercitato: torna al cedente
+    await eseguiRientroPrestito(player.id, player.squadra_originale);
+  }
 }
 
 // ── Rescissione anticipata prestito (art. 5.8.1) ─────────────────────────────

@@ -148,7 +148,7 @@ async function cachedFetch(key, fetcher, ttl = 90000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento,
   getBonusTrattativa, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -2352,18 +2352,25 @@ function ClausoleTab({ team, isAdmin }) {
   const [clausole, setClausole] = useState([]);
   const [rosaPlayers, setRosaPlayers] = useState([]);
   const [prestitiAttivi, setPrestitiAttivi] = useState([]);
+  const [prestitiScaduti, setPrestitiScaduti] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [rescindendo, setRescindendo] = useState(null); // id giocatore in rescissione
+  const [rescindendo, setRescindendo] = useState(null);
+  const [eseguendoScadenza, setEseguendoScadenza] = useState(null);
 
   const loadAll = useCallback(async () => {
-    const [c, r, p] = await Promise.all([
+    const [c, r, p, sc] = await Promise.all([
       getClausole(team.name),
       getRosa(team.name),
       getPrestitiAttivi(team.name),
+      getPrestitiScaduti(),
     ]);
     setClausole(c);
     setRosaPlayers(r);
     setPrestitiAttivi(p);
+    // Only show expired loans involving this team
+    setPrestitiScaduti((sc || []).filter(item =>
+      item.player.squadra === team.name || item.player.squadra_originale === team.name
+    ));
     setLoading(false);
   }, [team.name]);
 
@@ -2416,6 +2423,46 @@ function ClausoleTab({ team, isAdmin }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
       {/* ── PRESTITI IN CORSO ── */}
+      {/* ── Prestiti scaduti da gestire ── */}
+      {prestitiScaduti.length > 0 && (
+        <div style={{ background: "#ef444410", border: "1.5px solid #ef444433", borderRadius: 14, padding: 16, marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", letterSpacing: "0.08em", marginBottom: 12 }}>⏰ PRESTITI SCADUTI — DA GESTIRE</div>
+          {prestitiScaduti.map(item => {
+            const { player, tipo, prezzo } = item;
+            const isObl = tipo === 'prestito_obbligo';
+            return (
+              <div key={player.id} style={{ background: "#ffffff06", borderRadius: 10, padding: "10px 12px", marginBottom: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#f0f0f0" }}>{player.nome}</div>
+                    <div style={{ fontSize: 10, color: "#888" }}>
+                      {player.squadra_originale} → {player.squadra} · scad. {player.scadenza_prestito}
+                    </div>
+                    <div style={{ fontSize: 10, color: isObl ? "#f59e0b" : "#6366f1", marginTop: 2 }}>
+                      {isObl ? `⚡ Obbligo riscatto — ${player.squadra} acquista definitivamente (${prezzo}M)` : `🔄 Secco/Diritto — rientra a ${player.squadra_originale}`}
+                    </div>
+                  </div>
+                  {isAdmin && (
+                    <button
+                      onClick={async () => {
+                        if (!window.confirm(isObl ? `Eseguire obbligo di riscatto? ${player.squadra} acquista ${player.nome} per ${prezzo}M.` : `Rientrare ${player.nome} a ${player.squadra_originale}?`)) return;
+                        setEseguendoScadenza(player.id);
+                        try { await eseguiScadenzaPrestito(item); await loadAll(); }
+                        catch(e) { alert(e.message); }
+                        finally { setEseguendoScadenza(null); }
+                      }}
+                      disabled={eseguendoScadenza === player.id}
+                      style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: isObl ? "#f59e0b" : "#6366f1", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      {eseguendoScadenza === player.id ? "..." : isObl ? "✓ Esegui riscatto" : "↩ Rientra"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {(prestitiCeduti.length > 0 || prestitiRicevuti.length > 0) && (
         <div style={{ background: "#6366f108", border: "1.5px solid #6366f125", borderRadius: 14, padding: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#818cf8", letterSpacing: "0.08em", marginBottom: 12 }}>🔄 PRESTITI IN CORSO</div>
