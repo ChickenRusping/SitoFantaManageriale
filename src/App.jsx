@@ -743,9 +743,10 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
     }
   }
 
-  // Mini-rosa summary: conta per ruolo
+  // Mini-rosa summary: conta per ruolo (vivaio escluso — art. 3.4)
+  const rosaAttiva = myRosa.filter(p => !p.in_vivaio);
   const ruoliCount = { Por: 0, Dif: 0, Cen: 0, Att: 0 };
-  myRosa.forEach(p => {
+  rosaAttiva.forEach(p => {
     if (p.ruolo === 'Por') ruoliCount.Por++;
     else if (['Dc','Dd','Ds','B'].some(r => p.ruolo.includes(r))) ruoliCount.Dif++;
     else if (['E','M','C'].some(r => p.ruolo.includes(r))) ruoliCount.Cen++;
@@ -795,13 +796,13 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
           {/* Stats bar — ruoli + U21 + 31+ */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6 }}>
             {[
-              { label: "ROSA",    value: myRosa.length, color: myRosa.length < 25 || myRosa.length > 30 ? "#ef4444" : "#10b981" },
+              { label: "ROSA",    value: rosaAttiva.length, color: rosaAttiva.length < 25 || rosaAttiva.length > 30 ? "#ef4444" : "#10b981" },
               { label: "POR",     value: ruoliCount.Por, color: "#6366f1" },
               { label: "DIFESA",  value: ruoliCount.Dif, color: "#3b82f6" },
               { label: "CENTRO",  value: ruoliCount.Cen, color: "#f59e0b" },
               { label: "ATTACCO", value: ruoliCount.Att, color: "#ef4444" },
-              { label: "U-21",    value: myRosa.filter(p => p.anni > 0 && p.anni <= 21).length, color: "#a78bfa" },
-              { label: "31+",     value: myRosa.filter(p => p.anni >= 31).length, color: "#fb923c" },
+              { label: "U-21",    value: rosaAttiva.filter(p => p.anni > 0 && p.anni <= 21).length, color: "#a78bfa" },
+              { label: "31+",     value: rosaAttiva.filter(p => p.anni >= 31).length, color: "#fb923c" },
             ].map(s => (
               <div key={s.label} style={{ textAlign: "center", background: "#ffffff08", borderRadius: 10, padding: "7px 3px" }}>
                 <div style={{ fontSize: 7, color: "#555", letterSpacing: "0.04em", marginBottom: 3 }}>{s.label}</div>
