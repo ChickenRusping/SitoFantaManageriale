@@ -671,6 +671,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
   const [classifica, setClassifica] = useState([]);
   const [myRosa, setMyRosa] = useState([]);
   const [myAllenatore, setMyAllenatore] = useState(null);
+  const [roseCountMap, setRoseCountMap] = useState({});
   const [editMode, setEditMode] = useState(false);
   const [editRow, setEditRow] = useState(null); // { squadra, g, v, n, p, gf, gs, dr, pt, pt_totali }
   const [saving, setSaving] = useState(false);
@@ -706,6 +707,14 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
     getRosa(mySquadra).then(d => setMyRosa(d || []));
     getAllenatoreBySquadra(mySquadra, '2026-27').then(all => setMyAllenatore(all?.nome || null));
   }, [mySquadra]);
+
+  // Load live rosa counts for all teams to avoid stale `giocatori` field
+  const teamNamesKey = teams.map(t => t.name).join(',');
+  useEffect(() => {
+    if (!teams.length) return;
+    Promise.all(teams.map(t => getRosa(t.name).then(d => [t.name, (d || []).filter(p => !p.in_vivaio).length])))
+      .then(entries => setRoseCountMap(Object.fromEntries(entries)));
+  }, [teamNamesKey]);
 
   // Merge classifica con colori/loghi delle squadre
   const classificaRicca = classifica.map(c => {
@@ -819,9 +828,11 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 14 }}>
           {teams
             .filter(t => t.name !== mySquadra)
-            .map(team => (
-              <TeamCard key={team.id} team={team} onClick={() => onSelectTeam(team)} />
-            ))}
+            .map(team => {
+              const liveCount = roseCountMap[team.name];
+              const teamLive = liveCount !== undefined ? { ...team, giocatori: liveCount } : team;
+              return <TeamCard key={team.id} team={teamLive} onClick={() => onSelectTeam(team)} />;
+            })}
         </div>
       </div>
 
