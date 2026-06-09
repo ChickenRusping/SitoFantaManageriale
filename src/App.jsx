@@ -4734,7 +4734,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     if (!player) { setForm(f => ({ ...f, giocatoreId: '', giocatoreNome: '', quot: 0, prezzo: '' })); return; }
     const passaggi = Number(player.passaggi_sessione || 0);
     // Se ≥1 passaggio in sessione: solo prestito
-    const tipoForzato = passaggi >= 1 ? 'prestito_secco' : form.tipo;
+    const tipoForzato = passaggi >= 2 ? 'prestito_secco' : form.tipo;
     setForm(f => ({
       ...f,
       giocatoreId: playerId,
@@ -4815,27 +4815,30 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const [controffertaId, setControffertaId] = useState(null);
   const [controffertaPrezzo, setControffertaPrezzo] = useState("");
 
+  async function eseguiAccettazione(t) {
+    const mercatoAperto = getMercatoStatus().aperto;
+    const msg = t.fuori_mercato || !mercatoAperto
+      ? `Confermi di accettare? Il trasferimento di ${t.giocatore} sarà registrato come "differito".`
+      : `Confermi il trasferimento di ${t.giocatore} per ${t.prezzo}M?`;
+    if (!window.confirm(msg)) return;
+    setLoading(true);
+    try {
+      // checkEAggiornaPassaggi è già chiamato dentro eseguiTrasferimento — non chiamare due volte
+      await eseguiTrasferimento(t);
+      await aggiornaFantaSquadraListone(t.giocatore, t.a_squadra);
+      await aggiornaStipendioDopoTrasferimento(t.giocatore, t.a_squadra);
+      await logAzione({ utente: 'admin', squadra: t.da_squadra, azione: 'trasferimento', entita: 'trattative', entitaId: t.id, descrizione: `Trasferimento: ${t.giocatore} da ${t.da_squadra} a ${t.a_squadra} — ${t.prezzo}M (${t.tipo})`, dataPrima: { trattativa: t }, rollbackPossibile: false });
+    } catch (e) {
+      alert(`Errore durante il trasferimento: ${e.message}`);
+    } finally {
+      setLoading(false);
+      await loadAll();
+    }
+  }
+
   async function rispondi(t, azione) {
-    if (azione === 'accettata') {
-      const mercatoAperto = getMercatoStatus().aperto;
-      const msg = t.fuori_mercato || !mercatoAperto
-        ? `Confermi di accettare? Il trasferimento di ${t.giocatore} sarà registrato come "differito".`
-        : `Confermi il trasferimento di ${t.giocatore} per ${t.prezzo}M?`;
-      if (!window.confirm(msg)) return;
-      setLoading(true);
-      try {
-        await checkEAggiornaPassaggi(t.giocatore, t.a_squadra, t.tipo);
-        await eseguiTrasferimento(t);
-        // Aggiorna fanta_squadra nel listone e stipendio da listone
-        await aggiornaFantaSquadraListone(t.giocatore, t.a_squadra);
-        await aggiornaStipendioDopoTrasferimento(t.giocatore, t.a_squadra);
-        await logAzione({ utente: 'admin', squadra: t.da_squadra, azione: 'trasferimento', entita: 'trattative', entitaId: t.id, descrizione: `Trasferimento: ${t.giocatore} da ${t.da_squadra} a ${t.a_squadra} — ${t.prezzo}M (${t.tipo})`, dataPrima: { trattativa: t }, rollbackPossibile: false });
-      } catch (e) {
-        alert(`Errore durante il trasferimento: ${e.message}`);
-      } finally {
-        setLoading(false);
-        await loadAll();
-      }
+    if (azione === 'accettata' || azione === 'completata') {
+      await eseguiAccettazione(t);
       return;
     }
 
@@ -5086,7 +5089,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                           })
                           .map(p => {
                             const passaggi = Number(p.passaggi_sessione || 0);
-                            const soloP = passaggi >= 1;
+                            const soloP = passaggi >= 2;
                             return (
                               <option key={p.id} value={p.id}>
                                 {p.ruolo} {p.nome} — Q{p.quot} · stip {p.stip}M{soloP ? ` ⚠️ solo prestito (${passaggi}/3 pass.)` : ''}
@@ -5122,7 +5125,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                     <div style={{ fontSize: 10, color: "#666", marginBottom: 6 }}>3. TIPO OPERAZIONE</div>
                     {(() => {
                       const passaggi = Number(rosaTarget.find(p=>String(p.id)===String(form.giocatoreId))?.passaggi_sessione || 0);
-                      const soloP = passaggi >= 1;
+                      const soloP = passaggi >= 2;
                       const tipi = soloP
                         ? [["prestito_secco","🔄 Prestito Secco"],["prestito_diritto","🔄 c/Diritto"],["prestito_obbligo","🔄 c/Obbligo"]]
                         : [["cessione","💸 Cessione"],["prestito_diritto","🔄 c/Diritto"],["prestito_obbligo","🔄 c/Obbligo"],["prestito_secco","🔄 Prestito Secco"],["clausola","⚡ Clausola"]];
