@@ -5838,12 +5838,15 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
     setSaving(true);
     try {
       // Chiudi chiamate
-      await supabase.from('chiamate').update({ stato: 'conclusa' }).eq('giocatore', primaria.giocatore);
-      // Annulla anche eventuali aste attive per questo giocatore
-      await supabase.from('aste_svincolati')
-        .update({ stato: 'annullata' })
-        .eq('giocatore', primaria.giocatore)
-        .in('stato', ['raccolta_offerte', 'aperta']);
+      const { error: errChi } = await supabase.from('chiamate').update({ stato: 'conclusa' }).eq('giocatore', primaria.giocatore);
+      if (errChi) throw errChi;
+      // Annulla aste attive per questo giocatore (by ID to avoid RLS issues)
+      const asteDelGiocatore = (aste || []).filter(a =>
+        a.giocatore === primaria.giocatore && ['raccolta_offerte', 'aperta'].includes(a.stato)
+      );
+      for (const a of asteDelGiocatore) {
+        await updateAstaSvincolati(a.id, { stato: 'annullata' });
+      }
       await onRefresh();
     } catch(e) { alert(e.message); } finally { setSaving(false); }
   }
