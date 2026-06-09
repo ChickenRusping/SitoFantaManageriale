@@ -798,14 +798,11 @@ export async function checkEAggiornaPassaggi(giocatoreNome, squadraDestinazione,
   if (!player) return { ok: true, passaggi: 0 };
 
   const passaggi = Number(player.passaggi_sessione || 0);
-  const isPrestito = tipo?.startsWith('prestito');
 
-  // Art. 5.6: terzo passaggio DEVE essere prestito
-  if (passaggi >= 2 && !isPrestito) {
-    throw new Error(`${giocatoreNome} ha già cambiato ${passaggi} squadre in questa sessione — il terzo passaggio deve essere un prestito.`);
-  }
-  if (passaggi >= 3) {
-    throw new Error(`${giocatoreNome} ha già raggiunto il limite di 3 squadre in questa sessione.`);
+  // Art. 5.6 (aggiornato): la squadra iniziale conta come squadra 1, max 3 squadre totali
+  // → massimo 2 trasferimenti per sessione, qualsiasi tipo (anche cessione permanente)
+  if (passaggi >= 2) {
+    throw new Error(`${giocatoreNome} ha già raggiunto il limite di 3 squadre in questa sessione (squadra iniziale = squadra 1).`);
   }
 
   await supabase.from('rosa').update({ passaggi_sessione: passaggi + 1 }).eq('id', player.id);

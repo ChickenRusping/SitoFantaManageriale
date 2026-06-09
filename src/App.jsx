@@ -4733,8 +4733,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     const player = rosaTarget.find(p => String(p.id) === String(playerId));
     if (!player) { setForm(f => ({ ...f, giocatoreId: '', giocatoreNome: '', quot: 0, prezzo: '' })); return; }
     const passaggi = Number(player.passaggi_sessione || 0);
-    // Se ≥1 passaggio in sessione: solo prestito
-    const tipoForzato = passaggi >= 2 ? 'prestito_secco' : form.tipo;
+    const tipoForzato = form.tipo; // art. 5.6: qualsiasi tipo consentito, max 2 passaggi per sessione
     setForm(f => ({
       ...f,
       giocatoreId: playerId,
@@ -5089,10 +5088,10 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                           })
                           .map(p => {
                             const passaggi = Number(p.passaggi_sessione || 0);
-                            const soloP = passaggi >= 2;
+                            const soloP = false; // art. 5.6 aggiornato: nessun tipo forzato
                             return (
                               <option key={p.id} value={p.id}>
-                                {p.ruolo} {p.nome} — Q{p.quot} · stip {p.stip}M{soloP ? ` ⚠️ solo prestito (${passaggi}/3 pass.)` : ''}
+                                {p.ruolo} {p.nome} — Q{p.quot} · stip {p.stip}M{passaggi >= 2 ? ` 🔒 limite sessione (${passaggi}/2 pass.)` : passaggi === 1 ? ` ⚠️ ultimo passaggio (1/2)` : ''}
                               </option>
                             );
                           })}
@@ -5111,7 +5110,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                       { l: "QUOT.",       v: `${form.quot}M`,                             c: "#f0f0f0" },
                       { l: "OFFERTA MIN", v: `${prezzoMinimo(form.quot)}M`,               c: "#10b981" },
                       { l: "CLAUSOLA",   v: `${valoreClausola(form.quot)}M`,              c: "#f59e0b" },
-                      { l: "PASS. SESS.", v: `${rosaTarget.find(p=>String(p.id)===String(form.giocatoreId))?.passaggi_sessione||0}/3`, c: (rosaTarget.find(p=>String(p.id)===String(form.giocatoreId))?.passaggi_sessione||0)>=2?"#f59e0b":"#888" },
+                      { l: "PASS. SESS.", v: `${rosaTarget.find(p=>String(p.id)===String(form.giocatoreId))?.passaggi_sessione||0}/2`, c: (rosaTarget.find(p=>String(p.id)===String(form.giocatoreId))?.passaggi_sessione||0)>=2?"#ef4444":(rosaTarget.find(p=>String(p.id)===String(form.giocatoreId))?.passaggi_sessione||0)>=1?"#f59e0b":"#888" },
                     ].map(({ l, v, c }) => (
                       <div key={l} style={{ background: "#ffffff06", borderRadius: 7, padding: "6px 10px" }}>
                         <div style={{ fontSize: 9, color: "#555", letterSpacing: "0.07em" }}>{l}</div>
@@ -5125,7 +5124,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                     <div style={{ fontSize: 10, color: "#666", marginBottom: 6 }}>3. TIPO OPERAZIONE</div>
                     {(() => {
                       const passaggi = Number(rosaTarget.find(p=>String(p.id)===String(form.giocatoreId))?.passaggi_sessione || 0);
-                      const soloP = passaggi >= 2;
+                      const soloP = false; // art. 5.6 aggiornato: nessun tipo forzato
                       const tipi = soloP
                         ? [["prestito_secco","🔄 Prestito Secco"],["prestito_diritto","🔄 c/Diritto"],["prestito_obbligo","🔄 c/Obbligo"]]
                         : [["cessione","💸 Cessione"],["prestito_diritto","🔄 c/Diritto"],["prestito_obbligo","🔄 c/Obbligo"],["prestito_secco","🔄 Prestito Secco"],["clausola","⚡ Clausola"]];
