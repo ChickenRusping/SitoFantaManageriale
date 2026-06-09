@@ -2522,7 +2522,7 @@ export async function rivelaECompletaAsta(astaId) {
       in_vivaio: false, anni_contratto: 1, data_acquisto: oggi,
     });
     await supabase.from('svincolati').delete()
-      .eq('nome', asta.giocatore).eq('stagione', '2025-26');
+      .eq('nome', asta.giocatore);
   }
 
   // Scala bilancio
@@ -2584,7 +2584,7 @@ export async function completaUnicoInteressato(nomeGiocatore) {
       in_vivaio: false, anni_contratto: 1, data_acquisto: oggi,
     });
     await supabase.from('svincolati').delete()
-      .eq('nome', nomeGiocatore).eq('stagione', '2025-26');
+      .eq('nome', nomeGiocatore);
   }
 
   const { data: sq } = await supabase.from('squadre')

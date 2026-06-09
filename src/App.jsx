@@ -5797,34 +5797,50 @@ function formatCountdown(target) {
 function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRefresh, aste }) {
   const [saving, setSaving] = useState(false);
 
-  // Guard: se array vuoto o dati mancanti, non renderizzare
   if (!chiamateGiocatore?.length) return null;
-
   const primaria = chiamateGiocatore.find(c => c.tipo === 'prima') || chiamateGiocatore[0];
   if (!primaria) return null;
 
   const interessati = chiamateGiocatore.map(c => c.squadra);
   const giaInteressato = interessati.includes(mySquadra);
 
-  // scadenza_interesse potrebbe essere null su chiamate vecchie → fallback a +72h
   const scadInt = primaria.scadenza_interesse
     ? new Date(primaria.scadenza_interesse)
     : new Date(new Date(primaria.created_at || Date.now()).getTime() + 72 * 60 * 60 * 1000);
   const scadutaInteresse = new Date() > scadInt;
 
-  const astaAttiva = aste?.find(a => a.giocatore === primaria.giocatore && a.stato === 'raccolta_offerte');
+  const astaAttiva    = aste?.find(a => a.giocatore === primaria.giocatore && a.stato === 'raccolta_offerte');
   const astaAssegnata = aste?.find(a => a.giocatore === primaria.giocatore && a.stato === 'assegnata');
+  const isCandidatoVivaio = primaria.anni <= 23 && primaria.quot <= 3;
 
   async function handleInteresse(perVivaio) {
     setSaving(true);
-    try {
-      await aggiungiInteresse(primaria.giocatore, mySquadra, perVivaio);
-      await onRefresh();
-    } catch(e) { alert(e.message); }
-    finally { setSaving(false); }
+    try { await aggiungiInteresse(primaria.giocatore, mySquadra, perVivaio); await onRefresh(); }
+    catch(e) { alert(e.message); } finally { setSaving(false); }
   }
 
-  const isCandidatoVivaio = primaria.anni <= 23 && primaria.quot <= 3;
+  async function handleAssegnaDiretto() {
+    if (!window.confirm(`Assegnare ${primaria.giocatore} a ${interessati[0]} per ${(primaria.quot * 0.75).toFixed(2)}M (unico interessato)?`)) return;
+    setSaving(true);
+    try { await completaUnicoInteressato(primaria.giocatore); await onRefresh(); }
+    catch(e) { alert(e.message); } finally { setSaving(false); }
+  }
+
+  async function handleCreaAsta() {
+    if (!window.confirm(`Creare asta busta chiusa per ${primaria.giocatore}? (${interessati.length} interessati)`)) return;
+    setSaving(true);
+    try { await creaAstaDaChiamate(primaria.giocatore); await onRefresh(); }
+    catch(e) { alert(e.message); } finally { setSaving(false); }
+  }
+
+  async function handleCancellaChiamata() {
+    if (!window.confirm(`Cancellare tutte le chiamate per ${primaria.giocatore}?`)) return;
+    setSaving(true);
+    try {
+      await supabase.from('chiamate').update({ stato: 'conclusa' }).eq('giocatore', primaria.giocatore);
+      await onRefresh();
+    } catch(e) { alert(e.message); } finally { setSaving(false); }
+  }
 
   return (
     <div style={{ background: astaAttiva ? "#6366f110" : "#f59e0b08", border: `1.5px solid ${astaAttiva ? "#6366f135" : "#f59e0b25"}`, borderRadius: 14, padding: 14 }}>
@@ -5866,7 +5882,8 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
 
         {/* Azioni */}
         <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
-          {!astaAttiva && !astaAssegnata && !giaInteressato && !scadutaInteresse && mySquadra && (
+          {/* Azioni presidente */}
+          {!astaAttiva && !astaAssegnata && !giaInteressato && !scadutaInteresse && mySquadra && !isAdmin && (
             <div style={{ display: "flex", gap: 6 }}>
               <button onClick={() => handleInteresse(false)} disabled={saving}
                 style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "#f59e0b", color: "#000", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
@@ -5880,8 +5897,34 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
               )}
             </div>
           )}
-          {giaInteressato && !astaAttiva && !astaAssegnata && (
+          {giaInteressato && !astaAttiva && !astaAssegnata && !isAdmin && (
             <span style={{ fontSize: 10, color: "#10b981", fontWeight: 600 }}>✅ Sei interessato</span>
+          )}
+          {/* Azioni admin */}
+          {isAdmin && !astaAttiva && !astaAssegnata && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
+              {scadutaInteresse ? (
+                <>
+                  {interessati.length === 1 ? (
+                    <button onClick={handleAssegnaDiretto} disabled={saving}
+                      style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "#10b981", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      {saving ? "..." : `✓ Assegna a ${interessati[0]} (¾Q)`}
+                    </button>
+                  ) : (
+                    <button onClick={handleCreaAsta} disabled={saving}
+                      style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "#6366f1", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      {saving ? "..." : `🏷️ Crea Asta (${interessati.length} interessati)`}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <span style={{ fontSize: 10, color: "#555" }}>In attesa scadenza interesse</span>
+              )}
+              <button onClick={handleCancellaChiamata} disabled={saving}
+                style={{ padding: "3px 8px", borderRadius: 6, border: "1px solid #ef444430", background: "transparent", color: "#ef4444", fontSize: 10, cursor: "pointer" }}>
+                🗑 Cancella
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -6267,6 +6310,69 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
             } catch(e) {
               return <div key={i} style={{ fontSize: 11, color: "#ef4444", padding: 8 }}>Errore card: {e.message}</div>;
             }
+          })}
+        </div>
+      )}
+
+      {/* ── ASTE IN CORSO (busta chiusa) ── */}
+      {asteAttive.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#6366f1", letterSpacing: "0.08em" }}>
+            🏷️ ASTE IN CORSO — OFFERTE BUSTA CHIUSA ({asteAttive.length})
+          </div>
+          {asteAttive.map(asta => {
+            const scaduta = asta.scadenza ? new Date() > new Date(asta.scadenza) : false;
+            const interessatiAsta = chiamate.filter(c => c.giocatore === asta.giocatore && c.stato === 'in_asta');
+            const giaInteressato = interessatiAsta.some(c => c.squadra === mySquadra);
+            return (
+              <div key={asta.id} style={{ background: scaduta ? "#ef444408" : "#6366f108", border: `1.5px solid ${scaduta ? "#ef444430" : "#6366f130"}`, borderRadius: 14, padding: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: "#f0f0f0" }}>{asta.giocatore}</div>
+                    <div style={{ fontSize: 11, color: "#888" }}>{asta.ruolo} · {asta.anni}aa · Q{asta.quot} · base ¾Q = {(asta.quot * 0.75).toFixed(2)}M</div>
+                    <div style={{ fontSize: 10, color: scaduta ? "#ef4444" : "#818cf8", marginTop: 4 }}>
+                      {scaduta ? "⏰ Scadenza offerte passata" : `⏳ Offerte entro: ${new Date(asta.scadenza).toLocaleString("it-IT", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })} (${formatCountdown(asta.scadenza)})`}
+                    </div>
+                    <div style={{ fontSize: 10, color: "#555", marginTop: 2 }}>
+                      Interessati: {interessatiAsta.map(c => c.squadra).join(", ") || "—"}
+                    </div>
+                  </div>
+                  {/* Admin: rivela o cancella */}
+                  {isAdmin && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm(`Rivelare le offerte e assegnare ${asta.giocatore}?`)) return;
+                          try { await rivelaAsta(asta.id); await loadAll(); }
+                          catch(e) { alert(e.message); }
+                        }}
+                        style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: scaduta ? "#10b981" : "#6366f1", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                        🏁 Rivela e Assegna
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm(`Annullare l'asta per ${asta.giocatore}? Le chiamate saranno riaperte.`)) return;
+                          try {
+                            await updateAstaSvincolati(asta.id, { stato: 'annullata' });
+                            await supabase.from('chiamate').update({ stato: 'aperta', asta_id: null }).eq('giocatore', asta.giocatore).eq('stato', 'in_asta');
+                            await loadAll();
+                          } catch(e) { alert(e.message); }
+                        }}
+                        style={{ padding: "3px 8px", borderRadius: 6, border: "1px solid #ef444430", background: "transparent", color: "#ef4444", fontSize: 10, cursor: "pointer" }}>
+                        🗑 Annulla asta
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {/* Form offerta presidente interessato */}
+                {giaInteressato && !scaduta && (
+                  <OffertaInlineForm asta={asta} squadra={mySquadra} onRefresh={loadAll} />
+                )}
+                {giaInteressato && scaduta && (
+                  <div style={{ fontSize: 11, color: "#555", fontStyle: "italic", marginTop: 6 }}>Offerte chiuse — in attesa di rivelazione</div>
+                )}
+              </div>
+            );
           })}
         </div>
       )}
