@@ -1929,7 +1929,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                   <div style={{ fontSize:9,color:"#555",marginTop:2 }}>{opt.desc}</div>
                 </button>
               ))}
-              <button onClick={()=>{setPopup(null);navigate(`/mercato?player=${encodeURIComponent(popup.player.nome)}&squadra=${encodeURIComponent(team.name)}&tipo=${offerMode}`);}}
+              <button onClick={()=>{setPopup(null);navigate(`/mercato?player=${encodeURIComponent(popup.player.nome)}&squadra=${encodeURIComponent(team.name)}&tipo=${offerMode}&quot=${popup.player.quot}`);}}
                 style={{ padding:"9px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#6366f1,#a855f7)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer" }}>
                 → Vai a Mercato
               </button>
@@ -4690,6 +4690,7 @@ const URGENZA_COLORS_MERCATO = {
 };
 
 function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMercato }) {
+  const location = useLocation();
   const [tab, setTab] = useState("trattative");
   const [mercatoSection, setMercatoSection] = useState("mercato");
   const [trattative, setTrattative] = useState([]);
@@ -4775,6 +4776,40 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     checkPenalita();
     return () => clearInterval(interval);
   }, [trattative, mySquadra]);
+
+  // ── Pre-fill form da URL params (es. da popup Rosa di un'altra squadra) ─────
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const playerName = params.get('player');
+    const squadra    = params.get('squadra');
+    const tipo       = params.get('tipo') || 'cessione';
+    const quotParam  = parseFloat(params.get('quot') || 0);
+    if (!playerName || !squadra) return;
+
+    setShowForm(true);
+    setLoadingRosa(true);
+    getRosa(squadra).then(data => {
+      const rosa = (data || []).filter(p => !p.in_vivaio);
+      setRosaTarget(rosa);
+      const player = rosa.find(p => p.nome.toLowerCase() === playerName.toLowerCase());
+      const quot = player?.quot || quotParam;
+      const tipoNorm = tipo === 'prestito' ? 'prestito_diritto' : tipo;
+      const prezzoDefault = tipoNorm === 'clausola'
+        ? parseFloat((quot * 1.75).toFixed(2))
+        : parseFloat((quot / 2).toFixed(2));
+      setForm(f => ({
+        ...f,
+        squadraTarget: squadra,
+        giocatoreId:   player ? String(player.id) : '',
+        giocatoreNome: player ? player.nome : playerName,
+        quot,
+        tipo:          tipoNorm,
+        prezzo:        String(prezzoDefault),
+      }));
+      setLoadingRosa(false);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
 
   // ── Carica rosa quando si sceglie la squadra target ───────────────────────
   async function onSquadraTargetChange(squadraNome) {
