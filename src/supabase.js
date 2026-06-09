@@ -2539,10 +2539,8 @@ export async function rivelaECompletaAsta(astaId) {
     uscita: prezzoFinale, data: oggi,
   });
 
-  // Chiudi chiamate
-  await supabase.from('chiamate')
-    .update({ stato: 'conclusa' })
-    .eq('giocatore', asta.giocatore);
+  // Elimina chiamate del giocatore
+  await supabase.from('chiamate').delete().eq('giocatore', asta.giocatore);
 
   // Chiudi asta
   await updateAstaSvincolati(astaId, {
@@ -2599,9 +2597,7 @@ export async function completaUnicoInteressato(nomeGiocatore) {
     uscita: prezzoFinale, data: oggi,
   });
 
-  await supabase.from('chiamate')
-    .update({ stato: 'conclusa' })
-    .eq('giocatore', nomeGiocatore);
+  await supabase.from('chiamate').delete().eq('giocatore', nomeGiocatore);
 
   return { vincitore, prezzoFinale };
 }
