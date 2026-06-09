@@ -1202,6 +1202,123 @@ export async function applicaTassaSettimana(squadra, bilancioCorrente) {
   return { ok: true, importo, nuovoBilancio };
 }
 
+// ─── PAGAMENTI AUTOMATICI ─────────────────────────────────────────────────────
+// Replicato da App.jsx per uso server-side
+function _calcolaStipCorretto(quot, anniContratto, anni) {
+  const base = parseFloat((Number(quot || 0) / 5).toFixed(2));
+  const isU21 = anni > 0 && anni <= 21;
+  const ac = anniContratto || 0;
+  if (isU21 || ac <= 1) return base;
+  if (ac === 2) return parseFloat((base * 1.1).toFixed(2));
+  if (ac === 3) return parseFloat((base * 1.2).toFixed(2));
+  return parseFloat((base * 0.9).toFixed(2));
+}
+
+// Restituisce la data del lunedì della settimana corrente (YYYY-MM-DD)
+function getLunediCorrente() {
+  const d = new Date();
+  const giorno = d.getDay(); // 0=dom, 1=lun, ..., 6=sab
+  const diff = giorno === 0 ? -6 : 1 - giorno; // giorni da sottrarre per arrivare a lunedì
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().slice(0, 10);
+}
+
+// Restituisce il primo giorno del mese corrente (YYYY-MM-DD)
+function getPrimoDiMese() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+}
+
+export async function applicaPagamentiAutomatici() {
+  const oggi = new Date();
+  const oggiStr = oggi.toISOString().slice(0, 10);
+  const results = { tasse: [], stipendi: [], errori: [] };
+
+  // Carica tutte le squadre
+  const { data: squadre } = await supabase.from('squadre').select('name, bilancio');
+  if (!squadre?.length) return results;
+
+  // ── 1. TASSA SETTIMANALE (art. 7.1) ──────────────────────────────────────
+  // Applica se oggi è lunedì OPPURE se il lunedì di questa settimana non è ancora stato tassato
+  const lunedi = getLunediCorrente();
+  for (const sq of squadre) {
+    try {
+      // Controlla se la tassa è già stata applicata questa settimana
+      const { data: gia } = await supabase
+        .from('tasse_settimanali')
+        .select('id')
+        .eq('squadra', sq.name)
+        .gte('data_controllo', lunedi)
+        .limit(1);
+      if (gia?.length) continue; // già applicata questa settimana
+
+      // Deve essere almeno lunedì (giorno 1)
+      if (oggi.getDay() === 0) continue; // domenica: non ancora
+
+      const r = await applicaTassaSettimana(sq.name, sq.bilancio);
+      if (r.ok) results.tasse.push({ squadra: sq.name, importo: r.importo });
+    } catch(e) { results.errori.push(`Tassa ${sq.name}: ${e.message}`); }
+  }
+
+  // ── 2. STIPENDI MENSILI (art. 4.4) ───────────────────────────────────────
+  // Applica se oggi è il 1° del mese e gli stipendi non sono ancora stati pagati
+  const primoDiMese = getPrimoDiMese();
+  if (oggiStr === primoDiMese) {
+    for (const sq of squadre) {
+      try {
+        // Controlla se gli stipendi sono già stati pagati questo mese
+        const { data: gia } = await supabase
+          .from('movimenti')
+          .select('id')
+          .eq('squadra', sq.name)
+          .ilike('descrizione', 'Pagamento stipendi%')
+          .gte('data', primoDiMese)
+          .limit(1);
+        if (gia?.length) continue;
+
+        // Calcola totale stipendi dalla rosa attiva
+        const { data: rosa } = await supabase
+          .from('rosa')
+          .select('quot, anni_contratto, anni')
+          .eq('squadra', sq.name)
+          .eq('in_vivaio', false);
+
+        const stipRosa = (rosa || []).reduce(
+          (s, p) => s + _calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0
+        );
+
+        // SC allenatore (5M fissi se carta scelta)
+        const { data: all } = await supabase
+          .from('allenatori_carte')
+          .select('stipendio_sc')
+          .eq('squadra', sq.name)
+          .single()
+          .catch(() => ({ data: null }));
+        const stipAll = Number(all?.stipendio_sc || 0);
+
+        const totalStip = parseFloat((stipRosa + stipAll).toFixed(2));
+        const rata = parseFloat((totalStip / 12).toFixed(2));
+        const nuovoBilancio = parseFloat((sq.bilancio - rata).toFixed(2));
+
+        const mese = oggi.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
+        await supabase.from('movimenti').insert({
+          squadra: sq.name,
+          descrizione: `Pagamento stipendi ${mese}`,
+          uscita: rata, data: oggiStr,
+        });
+        await supabase.from('squadre').update({
+          bilancio: nuovoBilancio,
+          salary_used: totalStip,
+        }).eq('name', sq.name);
+
+        results.stipendi.push({ squadra: sq.name, rata, nuovoBilancio });
+      } catch(e) { results.errori.push(`Stipendi ${sq.name}: ${e.message}`); }
+    }
+  }
+
+  return results;
+}
+
 // ─── BILANCIO NEGATIVO (art. 7.2) ─────────────────────────────────────────────
 
 // Fasce penalità bilancio negativo (art. 7.2) — regolamento aggiornato
