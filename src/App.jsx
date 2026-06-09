@@ -6020,7 +6020,8 @@ function OffertaInlineForm({ asta, squadra, onRefresh, isCaller, dsMasterclass }
       // Decrementa utilizzo
       const nuoviDati = { ...(dsMasterclass.dati || {}), utilizzi_masterclass: utilizziUsati + 1 };
       await updateInvestimento(dsMasterclass.id, { dati: nuoviDati });
-      setOffertaRevelata(maxOfferta);
+      setOffertaRevelata(maxOfferta !== null ? maxOfferta : 0);
+      await onRefresh();
     } catch(e) { alert(e.message); }
     finally { setRevealingSaving(false); }
   }
