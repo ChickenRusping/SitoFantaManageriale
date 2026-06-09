@@ -4651,10 +4651,81 @@ function scadenzaPrestito(mesi) {
   return target.toISOString().slice(0, 10);
 }
 
-// Calcola prezzo a discesa live (art. 5.11)
+// ── Freeze notte 00:00–08:00 (art. 5.11) ─────────────────────────────────────
+// Esempio: offerta alle 23:20 → 40 min attivi fino a 00:00 → freeze → riprende
+// alle 08:00 con 80 min rimasti → asta scade alle 09:20
+const FREEZE_INIZIO = 0;  // 00:00
+const FREEZE_FINE   = 8;  // 08:00
+
+function isInFreeze(ora) { return ora >= FREEZE_INIZIO && ora < FREEZE_FINE; }
+
+// Calcola i minuti "attivi" tra due istanti, escludendo la finestra 00:00-08:00
+function minutiAttiviTrascorsi(startStr, now = new Date()) {
+  let t = new Date(startStr);
+  let attivi = 0;
+  while (t < now) {
+    const ora = t.getHours();
+    if (isInFreeze(ora)) {
+      // Salta direttamente alle 08:00
+      const next08 = new Date(t);
+      next08.setHours(FREEZE_FINE, 0, 0, 0);
+      if (next08 <= t) next08.setDate(next08.getDate() + 1); // già passate le 8
+      t = next08 < now ? next08 : now;
+    } else {
+      // Conta fino alla prossima 00:00 o a now
+      const mezzanotte = new Date(t);
+      mezzanotte.setDate(mezzanotte.getDate() + 1);
+      mezzanotte.setHours(FREEZE_INIZIO, 0, 0, 0);
+      const fine = mezzanotte < now ? mezzanotte : now;
+      attivi += (fine.getTime() - t.getTime()) / 60000;
+      t = fine;
+    }
+  }
+  return Math.max(0, attivi);
+}
+
+// Calcola la scadenza rialzo +2h attivi (esclude 00:00-08:00)
+function calcolaScadenzaRialzoConFreeze(fromTime = new Date()) {
+  let rimasti = 120; // minuti attivi rimanenti
+  let t = new Date(fromTime);
+  while (rimasti > 0) {
+    const ora = t.getHours();
+    if (isInFreeze(ora)) {
+      // Salta alle 08:00
+      const next08 = new Date(t);
+      next08.setHours(FREEZE_FINE, 0, 0, 0);
+      if (next08 <= t) next08.setDate(next08.getDate() + 1);
+      t = next08;
+    } else {
+      // Quanti minuti attivi fino alla prossima mezzanotte?
+      const mezzanotte = new Date(t);
+      mezzanotte.setDate(mezzanotte.getDate() + 1);
+      mezzanotte.setHours(FREEZE_INIZIO, 0, 0, 0);
+      const minutiFinestra = (mezzanotte.getTime() - t.getTime()) / 60000;
+      if (minutiFinestra >= rimasti) {
+        t = new Date(t.getTime() + rimasti * 60000);
+        rimasti = 0;
+      } else {
+        rimasti -= minutiFinestra;
+        t = mezzanotte; // entra nel freeze
+      }
+    }
+  }
+  return t.toISOString();
+}
+
+// Minuti attivi rimasti alla scadenza rialzo (from now to scadenza)
+function minutiRimanentiRialzo(scadenzaStr, now = new Date()) {
+  if (!scadenzaStr) return null;
+  const scadenza = new Date(scadenzaStr);
+  if (scadenza <= now) return 0;
+  return Math.round(minutiAttiviTrascorsi(now.toISOString(), scadenza));
+}
+
+// Calcola prezzo a discesa live — esclude ore notturne (art. 5.11)
 function prezzoDiscesaLive(quotBase, avviataAt) {
-  const minutiPassati = (new Date() - new Date(avviataAt)) / 60000;
-  const riduzioni = Math.floor(minutiPassati / 30);
+  const minutiAttivi = minutiAttiviTrascorsi(avviataAt);
+  const riduzioni = Math.floor(minutiAttivi / 30);
   const prezzo = parseFloat((quotBase - riduzioni * 0.25).toFixed(2));
   const minimo = parseFloat((quotBase / 2).toFixed(2));
   return Math.max(prezzo, minimo);
@@ -5000,7 +5071,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       offerta_attuale: astaForm.tipo_asta === 'rialzo' ? prezzoBase : quot,
       prezzo_corrente: astaForm.tipo_asta === 'discesa' ? quot : null,
       avviata_at: new Date().toISOString(),
-      scadenza_asta: astaForm.tipo_asta === 'rialzo' ? new Date(Date.now() + 2 * 3600 * 1000).toISOString() : null,
+      scadenza_asta: astaForm.tipo_asta === 'rialzo' ? calcolaScadenzaRialzoConFreeze() : null,
       note: astaForm.note,
     });
     setShowAstaForm(false);
@@ -5010,13 +5081,13 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   // ── Offerta su asta a rialzo ───────────────────────────────────────────────
   async function faiOffertaRialzo(asta) {
     const nuova = parseFloat((asta.offerta_attuale + 0.1).toFixed(2));
-    // Controlla orario (21:00-09:00 congelato, art. 5.11)
+    // Controlla orario (00:00-08:00 congelato, art. 5.11)
     const ora = now.getHours();
-    if (ora >= 21 || ora < 9) {
-      alert("Offerte congelate dalle 21:00 alle 09:00 (art. 5.11)");
+    if (isInFreeze(ora)) {
+      alert("Offerte congelate dalle 00:00 alle 08:00 (art. 5.11)");
       return;
     }
-    const nuovaScadenza = new Date(Date.now() + 2 * 3600 * 1000).toISOString();
+    const nuovaScadenza = calcolaScadenzaRialzoConFreeze(); // 2h attivi, freeze 00-08
     await updateAsta(asta.id, {
       offerta_attuale: nuova,
       miglior_offerente: mySquadra,
@@ -5075,7 +5146,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     return h;
   }
 
-  const horaCongelata = now.getHours() >= 21 || now.getHours() < 9;
+  const horaCongelata = isInFreeze(now.getHours()); // 00:00–08:00
 
   const myTrattative = trattative.filter(t => t.da_squadra === mySquadra || t.a_squadra === mySquadra);
   const tutteTrattative = isAdmin ? trattative : myTrattative;
@@ -5164,9 +5235,9 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       </div>
 
       {/* ⚠️ Alert asta congelata */}
-      {horaCongelata && astePending.some(a => a.tipo_asta === 'rialzo') && (
+      {horaCongelata && astePending.length > 0 && (
         <div style={{ background: "#f59e0b0a", border: "1px solid #f59e0b30", borderRadius: 10, padding: "10px 14px", fontSize: 11, color: "#f59e0b" }}>
-          🌙 Offerte aste a rialzo congelate (21:00 – 09:00) — i timer sono sospesi
+          🌙 Aste sospese (00:00 – 08:00) — nessuna offerta, timer e prezzi congelati
         </div>
       )}
 
@@ -5595,8 +5666,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
               const prezzoLive = a.tipo_asta === 'discesa' ? prezzoDiscesaLive(a.quot_giocatore, a.avviata_at) : a.offerta_attuale;
               const isFloor = prezzoLive <= a.quot_giocatore / 2;
               const minRilancio = parseFloat((a.offerta_attuale + 0.1).toFixed(2));
-              const minsPassati = Math.floor((now - new Date(a.avviata_at)) / 60000);
-              const scadFra = a.scadenza_asta ? Math.max(0, Math.round((new Date(a.scadenza_asta) - now) / 60000)) : null;
+              const minsAttiviPassati = Math.floor(minutiAttiviTrascorsi(a.avviata_at, now));
+              const scadFra = a.tipo_asta === 'rialzo' ? minutiRimanentiRialzo(a.scadenza_asta, now) : null;
 
               return (
                 <div key={a.id} style={{ background: "#f59e0b08", border: "1.5px solid #f59e0b25", borderRadius: 16, padding: 18 }}>
@@ -5612,7 +5683,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                       <div style={{ fontSize: 28, fontWeight: 900, color: isFloor ? "#ef4444" : "#f59e0b", fontFamily: "'Bebas Neue',sans-serif", lineHeight: 1 }}>{prezzoLive.toFixed(2)}M</div>
                       <div style={{ fontSize: 10, color: "#555" }}>
                         {a.tipo_asta === 'rialzo' && a.miglior_offerente ? `Miglior offerta: ${a.miglior_offerente}` : ""}
-                        {a.tipo_asta === 'discesa' ? `− ${Math.floor(minsPassati/30) * 0.25}M in ${minsPassati}min` : ""}
+                        {a.tipo_asta === 'discesa' ? `− ${Math.floor(minsAttiviPassati/30) * 0.25}M in ${minsAttiviPassati}min attivi${horaCongelata ? " (⏸ congelato)" : ""}` : ""}
                       </div>
                     </div>
                   </div>
@@ -5640,11 +5711,13 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                     <div style={{ marginBottom: 10 }}>
                       {isFloor
                         ? <div style={{ fontSize: 11, color: "#ef4444", fontWeight: 700 }}>⛔ Asta scaduta — prezzo minimo raggiunto</div>
-                        : a.proprietario !== mySquadra && !isAdmin && (
-                          <button onClick={() => acquistaDiscesa(a)} style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: "#f59e0b", color: "#000", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
-                            🛒 Acquista ora a {prezzoLive.toFixed(2)}M
-                          </button>
-                        )
+                        : horaCongelata
+                          ? <div style={{ fontSize: 11, color: "#555" }}>🌙 Acquisti sospesi (00:00–08:00)</div>
+                          : a.proprietario !== mySquadra && !isAdmin && (
+                            <button onClick={() => acquistaDiscesa(a)} style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: "#f59e0b", color: "#000", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
+                              🛒 Acquista ora a {prezzoLive.toFixed(2)}M
+                            </button>
+                          )
                       }
                     </div>
                   )}
