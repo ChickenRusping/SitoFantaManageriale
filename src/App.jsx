@@ -1939,7 +1939,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
       )}
 
       {/* ── Vivaio ── */}
-      {(vivaio.length>0||isAdmin)&&(
+      {(vivaio.length>0||isAdmin||mySquadra===teamName)&&(
         <div style={{ marginTop:24 }}>
           <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12 }}>
             <div style={{ fontSize:11,fontWeight:700,color:"#10b981",letterSpacing:"0.08em" }}>🌱 VIVAIO</div>

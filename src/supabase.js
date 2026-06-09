@@ -2835,6 +2835,12 @@ export async function aggiornaContrattiAnnuali() {
     const ac = Number(p.anni_contratto || 1);
     const stipAttuale = Number(p.stip || 0);
 
+    // Under-21: anni_contratto non avanza (art. 4.8.1 — nessun aumento contrattuale)
+    if (isU21) {
+      // Nessuna modifica: stip e anni_contratto rimangono invariati finché U21
+      continue;
+    }
+
     // Giocatori in prestito: avanza anni_contratto ma stipendio invariato
     if (p.in_prestito) {
       await supabase.from('rosa').update({ anni_contratto: ac + 1 }).eq('id', p.id);
