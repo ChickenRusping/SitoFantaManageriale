@@ -4716,7 +4716,6 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const [form, setForm] = useState(emptyForm);
   const [rosaTarget, setRosaTarget] = useState([]);
   const [loadingRosa, setLoadingRosa] = useState(false);
-  const [bonusDraft, setBonusDraft] = useState({ tipo_bonus: 'gol_fatti', soglia: '', valore_mln: '', direzione: 'acquirente_paga' });
 
   // Form nuova asta
   const emptyAstaForm = { giocatore: "", quot: "", tipo_asta: "rialzo", note: "" };
@@ -4804,16 +4803,6 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   }
 
   // ── Aggiunge una riga bonus al form ───────────────────────────────────────
-  function aggiungiBonusDraft() {
-    const soglia = Number(bonusDraft.soglia);
-    const valore = Number(bonusDraft.valore_mln);
-    if (!soglia || isNaN(soglia) || soglia <= 0) { alert('Inserisci una soglia valida (numero > 0)'); return; }
-    if (!valore || isNaN(valore) || valore <= 0) { alert('Inserisci un valore valido in milioni (> 0)'); return; }
-    const nuovaRiga = { tipo_bonus: bonusDraft.tipo_bonus, soglia, valore_mln: valore, direzione: bonusDraft.direzione };
-    setForm(f => ({ ...f, bonusRows: [...f.bonusRows, nuovaRiga] }));
-    // Reset solo i campi numerici, mantieni tipo e direzione per aggiunta rapida multipla
-    setBonusDraft(b => ({ ...b, soglia: '', valore_mln: '' }));
-  }
 
   function rimuoviBonusRow(idx) {
     setForm(f => ({ ...f, bonusRows: f.bonusRows.filter((_, i) => i !== idx) }));
@@ -4862,9 +4851,12 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       deadline_risposta: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
     });
 
-    // Inserisci i bonus
+    // Inserisci i bonus (parsa soglia e valore_mln da stringa a numero)
     for (const row of form.bonusRows) {
-      await insertBonusTrattativa({ ...row, trattativa_id: trattativa.id });
+      const soglia = Number(row.soglia);
+      const valore_mln = Number(row.valore_mln);
+      if (!soglia || !valore_mln || soglia <= 0 || valore_mln <= 0) continue; // salta righe incomplete
+      await insertBonusTrattativa({ ...row, soglia, valore_mln, trattativa_id: trattativa.id });
     }
 
     setShowForm(false);
@@ -5326,51 +5318,56 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
                   {/* BONUS */}
                   <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontSize: 10, color: "#666", letterSpacing: "0.08em", marginBottom: 8, fontWeight: 700 }}>4. BONUS (opz.)</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <div style={{ fontSize: 10, color: "#666", letterSpacing: "0.08em", fontWeight: 700 }}>4. BONUS (opz.)</div>
+                      <button type="button"
+                        onClick={() => setForm(f => ({ ...f, bonusRows: [...f.bonusRows, { tipo_bonus: 'gol_fatti', soglia: '', valore_mln: '', direzione: 'acquirente_paga' }] }))}
+                        style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid #6366f144", background: "#6366f118", color: "#818cf8", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                        + Aggiungi bonus
+                      </button>
+                    </div>
 
-                    {/* Righe già aggiunte */}
-                    {form.bonusRows.length > 0 && (
-                      <div style={{ marginBottom: 10, display: "flex", flexDirection: "column", gap: 5 }}>
-                        {form.bonusRows.map((row, idx) => (
-                          <div key={idx} style={{ display: "flex", alignItems: "center", gap: 8, background: "#ffffff08", borderRadius: 8, padding: "6px 12px" }}>
-                            <span style={{ fontSize: 11, color: "#ccc", flex: 1 }}>
-                              {TIPI_BONUS.find(b => b.value === row.tipo_bonus)?.label} ≥{row.soglia} → {row.valore_mln}M
-                              <span style={{ color: row.direzione === 'acquirente_paga' ? "#818cf8" : "#10b981", marginLeft: 6 }}>
-                                ({row.direzione === 'acquirente_paga' ? 'acquirente paga' : 'cedente paga'})
-                              </span>
-                            </span>
-                            <button onClick={() => rimuoviBonusRow(idx)} style={{ padding: "2px 8px", borderRadius: 5, border: "none", background: "#ef444418", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>✕</button>
-                          </div>
-                        ))}
-                      </div>
+                    {form.bonusRows.length === 0 && (
+                      <div style={{ fontSize: 11, color: "#444", fontStyle: "italic", marginBottom: 6 }}>Nessun bonus — clicca "+ Aggiungi bonus" per aggiungerne uno</div>
                     )}
 
-                    {/* Draft nuovo bonus */}
-                    <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1.5fr auto", gap: 6, alignItems: "end" }}>
-                      <div>
-                        <div style={{ fontSize: 9, color: "#555", marginBottom: 3 }}>TIPO</div>
-                        <select style={{ ...sel, fontSize: 11 }} value={bonusDraft.tipo_bonus} onChange={e => setBonusDraft(b => ({ ...b, tipo_bonus: e.target.value }))}>
-                          {TIPI_BONUS.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
-                        </select>
+                    {form.bonusRows.map((row, idx) => (
+                      <div key={idx} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1.5fr auto", gap: 6, alignItems: "end", marginBottom: 6 }}>
+                        <div>
+                          {idx === 0 && <div style={{ fontSize: 9, color: "#555", marginBottom: 3 }}>TIPO</div>}
+                          <select style={{ ...sel, fontSize: 11 }} value={row.tipo_bonus}
+                            onChange={e => setForm(f => ({ ...f, bonusRows: f.bonusRows.map((r, i) => i === idx ? { ...r, tipo_bonus: e.target.value } : r) }))}>
+                            {TIPI_BONUS.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          {idx === 0 && <div style={{ fontSize: 9, color: "#555", marginBottom: 3 }}>SOGLIA ≥</div>}
+                          <input style={{ ...inp, fontSize: 11 }} type="number" min="1" placeholder="es. 10"
+                            value={row.soglia}
+                            onChange={e => setForm(f => ({ ...f, bonusRows: f.bonusRows.map((r, i) => i === idx ? { ...r, soglia: e.target.value } : r) }))} />
+                        </div>
+                        <div>
+                          {idx === 0 && <div style={{ fontSize: 9, color: "#555", marginBottom: 3 }}>MLN</div>}
+                          <input style={{ ...inp, fontSize: 11 }} type="number" step="0.5" min="0.1" placeholder="es. 2"
+                            value={row.valore_mln}
+                            onChange={e => setForm(f => ({ ...f, bonusRows: f.bonusRows.map((r, i) => i === idx ? { ...r, valore_mln: e.target.value } : r) }))} />
+                        </div>
+                        <div>
+                          {idx === 0 && <div style={{ fontSize: 9, color: "#555", marginBottom: 3 }}>CHI PAGA</div>}
+                          <select style={{ ...sel, fontSize: 11 }} value={row.direzione}
+                            onChange={e => setForm(f => ({ ...f, bonusRows: f.bonusRows.map((r, i) => i === idx ? { ...r, direzione: e.target.value } : r) }))}>
+                            <option value="acquirente_paga">Acquirente</option>
+                            <option value="cedente_paga">Cedente</option>
+                          </select>
+                        </div>
+                        <button type="button" onClick={() => rimuoviBonusRow(idx)}
+                          style={{ padding: "8px 10px", borderRadius: 7, border: "none", background: "#ef444418", color: "#ef4444", fontSize: 13, cursor: "pointer", marginTop: idx === 0 ? 15 : 0 }}>✕</button>
                       </div>
-                      <div>
-                        <div style={{ fontSize: 9, color: "#555", marginBottom: 3 }}>SOGLIA</div>
-                        <input style={{ ...inp, fontSize: 11 }} type="number" min="1" placeholder="es. 10" value={bonusDraft.soglia} onChange={e => setBonusDraft(b => ({ ...b, soglia: e.target.value }))} />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 9, color: "#555", marginBottom: 3 }}>MΛN</div>
-                        <input style={{ ...inp, fontSize: 11 }} type="number" step="0.5" min="0.1" placeholder="es. 2" value={bonusDraft.valore_mln} onChange={e => setBonusDraft(b => ({ ...b, valore_mln: e.target.value }))} />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 9, color: "#555", marginBottom: 3 }}>CHI PAGA</div>
-                        <select style={{ ...sel, fontSize: 11 }} value={bonusDraft.direzione} onChange={e => setBonusDraft(b => ({ ...b, direzione: e.target.value }))}>
-                          <option value="acquirente_paga">Acquirente</option>
-                          <option value="cedente_paga">Cedente</option>
-                        </select>
-                      </div>
-                      <button type="button" onClick={aggiungiBonusDraft} style={{ padding: "8px 12px", borderRadius: 8, border: "none", background: "#6366f133", color: "#818cf8", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>+</button>
-                    </div>
-                    <div style={{ fontSize: 9, color: "#555", marginTop: 4 }}>I bonus vengono controllati automaticamente ad ogni aggiornamento del listone</div>
+                    ))}
+
+                    {form.bonusRows.length > 0 && (
+                      <div style={{ fontSize: 9, color: "#555", marginTop: 2 }}>I bonus vengono verificati automaticamente ad ogni aggiornamento del listone</div>
+                    )}
                   </div>
 
                   {!mercato.aperto && (
