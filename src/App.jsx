@@ -4701,6 +4701,18 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     return () => { supabase.removeChannel(s1); supabase.removeChannel(s2); };
   }, [loadAll]);
 
+  // ── Polling auto-close aste rialzo scadute (ogni minuto) ─────────────────
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const scadute = aste.filter(a =>
+        a.tipo_asta === 'rialzo' && a.stato === 'attiva' &&
+        a.scadenza_asta && new Date(a.scadenza_asta) <= new Date()
+      );
+      if (scadute.length > 0) loadAll(); // refresh UI so admin sees "Chiudi asta" button
+    }, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [aste, loadAll]);
+
   // ── Polling penalità automatiche (ogni 5 min) ─────────────────────────────
   useEffect(() => {
     if (typeof applicaPenalitaRitardoAuto !== 'function') return;
@@ -4816,23 +4828,48 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
   async function eseguiAccettazione(t) {
     const mercatoAperto = getMercatoStatus().aperto;
-    const msg = t.fuori_mercato || !mercatoAperto
-      ? `Confermi di accettare? Il trasferimento di ${t.giocatore} sarà registrato come "differito".`
+    const isDifferito = t.fuori_mercato || !mercatoAperto;
+    const msg = isDifferito
+      ? `Confermi di accettare?\n\nIl trasferimento di ${t.giocatore} sarà IN ATTESA fino all'apertura del mercato (art. 5.1.1).\nGiocatore e soldi si muoveranno il 1° giorno di mercato disponibile.`
       : `Confermi il trasferimento di ${t.giocatore} per ${t.prezzo}M?`;
     if (!window.confirm(msg)) return;
     setLoading(true);
     try {
-      // checkEAggiornaPassaggi è già chiamato dentro eseguiTrasferimento — non chiamare due volte
-      await eseguiTrasferimento(t);
-      await aggiornaFantaSquadraListone(t.giocatore, t.a_squadra);
-      await aggiornaStipendioDopoTrasferimento(t.giocatore, t.a_squadra);
-      await logAzione({ utente: 'admin', squadra: t.da_squadra, azione: 'trasferimento', entita: 'trattative', entitaId: t.id, descrizione: `Trasferimento: ${t.giocatore} da ${t.da_squadra} a ${t.a_squadra} — ${t.prezzo}M (${t.tipo})`, dataPrima: { trattativa: t }, rollbackPossibile: false });
+      if (isDifferito) {
+        // Trasferimento differito: aggiorna solo lo stato, non muovere il giocatore
+        await updateTrattativa(t.id, { stato: 'accettata_differita', updated_at: new Date().toISOString() });
+      } else {
+        await eseguiTrasferimento(t);
+        await aggiornaFantaSquadraListone(t.giocatore, t.a_squadra);
+        await aggiornaStipendioDopoTrasferimento(t.giocatore, t.a_squadra);
+        await logAzione({ utente: 'admin', squadra: t.da_squadra, azione: 'trasferimento', entita: 'trattative', entitaId: t.id, descrizione: `Trasferimento: ${t.giocatore} da ${t.da_squadra} a ${t.a_squadra} — ${t.prezzo}M (${t.tipo})`, dataPrima: { trattativa: t }, rollbackPossibile: false });
+      }
     } catch (e) {
-      alert(`Errore durante il trasferimento: ${e.message}`);
+      alert(`Errore: ${e.message}`);
     } finally {
       setLoading(false);
       await loadAll();
     }
+  }
+
+  // Esegue tutti i trasferimenti differiti (da chiamare all'apertura del mercato)
+  async function eseguiTrasferimentiDifferiti() {
+    const differiti = trattative.filter(t => t.stato === 'accettata_differita');
+    if (!differiti.length) { alert("Nessun trasferimento differito in attesa."); return; }
+    if (!window.confirm(`Eseguire ${differiti.length} trasferiment${differiti.length > 1 ? 'i' : 'o'} differit${differiti.length > 1 ? 'i' : 'o'}?\n\n${differiti.map(t => `${t.giocatore}: ${t.da_squadra} → ${t.a_squadra} (${t.prezzo}M)`).join('\n')}`)) return;
+    setLoading(true);
+    let ok = 0, err = [];
+    for (const t of differiti) {
+      try {
+        await eseguiTrasferimento(t);
+        await aggiornaFantaSquadraListone(t.giocatore, t.a_squadra);
+        await aggiornaStipendioDopoTrasferimento(t.giocatore, t.a_squadra);
+        ok++;
+      } catch(e) { err.push(`${t.giocatore}: ${e.message}`); }
+    }
+    setLoading(false);
+    await loadAll();
+    alert(`✅ ${ok} trasferimenti eseguiti${err.length ? `\n\n❌ Errori:\n${err.join('\n')}` : ''}`);
   }
 
   async function rispondi(t, azione) {
@@ -4914,11 +4951,36 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   // ── Acquisto asta a discesa ────────────────────────────────────────────────
   async function acquistaDiscesa(asta) {
     const prezzoAcquisto = prezzoDiscesaLive(asta.quot_giocatore, asta.avviata_at);
-    await updateAsta(asta.id, {
-      stato: 'aggiudicata',
-      vincitore: mySquadra,
-      prezzo_finale: prezzoAcquisto,
-    });
+    if (!window.confirm(`Acquistare ${asta.giocatore} per ${prezzoAcquisto.toFixed(2)}M?`)) return;
+    setLoading(true);
+    try {
+      await updateAsta(asta.id, { stato: 'aggiudicata', vincitore: mySquadra, prezzo_finale: prezzoAcquisto });
+      // Esegui il trasferimento fisico
+      await eseguiTrasferimento({ da_squadra: asta.da_squadra, a_squadra: mySquadra, giocatore: asta.giocatore, prezzo: prezzoAcquisto, tipo: 'cessione', quot_giocatore: asta.quot_giocatore, fuori_mercato: false, id: asta.id });
+      await aggiornaFantaSquadraListone(asta.giocatore, mySquadra);
+      await aggiornaStipendioDopoTrasferimento(asta.giocatore, mySquadra);
+      await loadAll();
+    } catch(e) { alert(`Errore: ${e.message}`); }
+    finally { setLoading(false); }
+  }
+
+  // ── Chiusura asta a rialzo (admin o auto quando scadenza < now) ─────────────
+  async function chiudiAstaRialzo(asta) {
+    if (!asta.miglior_offerente) {
+      if (!window.confirm(`Nessuna offerta per ${asta.giocatore}. Chiudere l'asta senza vincitore?`)) return;
+      await updateAsta(asta.id, { stato: 'scaduta' });
+      await loadAll(); return;
+    }
+    if (!window.confirm(`Aggiudicare ${asta.giocatore} a ${asta.miglior_offerente} per ${asta.offerta_attuale.toFixed(2)}M?`)) return;
+    setLoading(true);
+    try {
+      await updateAsta(asta.id, { stato: 'aggiudicata', vincitore: asta.miglior_offerente, prezzo_finale: asta.offerta_attuale });
+      await eseguiTrasferimento({ da_squadra: asta.da_squadra, a_squadra: asta.miglior_offerente, giocatore: asta.giocatore, prezzo: asta.offerta_attuale, tipo: 'cessione', quot_giocatore: asta.quot_giocatore, fuori_mercato: false, id: asta.id });
+      await aggiornaFantaSquadraListone(asta.giocatore, asta.miglior_offerente);
+      await aggiornaStipendioDopoTrasferimento(asta.giocatore, asta.miglior_offerente);
+      await loadAll();
+    } catch(e) { alert(`Errore: ${e.message}`); }
+    finally { setLoading(false); }
   }
 
   // ── Helpers display ───────────────────────────────────────────────────────
@@ -4928,7 +4990,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     clausola: "⚡ Clausola Rescissoria", scambio: "🔀 Scambio",
   };
 
-  const statoColor = { "in attesa": "#f59e0b", accettata: "#10b981", rifiutata: "#ef4444", completata: "#6366f1", scaduta: "#555", fuori_mercato: "#f97316", controproposta: "#818cf8" };
+  const statoColor = { "in attesa": "#f59e0b", accettata: "#10b981", rifiutata: "#ef4444", completata: "#6366f1", scaduta: "#555", fuori_mercato: "#f97316", controproposta: "#818cf8", accettata_differita: "#f97316" };
 
   // Scadenza risposta (24h)
   function hoursLeft(deadline) {
@@ -5044,6 +5106,33 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       {/* ══ TAB: TRATTATIVE ══ */}
       {tab === "trattative" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+          {/* Banner trasferimenti differiti */}
+          {(() => { const differiti = tutteTrattative.filter(t => t.stato === 'accettata_differita'); return differiti.length > 0 && (
+            <div style={{ background: "#f9731610", border: "1.5px solid #f9731633", borderRadius: 12, padding: "12px 16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#f97316" }}>📦 TRASFERIMENTI DIFFERITI ({differiti.length}) — in attesa apertura mercato</div>
+                {isAdmin && getMercatoStatus().aperto && (
+                  <button onClick={eseguiTrasferimentiDifferiti} disabled={loading}
+                    style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "#f97316", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                    ▶ Esegui tutti ora
+                  </button>
+                )}
+              </div>
+              {differiti.map(t => (
+                <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", borderTop: "1px solid #ffffff08", flexWrap: "wrap", gap: 6 }}>
+                  <span style={{ fontSize: 12, color: "#ddd" }}>{t.giocatore} · {t.da_squadra} → {t.a_squadra} · {t.prezzo}M</span>
+                  {isAdmin && getMercatoStatus().aperto && (
+                    <button onClick={async () => { setLoading(true); try { await eseguiTrasferimento(t); await aggiornaFantaSquadraListone(t.giocatore, t.a_squadra); await aggiornaStipendioDopoTrasferimento(t.giocatore, t.a_squadra); await loadAll(); } catch(e){alert(e.message);} finally{setLoading(false);} }}
+                      style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "#f9731622", color: "#f97316", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                      ▶ Esegui
+                    </button>
+                  )}
+                </div>
+              ))}
+              {!getMercatoStatus().aperto && <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>Il bottone "Esegui" appare automaticamente all'apertura del mercato.</div>}
+            </div>
+          ); })()}
 
           <button onClick={() => setShowForm(v => !v)} style={{ alignSelf: "flex-start", padding: "9px 18px", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#6366f1,#a855f7)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             {showForm ? "✕ Annulla" : "+ Nuova trattativa"}
@@ -5456,12 +5545,20 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
                   {a.tipo_asta === 'rialzo' && (
                     <div style={{ marginBottom: 10 }}>
-                      {scadFra !== null && <div style={{ fontSize: 11, color: scadFra < 30 ? "#ef4444" : "#888", marginBottom: 6 }}>⏱ Scade in {scadFra < 60 ? `${scadFra} min` : `${Math.floor(scadFra/60)}h ${scadFra%60}min`}{horaCongelata ? " (CONGELATO)" : ""}</div>}
-                      {a.proprietario !== mySquadra && !isAdmin && !horaCongelata && (
-                        <button onClick={() => faiOffertaRialzo(a)} style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: "#f59e0b", color: "#000", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
-                          📈 Offri {minRilancio}M
-                        </button>
-                      )}
+                      {scadFra !== null && <div style={{ fontSize: 11, color: scadFra === 0 ? "#ef4444" : scadFra < 30 ? "#f97316" : "#888", marginBottom: 6 }}>⏱ {scadFra === 0 ? "⏰ SCADUTA — in attesa di chiusura" : `Scade in ${scadFra < 60 ? `${scadFra} min` : `${Math.floor(scadFra/60)}h ${scadFra%60}min`}`}{horaCongelata ? " (CONGELATO)" : ""}</div>}
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {a.proprietario !== mySquadra && !isAdmin && !horaCongelata && scadFra !== 0 && (
+                          <button onClick={() => faiOffertaRialzo(a)} style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: "#f59e0b", color: "#000", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
+                            📈 Offri {minRilancio}M
+                          </button>
+                        )}
+                        {isAdmin && (scadFra === 0 || scadFra === null) && (
+                          <button onClick={() => chiudiAstaRialzo(a)} disabled={loading}
+                            style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: "#10b981", color: "#fff", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
+                            🏁 Chiudi asta e assegna
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
 
