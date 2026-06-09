@@ -148,7 +148,7 @@ async function cachedFetch(key, fetcher, ttl = 90000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, applicaPagamentiAutomatici, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, applicaPagamentiAutomatici, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento,
   getBonusTrattativa, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -5794,7 +5794,7 @@ function formatCountdown(target) {
 }
 
 // ── Componente: card giocatore chiamato ───────────────────────────────────────
-function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRefresh, aste }) {
+function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRefresh, aste, dsMasterclass }) {
   const [saving, setSaving] = useState(false);
 
   if (!chiamateGiocatore?.length) return null;
@@ -5812,6 +5812,7 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
   const astaAttiva    = aste?.find(a => a.giocatore === primaria.giocatore && a.stato === 'raccolta_offerte');
   const astaAssegnata = aste?.find(a => a.giocatore === primaria.giocatore && a.stato === 'assegnata');
   const isCandidatoVivaio = primaria.anni <= 23 && primaria.quot <= 3;
+  const isCaller = primaria.squadra === mySquadra;
 
   async function handleInteresse(perVivaio) {
     setSaving(true);
@@ -5939,19 +5940,22 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
       </div>
 
       {/* Form offerta se asta attiva */}
-      {astaAttiva && giaInteressato && (
-        <OffertaInlineForm asta={astaAttiva} squadra={mySquadra} onRefresh={onRefresh} />
+      {astaAttiva && giaInteressato && mySquadra && (
+        <OffertaInlineForm asta={astaAttiva} squadra={mySquadra} onRefresh={onRefresh}
+          isCaller={isCaller} dsMasterclass={dsMasterclass} />
       )}
     </div>
   );
 }
 
 // ── Form offerta busta chiusa ─────────────────────────────────────────────────
-function OffertaInlineForm({ asta, squadra, onRefresh }) {
+function OffertaInlineForm({ asta, squadra, onRefresh, isCaller, dsMasterclass }) {
   const [offerta, setOfferta] = useState([]);
   const [importo, setImporto] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [offertaRevelata, setOffertaRevelata] = useState(null);
+  const [revealingSaving, setRevealingSaving] = useState(false);
 
   useEffect(() => {
     if (!asta?.id) { setLoading(false); return; }
@@ -5970,6 +5974,10 @@ function OffertaInlineForm({ asta, squadra, onRefresh }) {
   const miaOffertaInviata = offerta.find(o => o.squadra === squadra);
   const scaduta = asta.scadenza ? new Date() > new Date(asta.scadenza) : false;
 
+  const utilizziUsati = dsMasterclass?.dati?.utilizzi_masterclass || 0;
+  const utilizziRimasti = 2 - utilizziUsati;
+  const puoUsareMasterclass = isCaller && dsMasterclass && utilizziRimasti > 0 && !offertaRevelata;
+
   async function invia() {
     const val = parseFloat(importo);
     if (!val || val < minOfferta) { alert(`Min ${minOfferta}M`); return; }
@@ -5983,24 +5991,61 @@ function OffertaInlineForm({ asta, squadra, onRefresh }) {
     finally { setSaving(false); }
   }
 
+  async function usaMasterclass() {
+    if (!window.confirm(`Usare 1 utilizzo del DS Masterclass per vedere l'offerta più alta? Rimangono ${utilizziRimasti} utilizzi su 2.`)) return;
+    setRevealingSaving(true);
+    try {
+      const offs = await getOfferteAsta(asta.id);
+      const offerteAvversari = offs.filter(o => o.squadra !== squadra && !o.assente);
+      const maxOfferta = offerteAvversari.length
+        ? Math.max(...offerteAvversari.map(o => Number(o.importo)))
+        : null;
+      // Decrementa utilizzo
+      const nuoviDati = { ...(dsMasterclass.dati || {}), utilizzi_masterclass: utilizziUsati + 1 };
+      await updateInvestimento(dsMasterclass.id, { dati: nuoviDati });
+      setOffertaRevelata(maxOfferta);
+    } catch(e) { alert(e.message); }
+    finally { setRevealingSaving(false); }
+  }
+
   if (loading) return null;
   if (scaduta) return <div style={{ fontSize: 11, color: "#555", marginTop: 8 }}>Asta scaduta — elaborazione in corso...</div>;
 
   return (
-    <div style={{ marginTop: 10, background: "#6366f108", borderRadius: 9, padding: "10px 12px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-      <span style={{ fontSize: 11, color: "#818cf8", fontWeight: 700 }}>🔒 Offerta segreta:</span>
-      <input type="number" step="0.25" min={minOfferta} value={importo}
-        onChange={e => setImporto(e.target.value)} placeholder={`min ${minOfferta}M`}
-        style={{ width: 90, padding: "4px 8px", borderRadius: 6, border: "1px solid #6366f130", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }} />
-      <span style={{ fontSize: 10, color: "#555" }}>M</span>
-      <button onClick={invia} disabled={saving}
-        style={{ padding: "4px 14px", borderRadius: 7, border: "none", background: "#6366f1", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-        {saving ? "..." : miaOffertaInviata ? "↻ Aggiorna" : "📨 Invia"}
-      </button>
-      {miaOffertaInviata && !miaOffertaInviata.assente && (
-        <span style={{ fontSize: 10, color: "#10b981" }}>✅ {Number(miaOffertaInviata.importo).toFixed(2)}M inviata</span>
+    <div style={{ marginTop: 10, background: "#6366f108", borderRadius: 9, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <span style={{ fontSize: 11, color: "#818cf8", fontWeight: 700 }}>🔒 Offerta segreta:</span>
+        <input type="number" step="0.25" min={minOfferta} value={importo}
+          onChange={e => setImporto(e.target.value)} placeholder={`min ${minOfferta}M`}
+          style={{ width: 90, padding: "4px 8px", borderRadius: 6, border: "1px solid #6366f130", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }} />
+        <span style={{ fontSize: 10, color: "#555" }}>M</span>
+        <button onClick={invia} disabled={saving}
+          style={{ padding: "4px 14px", borderRadius: 7, border: "none", background: "#6366f1", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+          {saving ? "..." : miaOffertaInviata ? "↻ Aggiorna" : "📨 Invia"}
+        </button>
+        {miaOffertaInviata && !miaOffertaInviata.assente && (
+          <span style={{ fontSize: 10, color: "#10b981" }}>✅ {Number(miaOffertaInviata.importo).toFixed(2)}M inviata</span>
+        )}
+        <span style={{ fontSize: 9, color: "#444" }}>Le altre offerte sono nascoste · max = tuo bilancio</span>
+      </div>
+
+      {/* DS Masterclass */}
+      {isCaller && dsMasterclass && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          {offertaRevelata !== null ? (
+            <span style={{ fontSize: 11, background: "#f59e0b18", color: "#f59e0b", border: "1px solid #f59e0b30", borderRadius: 7, padding: "4px 10px", fontWeight: 700 }}>
+              🔍 DS Masterclass: offerta più alta avversari = {offertaRevelata > 0 ? <b>{offertaRevelata.toFixed(2)}M</b> : "nessuna offerta"}
+            </span>
+          ) : puoUsareMasterclass ? (
+            <button onClick={usaMasterclass} disabled={revealingSaving}
+              style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid #f59e0b40", background: "#f59e0b12", color: "#f59e0b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+              {revealingSaving ? "..." : `🔍 DS Masterclass (${utilizziRimasti}/2 rimasti)`}
+            </button>
+          ) : utilizziRimasti <= 0 ? (
+            <span style={{ fontSize: 10, color: "#555" }}>🔍 DS Masterclass esaurito (0/2 rimasti)</span>
+          ) : null}
+        </div>
       )}
-      <span style={{ fontSize: 9, color: "#444" }}>Le altre offerte sono nascoste · max = tuo bilancio</span>
     </div>
   );
 }
@@ -6136,6 +6181,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
   const [showCallForm, setShowCallForm] = useState(null);
   const [callTeam, setCallTeam]       = useState(profile?.squadra || TEAMS[0].name);
   const [callVivaio, setCallVivaio]   = useState(false);
+  const [investimenti, setInvestimenti] = useState([]);
   const [editSvincolato, setEditSvincolato] = useState(null);
   const [importando, setImportando]   = useState(false);
   const [now, setNow]                 = useState(new Date());
@@ -6148,14 +6194,16 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
   }, []);
 
   const loadAll = useCallback(async () => {
-    const [chiamateData, svincolatiData, asteData] = await Promise.all([
-      getChiamate(), getSvincolatiDB(), getAsteSvincolati()
+    const [chiamateData, svincolatiData, asteData, invData] = await Promise.all([
+      getChiamate(), getSvincolatiDB(), getAsteSvincolati(),
+      mySquadra ? getInvestimenti(mySquadra) : Promise.resolve([]),
     ]);
     if (chiamateData) setChiamate(chiamateData);
     if (svincolatiData) setSvincolatiDB(svincolatiData);
     setAste(asteData);
+    setInvestimenti(invData || []);
     setLoading(false);
-  }, []);
+  }, [mySquadra]);
 
   useEffect(() => {
     loadAll();
@@ -6282,6 +6330,8 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
   const asteConcluse = aste.filter(a => a.stato === 'assegnata');
   const asteAttive   = aste.filter(a => a.stato === 'raccolta_offerte');
 
+  const dsMasterclass = investimenti.find(i => i.nome === 'DS Masterclass');
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
@@ -6314,6 +6364,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
                   onInteresse={() => {}}
                   onRefresh={loadAll}
                   aste={aste}
+                  dsMasterclass={dsMasterclass}
                 />
               );
             } catch(e) {
@@ -6333,6 +6384,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
             const scaduta = asta.scadenza ? new Date() > new Date(asta.scadenza) : false;
             const interessatiAsta = chiamate.filter(c => c.giocatore === asta.giocatore && c.stato === 'in_asta');
             const giaInteressato = interessatiAsta.some(c => c.squadra === mySquadra);
+            const isPrimoChiamante = interessatiAsta.some(c => c.squadra === mySquadra && c.tipo === 'prima');
             return (
               <div key={asta.id} style={{ background: scaduta ? "#ef444408" : "#6366f108", border: `1.5px solid ${scaduta ? "#ef444430" : "#6366f130"}`, borderRadius: 14, padding: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
@@ -6375,7 +6427,8 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
                 </div>
                 {/* Form offerta presidente interessato */}
                 {giaInteressato && !scaduta && (
-                  <OffertaInlineForm asta={asta} squadra={mySquadra} onRefresh={loadAll} />
+                  <OffertaInlineForm asta={asta} squadra={mySquadra} onRefresh={loadAll}
+                    isCaller={isPrimoChiamante} dsMasterclass={dsMasterclass} />
                 )}
                 {giaInteressato && scaduta && (
                   <div style={{ fontSize: 11, color: "#555", fontStyle: "italic", marginTop: 6 }}>Offerte chiuse — in attesa di rivelazione</div>
@@ -6470,13 +6523,21 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
                   </select>
                 : <span style={{ fontSize: 13, color: "#f59e0b", fontWeight: 700 }}>{mySquadra}</span>}
             </div>
-            {/* Vivaio checkbox */}
+            {/* Destinazione: Rosa o Vivaio */}
             {showCallForm.isVivaio && (
-              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12, color: "#10b981", background: "#10b98110", borderRadius: 8, padding: "8px 12px" }}>
-                <input type="checkbox" checked={callVivaio} onChange={e => setCallVivaio(e.target.checked)}
-                  style={{ width: 16, height: 16, accentColor: "#10b981" }} />
-                🌱 Acquisto per il <b>Vivaio</b>
-              </label>
+              <div>
+                <div style={{ fontSize: 10, color: "#555", marginBottom: 6 }}>DESTINAZIONE</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => setCallVivaio(false)}
+                    style={{ flex: 1, padding: "9px", borderRadius: 9, border: `1.5px solid ${!callVivaio ? "#f59e0b" : "#ffffff15"}`, background: !callVivaio ? "#f59e0b18" : "#ffffff08", color: !callVivaio ? "#f59e0b" : "#666", fontSize: 12, fontWeight: !callVivaio ? 700 : 400, cursor: "pointer" }}>
+                    ⚽ Rosa
+                  </button>
+                  <button onClick={() => setCallVivaio(true)}
+                    style={{ flex: 1, padding: "9px", borderRadius: 9, border: `1.5px solid ${callVivaio ? "#10b981" : "#ffffff15"}`, background: callVivaio ? "#10b98118" : "#ffffff08", color: callVivaio ? "#10b981" : "#666", fontSize: 12, fontWeight: callVivaio ? 700 : 400, cursor: "pointer" }}>
+                    🌱 Vivaio
+                  </button>
+                </div>
+              </div>
             )}
             {/* Preview scadenze */}
             <div style={{ fontSize: 10, color: "#666", background: "#ffffff06", borderRadius: 8, padding: "10px 12px", lineHeight: 1.8 }}>
