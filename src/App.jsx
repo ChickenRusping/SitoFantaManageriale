@@ -7995,12 +7995,21 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onPin, teams, p
 
       {/* Header */}
       <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 14 }}>
-        <div style={{ width: 42, height: 42, borderRadius: "50%", flexShrink: 0, background: `linear-gradient(135deg,${teamColor}cc,${teamColor}44)`, border: `2px solid ${teamColor}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, color: "#fff", fontFamily: "'Bebas Neue',sans-serif", letterSpacing: 1 }}>
-          {team?.tag || notizia.autore.slice(0,2).toUpperCase()}
-        </div>
+        {team ? (
+          <TeamAvatar team={team} size={42} />
+        ) : notizia.autore === 'Admin' ? (
+          <div style={{ width: 42, height: 42, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg,#7c3aed,#4f46e5)", border: "2px solid #7c3aed88", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+            🛡️
+          </div>
+        ) : (
+          <div style={{ width: 42, height: 42, borderRadius: "50%", flexShrink: 0, background: `linear-gradient(135deg,${teamColor}cc,${teamColor}44)`, border: `2px solid ${teamColor}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, color: "#fff", fontFamily: "'Bebas Neue',sans-serif", letterSpacing: 1 }}>
+            {notizia.autore.slice(0,2).toUpperCase()}
+          </div>
+        )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 14, fontWeight: 800, color: "#f0f0f0" }}>{notizia.squadra || notizia.autore}</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: notizia.autore === 'Admin' ? "#a78bfa" : "#f0f0f0" }}>{notizia.squadra || (notizia.autore === 'Admin' ? '🛡️ Lega Admin' : notizia.autore)}</span>
+            {notizia.autore === 'Admin' && <span style={{ fontSize: 10, fontWeight: 700, color: "#7c3aed", background: "#7c3aed18", border: "1px solid #7c3aed30", borderRadius: 6, padding: "2px 7px", letterSpacing: "0.05em" }}>UFFICIALE</span>}
             {notizia.squadra && <span style={{ fontSize: 11, color: "#555" }}>@{notizia.autore.toLowerCase().replace(/\s/g,"")}</span>}
             <span style={{ marginLeft: "auto", fontSize: 11, color: "#444" }}>{timeAgo(notizia.created_at)}</span>
           </div>
@@ -8192,7 +8201,7 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onPin, teams, p
   );
 }
 
-function NewsComposer({ profile, teams, onPost }) {
+function NewsComposer({ profile, teams, onPost, isAdmin }) {
   const [open, setOpen] = useState(false);
   const [titolo, setTitolo] = useState("");
   const [testo, setTesto] = useState("");
@@ -8200,8 +8209,9 @@ function NewsComposer({ profile, teams, onPost }) {
   const [immagini, setImmagini] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [posting, setPosting] = useState(false);
+  const [postAsAdmin, setPostAsAdmin] = useState(false);
   const team = teams?.find(t => t.name === profile?.squadra);
-  const teamColor = team?.color || "#6366f1";
+  const teamColor = postAsAdmin ? "#7c3aed" : (team?.color || "#6366f1");
 
   async function handleImgUpload(e) {
     const files = Array.from(e.target.files);
@@ -8222,14 +8232,14 @@ function NewsComposer({ profile, teams, onPost }) {
     setPosting(true);
     try {
       await insertNotizia({
-        autore: profile.nome || profile.email,
-        squadra: profile.squadra || null,
+        autore: postAsAdmin ? 'Admin' : (profile.nome || profile.email),
+        squadra: postAsAdmin ? null : (profile.squadra || null),
         categoria,
         titolo: titolo.trim(),
         testo: testo.trim(),
         immagini,
       });
-      setTitolo(""); setTesto(""); setImmagini([]); setCategoria("news"); setOpen(false);
+      setTitolo(""); setTesto(""); setImmagini([]); setCategoria("news"); setPostAsAdmin(false); setOpen(false);
       onPost?.();
     } catch(err) { alert(err.message); }
     finally { setPosting(false); }
@@ -8250,15 +8260,35 @@ function NewsComposer({ profile, teams, onPost }) {
       }}
       onMouseEnter={e => { e.currentTarget.style.background = teamColor + "15"; e.currentTarget.style.borderColor = teamColor + "60"; }}
       onMouseLeave={e => { e.currentTarget.style.background = teamColor + "08"; e.currentTarget.style.borderColor = teamColor + "40"; }}>
-      <div style={{ width: 36, height: 36, borderRadius: "50%", background: `linear-gradient(135deg,${teamColor}cc,${teamColor}44)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900, color: "#fff", fontFamily: "'Bebas Neue',sans-serif", flexShrink: 0 }}>
-        {team?.tag || "✏️"}
-      </div>
+      {team ? <TeamAvatar team={team} size={36} /> : (
+        <div style={{ width: 36, height: 36, borderRadius: "50%", background: `linear-gradient(135deg,${teamColor}cc,${teamColor}44)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>✏️</div>
+      )}
       Scrivi una notizia, conferenza stampa, risultato…
     </button>
   );
 
   return (
     <div style={{ background: "#0f111a", border: `1.5px solid ${teamColor}40`, borderRadius: 16, padding: 20 }}>
+      {/* Admin identity toggle */}
+      {isAdmin && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, padding: "8px 12px", borderRadius: 10, background: postAsAdmin ? "#7c3aed18" : "#ffffff06", border: `1px solid ${postAsAdmin ? "#7c3aed40" : "#ffffff10"}` }}>
+          {postAsAdmin ? (
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🛡️</div>
+          ) : team ? (
+            <TeamAvatar team={team} size={28} />
+          ) : (
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#ffffff10", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>👤</div>
+          )}
+          <span style={{ flex: 1, fontSize: 12, color: postAsAdmin ? "#a78bfa" : "#666", fontWeight: 600 }}>
+            {postAsAdmin ? "Pubblicazione come Lega Admin" : `Pubblicazione come ${team?.name || profile?.nome || "presidente"}`}
+          </span>
+          <button onClick={() => setPostAsAdmin(v => !v)}
+            style={{ padding: "4px 10px", borderRadius: 8, border: `1px solid ${postAsAdmin ? "#7c3aed60" : "#ffffff15"}`, background: postAsAdmin ? "#7c3aed22" : "transparent", color: postAsAdmin ? "#a78bfa" : "#555", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+            {postAsAdmin ? "🛡️ Admin" : "Passa ad Admin"}
+          </button>
+        </div>
+      )}
+
       {/* Categoria selector */}
       <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
         {CATEGORIE.map(c => (
@@ -8400,7 +8430,7 @@ function NewsPage({ profile, isAdmin, teams }) {
 
       {/* Composer — ha il suo stato interno, non viene toccato dal feed */}
       <div style={{ marginBottom: 20 }}>
-        <NewsComposer profile={profile} teams={teams} onPost={handlePostPublicato} />
+        <NewsComposer profile={profile} teams={teams} onPost={handlePostPublicato} isAdmin={isAdmin} />
       </div>
 
       {/* Banner nuovi post — appare solo quando arrivano aggiornamenti */}
