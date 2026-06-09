@@ -1214,11 +1214,12 @@ function _calcolaStipCorretto(quot, anniContratto, anni) {
   return parseFloat((base * 0.9).toFixed(2));
 }
 
-// Restituisce la data del lunedì della settimana corrente (YYYY-MM-DD)
-function getLunediCorrente() {
+// Restituisce la data dell'ultima domenica (YYYY-MM-DD)
+// "domenica alle 24:00" = scadenza settimanale tasse
+function getDomenicaCorrente() {
   const d = new Date();
   const giorno = d.getDay(); // 0=dom, 1=lun, ..., 6=sab
-  const diff = giorno === 0 ? -6 : 1 - giorno; // giorni da sottrarre per arrivare a lunedì
+  const diff = giorno === 0 ? 0 : -giorno; // torna indietro alla domenica più recente
   d.setDate(d.getDate() + diff);
   return d.toISOString().slice(0, 10);
 }
@@ -1239,21 +1240,19 @@ export async function applicaPagamentiAutomatici() {
   if (!squadre?.length) return results;
 
   // ── 1. TASSA SETTIMANALE (art. 7.1) ──────────────────────────────────────
-  // Applica se oggi è lunedì OPPURE se il lunedì di questa settimana non è ancora stato tassato
-  const lunedi = getLunediCorrente();
+  // Scadenza: domenica alle 24:00 (= lunedì 00:00)
+  // Applica se l'ultima domenica non è ancora stata tassata
+  const domenica = getDomenicaCorrente();
   for (const sq of squadre) {
     try {
-      // Controlla se la tassa è già stata applicata questa settimana
+      // Controlla se la tassa è già stata applicata dall'ultima domenica
       const { data: gia } = await supabase
         .from('tasse_settimanali')
         .select('id')
         .eq('squadra', sq.name)
-        .gte('data_controllo', lunedi)
+        .gte('data_controllo', domenica)
         .limit(1);
       if (gia?.length) continue; // già applicata questa settimana
-
-      // Deve essere almeno lunedì (giorno 1)
-      if (oggi.getDay() === 0) continue; // domenica: non ancora
 
       const r = await applicaTassaSettimana(sq.name, sq.bilancio);
       if (r.ok) results.tasse.push({ squadra: sq.name, importo: r.importo });
