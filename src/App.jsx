@@ -4783,6 +4783,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const [mercatoSection, setMercatoSection] = useState("mercato");
   const [trattative, setTrattative] = useState([]);
   const [aste, setAste] = useState([]);
+  const [asteSvinc, setAsteSvinc] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showAstaForm, setShowAstaForm] = useState(false);
@@ -4820,12 +4821,14 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   }, []);
 
   const loadAll = useCallback(async () => {
-    const [t, a] = await Promise.all([
+    const [t, a, as] = await Promise.all([
       cachedFetch('trattative', () => getTrattative(), 30000),
       cachedFetch('aste', () => getAste(), 30000),
+      cachedFetch('aste_svincolati_all', () => getAsteSvincolati(), 30000),
     ]);
     setTrattative(t);
     setAste(a);
+    setAsteSvinc(as || []);
     setLoading(false);
   }, []);
 
@@ -4833,7 +4836,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     loadAll();
     const s1 = subscribeTrattative(loadAll);
     const s2 = subscribeAste(loadAll);
-    return () => { supabase.removeChannel(s1); supabase.removeChannel(s2); };
+    const s3 = subscribeAsteSvincolati(loadAll);
+    return () => { supabase.removeChannel(s1); supabase.removeChannel(s2); supabase.removeChannel(s3); };
   }, [loadAll]);
 
   // ── Polling auto-close aste rialzo scadute (ogni minuto) ─────────────────
@@ -5774,10 +5778,10 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
             })
           }
 
-          {/* Aste concluse */}
+          {/* Aste presidenti concluse */}
           {asteChiuse.length > 0 && (
             <>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em", marginTop: 16, marginBottom: 6 }}>🏷️ ASTE CONCLUSE</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em", marginTop: 16, marginBottom: 6 }}>🏷️ ASTE TRA PRESIDENTI CONCLUSE</div>
               {asteChiuse.map(a => (
                 <div key={a.id} style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: "10px 14px", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                   <div style={{ flex: 1 }}>
@@ -5790,6 +5794,39 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
               ))}
             </>
           )}
+
+          {/* Aste svincolati concluse */}
+          {(() => {
+            const storSvinc = asteSvinc.filter(a => a.stato !== 'raccolta_offerte').sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            if (!storSvinc.length) return null;
+            return (
+              <>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em", marginTop: 16, marginBottom: 6 }}>📞 ASTE SVINCOLATI CONCLUSE</div>
+                {storSvinc.map(a => {
+                  const statoCol = a.stato === 'assegnata' ? "#10b981" : a.stato === 'annullata' ? "#ef4444" : "#555";
+                  const vincTeam = a.vincitore ? TEAMS.find(t => t.name === a.vincitore) : null;
+                  return (
+                    <div key={a.id} style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: "10px 14px", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                      {vincTeam && <TeamAvatar team={vincTeam} size={24} />}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#ddd" }}>
+                          {a.giocatore}
+                          {a.per_vivaio && <span style={{ marginLeft: 6, fontSize: 9, background: "#10b98118", color: "#10b981", border: "1px solid #10b98130", borderRadius: 6, padding: "1px 5px" }}>🌱 Vivaio</span>}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#666" }}>
+                          {a.ruolo} · Q{a.quot}
+                          {a.vincitore ? ` · assegnato a ${a.vincitore}` : ""}
+                          {a.created_at ? ` · ${new Date(a.created_at).toLocaleDateString("it-IT")}` : ""}
+                        </div>
+                      </div>
+                      {a.prezzo_finale != null && <div style={{ fontSize: 14, fontWeight: 800, color: "#f59e0b", fontFamily: "'Bebas Neue',sans-serif" }}>{Number(a.prezzo_finale).toFixed(2)}M</div>}
+                      <Badge color={statoCol}>{a.stato}</Badge>
+                    </div>
+                  );
+                })}
+              </>
+            );
+          })()}
         </div>
       )}
 
