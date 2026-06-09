@@ -5834,10 +5834,16 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
   }
 
   async function handleCancellaChiamata() {
-    if (!window.confirm(`Cancellare tutte le chiamate per ${primaria.giocatore}?`)) return;
+    if (!window.confirm(`Cancellare tutte le chiamate e le aste attive per ${primaria.giocatore}?`)) return;
     setSaving(true);
     try {
+      // Chiudi chiamate
       await supabase.from('chiamate').update({ stato: 'conclusa' }).eq('giocatore', primaria.giocatore);
+      // Annulla anche eventuali aste attive per questo giocatore
+      await supabase.from('aste_svincolati')
+        .update({ stato: 'annullata' })
+        .eq('giocatore', primaria.giocatore)
+        .in('stato', ['raccolta_offerte', 'aperta']);
       await onRefresh();
     } catch(e) { alert(e.message); } finally { setSaving(false); }
   }
@@ -5901,9 +5907,9 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
             <span style={{ fontSize: 10, color: "#10b981", fontWeight: 600 }}>✅ Sei interessato</span>
           )}
           {/* Azioni admin */}
-          {isAdmin && !astaAttiva && !astaAssegnata && (
+          {isAdmin && !astaAssegnata && (
             <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
-              {scadutaInteresse ? (
+              {!astaAttiva && (scadutaInteresse ? (
                 <>
                   {interessati.length === 1 ? (
                     <button onClick={handleAssegnaDiretto} disabled={saving}
@@ -5919,7 +5925,7 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
                 </>
               ) : (
                 <span style={{ fontSize: 10, color: "#555" }}>In attesa scadenza interesse</span>
-              )}
+              ))}
               <button onClick={handleCancellaChiamata} disabled={saving}
                 style={{ padding: "3px 8px", borderRadius: 6, border: "1px solid #ef444430", background: "transparent", color: "#ef4444", fontSize: 10, cursor: "pointer" }}>
                 🗑 Cancella
