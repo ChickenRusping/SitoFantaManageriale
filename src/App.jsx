@@ -4805,11 +4805,14 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
   // ── Aggiunge una riga bonus al form ───────────────────────────────────────
   function aggiungiBonusDraft() {
-    const soglia = parseInt(bonusDraft.soglia);
-    const valore = parseFloat(bonusDraft.valore_mln);
-    if (!soglia || !valore || soglia <= 0 || valore <= 0) return;
-    setForm(f => ({ ...f, bonusRows: [...f.bonusRows, { ...bonusDraft, soglia, valore_mln: valore }] }));
-    setBonusDraft({ tipo_bonus: 'gol_fatti', soglia: '', valore_mln: '', direzione: 'acquirente_paga' });
+    const soglia = Number(bonusDraft.soglia);
+    const valore = Number(bonusDraft.valore_mln);
+    if (!soglia || isNaN(soglia) || soglia <= 0) { alert('Inserisci una soglia valida (numero > 0)'); return; }
+    if (!valore || isNaN(valore) || valore <= 0) { alert('Inserisci un valore valido in milioni (> 0)'); return; }
+    const nuovaRiga = { tipo_bonus: bonusDraft.tipo_bonus, soglia, valore_mln: valore, direzione: bonusDraft.direzione };
+    setForm(f => ({ ...f, bonusRows: [...f.bonusRows, nuovaRiga] }));
+    // Reset solo i campi numerici, mantieni tipo e direzione per aggiunta rapida multipla
+    setBonusDraft(b => ({ ...b, soglia: '', valore_mln: '' }));
   }
 
   function rimuoviBonusRow(idx) {
@@ -4851,7 +4854,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       prezzo,
       durata_mesi: form.tipo.startsWith('prestito') ? parseInt(form.durata_mesi) : null,
       scadenza_prestito: scad,
-      stipendio_a_chi: form.tipo.startsWith('prestito') ? form.stipendio_a_chi : null,
+      stipendio_a_chi: form.tipo.startsWith('prestito') ? 'ricevente' : null,
       fuori_mercato: !mercato.aperto,
       note: form.note,
       n_rifiuti: 0,
@@ -5312,15 +5315,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                       </div>
                     )}
 
-                    {form.tipo.startsWith('prestito') && (
-                      <div>
-                        <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>STIPENDIO A CARICO DI</div>
-                        <select style={sel} value={form.stipendio_a_chi} onChange={e => setForm(f => ({ ...f, stipendio_a_chi: e.target.value }))}>
-                          <option value="ricevente">Chi riceve ({mySquadra})</option>
-                          <option value="cedente">Chi presta ({form.squadraTarget})</option>
-                        </select>
-                      </div>
-                    )}
+                    {/* stipendio_a_chi rimosso — sempre a carico del ricevente */}
                   </div>
 
                   {/* Note */}
@@ -5373,7 +5368,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                           <option value="cedente_paga">Cedente</option>
                         </select>
                       </div>
-                      <button onClick={aggiungiBonusDraft} style={{ padding: "8px 12px", borderRadius: 8, border: "none", background: "#6366f133", color: "#818cf8", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>+</button>
+                      <button type="button" onClick={aggiungiBonusDraft} style={{ padding: "8px 12px", borderRadius: 8, border: "none", background: "#6366f133", color: "#818cf8", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>+</button>
                     </div>
                     <div style={{ fontSize: 9, color: "#555", marginTop: 4 }}>I bonus vengono controllati automaticamente ad ogni aggiornamento del listone</div>
                   </div>
