@@ -5837,8 +5837,8 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
     if (!window.confirm(`Cancellare tutte le chiamate e le aste attive per ${primaria.giocatore}?`)) return;
     setSaving(true);
     try {
-      // Chiudi chiamate
-      const { error: errChi } = await supabase.from('chiamate').update({ stato: 'conclusa' }).eq('giocatore', primaria.giocatore);
+      // Elimina chiamate del giocatore
+      const { error: errChi } = await supabase.from('chiamate').delete().eq('giocatore', primaria.giocatore);
       if (errChi) throw errChi;
       // Annulla aste attive per questo giocatore (by ID to avoid RLS issues)
       const asteDelGiocatore = (aste || []).filter(a =>
