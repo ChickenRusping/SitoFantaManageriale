@@ -1181,24 +1181,31 @@ export async function getTassePagate(squadra) {
 }
 
 // Applica la tassa settimanale (chiamato dall'admin ogni lunedì sera)
-export async function applicaTassaSettimana(squadra, bilancioCorrente) {
-  const { perc, importo } = calcolaTassa(bilancioCorrente);
+export async function applicaTassaSettimana(squadra, bilancioCorrente, dataControllo = null, settimanaLabel = null) {
+  const { perc, importo, flat } = calcolaTassa(bilancioCorrente);
   if (importo <= 0) return { skip: true, motivo: 'Bilancio 0 o negativo' };
 
   const oggi = new Date().toISOString().slice(0, 10);
-  // Inserisce record tassa
-  await supabase.from('tasse_settimanali').insert({
+  const dataRef = dataControllo || oggi;
+  const { week, year } = getWeekNumber(new Date(dataRef));
+  const wLabel = settimanaLabel || `${week}/${year}`;
+
+  // Inserisce record tassa — usa data_controllo = domenica per deduplicazione
+  const { error: insErr } = await supabase.from('tasse_settimanali').insert({
     squadra, bilancio_al_controllo: bilancioCorrente,
     percentuale: perc, importo_tassa: importo,
-    data_controllo: oggi, applicata: true,
+    data_controllo: dataRef, applicata: true,
   });
+  // Se l'insert fallisce (es. già inserito da altro client), salta silenziosamente
+  if (insErr) return { skip: true, motivo: 'Già applicata (race condition)' };
+
   // Scala dal bilancio
   const nuovoBilancio = parseFloat((bilancioCorrente - importo).toFixed(2));
   await supabase.from('squadre').update({ bilancio: nuovoBilancio }).eq('name', squadra);
-  await supabase.from('movimenti').insert({
-    squadra, descrizione: `Tassa settimanale ${perc}% (bilancio ${bilancioCorrente}M)`,
-    uscita: importo, data: oggi,
-  });
+  const desc = flat
+    ? `Tassa settimanale 1% flat (bilancio ${bilancioCorrente.toFixed(2)}M) settimana ${wLabel}`
+    : `Tassa settimanale ${perc}% (bilancio ${bilancioCorrente.toFixed(2)}M) settimana ${wLabel}`;
+  await supabase.from('movimenti').insert({ squadra, descrizione: desc, uscita: importo, data: oggi });
   return { ok: true, importo, nuovoBilancio };
 }
 
@@ -1230,6 +1237,15 @@ function getPrimoDiMese() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
+// Numero settimana ISO (1-53) per identificare univocamente la settimana
+function getWeekNumber(d = new Date()) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return { week: Math.ceil((((date - yearStart) / 86400000) + 1) / 7), year: date.getUTCFullYear() };
+}
+
 export async function applicaPagamentiAutomatici() {
   const oggi = new Date();
   const oggiStr = oggi.toISOString().slice(0, 10);
@@ -1240,21 +1256,31 @@ export async function applicaPagamentiAutomatici() {
   if (!squadre?.length) return results;
 
   // ── 1. TASSA SETTIMANALE (art. 7.1) ──────────────────────────────────────
-  // Scadenza: domenica alle 24:00 (= lunedì 00:00)
-  // Applica se l'ultima domenica non è ancora stata tassata
+  // Scadenza: domenica alle 23:00
+  // Applica solo se: è domenica dopo le 23:00, OPPURE è un giorno successivo
+  // e la domenica di questa settimana non è ancora stata tassata
   const domenica = getDomenicaCorrente();
+  const giorno = oggi.getDay(); // 0=dom
+  const ora = oggi.getHours();
+  const passataCoprifuoco = (giorno === 0 && ora >= 23) || giorno !== 0;
+  if (!passataCoprifuoco) return results; // troppo presto questa settimana
+
+  const { week, year } = getWeekNumber(oggi);
+  const settimanaLabel = `${week}/${year}`;
+
   for (const sq of squadre) {
     try {
-      // Controlla se la tassa è già stata applicata dall'ultima domenica
+      // Controlla se la tassa è già stata applicata questa settimana
+      // Usa la domenica come data_controllo — chiave univoca per settimana
       const { data: gia } = await supabase
         .from('tasse_settimanali')
         .select('id')
         .eq('squadra', sq.name)
-        .gte('data_controllo', domenica)
+        .eq('data_controllo', domenica)  // chiave esatta, non gte
         .limit(1);
       if (gia?.length) continue; // già applicata questa settimana
 
-      const r = await applicaTassaSettimana(sq.name, sq.bilancio);
+      const r = await applicaTassaSettimana(sq.name, sq.bilancio, domenica, settimanaLabel);
       if (r.ok) results.tasse.push({ squadra: sq.name, importo: r.importo });
     } catch(e) { results.errori.push(`Tassa ${sq.name}: ${e.message}`); }
   }

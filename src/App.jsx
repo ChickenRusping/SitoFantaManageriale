@@ -8307,15 +8307,23 @@ function AppInner() {
     setAuthLoading(false);
   }
 
-  // ── Pagamenti automatici (tasse lunedì + stipendi 1° mese) ───────────────
+  // ── Pagamenti automatici (tasse dom 23:00 + stipendi 1° mese) ───────────
   useEffect(() => {
     if (!session) return;
-    // Esegue in background alla prima apertura dell'app — non blocca il caricamento
+    const now = new Date();
+    // Chiave localStorage: "autopay_YYYY-WW" per tasse, "autopay_stip_YYYY-MM" per stipendi
+    const wKey = `autopay_${now.getFullYear()}-W${String(Math.ceil(((now - new Date(now.getFullYear(),0,1))/86400000+1)/7)).padStart(2,'0')}`;
+    const mKey = `autopay_stip_${now.toISOString().slice(0,7)}`;
+    const alreadyThisWeek  = localStorage.getItem(wKey);
+    const alreadyThisMonth = localStorage.getItem(mKey);
+    if (alreadyThisWeek && alreadyThisMonth) return; // questo browser ha già triggerato
     applicaPagamentiAutomatici().then(r => {
-      if (r.tasse.length)    console.log(`✅ Tasse auto: ${r.tasse.length} squadre`);
-      if (r.stipendi.length) console.log(`✅ Stipendi auto: ${r.stipendi.length} squadre`);
+      if (r.tasse.length)    { console.log(`✅ Tasse auto: ${r.tasse.length} squadre`); localStorage.setItem(wKey, '1'); }
+      if (r.stipendi.length) { console.log(`✅ Stipendi auto: ${r.stipendi.length} squadre`); localStorage.setItem(mKey, '1'); }
+      // Segna "tentato" anche se zero squadre (vuol dire già applicate da altro client)
+      if (!alreadyThisWeek)  localStorage.setItem(wKey, '1');
+      if (!alreadyThisMonth) localStorage.setItem(mKey, '1');
       if (r.errori.length)   console.warn('⚠️ Errori pagamenti auto:', r.errori);
-      // Ricarica squadre se qualcosa è cambiato
       if (r.tasse.length || r.stipendi.length) {
         getSquadre().then(data => { if (data) setSquadreDB(data); });
       }
