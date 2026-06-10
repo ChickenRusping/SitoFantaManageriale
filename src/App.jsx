@@ -160,6 +160,8 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   // Admin Control Room
   getStadioInvestimenti, setStadioUpgrade, applicaEntrateStadioTutte,
   applicaTassaATutti, applicaStipendioATutti, getControlRoomStatus,
+  // Telegram
+  sendTelegramNotification, getTelegramRegistrations, deleteTelegramRegistration,
 } from "./supabase.js";
 
 // ─── SORTABLE TABLE HOOK ──────────────────────────────────────────────────────
@@ -4385,6 +4387,10 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
             mySquadra={mySquadra}
             onRefresh={loadClubIdentity}
           />
+          {/* Telegram self-registration — only for the team's own president */}
+          {mySquadra === team.name && !isAdmin && (
+            <TelegramRegistrationCard squadra={team.name} />
+          )}
         </div>
       </div>
     </div>
@@ -4417,6 +4423,65 @@ function ImageSlot({ kind, url, label, slotStyle, canEdit, uploading, teamName, 
         </div>
       )}
       {canEdit && <input id={inputId} type="file" accept="image/*" style={{ display: "none" }} onChange={e => onUpload(kind, e)} />}
+    </div>
+  );
+}
+
+/* ─── TELEGRAM REGISTRATION CARD ────────────────────────────────────────────── */
+function TelegramRegistrationCard({ squadra }) {
+  const [reg, setReg] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    // Load current registration status from supabase
+    supabase.from('telegram_registrations').select('chat_id, username, registered_at').eq('squadra', squadra).single()
+      .then(({ data }) => { setReg(data || null); setLoaded(true); });
+  }, [squadra]);
+
+  // Build the deep-link URL using base64url of the squad name
+  const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || '';
+  const b64 = typeof btoa !== 'undefined'
+    ? btoa(squadra).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+    : '';
+  const tgLink = botUsername ? `https://t.me/${botUsername}?start=${b64}` : null;
+
+  return (
+    <div style={{ background: '#6366f108', border: '1.5px solid #6366f125', borderRadius: 14, padding: '14px 16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <span style={{ fontSize: 18 }}>✈️</span>
+        <span style={{ fontSize: 13, fontWeight: 800, color: '#c7d2fe' }}>Notifiche Telegram</span>
+      </div>
+
+      {!loaded && <div style={{ fontSize: 11, color: '#555' }}>Caricamento…</div>}
+
+      {loaded && reg && (
+        <div style={{ background: '#10b98110', border: '1px solid #10b98130', borderRadius: 9, padding: '8px 12px', marginBottom: 10 }}>
+          <div style={{ fontSize: 11, color: '#10b981', fontWeight: 700 }}>✓ Registrato</div>
+          <div style={{ fontSize: 10, color: '#666', marginTop: 2 }}>
+            @{reg.username || '?'} · dal {new Date(reg.registered_at).toLocaleDateString('it-IT')}
+          </div>
+        </div>
+      )}
+
+      {loaded && !reg && (
+        <div style={{ fontSize: 11, color: '#888', marginBottom: 10, lineHeight: 1.5 }}>
+          Ricevi notifiche private su Telegram per trattative, aste e movimenti.
+        </div>
+      )}
+
+      {tgLink ? (
+        <a
+          href={tgLink}
+          target="_blank"
+          rel="noreferrer"
+          style={{ display: 'block', textAlign: 'center', padding: '8px 14px', borderRadius: 9, background: '#6366f120', border: '1.5px solid #6366f140', color: '#818cf8', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
+          {reg ? '🔄 Ri-registrati' : '📲 Registrati sul bot'}
+        </a>
+      ) : (
+        <div style={{ fontSize: 10, color: '#444', fontStyle: 'italic' }}>
+          Bot non ancora configurato.<br/>Contatta l'admin della lega.
+        </div>
+      )}
     </div>
   );
 }
@@ -5000,6 +5065,13 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       await insertBonusTrattativa({ ...row, soglia, valore_mln, trattativa_id: trattativa.id });
     }
 
+    // Notify the receiving team via Telegram DM
+    sendTelegramNotification('trattativa_ricevuta', {
+      giocatore: form.giocatoreNome,
+      importo: prezzo,
+      da_squadra: mySquadra,
+    }, form.squadraTarget);
+
     setShowForm(false);
     setForm(emptyForm);
     setRosaTarget([]);
@@ -5026,6 +5098,9 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
         await aggiornaFantaSquadraListone(t.giocatore, t.a_squadra);
         await aggiornaStipendioDopoTrasferimento(t.giocatore, t.a_squadra);
         await logAzione({ utente: 'admin', squadra: t.da_squadra, azione: 'trasferimento', entita: 'trattative', entitaId: t.id, descrizione: `Trasferimento: ${t.giocatore} da ${t.da_squadra} a ${t.a_squadra} — ${t.prezzo}M (${t.tipo})`, dataPrima: { trattativa: t }, rollbackPossibile: false });
+        // Notify both teams via Telegram DM
+        sendTelegramNotification('trattativa_accettata', { giocatore: t.giocatore, importo: t.prezzo }, t.da_squadra);
+        sendTelegramNotification('trattativa_accettata', { giocatore: t.giocatore, importo: t.prezzo }, t.a_squadra);
       }
     } catch (e) {
       alert(`Errore: ${e.message}`);
@@ -5069,6 +5144,11 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       updated_at: new Date().toISOString(),
       deadline_risposta: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
     });
+    // Notify the offering team that their offer was refused
+    sendTelegramNotification('trattativa_rifiutata', {
+      giocatore: t.giocatore,
+      importo: t.prezzo,
+    }, t.da_squadra);
     await loadAll();
   }
 
@@ -6323,6 +6403,12 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
       anni: player.anni || 0, squadra_serie_a: player.squadra_serie_a || '',
       squadra, per_vivaio: perVivaio,
     });
+    // Notify channel about the chiamata
+    sendTelegramNotification('chiamata_svincolati', {
+      giocatore: player.nome,
+      quotazione: player.quot,
+      squadra,
+    });
     setShowCallForm(null);
     setCallVivaio(false);
     await loadAll();
@@ -6473,7 +6559,34 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
                       <button
                         onClick={async () => {
                           if (!window.confirm(`Rivelare le offerte e assegnare ${asta.giocatore}?`)) return;
-                          try { await rivelaAsta(asta.id); await loadAll(); }
+                          try {
+                            await rivelaAsta(asta.id);
+                            await loadAll();
+                            // Notify channel + winner/losers
+                            sendTelegramNotification('asta_svincolati', {
+                              giocatore: asta.giocatore,
+                              quotazione: asta.quotazione,
+                              squadra: asta.vincitore || '—',
+                              ore: 0,
+                            });
+                            if (asta.vincitore) {
+                              sendTelegramNotification('asta_vinta', {
+                                giocatore: asta.giocatore,
+                                importo: asta.offerta_attuale,
+                              }, asta.vincitore);
+                            }
+                            // Notify losers
+                            const tutteOfferte = await getOfferteAsta(asta.id);
+                            for (const off of (tutteOfferte || [])) {
+                              if (off.squadra !== asta.vincitore) {
+                                sendTelegramNotification('asta_persa', {
+                                  giocatore: asta.giocatore,
+                                  vincitore: asta.vincitore || '—',
+                                  importo: asta.offerta_attuale,
+                                }, off.squadra);
+                              }
+                            }
+                          }
                           catch(e) { alert(e.message); }
                         }}
                         style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: scaduta ? "#10b981" : "#6366f1", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
@@ -7722,6 +7835,8 @@ function AdminControlRoomPage({ teams }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(null); // quale operazione sta girando
   const [lastResult, setLastResult] = useState(null);
+  const [tgRegs, setTgRegs] = useState([]);
+  const [tgLoading, setTgLoading] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -7733,6 +7848,13 @@ function AdminControlRoomPage({ teams }) {
       setStatus(s);
       setStadioInv(inv);
     } finally { setLoading(false); }
+  }
+
+  async function loadTgRegs() {
+    setTgLoading(true);
+    try { setTgRegs(await getTelegramRegistrations()); }
+    catch(e) { alert(e.message); }
+    finally { setTgLoading(false); }
   }
 
   useEffect(() => { load(); }, []);
@@ -7758,6 +7880,12 @@ function AdminControlRoomPage({ teams }) {
       const skip = res.filter(r => r.skip).length;
       setLastResult({ label, ok, skip, ts: new Date().toLocaleTimeString('it-IT') });
       await load();
+      // Telegram channel notifications for bulk payments
+      const meseISO = new Date().toISOString().slice(0, 7);
+      const domenica = getDomenicaCorrente();
+      if (fn === applicaTassaATutti)     sendTelegramNotification('tassa_applicata',    { domenica });
+      if (fn === applicaStipendioATutti) sendTelegramNotification('stipendi_applicati',  { mese: meseISO });
+      if (fn === applicaEntrateStadioTutte) sendTelegramNotification('stadio_applicato', { mese: meseISO });
     } catch(e) { alert(e.message); }
     finally { setBusy(null); }
   }
@@ -7766,6 +7894,7 @@ function AdminControlRoomPage({ teams }) {
     { key: 'panoramica', icon: '📊', label: 'Panoramica' },
     { key: 'stadio',     icon: '🏟',  label: 'Stadio' },
     { key: 'tasse',      icon: '📅',  label: 'Tasse' },
+    { key: 'telegram',   icon: '✈️',  label: 'Telegram' },
     { key: 'stipendi',   icon: '💰',  label: 'Stipendi' },
     { key: 'stagione',   icon: '⚙️',  label: 'Stagione' },
   ];
@@ -8004,6 +8133,71 @@ function AdminControlRoomPage({ teams }) {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+          {tab === 'telegram' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em', marginBottom: 4 }}>✈️ TELEGRAM — REGISTRAZIONI PRESIDENTI</div>
+
+              {/* Info box */}
+              <div style={{ background: '#6366f118', border: '1px solid #6366f130', borderRadius: 12, padding: '12px 16px', fontSize: 12, color: '#aaa', lineHeight: 1.6 }}>
+                I presidenti si registrano autonomamente cliccando il link nella loro <b style={{ color: '#c7d2fe' }}>Pagina Presidente</b>.<br/>
+                Il bot invia notifiche private per: trattative, risultati aste, movimenti importanti.<br/>
+                Il canale pubblico riceve: news pinnate, chiamate svincolati, tasse, stipendi, stadio.
+              </div>
+
+              {/* Load button */}
+              <button
+                onClick={loadTgRegs}
+                disabled={tgLoading}
+                style={{ alignSelf: 'flex-start', padding: '7px 18px', borderRadius: 9, border: '1.5px solid #6366f150', background: '#6366f118', color: '#818cf8', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                {tgLoading ? '…' : '🔄 Carica registrazioni'}
+              </button>
+
+              {/* Registrations table */}
+              {tgRegs.length === 0 && !tgLoading && (
+                <div style={{ color: '#555', fontSize: 12 }}>Nessuna registrazione trovata. Clicca "Carica registrazioni".</div>
+              )}
+              {tgRegs.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {tgRegs.map(r => (
+                    <div key={r.squadra} style={{ background: '#10b98108', border: '1px solid #10b98120', borderRadius: 10, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#f0f0f0' }}>{r.squadra}</div>
+                        <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>
+                          @{r.username || '?'} · chat_id: {r.chat_id} · {new Date(r.registered_at).toLocaleDateString('it-IT')}
+                        </div>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm(`Rimuovere la registrazione di ${r.squadra}?`)) return;
+                          await deleteTelegramRegistration(r.squadra);
+                          setTgRegs(prev => prev.filter(x => x.squadra !== r.squadra));
+                        }}
+                        style={{ padding: '4px 12px', borderRadius: 7, border: '1px solid #ef444430', background: '#ef444410', color: '#ef4444', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                        ✕ Rimuovi
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Test message */}
+              <div style={{ background: '#f59e0b08', border: '1px solid #f59e0b20', borderRadius: 10, padding: '12px 14px' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', marginBottom: 8 }}>🧪 Invia messaggio di test al canale</div>
+                <button
+                  onClick={() => {
+                    sendTelegramNotification('notizia_pinnata', {
+                      squadra: 'Lega Admin',
+                      titolo: '🧪 Test notifica canale',
+                      testo: 'Questo è un messaggio di test inviato dalla Control Room.',
+                    });
+                    alert('Messaggio inviato al canale (se configurato).');
+                  }}
+                  style={{ padding: '7px 16px', borderRadius: 9, border: '1.5px solid #f59e0b40', background: '#f59e0b15', color: '#f59e0b', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                  📨 Invia test
+                </button>
+              </div>
             </div>
           )}
         </>
@@ -8725,6 +8919,17 @@ function NewsPage({ profile, isAdmin, teams }) {
     try {
       await togglePinnata(id, pinnata);
       setNotizie(prev => prev.map(n => n.id === id ? { ...n, pinnata } : n));
+      // When pinning a news item, send to Telegram channel
+      if (pinnata) {
+        const notizia = notizie.find(n => n.id === id);
+        if (notizia) {
+          sendTelegramNotification('notizia_pinnata', {
+            squadra: notizia.squadra || (notizia.autore === 'Admin' ? null : notizia.autore),
+            titolo: notizia.titolo,
+            testo: notizia.testo,
+          });
+        }
+      }
     } catch(e) { alert(e.message); }
   }
 
