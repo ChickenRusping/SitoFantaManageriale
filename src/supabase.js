@@ -422,7 +422,7 @@ export async function updateClubIdentity(squadra, fields) {
 // kind: 'stemma' | 'maglia_casa' | 'maglia_trasferta' | 'maglia_terza'
 export async function uploadImmagineSquadra(squadra, file, kind) {
   if (!file) throw new Error('Nessun file selezionato');
-  if (file.size > 2 * 1024 * 1024) throw new Error('Immagine troppo grande (max 2MB)');
+  if (file.size > 10 * 1024 * 1024) throw new Error('Immagine troppo grande (max 10MB)');
 
   // Sanitizza nome squadra per path
   const slug = squadra.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -1285,19 +1285,20 @@ export async function applicaPagamentiAutomatici() {
     } catch(e) { results.errori.push(`Tassa ${sq.name}: ${e.message}`); }
   }
 
-  // ── 2. STIPENDI MENSILI (art. 4.4) ───────────────────────────────────────
-  // Applica se oggi è il 1° del mese e gli stipendi non sono ancora stati pagati
+  // ── 2. STIPENDI MENSILI + STADIO (art. 4.4) ──────────────────────────────
+  // Applica se oggi è il 1° del mese e i pagamenti non sono ancora stati effettuati
   const primoDiMese = getPrimoDiMese();
+  const meseISO = oggi.toISOString().slice(0, 7); // YYYY-MM
   if (oggiStr === primoDiMese) {
     for (const sq of squadre) {
       try {
-        // Controlla se gli stipendi sono già stati pagati questo mese
+        // Controlla se gli stipendi sono già stati pagati questo mese (chiave esatta: YYYY-MM)
+        const stipDesc = `Pagamento stipendi ${meseISO}`;
         const { data: gia } = await supabase
           .from('movimenti')
           .select('id')
           .eq('squadra', sq.name)
-          .ilike('descrizione', 'Pagamento stipendi%')
-          .gte('data', primoDiMese)
+          .eq('descrizione', stipDesc)
           .limit(1);
         if (gia?.length) continue;
 
@@ -1325,10 +1326,9 @@ export async function applicaPagamentiAutomatici() {
         const rata = parseFloat((totalStip / 12).toFixed(2));
         const nuovoBilancio = parseFloat((sq.bilancio - rata).toFixed(2));
 
-        const mese = oggi.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
         await supabase.from('movimenti').insert({
           squadra: sq.name,
-          descrizione: `Pagamento stipendi ${mese}`,
+          descrizione: stipDesc,
           uscita: rata, data: oggiStr,
         });
         await supabase.from('squadre').update({
@@ -1338,6 +1338,44 @@ export async function applicaPagamentiAutomatici() {
 
         results.stipendi.push({ squadra: sq.name, rata, nuovoBilancio });
       } catch(e) { results.errori.push(`Stipendi ${sq.name}: ${e.message}`); }
+    }
+
+    // ── 3. ENTRATE STADIO MENSILI ───────────────────────────────────────────
+    // 4M base, 5.5M se "Ristrutturazione Stadio" presente in investimenti
+    const stadioDesc = `Entrate stadio ${meseISO}`;
+    for (const sq of squadre) {
+      try {
+        // Controlla se le entrate stadio sono già state accreditate questo mese
+        const { data: giaStadio } = await supabase
+          .from('movimenti')
+          .select('id')
+          .eq('squadra', sq.name)
+          .eq('descrizione', stadioDesc)
+          .limit(1);
+        if (giaStadio?.length) continue;
+
+        // Controlla se la squadra ha l'investimento "Ristrutturazione Stadio"
+        const { data: inv } = await supabase
+          .from('investimenti')
+          .select('id')
+          .eq('squadra', sq.name)
+          .eq('nome', 'Ristrutturazione Stadio')
+          .limit(1);
+        const entrata = inv?.length ? 5.5 : 4;
+
+        await supabase.from('movimenti').insert({
+          squadra: sq.name,
+          descrizione: stadioDesc,
+          entrata, data: oggiStr,
+        });
+        await supabase.from('squadre').update({
+          bilancio: parseFloat((sq.bilancio + entrata).toFixed(2)),
+        }).eq('name', sq.name);
+        // Aggiorna bilancio in-memory per i prossimi loop
+        sq.bilancio = parseFloat((sq.bilancio + entrata).toFixed(2));
+
+        results.stipendi.push({ squadra: sq.name, tipo: 'stadio', importo: entrata });
+      } catch(e) { results.errori.push(`Stadio ${sq.name}: ${e.message}`); }
     }
   }
 
@@ -1444,13 +1482,11 @@ export async function calcolaNettoSpeso(squadra, dataInizio, dataFine) {
 
 // Calcola la penalità fair spending per un dato netto
 export function calcolaFairSpending(netto) {
-  // art. 7.3 — soglia sicura alzata a 50M, nuove penalità
-  if (netto <= 50) return { zona: 'sicura', multa: 0,  giorni: 0, pt: 0, euro: 0  };
-  if (netto <= 55) return { zona: '50-55',  multa: 5,  giorni: 0, pt: 0, euro: 0  };
-  if (netto <= 60) return { zona: '55-60',  multa: 10, giorni: 0, pt: 0, euro: 0  };
-  if (netto <= 65) return { zona: '60-65',  multa: 15, giorni: 0, pt: 2, euro: 0  };
-  if (netto <= 70) return { zona: '65-70',  multa: 20, giorni: 0, pt: 4, euro: 5  };
-  return             { zona: '>70',    multa: 25, giorni: 0, pt: 6, euro: 10 };
+  // art. 7.3 — soglia sicura 50M, 3 fasce di penalità
+  if (netto <= 50) return { zona: 'sicura', multa: 0,  giorni: 0, pt: 0, euro: 0 };
+  if (netto <= 55) return { zona: '50-55',  multa: 10, giorni: 0, pt: 0, euro: 0 };
+  if (netto <= 60) return { zona: '55-60',  multa: 15, giorni: 0, pt: 2, euro: 0 };
+  return             { zona: '>60',    multa: 20, giorni: 0, pt: 4, euro: 5  };
 }
 
 export async function getFairSpending(squadra) {
@@ -3108,6 +3144,7 @@ export async function toggleReaction(id, emoji, username, currentReactions) {
   return reactions;
 }
 export async function uploadNotiziaImmagine(file, path) {
+  if (file.size > 10 * 1024 * 1024) throw new Error('Immagine troppo grande (max 10MB)');
   const { data, error } = await supabase.storage.from('notizie-immagini').upload(path, file, { upsert: true, contentType: file.type });
   if (error) throw error;
   const { data: { publicUrl } } = supabase.storage.from('notizie-immagini').getPublicUrl(path);
