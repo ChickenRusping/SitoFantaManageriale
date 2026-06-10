@@ -126,60 +126,29 @@ export async function getChiamateByGiocatore(nomeGiocatore) {
 // ── Calcola scadenza interesse lato JS (specchio del trigger DB) ──────────────
 export function calcolaScadenzaInteresse(dataChiamata = new Date()) {
   const d = new Date(dataChiamata);
-  const m = d.getMonth() + 1;
-  const day = d.getDate();
-  const periodoCampionato = (m > 8) || (m === 8 && day >= 16) || (m < 6);
+  // Sempre: prossimo giovedì alle 20:00 UTC (= 21:00 ora italiana)
+  const dow = d.getUTCDay(); // 0=dom, 1=lun, ..., 4=gio
+  const giorniDaLun = (dow === 0) ? 6 : dow - 1;
+  const lun = new Date(d);
+  lun.setUTCDate(d.getUTCDate() - giorniDaLun);
+  lun.setUTCHours(0, 0, 0, 0);
 
-  if (periodoCampionato) {
-    // Prossimo giovedì alle 19:00 UTC (= 20:00 ora italiana UTC+1)
-    // Partiamo dal lunedì della settimana corrente (UTC)
-    const dow = d.getUTCDay(); // 0=dom, 1=lun, 4=gio
-    // Giorni dall'inizio settimana (lunedì=1 in UTC)
-    const giorniDaLun = (dow === 0) ? 6 : dow - 1; // 0=lun, ..., 6=dom
-    const lun = new Date(d);
-    lun.setUTCDate(d.getUTCDate() - giorniDaLun);
-    lun.setUTCHours(0, 0, 0, 0);
+  const gio = new Date(lun);
+  gio.setUTCDate(lun.getUTCDate() + 3);
+  gio.setUTCHours(20, 0, 0, 0);
 
-    // Giovedì = lunedì + 3 giorni, ore 20:00 UTC (= 21:00 ora italiana)
-    const gio = new Date(lun);
-    gio.setUTCDate(lun.getUTCDate() + 3);
-    gio.setUTCHours(20, 0, 0, 0);
-
-    // Se siamo già oltre giovedì 20:00 UTC, vai alla settimana successiva
-    if (d >= gio) gio.setUTCDate(gio.getUTCDate() + 7);
-    return gio;
-  } else {
-    return new Date(d.getTime() + 72 * 60 * 60 * 1000);
-  }
+  // Se siamo già oltre giovedì 20:00 UTC, vai alla settimana successiva
+  if (d >= gio) gio.setUTCDate(gio.getUTCDate() + 7);
+  return gio;
 }
 
-// ── Calcola scadenza offerte (dopo che scade l'interesse) ─────────────────────
-// Campionato: venerdì ore 16:00 (stesso weekend)
-// Senza partite: +24h dalla scadenza interesse
-// ── Calcola scadenza offerte (slot base venerdì 12:00 Italia = 11:00 UTC) ──────
+// Sempre: venerdì della stessa settimana, slot base 13:00 UTC (= 14:00 Italia)
 export function calcolaScadenzaOfferte(scadenzaInteresse) {
-  const d = new Date(scadenzaInteresse);
-  const m = d.getMonth() + 1;
-  const day = d.getDate();
-  const periodoCampionato = (m > 8) || (m === 8 && day >= 16) || (m < 6);
-
-  if (periodoCampionato) {
-    // Venerdì della stessa settimana alle 11:00 UTC (= 12:00 Italia)
-    // Partiamo dal lunedì UTC della settimana della scadenza interesse (giovedì)
-    const dowUtc = d.getUTCDay(); // 4 = giovedì
-    const giorniDaLun = (dowUtc === 0) ? 6 : dowUtc - 1;
-    const lun = new Date(d);
-    lun.setUTCDate(d.getUTCDate() - giorniDaLun);
-    lun.setUTCHours(0, 0, 0, 0);
-
-    // Venerdì = lunedì + 4 giorni, ore 13:00 UTC (= 14:00 Italia)
-    const ven = new Date(lun);
-    ven.setUTCDate(lun.getUTCDate() + 4);
-    ven.setUTCHours(13, 0, 0, 0);
-    return ven;
-  } else {
-    return new Date(d.getTime() + 24 * 60 * 60 * 1000);
-  }
+  const d = new Date(scadenzaInteresse); // giovedì 20:00 UTC
+  const ven = new Date(d);
+  ven.setUTCDate(d.getUTCDate() + 1); // giovedì → venerdì
+  ven.setUTCHours(13, 0, 0, 0); // 13:00 UTC = 14:00 Italia (slot base)
+  return ven;
 }
 
 // ── Inserisce la chiamata principale (tipo='prima') ───────────────────────────
@@ -2567,26 +2536,13 @@ export async function creaAstaDaChiamate(nomeGiocatore) {
 
   const scadenzaInteresse = new Date(primaria.scadenza_interesse);
 
-  // Usa UTC per evitare shift di fuso orario
-  const mUtc = scadenzaInteresse.getUTCMonth() + 1;
-  const dayUtc = scadenzaInteresse.getUTCDate();
-  const periodoCampionato = (mUtc > 8) || (mUtc === 8 && dayUtc >= 16) || (mUtc < 6);
-
-  let scadenzaOfferte;
-  if (periodoCampionato) {
-    // Venerdì della stessa settimana UTC
-    // scadenzaInteresse è giovedì 19:00 UTC → +1 giorno = venerdì
-    const ven = new Date(scadenzaInteresse);
-    ven.setUTCDate(scadenzaInteresse.getUTCDate() + 1); // giovedì → venerdì
-    ven.setUTCHours(13, 0, 0, 0); // 13:00 UTC = 14:00 Italia (slot base)
-
-    // Quante aste ci sono già quel venerdì → +30min per slot
-    const slot = await calcolaSlotVenerdì(ven);
-    ven.setUTCMinutes(slot * 30);
-    scadenzaOfferte = ven;
-  } else {
-    scadenzaOfferte = new Date(scadenzaInteresse.getTime() + 24 * 60 * 60 * 1000);
-  }
+  // Sempre: venerdì = giovedì + 1 giorno, slot base 13:00 UTC (14:00 Italia) + 30min per ogni asta già presente
+  const ven = new Date(scadenzaInteresse);
+  ven.setUTCDate(scadenzaInteresse.getUTCDate() + 1);
+  ven.setUTCHours(13, 0, 0, 0);
+  const slot = await calcolaSlotVenerdì(ven);
+  ven.setUTCMinutes(slot * 30);
+  const scadenzaOfferte = ven;
 
   const { data: asta, error } = await supabase.from('aste_svincolati')
     .insert({
@@ -3272,6 +3228,87 @@ export async function getCommenti(notiziaId) { const { data, error } = await sup
 export async function insertCommento({ notiziaId, autore, squadra, testo }) { const { data, error } = await supabase.from('commenti_notizie').insert({ notizia_id: notiziaId, autore, squadra, testo }).select().single(); if (error) throw error; return data; }
 export async function deleteCommento(id) { const { error } = await supabase.from('commenti_notizie').delete().eq('id', id); if (error) throw error; }
 export function subscribeCommenti(notiziaId, callback) { return supabase.channel(`commenti-${notiziaId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'commenti_notizie', filter: `notizia_id=eq.${notiziaId}` }, callback).subscribe(); }
+// ─── ADMIN CONTROL ROOM — EXTRA BULK OPERATIONS ──────────────────────────────
+
+// Mercato override (stored in impostazioni table)
+export async function getMercatoOverride() {
+  const { data } = await supabase.from('impostazioni').select('valore').eq('chiave', 'mercato_override').single();
+  return data?.valore ?? null; // null=auto, 'aperto', 'chiuso'
+}
+
+export async function setMercatoOverride(valore) {
+  // valore: null (auto), 'aperto', 'chiuso'
+  if (valore === null) {
+    await supabase.from('impostazioni').delete().eq('chiave', 'mercato_override');
+  } else {
+    await supabase.from('impostazioni').upsert({ chiave: 'mercato_override', valore }, { onConflict: 'chiave' });
+  }
+}
+
+// Trasferimenti differiti
+export async function getTrasferimentiDifferiti() {
+  const { data } = await supabase.from('trattative').select('*').eq('stato', 'accettata_differita').order('updated_at', { ascending: false });
+  return data || [];
+}
+
+// FPF: applica multe a tutte le squadre che hanno sforato
+export async function applicaMulteFPFTutte(stagione = '2026-27') {
+  const fpfMap = await getFpfTutteSquadre();
+  const oggi = new Date().toISOString().slice(0, 10);
+  const results = [];
+
+  for (const [squadra, netto] of Object.entries(fpfMap)) {
+    const { multa, pt, euro } = calcolaFairSpending(netto);
+    if (multa === 0) { results.push({ squadra, skip: true, motivo: 'in_regola' }); continue; }
+
+    // Check già applicata questa stagione
+    const { data: penGia } = await supabase.from('penalita')
+      .select('id').eq('squadra', squadra).eq('codice_tipo', 'fpf').eq('stagione', stagione).eq('applicata', true).single();
+    if (penGia) { results.push({ squadra, skip: true, motivo: 'gia_applicata' }); continue; }
+
+    const { data: sq } = await supabase.from('squadre').select('bilancio, punti').eq('name', squadra).single();
+    if (!sq) { results.push({ squadra, skip: true, motivo: 'squadra_not_found' }); continue; }
+
+    const nuovoBilancio = parseFloat((sq.bilancio - multa).toFixed(2));
+    const nuoviPunti = (sq.punti || 0) - pt;
+
+    await supabase.from('squadre').update({ bilancio: nuovoBilancio, ...(pt > 0 ? { punti: nuoviPunti } : {}) }).eq('name', squadra);
+    await supabase.from('movimenti').insert({ squadra, descrizione: `Multa FPF ${stagione} (netto: ${netto.toFixed(1)}M)`, uscita: multa, data: oggi });
+    // Insert penalita record
+    await supabase.from('penalita').insert({ squadra, stagione, codice_tipo: 'fpf', descrizione: `FPF ${stagione}`, importo: multa, pt_penalita: pt, euro_penalita: euro, applicata: true, data: oggi });
+
+    results.push({ squadra, ok: true, netto, multa, pt, euro });
+  }
+  return results;
+}
+
+// Premi: distribuisci premi campionato in base alla classifica attuale
+export async function applicaPremiCampionato(stagione = '2026-27') {
+  const oggi = new Date().toISOString().slice(0, 10);
+  const { data: classifica } = await supabase.from('classifica').select('squadra, punti').eq('stagione', stagione).order('punti', { ascending: false });
+  if (!classifica?.length) throw new Error('Nessuna classifica trovata');
+
+  const results = [];
+  for (let i = 0; i < classifica.length; i++) {
+    const squadra = classifica[i].squadra;
+    const posizione = i + 1;
+    const premio = calcolaPremiFinali(posizione);
+    if (!premio) { results.push({ squadra, posizione, skip: true }); continue; }
+
+    // Check già assegnato
+    const { data: giaAssegnato } = await supabase.from('movimenti').select('id')
+      .eq('squadra', squadra).ilike('descrizione', `Premio campionato ${stagione}%`).single();
+    if (giaAssegnato) { results.push({ squadra, posizione, skip: true, motivo: 'gia_assegnato' }); continue; }
+
+    const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadra).single();
+    const nuovoBilancio = parseFloat(((sq?.bilancio || 0) + premio).toFixed(2));
+    await supabase.from('squadre').update({ bilancio: nuovoBilancio }).eq('name', squadra);
+    await supabase.from('movimenti').insert({ squadra, descrizione: `Premio campionato ${stagione} (${posizione}° posto)`, entrata: premio, data: oggi });
+    results.push({ squadra, posizione, ok: true, premio });
+  }
+  return results;
+}
+
 // ─── TELEGRAM NOTIFICATIONS ──────────────────────────────────────────────────
 
 /**
