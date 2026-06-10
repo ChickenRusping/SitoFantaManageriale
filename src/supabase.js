@@ -1222,11 +1222,11 @@ function _calcolaStipCorretto(quot, anniContratto, anni) {
 }
 
 // Restituisce la data dell'ultima domenica (YYYY-MM-DD)
-// "domenica alle 24:00" = scadenza settimanale tasse
-function getDomenicaCorrente() {
+// La tassa scatta ogni domenica alle 23:00 — la domenica è la chiave di deduplicazione settimanale
+export function getDomenicaCorrente() {
   const d = new Date();
   const giorno = d.getDay(); // 0=dom, 1=lun, ..., 6=sab
-  const diff = giorno === 0 ? 0 : -giorno; // torna indietro alla domenica più recente
+  const diff = giorno === 0 ? 0 : -giorno; // rimane domenica se è domenica, altrimenti torna alla domenica precedente
   d.setDate(d.getDate() + diff);
   return d.toISOString().slice(0, 10);
 }
@@ -1256,27 +1256,26 @@ export async function applicaPagamentiAutomatici() {
   if (!squadre?.length) return results;
 
   // ── 1. TASSA SETTIMANALE (art. 7.1) ──────────────────────────────────────
-  // Scadenza: domenica alle 23:00
-  // Applica solo se: è domenica dopo le 23:00, OPPURE è un giorno successivo
-  // e la domenica di questa settimana non è ancora stata tassata
+  // Scatta ogni domenica alle 23:00. Chiave deduplicazione = data domenica.
+  // Se domenica è stata mancata, si recupera nei giorni successivi (catch-up).
   const domenica = getDomenicaCorrente();
   const giorno = oggi.getDay(); // 0=dom
   const ora = oggi.getHours();
-  const passataCoprifuoco = (giorno === 0 && ora >= 23) || giorno !== 0;
-  if (!passataCoprifuoco) return results; // troppo presto questa settimana
+  // Condizione: domenica dopo le 23, OPPURE giorni successivi (catch-up domenica mancata)
+  const tassaScattata = (giorno === 0 && ora >= 23) || giorno !== 0;
+  if (!tassaScattata) return results; // domenica prima delle 23: troppo presto
 
   const { week, year } = getWeekNumber(oggi);
   const settimanaLabel = `${week}/${year}`;
 
   for (const sq of squadre) {
     try {
-      // Controlla se la tassa è già stata applicata questa settimana
-      // Usa la domenica come data_controllo — chiave univoca per settimana
+      // Controlla se la tassa è già stata applicata questa settimana (chiave = domenica)
       const { data: gia } = await supabase
         .from('tasse_settimanali')
         .select('id')
         .eq('squadra', sq.name)
-        .eq('data_controllo', domenica)  // chiave esatta, non gte
+        .eq('data_controllo', domenica)
         .limit(1);
       if (gia?.length) continue; // già applicata questa settimana
 
@@ -1286,10 +1285,10 @@ export async function applicaPagamentiAutomatici() {
   }
 
   // ── 2. STIPENDI MENSILI + STADIO (art. 4.4) ──────────────────────────────
-  // Applica se oggi è il 1° del mese e i pagamenti non sono ancora stati effettuati
+  // Applica il 1° del mese DALLE 9:00 in poi
   const primoDiMese = getPrimoDiMese();
   const meseISO = oggi.toISOString().slice(0, 7); // YYYY-MM
-  if (oggiStr === primoDiMese) {
+  if (oggiStr === primoDiMese && ora >= 9) {
     for (const sq of squadre) {
       try {
         // Controlla se gli stipendi sono già stati pagati questo mese (chiave esatta: YYYY-MM)
