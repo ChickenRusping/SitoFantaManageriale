@@ -148,7 +148,7 @@ async function cachedFetch(key, fetcher, ttl = 90000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, applicaPagamentiAutomatici, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, applicaPagamentiAutomatici, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento,
   getBonusTrattativa, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -3092,10 +3092,14 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
   }
 
   async function handleApplicaTassa() {
+    const domenica = getDomenicaCorrente();
+    // Blocca se la tassa di questa domenica è già stata applicata
+    const giaApplicata = tasse.some(t => t.data_controllo === domenica);
+    if (giaApplicata) { alert(`La tassa di questa settimana (domenica ${domenica}) è già stata applicata.`); return; }
     if (!window.confirm(`Applicare tassa del ${tassa.perc}% (−${tassa.importo}M) al bilancio di ${team.name}?`)) return;
     setApplicandoTassa(true);
     try {
-      await applicaTassaSettimana(team.name, bilancio);
+      await applicaTassaSettimana(team.name, bilancio, domenica);
       await logAzione({ utente: 'admin', squadra: team.name, azione: 'tassa_settimanale', entita: 'squadre', descrizione: `Tassa settimanale ${tassa.perc}% −${tassa.importo}M (bilancio era ${bilancio.toFixed(2)}M)`, dataPrima: { bilancio }, dataDopo: { bilancio: bilancio - tassa.importo }, rollbackPossibile: true });
       getTassePagate(team.name).then(setTasse);
     } catch(e) { alert(e.message); }
@@ -3207,12 +3211,20 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
               <span style={{ fontSize: 12, color: "#888" }}>Tassa prossimo lunedì</span>
               <span style={{ fontSize: 18, fontWeight: 900, color: "#f59e0b", fontFamily: "'Bebas Neue',sans-serif" }}>−{tassa.importo}M <span style={{ fontSize: 12 }}>({tassa.perc}%)</span></span>
             </div>
-            {isAdmin && (
-              <button onClick={handleApplicaTassa} disabled={applicandoTassa}
-                style={{ width: "100%", padding: "9px", borderRadius: 9, border: "1px solid #f59e0b33", background: "#f59e0b18", color: "#f59e0b", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                {applicandoTassa ? "Applicazione..." : `📊 Applica tassa settimana (−${tassa.importo}M)`}
-              </button>
-            )}
+            {isAdmin && (() => {
+              const domenicaKey = getDomenicaCorrente();
+              const giaFatta = tasse.some(t => t.data_controllo === domenicaKey);
+              return giaFatta ? (
+                <div style={{ width: "100%", padding: "9px", borderRadius: 9, background: "#10b98110", border: "1px solid #10b98130", color: "#10b981", fontSize: 12, fontWeight: 700, textAlign: "center" }}>
+                  ✓ Tassa settimana ({domenicaKey}) già applicata
+                </div>
+              ) : (
+                <button onClick={handleApplicaTassa} disabled={applicandoTassa}
+                  style={{ width: "100%", padding: "9px", borderRadius: 9, border: "1px solid #f59e0b33", background: "#f59e0b18", color: "#f59e0b", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  {applicandoTassa ? "Applicazione..." : `📊 Applica tassa settimana (−${tassa.importo}M)`}
+                </button>
+              );
+            })()}
           </>
         )}
         {/* Storico ultime tasse */}
