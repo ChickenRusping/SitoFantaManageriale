@@ -4552,7 +4552,7 @@ function ClubIdentityRight({ team, clubIdentity, isAdmin, mySquadra, onRefresh }
     finally { setSaving(false); }
   }
 
-  const TEAMS_LIST = ["Alcool Campi","AK Toio","Agnus Dei FC","Balillareal","Borjcellona","Consules FC","Finocchiona AC","Shalpe 104"];
+  const TEAMS_LIST = ["Alcool Campi","AK Toio","Agnus Dei FC","Balillareal","Borjcellona","Wehrmacht FC","Finocchiona AC","Shalpe 104"];
   const squadreRivali = TEAMS_LIST.filter(n => n !== team.name);
 
   // Rivale: bloccato dopo la scelta — solo admin può cambiarlo (art. 8.3)
