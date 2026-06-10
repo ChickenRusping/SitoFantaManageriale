@@ -4198,6 +4198,13 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
     const nuovi = [...movimenti, { entrata, uscita }];
     const nuovoBilancio = parseFloat(nuovi.reduce((s, m) => s + (m.entrata || 0) - (m.uscita || 0), 0).toFixed(2));
     await updateSquadra(team.name, { bilancio: nuovoBilancio });
+    // Notifica privata Telegram al presidente della squadra
+    sendTelegramNotification('movimento_privato', {
+      descrizione: movForm.descrizione,
+      entrata: entrata || null,
+      uscita: uscita || null,
+      bilancio: nuovoBilancio,
+    }, team.name);
     setShowMovForm(false);
     setMovForm({ descrizione: "", entrata: "", uscita: "", data: new Date().toISOString().slice(0, 10) });
     await loadMovimenti();
