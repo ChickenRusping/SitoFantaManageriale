@@ -1843,6 +1843,124 @@ export async function applicaIscrizioneATutti() {
 }
 
 
+// ─── ADMIN CONTROL ROOM ───────────────────────────────────────────────────────
+
+// Restituisce tutti gli investimenti "Ristrutturazione Stadio" attivi per la stagione
+export async function getStadioInvestimenti(stagione = '2026-27') {
+  const { data } = await supabase.from('investimenti')
+    .select('*').eq('nome', 'Ristrutturazione Stadio').eq('stagione', stagione);
+  return data || [];
+}
+
+// Aggiunge o rimuove il potenziamento stadio per un team (admin override, senza costo)
+export async function setStadioUpgrade(squadra, attivo, stagione = '2026-27') {
+  if (attivo) {
+    const { error } = await supabase.from('investimenti').insert({
+      squadra, nome: 'Ristrutturazione Stadio', categoria: 'grande',
+      costo: 0, stagione,
+      data_acquisto: new Date().toISOString().slice(0, 10),
+      dati: { admin_override: true },
+    });
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from('investimenti').delete()
+      .eq('squadra', squadra).eq('nome', 'Ristrutturazione Stadio').eq('stagione', stagione);
+    if (error) throw error;
+  }
+}
+
+// Applica le entrate stadio a TUTTE le squadre (trigger manuale admin)
+export async function applicaEntrateStadioTutte(stagione = '2026-27') {
+  const oggi = new Date().toISOString().slice(0, 10);
+  const meseISO = new Date().toISOString().slice(0, 7);
+  const stadioDesc = `Entrate stadio ${meseISO}`;
+
+  const { data: squadre } = await supabase.from('squadre').select('name, bilancio');
+  if (!squadre?.length) return [];
+
+  const { data: invAll } = await supabase.from('investimenti')
+    .select('squadra').eq('nome', 'Ristrutturazione Stadio').eq('stagione', stagione);
+  const potenziate = new Set((invAll || []).map(i => i.squadra));
+
+  const results = [];
+  for (const sq of squadre) {
+    const { data: gia } = await supabase.from('movimenti').select('id')
+      .eq('squadra', sq.name).eq('descrizione', stadioDesc).limit(1);
+    if (gia?.length) { results.push({ squadra: sq.name, skip: true }); continue; }
+
+    const entrata = potenziate.has(sq.name) ? 5.5 : 4;
+    await supabase.from('movimenti').insert({ squadra: sq.name, descrizione: stadioDesc, entrata, data: oggi });
+    await supabase.from('squadre').update({ bilancio: parseFloat((sq.bilancio + entrata).toFixed(2)) }).eq('name', sq.name);
+    results.push({ squadra: sq.name, entrata, ok: true });
+  }
+  return results;
+}
+
+// Applica la tassa settimanale a TUTTE le squadre (trigger manuale admin)
+export async function applicaTassaATutti() {
+  const domenica = getDomenicaCorrente();
+  const { week, year } = getWeekNumber(new Date());
+  const settimanaLabel = `${week}/${year}`;
+  const { data: squadre } = await supabase.from('squadre').select('name, bilancio');
+  if (!squadre?.length) return [];
+  const results = [];
+  for (const sq of squadre) {
+    const { data: gia } = await supabase.from('tasse_settimanali').select('id')
+      .eq('squadra', sq.name).eq('data_controllo', domenica).limit(1);
+    if (gia?.length) { results.push({ squadra: sq.name, skip: true }); continue; }
+    const r = await applicaTassaSettimana(sq.name, sq.bilancio, domenica, settimanaLabel);
+    results.push({ squadra: sq.name, ...r });
+  }
+  return results;
+}
+
+// Applica stipendi mensili a TUTTE le squadre (trigger manuale admin)
+export async function applicaStipendioATutti() {
+  const oggi = new Date().toISOString().slice(0, 10);
+  const meseISO = new Date().toISOString().slice(0, 7);
+  const stipDesc = `Pagamento stipendi ${meseISO}`;
+  const { data: squadre } = await supabase.from('squadre').select('name, bilancio');
+  if (!squadre?.length) return [];
+  const results = [];
+  for (const sq of squadre) {
+    const { data: gia } = await supabase.from('movimenti').select('id')
+      .eq('squadra', sq.name).eq('descrizione', stipDesc).limit(1);
+    if (gia?.length) { results.push({ squadra: sq.name, skip: true }); continue; }
+    const { data: rosa } = await supabase.from('rosa').select('quot, anni_contratto, anni')
+      .eq('squadra', sq.name).eq('in_vivaio', false);
+    const stipRosa = (rosa || []).reduce((s, p) => s + _calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
+    const { data: all } = await supabase.from('allenatori_carte').select('stipendio_sc')
+      .eq('squadra', sq.name).single().catch(() => ({ data: null }));
+    const totalStip = parseFloat((stipRosa + Number(all?.stipendio_sc || 0)).toFixed(2));
+    const rata = parseFloat((totalStip / 12).toFixed(2));
+    await supabase.from('movimenti').insert({ squadra: sq.name, descrizione: stipDesc, uscita: rata, data: oggi });
+    await supabase.from('squadre').update({ bilancio: parseFloat((sq.bilancio - rata).toFixed(2)), salary_used: totalStip }).eq('name', sq.name);
+    results.push({ squadra: sq.name, rata, ok: true });
+  }
+  return results;
+}
+
+// Stato finanziario riepilogativo per il Control Room
+export async function getControlRoomStatus() {
+  const oggi = new Date().toISOString().slice(0, 10);
+  const meseISO = new Date().toISOString().slice(0, 7);
+  const domenica = getDomenicaCorrente();
+  const stipDesc = `Pagamento stipendi ${meseISO}`;
+  const stadioDesc = `Entrate stadio ${meseISO}`;
+
+  const [{ data: squadre }, { data: tasse }, { data: movMese }] = await Promise.all([
+    supabase.from('squadre').select('*'),
+    supabase.from('tasse_settimanali').select('squadra, data_controllo').eq('data_controllo', domenica),
+    supabase.from('movimenti').select('squadra, descrizione').gte('data', `${meseISO}-01`),
+  ]);
+
+  const tassePagate = new Set((tasse || []).map(t => t.squadra));
+  const stipendiPagati = new Set((movMese || []).filter(m => m.descrizione === stipDesc).map(m => m.squadra));
+  const stadioPagato = new Set((movMese || []).filter(m => m.descrizione === stadioDesc).map(m => m.squadra));
+
+  return { squadre: squadre || [], tassePagate, stipendiPagati, stadioPagato, domenica, meseISO };
+}
+
 // ─── AUDIT LOG ────────────────────────────────────────────────────────────────
 
 export async function logAzione({ utente, squadraUtente = null, azione, entita, entitaId = null, squadra = null, descrizione, dataPrima = null, dataDopo = null, rollbackPossibile = false }) {
