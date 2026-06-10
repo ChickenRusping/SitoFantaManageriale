@@ -162,7 +162,7 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   applicaTassaATutti, applicaStipendioATutti, getControlRoomStatus,
   // Extra Control Room
   getMercatoOverride, setMercatoOverride, getTrasferimentiDifferiti,
-  applicaMulteFPFTutte, applicaPremiCampionato, aggiornaContrattiAnnuali,
+  applicaMulteFPFTutte, applicaPremiCampionato,
   getFpfTutteSquadre, calcolaFairSpending, calcolaPremiFinali,
   // Telegram
   sendTelegramNotification, getTelegramRegistrations, deleteTelegramRegistration,
