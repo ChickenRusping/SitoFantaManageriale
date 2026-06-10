@@ -23,98 +23,68 @@ async function sendMessage(chatId: string | number, text: string, extra: object 
     const res = await fetch(`${TG}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML", ...extra }),
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
     });
     const json = await res.json();
-    if (!json.ok) console.warn("Telegram sendMessage error:", json.description);
+    if (!json.ok) console.warn("TG error:", json.description);
     return json;
   } catch (e) {
-    console.warn("Telegram fetch error:", e);
+    console.warn("TG fetch error:", e);
     return { ok: false };
   }
 }
 
-// ─── Message builder ──────────────────────────────────────────────────────────
-
-function buildMessage(type: string, payload: Record<string, unknown>): string | null {
+function buildMessage(type: string, p: Record<string, unknown>): string | null {
   switch (type) {
-
-    // ── PUBLIC (channel) ──────────────────────────────────────────────────────
-
     case "chiamata_svincolati":
-      return `📣 <b>Nuova chiamata!</b>\n\n⚽ <b>${payload.giocatore}</b> · Q${payload.quotazione}\n🏟 <b>${payload.squadra}</b> ha manifestato interesse\n⏰ Asta disponibile tra ${payload.ore ?? 24}h se altri si uniscono`;
-
+      return `📣 <b>Nuova chiamata!</b>\n\n⚽ <b>${p.giocatore}</b> · Q${p.quotazione}\n🏟 <b>${p.squadra}</b> ha manifestato interesse\n⏰ Asta disponibile tra ${p.ore ?? 24}h se altri si uniscono`;
     case "asta_svincolati":
-      return `🔔 <b>Asta svincolati aperta!</b>\n\n⚽ <b>${payload.giocatore}</b> · Q${payload.quotazione}\n📣 Chiamato da: <b>${payload.squadra}</b>\n⏰ Scade tra <b>${payload.ore ?? 24}h</b> — fate le vostre offerte!`;
-
+      return `🔔 <b>Asta svincolati aperta!</b>\n\n⚽ <b>${p.giocatore}</b> · Q${p.quotazione}\n📣 Chiamato da: <b>${p.squadra}</b>\n⏰ Scade tra <b>${p.ore ?? 24}h</b> — fate le vostre offerte!`;
     case "notizia_pinnata":
-      return `📌 <b>${payload.squadra ?? "Lega Admin"}</b>\n\n<b>${payload.titolo}</b>\n${String(payload.testo ?? "").slice(0, 300)}${String(payload.testo ?? "").length > 300 ? "…" : ""}`;
-
+      return `📌 <b>${p.squadra ?? "Lega Admin"}</b>\n\n<b>${p.titolo}</b>\n${String(p.testo ?? "").slice(0, 300)}${String(p.testo ?? "").length > 300 ? "…" : ""}`;
     case "scadenza_imminente":
-      return `⏰ <b>Scadenza tra ${payload.giorni} giorn${Number(payload.giorni) === 1 ? "o" : "i"}!</b>\n\n📋 ${payload.label}\n📅 ${payload.data}`;
-
+      return `⏰ <b>Scadenza tra ${p.giorni} giorn${Number(p.giorni) === 1 ? "o" : "i"}!</b>\n\n📋 ${p.label}\n📅 ${p.data}`;
     case "mercato_aperto":
-      return `🟢 <b>Mercato aperto</b> — sessione <b>${payload.periodo}</b>\nPotete ora fare offerte e trattative.`;
-
+      return `🟢 <b>Mercato aperto</b> — sessione <b>${p.periodo}</b>\nPotete ora fare offerte e trattative.`;
     case "mercato_chiuso":
       return `🔴 <b>Mercato chiuso</b>\nLa finestra di trasferimenti è terminata.`;
-
     case "tassa_applicata":
-      return `📊 <b>Tasse settimanali applicate</b>\nSettimana del ${payload.domenica} — verificate i vostri bilanci.`;
-
+      return `📊 <b>Tasse settimanali applicate</b>\nSettimana del ${p.domenica} — verificate i vostri bilanci.`;
     case "stipendi_applicati":
-      return `💰 <b>Stipendi mensili addebitati</b>\nMese: <b>${payload.mese}</b> — verificate i vostri bilanci.`;
-
+      return `💰 <b>Stipendi mensili addebitati</b>\nMese: <b>${p.mese}</b> — verificate i vostri bilanci.`;
     case "stadio_applicato":
-      return `🏟 <b>Entrate stadio accreditate</b>\nMese: <b>${payload.mese}</b>\n4M (base) · 5.5M (con Ristrutturazione Stadio)`;
-
-    // ── PRIVATE (to specific team) ────────────────────────────────────────────
-
+      return `🏟 <b>Entrate stadio accreditate</b>\nMese: <b>${p.mese}</b>\n4M (base) · 5.5M (con Ristrutturazione Stadio)`;
     case "trattativa_ricevuta":
-      return `📨 <b>Nuova offerta ricevuta!</b>\n\n⚽ <b>${payload.giocatore}</b>\n💰 Offerta: <b>${payload.importo}M</b>\n🏟 Da: <b>${payload.da_squadra}</b>\nAccedi all'app per rispondere.`;
-
+      return `📨 <b>Nuova offerta ricevuta!</b>\n\n⚽ <b>${p.giocatore}</b>\n💰 Offerta: <b>${p.importo}M</b>\n🏟 Da: <b>${p.da_squadra}</b>\nAccedi all'app per rispondere.`;
     case "trattativa_accettata":
-      return `✅ <b>Trattativa accettata!</b>\n\n⚽ <b>${payload.giocatore}</b> si trasferisce per <b>${payload.importo}M</b>`;
-
+      return `✅ <b>Trattativa accettata!</b>\n\n⚽ <b>${p.giocatore}</b> si trasferisce per <b>${p.importo}M</b>`;
     case "trattativa_rifiutata":
-      return `❌ <b>Offerta rifiutata</b>\n\nL'offerta per <b>${payload.giocatore}</b> (${payload.importo}M) non è stata accettata.`;
-
+      return `❌ <b>Offerta rifiutata</b>\n\nL'offerta per <b>${p.giocatore}</b> (${p.importo}M) non è stata accettata.`;
     case "asta_vinta":
-      return `🏆 <b>Asta vinta!</b>\n\n⚽ <b>${payload.giocatore}</b> è tuo per <b>${payload.importo}M</b>!\nBenvenuto in rosa 🎉`;
-
+      return `🏆 <b>Asta vinta!</b>\n\n⚽ <b>${p.giocatore}</b> è tuo per <b>${p.importo}M</b>!\nBenvenuto in rosa 🎉`;
     case "asta_persa":
-      return `😔 <b>Asta persa</b>\n\n⚽ <b>${payload.giocatore}</b>\nVincitore: <b>${payload.vincitore}</b> · ${payload.importo}M`;
-
+      return `😔 <b>Asta persa</b>\n\n⚽ <b>${p.giocatore}</b>\nVincitore: <b>${p.vincitore}</b> · ${p.importo}M`;
     case "movimento_privato":
-      return `💳 <b>Nuovo movimento</b>\n\n${payload.entrata ? `+${payload.entrata}` : `-${payload.uscita}`}M — ${payload.descrizione}\n💰 Bilancio aggiornato: <b>${payload.bilancio}M</b>`;
-
+      return `💳 <b>Nuovo movimento</b>\n\n${p.entrata ? `+${p.entrata}` : `-${p.uscita}`}M — ${p.descrizione}\n💰 Bilancio aggiornato: <b>${p.bilancio}M</b>`;
     default:
       return null;
   }
 }
 
-// ─── Main handler ─────────────────────────────────────────────────────────────
-
 serve(async (req) => {
-  // Allow CORS from the app
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "authorization, content-type",
-      },
-    });
+    return new Response(null, { status: 204, headers: CORS });
   }
 
   const body = await req.json().catch(() => null);
-  if (!body) return new Response("Bad request", { status: 400 });
+  if (!body) return err("Bad request");
 
   const db = createClient(SUPABASE_URL, SERVICE_KEY);
 
-  // ── A) Incoming webhook from Telegram ──────────────────────────────────────
+  // ── A) Incoming Telegram webhook ──────────────────────────────────────────
   if ("update_id" in body) {
     const msg = body.message ?? body.channel_post;
-    if (!msg?.text) return new Response("ok");
+    if (!msg?.text) return ok();
 
     const chatId   = msg.chat.id as number;
     const text     = (msg.text as string).trim();
@@ -122,70 +92,52 @@ serve(async (req) => {
 
     if (text.startsWith("/start")) {
       const slug = text.split(" ")[1] ?? "";
-
       if (!slug) {
-        await sendMessage(chatId,
-          "👋 Benvenuto al bot di <b>Fanta Manageriale</b>!\n\nPer ricevere notifiche private, clicca il link di registrazione nella tua pagina presidente sull'app.\n\nComandi:\n/status — mostra la tua registrazione"
-        );
-        return new Response("ok");
+        await sendMessage(chatId, "👋 Benvenuto al bot di <b>Fanta Manageriale</b>!\n\nPer ricevere notifiche private, clicca il link nella tua pagina presidente.\n\nComandi:\n/status — mostra registrazione\n/unregister — rimuovi registrazione");
+        return ok();
       }
-
-      // Decode squad name (base64url)
       let squadra: string;
-      try {
-        squadra = atob(slug.replace(/-/g, "+").replace(/_/g, "/"));
-      } catch {
-        squadra = slug;
-      }
+      try { squadra = atob(slug.replace(/-/g, "+").replace(/_/g, "/")); }
+      catch { squadra = slug; }
 
       const { data: sq } = await db.from("squadre").select("name").eq("name", squadra).single();
-
       if (!sq) {
-        await sendMessage(chatId,
-          `❌ Squadra non trovata: <code>${squadra}</code>\n\nRiprova con il link dalla tua pagina presidente.`
-        );
+        await sendMessage(chatId, `❌ Squadra non trovata: <code>${squadra}</code>\n\nRiprova con il link dalla tua pagina presidente.`);
       } else {
         await db.from("telegram_registrations").upsert(
           { squadra, chat_id: chatId, username, registered_at: new Date().toISOString() },
           { onConflict: "squadra" }
         );
-        await sendMessage(chatId,
-          `✅ <b>Registrazione completata!</b>\n\n🏟 Squadra: <b>${squadra}</b>\n👤 Username: @${username}\n\nRiceverai notifiche private per:\n• 📨 Trattative ricevute\n• 🏆 Risultati aste svincolati\n• 💳 Movimenti importanti\n\nPer notifiche pubbliche (aste, news, scadenze) unisciti al canale della lega.`
-        );
+        await sendMessage(chatId, `✅ <b>Registrazione completata!</b>\n\n🏟 Squadra: <b>${squadra}</b>\n👤 Username: @${username}\n\nRiceverai notifiche private per:\n• 📨 Trattative ricevute\n• 🏆 Risultati aste svincolati\n• 💳 Movimenti importanti`);
       }
-
     } else if (text === "/status") {
-      const { data: reg } = await db.from("telegram_registrations").select("squadra, username, registered_at").eq("chat_id", chatId).single();
+      const { data: reg } = await db.from("telegram_registrations").select("squadra, registered_at").eq("chat_id", chatId).single();
       if (reg) {
-        const since = new Date(reg.registered_at as string).toLocaleDateString("it-IT");
-        await sendMessage(chatId, `✅ Registrato come: <b>${reg.squadra}</b>\nDal: ${since}`);
+        await sendMessage(chatId, `✅ Registrato come: <b>${reg.squadra}</b>\nDal: ${new Date(reg.registered_at as string).toLocaleDateString("it-IT")}`);
       } else {
         await sendMessage(chatId, "❌ Non sei registrato.\nUsa il link dalla tua pagina presidente.");
       }
-
     } else if (text === "/unregister") {
       await db.from("telegram_registrations").delete().eq("chat_id", chatId);
-      await sendMessage(chatId, "✅ Registrazione rimossa. Non riceverai più notifiche private.");
+      await sendMessage(chatId, "✅ Registrazione rimossa.");
     }
-
-    return new Response("ok");
+    return ok();
   }
 
-  // ── B) Outgoing notification (called from React app) ──────────────────────
+  // ── B) Outgoing notification from React app ───────────────────────────────
   const { type, payload = {}, squadra: targetSquadra } = body as {
     type: string;
     payload: Record<string, unknown>;
     squadra?: string;
   };
 
-  if (!type) return new Response("Missing type", { status: 400 });
+  if (!type) return err("Missing type");
 
   const text = buildMessage(type, payload);
-  if (!text) return new Response(`Unknown type: ${type}`, { status: 400 });
+  if (!text) return err(`Unknown type: ${type}`);
 
   const results: Array<{ target: string; ok: boolean }> = [];
 
-  // Public types → channel
   const publicTypes = [
     "chiamata_svincolati", "asta_svincolati", "notizia_pinnata",
     "scadenza_imminente", "mercato_aperto", "mercato_chiuso",
@@ -197,23 +149,19 @@ serve(async (req) => {
     results.push({ target: "channel", ok: r.ok === true });
   }
 
-  // Private types → specific team
   if (targetSquadra) {
     const { data: reg } = await db
       .from("telegram_registrations")
       .select("chat_id")
       .eq("squadra", targetSquadra)
       .single();
-
     if (reg?.chat_id) {
       const r = await sendMessage(reg.chat_id as number, text);
       results.push({ target: targetSquadra, ok: r.ok === true });
     } else {
-      results.push({ target: targetSquadra, ok: false, ...{ reason: "not_registered" } });
+      results.push({ target: targetSquadra, ok: false });
     }
   }
 
-  return new Response(JSON.stringify({ ok: true, results }), {
-    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-  });
+  return ok({ ok: true, results });
 });
