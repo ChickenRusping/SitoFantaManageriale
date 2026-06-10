@@ -3272,6 +3272,45 @@ export async function getCommenti(notiziaId) { const { data, error } = await sup
 export async function insertCommento({ notiziaId, autore, squadra, testo }) { const { data, error } = await supabase.from('commenti_notizie').insert({ notizia_id: notiziaId, autore, squadra, testo }).select().single(); if (error) throw error; return data; }
 export async function deleteCommento(id) { const { error } = await supabase.from('commenti_notizie').delete().eq('id', id); if (error) throw error; }
 export function subscribeCommenti(notiziaId, callback) { return supabase.channel(`commenti-${notiziaId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'commenti_notizie', filter: `notizia_id=eq.${notiziaId}` }, callback).subscribe(); }
+// ─── TELEGRAM NOTIFICATIONS ──────────────────────────────────────────────────
+
+/**
+ * Send a Telegram notification via the Edge Function.
+ * type:    notification type key (see Edge Function index.ts for full list)
+ * payload: data object for the message template
+ * squadra: (optional) target team for private DMs; omit for public-only
+ *
+ * Never throws — errors are silently swallowed so they don't break app flows.
+ */
+export async function sendTelegramNotification(type, payload = {}, squadra = null) {
+  try {
+    await supabase.functions.invoke('telegram-notify', {
+      body: { type, payload, ...(squadra ? { squadra } : {}) },
+    });
+  } catch (e) {
+    console.warn('[Telegram] notification failed silently:', type, e);
+  }
+}
+
+// ─── TELEGRAM REGISTRATIONS (Admin) ──────────────────────────────────────────
+
+export async function getTelegramRegistrations() {
+  const { data, error } = await supabase
+    .from('telegram_registrations')
+    .select('squadra, chat_id, username, registered_at')
+    .order('registered_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function deleteTelegramRegistration(squadra) {
+  const { error } = await supabase
+    .from('telegram_registrations')
+    .delete()
+    .eq('squadra', squadra);
+  if (error) throw error;
+}
+
 export async function rimuoviAllenatore(squadra, nomeAllenatore, rimborso = 0) {
   await supabase.from('allenatori_carte').update({ squadra: null }).eq('nome', nomeAllenatore).eq('squadra', squadra);
   if (rimborso > 0) {
