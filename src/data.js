@@ -51,7 +51,7 @@ export const TEAMS = [
   { id:5, name:"Shalpe 104",     tag:"SHA", color:"#f97316", allenatore:"Chivu",               bilancio:24.5,  salaryUsed:74.5, giocatori:28, u21:1, fairPlay1:12.55, fairPlay2:15.6,  penalita:1, guadGiornate:79.5,  guadObiettivi:3,   guadInv:0.0,   clausoleIn:6.0,   clausoleOut:8.5,   svincoliOrdinari:1 },
   { id:6, name:"Finocchiona AC", tag:"FIN", color:"#ef4444", allenatore:"Conte",               bilancio:8.15,  salaryUsed:74.8, giocatori:25, u21:4, fairPlay1:60.65, fairPlay2:6.0,   penalita:2, guadGiornate:92.3,  guadObiettivi:0,   guadInv:-16.0, clausoleIn:36.5,  clausoleOut:9.0,   svincoliOrdinari:2 },
   { id:7, name:"Agnus Dei FC",   tag:"AGD", color:"#06b6d4", allenatore:"Sarri & Vanoli",      bilancio:31.1,  salaryUsed:66.0, giocatori:24, u21:1, fairPlay1:20.4,  fairPlay2:5.0,   penalita:3, guadGiornate:56.0,  guadObiettivi:0,   guadInv:-8.0,  clausoleIn:15.1,  clausoleOut:15.5,  svincoliOrdinari:0 },
-  { id:8, name:"Consules FC",    tag:"CON", color:"#ec4899", allenatore:"Gasperini",           bilancio:5.4,   salaryUsed:70.1, giocatori:28, u21:2, fairPlay1:28.65, fairPlay2:17.0,  penalita:9, guadGiornate:43.9,  guadObiettivi:5,   guadInv:0.0,   clausoleIn:16.0,  clausoleOut:15.0,  svincoliOrdinari:1 },
+  { id:8, name:"Wehrmacht FC",    tag:"CON", color:"#ec4899", allenatore:"Gasperini",           bilancio:5.4,   salaryUsed:70.1, giocatori:28, u21:2, fairPlay1:28.65, fairPlay2:17.0,  penalita:9, guadGiornate:43.9,  guadObiettivi:5,   guadInv:0.0,   clausoleIn:16.0,  clausoleOut:15.0,  svincoliOrdinari:1 },
 ];
 
 export const ROSTERS = {
@@ -253,7 +253,7 @@ export const ROSTERS = {
     { ruolo:"Pc", anni:28, nome:"Thuram", quot:29, stip:5.8, clausola:58 },
     { ruolo:"Pc", anni:25, nome:"Krstovic", quot:15, stip:3.0, clausola:30 },
   ],
-  "Consules FC": [
+  "Wehrmacht FC": [
     { ruolo:"Por", anni:26, nome:"Svilar", quot:20, stip:4.0, clausola:40 },
     { ruolo:"Por", anni:27, nome:"Vasquez D.", quot:1, stip:0.2, clausola:2 },
     { ruolo:"Por", anni:30, nome:"Gollini", quot:1, stip:0.2, clausola:2 },
@@ -383,7 +383,7 @@ export const OBJECTIVES = {
       { costo: 8, testo: "Clausola No-Svincolo", note: "Marcus Thuram", progresso: "-", guadagno: null },
     ],
   },
-  "Consules FC": {
+  "Wehrmacht FC": {
     allenatore: [
       { testo: "Effettua almeno 7 operazioni di mercato tra presidenti.", progresso: "-", guadagno: 5 },
       { testo: "Per almeno 19 giornate, mantieni una rosa di almeno 28 giocatori.", progresso: "-", guadagno: null },
@@ -409,7 +409,7 @@ export const CLUB_IDENTITY = {
     campionati: "1", coppe: "-", supercoppe: "-",
     fondazione: "2023",
     stadio: "Tao Nou (capacità 80.000 con Skybox)",
-    rivali: "AK Toio, Balillareal, Consules FC",
+    rivali: "AK Toio, Balillareal, Wehrmacht FC",
     gemellato: "Agnus Dei FC",
     descrizione: `Fondata nel 2023 col nome di Omega Team, ha subito dato spettacolo ai propri tifosi vincendo il Campionato alla sua prima edizione.\n\nIl 2024/25 è stato un anno amaro che ci ha visto concludere a 3 punti dal Titolo, ma con un nuovo spirito e una nuova identità il club è pronto a mettersi alla prova in una nuova competizione a 8 giocatori.\n\nIl BORJCELLONA è pronto e lo dimostrerà.`,
     motto: null,
@@ -436,7 +436,7 @@ export const CLUB_IDENTITY = {
     campionati: "-", coppe: "-", supercoppe: "-",
     fondazione: "2025",
     stadio: "Centro Didattico Morgagni (5.000 posti + Mensa inclusa)",
-    rivali: "Balillareal, Alcool Campi, Consules",
+    rivali: "Balillareal, Alcool Campi, Wehrmacht FC",
     gemellato: null,
     descrizione: `Nati dalle ceneri del DINAMO 104, dopo l'acquisto del presidente DANDANDANDAN, non siamo qui per scherzare, ma nemmeno per annoiarvi. Siamo gli SHALPE 104, e se c'è una cosa che abbiamo imparato, è che la gloria non si compra al supermercato.\n\nLa nostra filosofia: serietà sul campo, sorrisi fuori. La nostra tattica si chiama "attacco a tradimento": un mix letale di statistiche scientifiche e pura, folle intuizione.\n\nIl nostro stadio, il Centro Didattico Morgagni, non è un luogo, ma un'emozione. Qui, tra una risata e una bestemmia, celebriamo il nostro credo calcistico.`,
     motto: `"Non si molla un cazzo."`,
@@ -459,7 +459,7 @@ export const CLUB_IDENTITY = {
     descrizione: "Descrizione non ancora inserita.",
     motto: null,
   },
-  "Consules FC": {
+  "Wehrmacht FC": {
     campionati: "-", coppe: "-", supercoppe: "-",
     fondazione: "-",
     stadio: "-",
@@ -521,7 +521,7 @@ export const MOVEMENTS = {
     { data: "12/08/25", desc: "Risoluzione Contratto Man", entrata: 5.5, uscita: null },
     { data: "16/08/25", desc: "Pagamento 5€ extra budget", entrata: 12.5, uscita: null },
   ],
-  "Consules FC": [
+  "Wehrmacht FC": [
     { data: "11/08/25", desc: "Cessione Milinkovic-Savic a Maro", entrata: 2.0, uscita: null },
     { data: "13/08/25", desc: "Risoluzione contratto Ndoye", entrata: 9.0, uscita: null },
     { data: "13/08/25", desc: "Pagamento 5€ extra budget", entrata: 12.5, uscita: null },
@@ -551,7 +551,7 @@ Sostenuta dalla fedele Curva degli Spiriti, Alcool Campi è pronta a scrivere la
     fondazione: "2023",
     stadio: "Tao Nou",
     capacita: "80.000",
-    rivali: "AK Toio, Balillareal, Consules FC",
+    rivali: "AK Toio, Balillareal, Wehrmacht FC",
     gemellato: "Agnus Dei FC",
     campionati: 1,
     coppe: 0,
@@ -595,7 +595,7 @@ L'anno successivo ci siamo fatti valere e abbiamo portato a casa lo scudetto tan
     fondazione: "2025",
     stadio: "Centro Didattico Morgagni",
     capacita: "5.000",
-    rivali: "Balillareal, Alcool Campi, Consules",
+    rivali: "Balillareal, Alcool Campi, Wehrmacht FC",
     gemellato: null,
     campionati: 0,
     coppe: 0,
@@ -635,7 +635,7 @@ La società mantiene l'impegno di tutelare le diversità come nell'anno di fonda
     descrizione: "Descrizione non ancora inserita.",
     motto: null,
   },
-  "Consules FC": {
+  "Wehrmacht FC": {
     fondazione: "-",
     stadio: "-",
     capacita: "-",
