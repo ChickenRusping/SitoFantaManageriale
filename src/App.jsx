@@ -163,7 +163,6 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   // Extra Control Room
   getMercatoOverride, setMercatoOverride, getTrasferimentiDifferiti,
   applicaMulteFPFTutte, applicaPremiCampionato,
-  getFpfTutteSquadre, calcolaFairSpending, calcolaPremiFinali,
   // Telegram
   sendTelegramNotification, getTelegramRegistrations, deleteTelegramRegistration,
 } from "./supabase.js";
