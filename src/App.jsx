@@ -160,6 +160,10 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   // Admin Control Room
   getStadioInvestimenti, setStadioUpgrade, applicaEntrateStadioTutte,
   applicaTassaATutti, applicaStipendioATutti, getControlRoomStatus,
+  // Extra Control Room
+  getMercatoOverride, setMercatoOverride, getTrasferimentiDifferiti,
+  applicaMulteFPFTutte, applicaPremiCampionato, aggiornaContrattiAnnuali,
+  getFpfTutteSquadre, calcolaFairSpending, calcolaPremiFinali,
   // Telegram
   sendTelegramNotification, getTelegramRegistrations, deleteTelegramRegistration,
 } from "./supabase.js";
@@ -4687,10 +4691,15 @@ function ClubIdentityCard({ team, isAdmin, mySquadra }) {
 /* ─── MERCATO PAGE ──────────────────────────────────────────────────────────── */
 /* ─── HELPERS MERCATO ───────────────────────────────────────────────────────── */
 
+// Module-level override set by App on load
+let _mercatoOverride = null;
+
 // Finestre di mercato (art. 5.1)
 // Estivo:   01/06 09:00 → 15/09 24:00
 // Invernale: 01/01 09:00 → 15/02 24:00
 function getMercatoStatus() {
+  if (_mercatoOverride === 'aperto') return { aperto: true, label: 'Override Admin', giorniRimasti: '∞', override: true };
+  if (_mercatoOverride === 'chiuso') return { aperto: false, label: 'Chiuso (Admin)', override: true, prossima: null, giorniApertura: '?', dataApertura: '—' };
   const now = new Date();
   const y = now.getFullYear();
 
@@ -7883,6 +7892,12 @@ function AdminControlRoomPage({ teams }) {
   const [lastResult, setLastResult] = useState(null);
   const [tgRegs, setTgRegs] = useState([]);
   const [tgLoading, setTgLoading] = useState(false);
+  const [mercatoOvr, setMercatoOvr] = useState(null); // null=auto, 'aperto', 'chiuso'
+  const [mercatoOvrLoading, setMercatoOvrLoading] = useState(false);
+  const [asteAttive, setAsteAttive] = useState([]);
+  const [fpfData, setFpfData] = useState(null);
+  const [differiti, setDifferiti] = useState([]);
+  const [classifica, setClassifica] = useState([]);
 
   async function load() {
     setLoading(true);
@@ -7902,6 +7917,33 @@ function AdminControlRoomPage({ teams }) {
     catch(e) { alert(e.message); }
     finally { setTgLoading(false); }
   }
+
+  async function loadMercatoOvr() {
+    setMercatoOvrLoading(true);
+    try { const v = await getMercatoOverride(); setMercatoOvr(v); }
+    finally { setMercatoOvrLoading(false); }
+  }
+
+  async function loadAste() {
+    const { data } = await supabase.from('aste_svincolati').select('*').eq('stato', 'raccolta_offerte').order('scadenza', { ascending: true });
+    setAsteAttive(data || []);
+  }
+
+  async function loadFpf() {
+    const map = await getFpfTutteSquadre();
+    setFpfData(map);
+  }
+
+  async function loadDifferiti() {
+    setDifferiti(await getTrasferimentiDifferiti());
+  }
+
+  async function loadClassifica() {
+    const { data } = await supabase.from('classifica').select('squadra, punti, gf, gs').eq('stagione', STAGIONE_CR).order('punti', { ascending: false });
+    setClassifica(data || []);
+  }
+
+  useEffect(() => { loadMercatoOvr(); }, []);
 
   useEffect(() => { load(); }, []);
 
@@ -7937,12 +7979,18 @@ function AdminControlRoomPage({ teams }) {
   }
 
   const tabs = [
-    { key: 'panoramica', icon: '📊', label: 'Panoramica' },
-    { key: 'stadio',     icon: '🏟',  label: 'Stadio' },
-    { key: 'tasse',      icon: '📅',  label: 'Tasse' },
-    { key: 'telegram',   icon: '✈️',  label: 'Telegram' },
-    { key: 'stipendi',   icon: '💰',  label: 'Stipendi' },
-    { key: 'stagione',   icon: '⚙️',  label: 'Stagione' },
+    { key: 'panoramica',  icon: '📊', label: 'Panoramica' },
+    { key: 'mercato',     icon: '🏪', label: 'Mercato' },
+    { key: 'aste',        icon: '🔔', label: 'Aste' },
+    { key: 'stadio',      icon: '🏟', label: 'Stadio' },
+    { key: 'tasse',       icon: '📅', label: 'Tasse' },
+    { key: 'stipendi',    icon: '💰', label: 'Stipendi' },
+    { key: 'fpf',         icon: '⚖️', label: 'FPF' },
+    { key: 'premi',       icon: '🏆', label: 'Premi' },
+    { key: 'contratti',   icon: '📋', label: 'Contratti' },
+    { key: 'differiti',   icon: '⏳', label: 'Differiti' },
+    { key: 'stagione',    icon: '⚙️', label: 'Stagione' },
+    { key: 'telegram',    icon: '✈️', label: 'Telegram' },
   ];
 
   const isBusy = !!busy;
@@ -8244,6 +8292,247 @@ function AdminControlRoomPage({ teams }) {
                   📨 Invia test
                 </button>
               </div>
+            </div>
+          )}
+          {/* ── MERCATO ── */}
+          {tab === 'mercato' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>🏪 MERCATO — OVERRIDE MANUALE</div>
+              <div style={{ background: '#f59e0b08', border: '1px solid #f59e0b20', borderRadius: 12, padding: '14px 16px', fontSize: 12, color: '#aaa', lineHeight: 1.6 }}>
+                Di default il mercato segue le finestre automatiche (Estivo: 1/06–15/09, Invernale: 1/01–15/02).<br/>
+                Puoi forzare apertura o chiusura manuale — si ripristina automaticamente impostando "Auto".
+              </div>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {[
+                  { val: null,     label: '🔄 Auto (date fisse)',  color: '#6366f1' },
+                  { val: 'aperto', label: '🟢 Forza APERTO',       color: '#10b981' },
+                  { val: 'chiuso', label: '🔴 Forza CHIUSO',       color: '#ef4444' },
+                ].map(opt => (
+                  <button key={String(opt.val)} disabled={mercatoOvrLoading}
+                    onClick={async () => {
+                      setMercatoOvrLoading(true);
+                      await setMercatoOverride(opt.val);
+                      _mercatoOverride = opt.val;
+                      setMercatoOvr(opt.val);
+                      setMercatoOvrLoading(false);
+                    }}
+                    style={{ padding: '9px 18px', borderRadius: 10, border: `1.5px solid ${mercatoOvr === opt.val ? opt.color : opt.color + '40'}`, background: mercatoOvr === opt.val ? opt.color + '20' : 'transparent', color: mercatoOvr === opt.val ? opt.color : '#666', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                    {opt.label} {mercatoOvr === opt.val ? '✓' : ''}
+                  </button>
+                ))}
+              </div>
+              <div style={{ fontSize: 12, color: '#555' }}>
+                Stato attuale: <b style={{ color: mercatoOvr === 'aperto' ? '#10b981' : mercatoOvr === 'chiuso' ? '#ef4444' : '#818cf8' }}>
+                  {mercatoOvr === 'aperto' ? 'APERTO (override)' : mercatoOvr === 'chiuso' ? 'CHIUSO (override)' : 'Auto'}
+                </b>
+              </div>
+            </div>
+          )}
+
+          {/* ── ASTE ── */}
+          {tab === 'aste' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>🔔 ASTE SVINCOLATI ATTIVE</div>
+                <button onClick={loadAste} style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid #6366f130', background: '#6366f110', color: '#818cf8', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>🔄 Aggiorna</button>
+              </div>
+              {asteAttive.length === 0 && <div style={{ color: '#555', fontSize: 12 }}>Nessuna asta attiva. Clicca "Aggiorna".</div>}
+              {asteAttive.map(asta => (
+                <div key={asta.id} style={{ background: '#6366f108', border: '1px solid #6366f125', borderRadius: 12, padding: '12px 14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: '#f0f0f0' }}>{asta.giocatore}</div>
+                      <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>
+                        Q{asta.quot} · chiamato da {asta.aperta_da} · {asta.n_interessati} interessati
+                      </div>
+                      <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 2 }}>
+                        ⏰ Scade: {new Date(asta.scadenza).toLocaleString('it-IT', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const offerte = await getOfferteAsta(asta.id);
+                            const { data: chiamateAsta } = await supabase.from('chiamate').select('squadra').eq('giocatore', asta.giocatore);
+                            const squadreInteressate = (chiamateAsta || []).map(c => c.squadra);
+                            const { data: dsInvs } = await supabase.from('investimenti').select('squadra, dati').eq('nome', 'DS Masterclass').in('squadra', squadreInteressate);
+                            const dsTeams = (dsInvs || []).filter(d => (d.dati?.utilizzi_masterclass || 0) < 2);
+                            if (!dsTeams.length) { alert('Nessun presidente con DS Masterclass disponibile.'); return; }
+                            for (const ds of dsTeams) {
+                              const altrui = offerte.filter(o => o.squadra !== ds.squadra && !o.assente);
+                              const riepilogo = altrui.length ? altrui.map(o => `• ${o.squadra}: ${Number(o.importo).toFixed(2)}M`).join('\n') : 'Nessuna offerta ancora.';
+                              sendTelegramNotification('ds_masterclass_offerte', { giocatore: asta.giocatore, riepilogo, scadenza: new Date(asta.scadenza).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) }, ds.squadra);
+                            }
+                            alert(`✅ Notifica DS inviata a ${dsTeams.length} presidente/i.`);
+                          } catch(e) { alert(e.message); }
+                        }}
+                        style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid #f59e0b40', background: '#f59e0b10', color: '#f59e0b', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                        📡 DS Masterclass
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── FPF ── */}
+          {tab === 'fpf' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>⚖️ FAIR PLAY FINANZIARIO — MULTA BULK</div>
+              <div style={{ background: '#ef444408', border: '1px solid #ef444420', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#aaa', lineHeight: 1.6 }}>
+                Calcola e applica le multe FPF a tutte le squadre che hanno sforato i limiti di spesa netta.<br/>
+                <b style={{ color: '#f87171' }}>Operazione irreversibile</b> — esegui solo a fine stagione.
+              </div>
+              <button onClick={loadFpf} style={{ alignSelf: 'flex-start', padding: '7px 16px', borderRadius: 9, border: '1px solid #6366f130', background: '#6366f110', color: '#818cf8', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>📊 Calcola situazione FPF</button>
+              {fpfData && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {Object.entries(fpfData).sort((a,b) => b[1]-a[1]).map(([squadra, netto]) => {
+                    const { zona, multa, pt, euro } = calcolaFairSpending(netto);
+                    const colore = multa > 0 ? (multa >= 20 ? '#ef4444' : multa >= 15 ? '#f97316' : '#f59e0b') : '#10b981';
+                    return (
+                      <div key={squadra} style={{ background: colore + '08', border: `1px solid ${colore}25`, borderRadius: 10, padding: '9px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                        <div>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: '#f0f0f0' }}>{squadra}</span>
+                          <span style={{ fontSize: 11, color: '#666', marginLeft: 8 }}>Netto: {netto.toFixed(1)}M</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          {multa > 0 ? (
+                            <>
+                              <span style={{ fontSize: 11, color: colore, fontWeight: 700 }}>−{multa}M</span>
+                              {pt > 0 && <span style={{ fontSize: 10, color: colore }}>−{pt}pt</span>}
+                              {euro > 0 && <span style={{ fontSize: 10, color: colore }}>−{euro}€</span>}
+                            </>
+                          ) : <span style={{ fontSize: 11, color: '#10b981', fontWeight: 700 }}>✓ In regola</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <button
+                    onClick={() => runBulk(() => applicaMulteFPFTutte(STAGIONE_CR), 'Multe FPF a tutti')}
+                    disabled={isBusy}
+                    style={{ marginTop: 8, padding: '9px 20px', borderRadius: 10, border: '1.5px solid #ef444450', background: '#ef444415', color: '#ef4444', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                    ⚖️ Applica multe FPF a tutte le squadre
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── PREMI ── */}
+          {tab === 'premi' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>🏆 PREMI CAMPIONATO — DISTRIBUZIONE FINALE</div>
+              <div style={{ background: '#f59e0b08', border: '1px solid #f59e0b20', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#aaa', lineHeight: 1.6 }}>
+                Distribuisce i premi in base alla classifica finale della stagione {STAGIONE_CR}.<br/>
+                Idempotente — salta le squadre già premiate.
+              </div>
+              <button onClick={loadClassifica} style={{ alignSelf: 'flex-start', padding: '7px 16px', borderRadius: 9, border: '1px solid #f59e0b30', background: '#f59e0b10', color: '#f59e0b', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>📋 Carica classifica</button>
+              {classifica.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {classifica.map((sq, i) => {
+                    const pos = i + 1;
+                    const premio = calcolaPremiFinali(pos);
+                    return (
+                      <div key={sq.squadra} style={{ background: '#ffffff06', border: '1px solid #ffffff10', borderRadius: 10, padding: '9px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                          <span style={{ fontSize: 16, fontWeight: 900, color: pos <= 3 ? '#f59e0b' : '#555', fontFamily: "'Bebas Neue',sans-serif", width: 24 }}>{pos}°</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: '#f0f0f0' }}>{sq.squadra}</span>
+                          <span style={{ fontSize: 11, color: '#666' }}>{sq.punti} pt</span>
+                        </div>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: premio > 0 ? '#10b981' : '#444' }}>
+                          {premio > 0 ? `+${premio}M` : '—'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  <button
+                    onClick={() => runBulk(() => applicaPremiCampionato(STAGIONE_CR), 'Premi campionato')}
+                    disabled={isBusy}
+                    style={{ marginTop: 8, padding: '9px 20px', borderRadius: 10, border: '1.5px solid #10b98150', background: '#10b98115', color: '#10b981', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                    🏆 Distribuisci premi campionato
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── CONTRATTI ── */}
+          {tab === 'contratti' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>📋 CONTRATTI — RINNOVO ANNUALE</div>
+              <div style={{ background: '#6366f108', border: '1px solid #6366f125', borderRadius: 10, padding: '12px 14px', fontSize: 12, color: '#aaa', lineHeight: 1.6 }}>
+                Esegui a fine stagione (01/06) per aggiornare tutti i contratti:<br/>
+                • Avanza <b style={{ color: '#c7d2fe' }}>anni_contratto</b> per tutti i giocatori<br/>
+                • Applica aumenti di stipendio automatici<br/>
+                • Svincola automaticamente chi era all'anno 2 senza rinnovo confermato
+              </div>
+              <button
+                onClick={async () => {
+                  if (!window.confirm('Aggiornare tutti i contratti a fine stagione?\n\nI giocatori all\'anno 2 non confermati verranno svincolati automaticamente.')) return;
+                  setBusy('Contratti annuali');
+                  try {
+                    const res = await aggiornaContrattiAnnuali();
+                    setLastResult({ label: 'Contratti annuali', ok: res.aggiornati?.length || 0, skip: res.svincolati?.length || 0, ts: new Date().toLocaleTimeString('it-IT') });
+                    if (res.svincolati?.length) alert(`⚠️ Svincolati automaticamente:\n${res.svincolati.map(s => `• ${s.nome} (${s.squadra})`).join('\n')}`);
+                  } catch(e) { alert(e.message); }
+                  finally { setBusy(null); }
+                }}
+                disabled={isBusy}
+                style={{ alignSelf: 'flex-start', padding: '9px 20px', borderRadius: 10, border: '1.5px solid #6366f150', background: '#6366f115', color: '#818cf8', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                📋 Aggiorna contratti annuali
+              </button>
+            </div>
+          )}
+
+          {/* ── DIFFERITI ── */}
+          {tab === 'differiti' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>⏳ TRASFERIMENTI DIFFERITI</div>
+                <button onClick={loadDifferiti} style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid #f97316 30', background: '#f9731610', color: '#f97316', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>🔄 Aggiorna</button>
+              </div>
+              <div style={{ fontSize: 12, color: '#aaa', lineHeight: 1.5 }}>
+                Trasferimenti accettati fuori mercato — in attesa di essere eseguiti all'apertura della prossima finestra.
+              </div>
+              {differiti.length === 0 && <div style={{ color: '#555', fontSize: 12 }}>Nessun trasferimento differito in attesa. Clicca "Aggiorna".</div>}
+              {differiti.map(t => (
+                <div key={t.id} style={{ background: '#f9731608', border: '1px solid #f9731625', borderRadius: 12, padding: '12px 14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: '#f0f0f0' }}>{t.giocatore}</div>
+                      <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>{t.da_squadra} → {t.a_squadra} · {t.prezzo}M · {t.tipo}</div>
+                      <div style={{ fontSize: 10, color: '#555', marginTop: 2 }}>Accettato: {new Date(t.updated_at).toLocaleDateString('it-IT')}</div>
+                    </div>
+                    <span style={{ padding: '3px 10px', borderRadius: 8, background: '#f9731615', border: '1px solid #f9731630', fontSize: 10, fontWeight: 700, color: '#f97316' }}>⏳ In attesa mercato</span>
+                  </div>
+                </div>
+              ))}
+              {differiti.length > 0 && (
+                <button
+                  onClick={async () => {
+                    if (!window.confirm(`Eseguire ${differiti.length} trasferiment${differiti.length > 1 ? 'i' : 'o'} differit${differiti.length > 1 ? 'i' : 'o'}?\n\n${differiti.map(t => `${t.giocatore}: ${t.da_squadra} → ${t.a_squadra} (${t.prezzo}M)`).join('\n')}`)) return;
+                    setBusy('Trasferimenti differiti');
+                    let ok = 0, errs = [];
+                    for (const t of differiti) {
+                      try {
+                        await eseguiTrasferimento(t);
+                        await aggiornaFantaSquadraListone(t.giocatore, t.a_squadra);
+                        await aggiornaStipendioDopoTrasferimento(t.giocatore, t.a_squadra);
+                        ok++;
+                      } catch(e) { errs.push(`${t.giocatore}: ${e.message}`); }
+                    }
+                    setBusy(null);
+                    await loadDifferiti();
+                    setLastResult({ label: 'Trasferimenti differiti', ok, skip: errs.length, ts: new Date().toLocaleTimeString('it-IT') });
+                    if (errs.length) alert(`⚠️ Errori:\n${errs.join('\n')}`);
+                  }}
+                  disabled={isBusy}
+                  style={{ padding: '9px 20px', borderRadius: 10, border: '1.5px solid #10b98150', background: '#10b98115', color: '#10b981', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                  ▶️ Esegui tutti i trasferimenti differiti
+                </button>
+              )}
             </div>
           )}
         </>
@@ -9129,6 +9418,7 @@ function AppInner() {
   const [fpfMap, setFpfMap] = useState({});
   const [clubIdentities, setClubIdentities] = useState({});
   const [offerteInAttesa, setOfferteInAttesa] = useState([]);
+  const [mercatoOverride, setMercatoOverride_state] = useState(null); // null=auto, 'aperto', 'chiuso'
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -9175,6 +9465,12 @@ function AppInner() {
     getSquadre().then(data => { if (data) setSquadreDB(data); });
     const sub = subscribeSquadre(() => getSquadre().then(data => { if (data) setSquadreDB(data); }));
     return () => supabase.removeChannel(sub);
+  }, [session]);
+
+  // ── Mercato override ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!session) return;
+    getMercatoOverride().then(v => { _mercatoOverride = v; setMercatoOverride_state(v); }).catch(() => {});
   }, [session]);
 
   // ── Offerte in attesa: solo realtime, nessun polling ─────────────────────
