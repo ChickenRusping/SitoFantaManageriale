@@ -71,6 +71,8 @@ function buildMessage(type: string, p: Record<string, unknown>): string | null {
       return `😔 <b>Asta persa</b>\n\n⚽ <b>${p.giocatore}</b>\nVincitore: <b>${p.vincitore}</b> · ${p.importo}M`;
     case "movimento_privato":
       return `💳 <b>Nuovo movimento</b>\n\n${p.entrata ? `+${p.entrata}` : `-${p.uscita}`}M — ${p.descrizione}\n💰 Bilancio aggiornato: <b>${p.bilancio}M</b>`;
+    case "ds_masterclass_offerte":
+      return `🔍 <b>DS Masterclass — Offerte ricevute</b>\n\n⚽ <b>${p.giocatore}</b>\n\nOfferte avversari:\n${p.riepilogo}\n\n⏰ Hai tempo fino alle <b>${p.scadenza}</b> per formulare la tua offerta.\nAccedi all'app ora!`;
     default:
       return null;
   }
