@@ -4388,7 +4388,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
             onRefresh={loadClubIdentity}
           />
           {/* Telegram self-registration — only for the team's own president */}
-          {mySquadra === team.name && !isAdmin && (
+          {mySquadra === team.name && (
             <TelegramRegistrationCard squadra={team.name} />
           )}
         </div>
