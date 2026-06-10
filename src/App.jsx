@@ -6556,6 +6556,45 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
                   {/* Admin: rivela o cancella */}
                   {isAdmin && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
+                      {/* DS Masterclass notification */}
+                      <button
+                        onClick={async () => {
+                          try {
+                            // Get all offers so far
+                            const offerte = await getOfferteAsta(asta.id);
+                            // Get all teams interested in this auction (from chiamate)
+                            const { data: chiamateAsta } = await supabase
+                              .from('chiamate').select('squadra').eq('giocatore', asta.giocatore);
+                            const squadreInteressate = (chiamateAsta || []).map(c => c.squadra);
+                            // Get all investments named 'DS Masterclass' for interested teams
+                            const { data: dsInvs } = await supabase
+                              .from('investimenti')
+                              .select('squadra, dati')
+                              .eq('nome', 'DS Masterclass')
+                              .in('squadra', squadreInteressate);
+                            const dsTeams = (dsInvs || []).filter(d => {
+                              const usati = d.dati?.utilizzi_masterclass || 0;
+                              return usati < 2;
+                            });
+                            if (!dsTeams.length) { alert('Nessun presidente con DS Masterclass attivo e utilizzi rimasti.'); return; }
+                            // Build offer summary (hide own offer, show others)
+                            for (const ds of dsTeams) {
+                              const altrui = offerte.filter(o => o.squadra !== ds.squadra && !o.assente);
+                              const riepilogo = altrui.length
+                                ? altrui.map(o => `• ${o.squadra}: ${Number(o.importo).toFixed(2)}M`).join('\n')
+                                : 'Nessuna offerta ancora presente.';
+                              sendTelegramNotification('ds_masterclass_offerte', {
+                                giocatore: asta.giocatore,
+                                riepilogo,
+                                scadenza: new Date(asta.scadenza).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+                              }, ds.squadra);
+                            }
+                            alert(`✅ Notifica inviata a ${dsTeams.length} presidente/i DS Masterclass.`);
+                          } catch(e) { alert(e.message); }
+                        }}
+                        style={{ padding: "6px 14px", borderRadius: 8, border: "1.5px solid #f59e0b50", background: "#f59e0b10", color: "#f59e0b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                        📡 Notifica DS Masterclass
+                      </button>
                       <button
                         onClick={async () => {
                           if (!window.confirm(`Rivelare le offerte e assegnare ${asta.giocatore}?`)) return;
