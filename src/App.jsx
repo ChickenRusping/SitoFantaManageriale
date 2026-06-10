@@ -157,6 +157,9 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   calcolaStatoTrattativaMercato, applicaPenalitaRitardoAuto,
   // Contratti
   aggiornaContrattiAnnuali, confermRinnovoBiennale,
+  // Admin Control Room
+  getStadioInvestimenti, setStadioUpgrade, applicaEntrateStadioTutte,
+  applicaTassaATutti, applicaStipendioATutti, getControlRoomStatus,
 } from "./supabase.js";
 
 // ─── SORTABLE TABLE HOOK ──────────────────────────────────────────────────────
@@ -7709,6 +7712,314 @@ function PremiPage({ isAdmin, teams = [] }) {
   );
 }
 
+/* ─── ADMIN CONTROL ROOM ─────────────────────────────────────────────────────── */
+const STAGIONE_CR = '2026-27';
+
+function AdminControlRoomPage({ teams }) {
+  const [tab, setTab] = useState('panoramica');
+  const [status, setStatus] = useState(null);
+  const [stadioInv, setStadioInv] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(null); // quale operazione sta girando
+  const [lastResult, setLastResult] = useState(null);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const [s, inv] = await Promise.all([
+        getControlRoomStatus(),
+        getStadioInvestimenti(STAGIONE_CR),
+      ]);
+      setStatus(s);
+      setStadioInv(inv);
+    } finally { setLoading(false); }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  const stadioSet = new Set(stadioInv.map(i => i.squadra));
+
+  async function toggleStadio(squadra) {
+    const haUpgrade = stadioSet.has(squadra);
+    setBusy(`stadio_${squadra}`);
+    try {
+      await setStadioUpgrade(squadra, !haUpgrade, STAGIONE_CR);
+      await load();
+    } catch(e) { alert(e.message); }
+    finally { setBusy(null); }
+  }
+
+  async function runBulk(fn, label) {
+    if (!window.confirm(`Eseguire: ${label}?`)) return;
+    setBusy(label);
+    try {
+      const res = await fn();
+      const ok = res.filter(r => r.ok).length;
+      const skip = res.filter(r => r.skip).length;
+      setLastResult({ label, ok, skip, ts: new Date().toLocaleTimeString('it-IT') });
+      await load();
+    } catch(e) { alert(e.message); }
+    finally { setBusy(null); }
+  }
+
+  const tabs = [
+    { key: 'panoramica', icon: '📊', label: 'Panoramica' },
+    { key: 'stadio',     icon: '🏟',  label: 'Stadio' },
+    { key: 'tasse',      icon: '📅',  label: 'Tasse' },
+    { key: 'stipendi',   icon: '💰',  label: 'Stipendi' },
+    { key: 'stagione',   icon: '⚙️',  label: 'Stagione' },
+  ];
+
+  const isBusy = !!busy;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: 28, fontWeight: 900, color: '#f59e0b', fontFamily: "'Bebas Neue',sans-serif", letterSpacing: '2px', lineHeight: 1 }}>⚡ ADMIN CONTROL ROOM</div>
+        <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Operazioni centrali · Stagione {STAGIONE_CR}</div>
+      </div>
+
+      {/* Last result toast */}
+      {lastResult && (
+        <div style={{ marginBottom: 16, background: '#10b98112', border: '1px solid #10b98130', borderRadius: 10, padding: '10px 14px', display: 'flex', gap: 12, alignItems: 'center' }}>
+          <span style={{ fontSize: 16 }}>✅</span>
+          <div style={{ flex: 1, fontSize: 12, color: '#10b981' }}>
+            <b>{lastResult.label}</b> — {lastResult.ok} applicate, {lastResult.skip} già eseguite
+          </div>
+          <span style={{ fontSize: 11, color: '#555' }}>{lastResult.ts}</span>
+          <button onClick={() => setLastResult(null)} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 14 }}>✕</button>
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
+        {tabs.map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            style={{ padding: '7px 14px', borderRadius: 10, border: `1.5px solid ${tab === t.key ? '#f59e0b60' : '#ffffff15'}`, background: tab === t.key ? '#f59e0b18' : 'transparent', color: tab === t.key ? '#f59e0b' : '#666', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+            {t.icon} {t.label}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ color: '#555', fontSize: 13, padding: 20 }}>Caricamento...</div>
+      ) : (
+
+        <>
+          {/* ── PANORAMICA ── */}
+          {tab === 'panoramica' && status && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em', marginBottom: 14 }}>STATO SQUADRE — {status.meseISO}</div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #ffffff15' }}>
+                      {['Squadra', 'Bilancio', 'Tassa (dom.)', 'Stipendi (mese)', 'Stadio (mese)', 'Entrate stadio'].map(h => (
+                        <th key={h} style={{ padding: '6px 10px', textAlign: 'left', color: '#555', fontWeight: 700, fontSize: 10, whiteSpace: 'nowrap' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(status.squadre || []).sort((a,b) => (b.bilancio||0) - (a.bilancio||0)).map(sq => {
+                      const team = teams?.find(t => t.name === sq.name);
+                      const tassaOk = status.tassePagate.has(sq.name);
+                      const stipOk  = status.stipendiPagati.has(sq.name);
+                      const stadioOk= status.stadioPagato.has(sq.name);
+                      const hasUpgrade = stadioSet.has(sq.name);
+                      return (
+                        <tr key={sq.name} style={{ borderBottom: '1px solid #ffffff08' }}
+                          onMouseEnter={e => e.currentTarget.style.background = '#ffffff05'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                          <td style={{ padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {team && <TeamAvatar team={team} size={24} />}
+                            <span style={{ fontWeight: 600, color: '#ddd' }}>{sq.name}</span>
+                          </td>
+                          <td style={{ padding: '8px 10px', fontWeight: 800, color: sq.bilancio < 0 ? '#ef4444' : sq.bilancio < 10 ? '#f97316' : '#10b981', fontFamily: "'Bebas Neue',sans-serif", fontSize: 15 }}>{(sq.bilancio||0).toFixed(1)}M</td>
+                          <td style={{ padding: '8px 10px' }}><StatusPill ok={tassaOk} /></td>
+                          <td style={{ padding: '8px 10px' }}><StatusPill ok={stipOk} /></td>
+                          <td style={{ padding: '8px 10px' }}><StatusPill ok={stadioOk} /></td>
+                          <td style={{ padding: '8px 10px', fontWeight: 700, color: hasUpgrade ? '#10b981' : '#888', fontSize: 13, fontFamily: "'Bebas Neue',sans-serif" }}>{hasUpgrade ? '+5.5M' : '+4M'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {/* Riepilogo rapido */}
+              <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
+                {[
+                  { label: 'Tasse pagate', n: status.tassePagate.size, tot: status.squadre.length, color: '#f59e0b' },
+                  { label: 'Stipendi pagati', n: status.stipendiPagati.size, tot: status.squadre.length, color: '#6366f1' },
+                  { label: 'Stadio pagato', n: status.stadioPagato.size, tot: status.squadre.length, color: '#10b981' },
+                ].map(s => (
+                  <div key={s.label} style={{ flex: '1 1 140px', background: s.color + '10', border: `1px solid ${s.color}25`, borderRadius: 10, padding: '10px 14px' }}>
+                    <div style={{ fontSize: 9, color: s.color, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 4 }}>{s.label.toUpperCase()}</div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: s.color, fontFamily: "'Bebas Neue',sans-serif", lineHeight: 1 }}>{s.n}<span style={{ fontSize: 13, color: '#555' }}>/{s.tot}</span></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── STADIO ── */}
+          {tab === 'stadio' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>🏟 ENTRATE STADIO MENSILI</div>
+                  <div style={{ fontSize: 11, color: '#555', marginTop: 4 }}>Base: 4M · Con Ristrutturazione Stadio: 5.5M · Pagamento il 1° di ogni mese</div>
+                </div>
+                <button
+                  onClick={() => runBulk(applicaEntrateStadioTutte, 'Entrate stadio a tutti')}
+                  disabled={isBusy}
+                  style={{ padding: '8px 18px', borderRadius: 10, border: '1.5px solid #10b98150', background: '#10b98118', color: '#10b981', fontSize: 12, fontWeight: 700, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.6 : 1 }}>
+                  {busy === 'Entrate stadio a tutti' ? '⏳ Esecuzione...' : '🏟 Applica entrate a tutti'}
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {(status?.squadre || []).sort((a,b) => a.name.localeCompare(b.name)).map(sq => {
+                  const team = teams?.find(t => t.name === sq.name);
+                  const hasUpgrade = stadioSet.has(sq.name);
+                  const stadioOk = status?.stadioPagato.has(sq.name);
+                  const isBusyThis = busy === `stadio_${sq.name}`;
+                  return (
+                    <div key={sq.name} style={{ background: '#ffffff06', border: '1px solid #ffffff10', borderRadius: 12, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                      {team && <TeamAvatar team={team} size={36} />}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#f0f0f0' }}>{sq.name}</div>
+                        <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>
+                          Entrate mensili: <b style={{ color: hasUpgrade ? '#10b981' : '#888' }}>{hasUpgrade ? '+5.5M' : '+4M'}</b>
+                          {stadioOk && <span style={{ marginLeft: 8, color: '#10b981', fontSize: 10 }}>✓ pagato {status.meseISO}</span>}
+                        </div>
+                      </div>
+                      {/* Toggle upgrade */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 10, color: '#555' }}>Ristrutturazione Stadio</span>
+                        <button
+                          onClick={() => toggleStadio(sq.name)}
+                          disabled={isBusyThis || isBusy}
+                          style={{ width: 44, height: 24, borderRadius: 12, border: 'none', background: hasUpgrade ? '#10b981' : '#ffffff15', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', opacity: isBusyThis ? 0.5 : 1 }}>
+                          <div style={{ position: 'absolute', top: 3, left: hasUpgrade ? 23 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+                        </button>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: hasUpgrade ? '#10b981' : '#555', minWidth: 36 }}>{hasUpgrade ? 'ON' : 'OFF'}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── TASSE ── */}
+          {tab === 'tasse' && status && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>📅 TASSA SETTIMANALE</div>
+                  <div style={{ fontSize: 11, color: '#555', marginTop: 4 }}>Domenica {status.domenica} · Art. 7.1</div>
+                </div>
+                <button
+                  onClick={() => runBulk(applicaTassaATutti, 'Tassa settimanale a tutti')}
+                  disabled={isBusy}
+                  style={{ padding: '8px 18px', borderRadius: 10, border: '1.5px solid #f59e0b50', background: '#f59e0b18', color: '#f59e0b', fontSize: 12, fontWeight: 700, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.6 : 1 }}>
+                  {busy === 'Tassa settimanale a tutti' ? '⏳ Esecuzione...' : '📊 Applica tassa a tutti'}
+                </button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 8 }}>
+                {(status.squadre || []).sort((a,b) => a.name.localeCompare(b.name)).map(sq => {
+                  const team = teams?.find(t => t.name === sq.name);
+                  const ok = status.tassePagate.has(sq.name);
+                  const tassa = calcolaTassa(sq.bilancio || 0);
+                  return (
+                    <div key={sq.name} style={{ background: ok ? '#10b98108' : '#f59e0b08', border: `1px solid ${ok ? '#10b98130' : '#f59e0b25'}`, borderRadius: 10, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {team && <TeamAvatar team={team} size={28} />}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#ddd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sq.name}</div>
+                        <div style={{ fontSize: 10, color: '#555' }}>{tassa.perc} → −{tassa.importo}M</div>
+                      </div>
+                      <div style={{ fontSize: 18 }}>{ok ? '✅' : '⏳'}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── STIPENDI ── */}
+          {tab === 'stipendi' && status && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>💰 STIPENDI MENSILI</div>
+                  <div style={{ fontSize: 11, color: '#555', marginTop: 4 }}>Mese: {status.meseISO} · 1° del mese alle 9:00 · Art. 4.4</div>
+                </div>
+                <button
+                  onClick={() => runBulk(applicaStipendioATutti, 'Stipendi mensili a tutti')}
+                  disabled={isBusy}
+                  style={{ padding: '8px 18px', borderRadius: 10, border: '1.5px solid #6366f150', background: '#6366f118', color: '#818cf8', fontSize: 12, fontWeight: 700, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.6 : 1 }}>
+                  {busy === 'Stipendi mensili a tutti' ? '⏳ Esecuzione...' : '💰 Applica stipendi a tutti'}
+                </button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 8 }}>
+                {(status.squadre || []).sort((a,b) => a.name.localeCompare(b.name)).map(sq => {
+                  const team = teams?.find(t => t.name === sq.name);
+                  const ok = status.stipendiPagati.has(sq.name);
+                  return (
+                    <div key={sq.name} style={{ background: ok ? '#10b98108' : '#6366f108', border: `1px solid ${ok ? '#10b98130' : '#6366f125'}`, borderRadius: 10, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {team && <TeamAvatar team={team} size={28} />}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#ddd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sq.name}</div>
+                        <div style={{ fontSize: 10, color: '#555' }}>SC: {(sq.salary_used || 0).toFixed(1)}M → rata {((sq.salary_used || 0) / 12).toFixed(2)}M</div>
+                      </div>
+                      <div style={{ fontSize: 18 }}>{ok ? '✅' : '⏳'}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── STAGIONE ── */}
+          {tab === 'stagione' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em', marginBottom: 4 }}>⚙️ OPERAZIONI DI STAGIONE</div>
+              {[
+                { label: '📋 Iscrizione campionato a tutti (−30M)', fn: applicaIscrizioneATutti, color: '#f97316', desc: 'Applica il costo iscrizione alle squadre che non l\'hanno ancora pagata' },
+                { label: '🔄 Aggiornamento quote (da Listone)', fn: null, color: '#6366f1', desc: 'Da eseguire da Mercato → Listone', disabled: true },
+              ].map(op => (
+                <div key={op.label} style={{ background: op.color + '08', border: `1px solid ${op.color}25`, borderRadius: 12, padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: op.disabled ? '#444' : '#ccc' }}>{op.label}</div>
+                    <div style={{ fontSize: 11, color: '#555', marginTop: 3 }}>{op.desc}</div>
+                  </div>
+                  {!op.disabled && (
+                    <button
+                      onClick={() => op.fn && runBulk(op.fn, op.label)}
+                      disabled={isBusy || op.disabled}
+                      style={{ padding: '7px 16px', borderRadius: 9, border: `1.5px solid ${op.color}50`, background: op.color + '18', color: op.color, fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
+                      Esegui
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function StatusPill({ ok }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 20, background: ok ? '#10b98118' : '#ffffff08', border: `1px solid ${ok ? '#10b98140' : '#ffffff15'}`, fontSize: 10, fontWeight: 700, color: ok ? '#10b981' : '#555', whiteSpace: 'nowrap' }}>
+      {ok ? '✓ OK' : '⏳ Da fare'}
+    </span>
+  );
+}
+
 /* ─── ADMIN LOG PAGE ─────────────────────────────────────────────────────────── */
 function AdminLogPage({ profile }) {
   const [log, setLog] = useState([]);
@@ -8688,7 +8999,7 @@ function AppInner() {
   const isAdmin = profile?.ruolo === "admin";
   const mySquadra = profile?.squadra;
   const pathname = location.pathname;
-  const currentPage = pathname==='/news'?'news':pathname==='/squadre'?'squadre':pathname.startsWith('/presidente')?'squadre':pathname==='/lega'?'lega':pathname==='/mercato'?'mercato':pathname==='/modifica'?'modifica':pathname==='/adminlog'?'adminlog':'news';
+  const currentPage = pathname==='/news'?'news':pathname==='/squadre'?'squadre':pathname.startsWith('/presidente')?'squadre':pathname==='/lega'?'lega':pathname==='/mercato'?'mercato':pathname==='/modifica'?'modifica':pathname==='/adminlog'?'adminlog':pathname==='/admin-control'?'admin-control':'news';
 
   const navItems = [
     { key:"news",    path:"/news",    icon:"📰", label:"News"    },
@@ -8714,6 +9025,7 @@ function AppInner() {
       <Route path="/mercato" element={<MercatoPage profile={profile} isAdmin={isAdmin} teams={mergedTeams} offerteInAttesa={offerteInAttesa} statoMercato={statoMercato}/>}/>
       {isAdmin && mergedTeams.length > 0 && <Route path="/modifica" element={<ModificaRosePage teams={mergedTeams} isAdmin={isAdmin} onRefresh={refreshSquadre}/>}/>}
       {isAdmin && <Route path="/adminlog" element={<AdminLogPage profile={profile}/>}/>}
+      {isAdmin && <Route path="/admin-control" element={<AdminControlRoomPage teams={mergedTeams}/>}/>}
       <Route path="/presidente/:teamId" element={<PresidentePageWrapper mergedTeams={mergedTeams} isAdmin={isAdmin} mySquadra={mySquadra}/>}/>
       <Route path="/presidente/:teamId/:tab" element={<PresidentePageWrapper mergedTeams={mergedTeams} isAdmin={isAdmin} mySquadra={mySquadra}/>}/>
       <Route path="*" element={<Navigate to="/news" replace />}/>
@@ -8759,7 +9071,7 @@ function AppInner() {
               {isAdmin && (
                 <div style={{ marginTop:20 }}>
                   <div style={{ fontSize:9,color:"#333",letterSpacing:"0.1em",fontWeight:700,padding:"0 12px",marginBottom:8 }}>⚡ ADMIN</div>
-                  {[{key:"modifica",path:"/modifica",icon:"✏️",label:"Modifica Rose"},{key:"adminlog",path:"/adminlog",icon:"🗂️",label:"Audit Log"}].map(item => {
+                  {[{key:"admin-control",path:"/admin-control",icon:"⚡",label:"Control Room"},{key:"modifica",path:"/modifica",icon:"✏️",label:"Modifica Rose"},{key:"adminlog",path:"/adminlog",icon:"🗂️",label:"Audit Log"}].map(item => {
                     const active = currentPage === item.key;
                     return <button key={item.key} onClick={()=>navigate(item.path)} style={{ width:"100%",display:"flex",alignItems:"center",gap:12,padding:"10px 12px",borderRadius:10,border:"none",background:active?"#f59e0b22":"transparent",color:active?"#f59e0b":"#555",fontWeight:700,fontSize:12,cursor:"pointer",marginBottom:3,textAlign:"left" }} onMouseEnter={e=>{if(!active){e.currentTarget.style.background="#ffffff08";e.currentTarget.style.color="#aaa";}}} onMouseLeave={e=>{if(!active){e.currentTarget.style.background="transparent";e.currentTarget.style.color="#555";}}}><span style={{ fontSize:16 }}>{item.icon}</span>{item.label}{active&&<div style={{ marginLeft:"auto",width:6,height:6,borderRadius:"50%",background:"#f59e0b" }}/>}</button>;
                   })}
