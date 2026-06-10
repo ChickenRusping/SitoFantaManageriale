@@ -8755,6 +8755,11 @@ function NewsComposer({ profile, teams, onPost, isAdmin }) {
         testo: testo.trim(),
         immagini,
       });
+      sendTelegramNotification('notizia_pinnata', {
+        squadra: postAsAdmin ? null : (profile.squadra || profile.nome || profile.email),
+        titolo: titolo.trim(),
+        testo: testo.trim(),
+      });
       setTitolo(""); setTesto(""); setImmagini([]); setCategoria("news"); setPostAsAdmin(false); setOpen(false);
       onPost?.();
     } catch(err) { alert(err.message); }
