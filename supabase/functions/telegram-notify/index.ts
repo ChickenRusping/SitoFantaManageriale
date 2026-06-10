@@ -1,24 +1,29 @@
-// Supabase Edge Function — Telegram Notifications
-// Deploy via: Supabase Dashboard → Edge Functions → New Function
-//
-// Required env vars (set in Supabase Dashboard → Settings → Edge Functions):
-//   TELEGRAM_BOT_TOKEN      — from @BotFather
-//   TELEGRAM_CHANNEL_ID     — e.g. "@fantamanageriale" or "-100xxxxxxxxxx"
-//   TELEGRAM_BOT_USERNAME   — e.g. "fantamanagerialebot" (no @)
-
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BOT_TOKEN        = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
-const CHANNEL_ID       = Deno.env.get("TELEGRAM_CHANNEL_ID");
-const SUPABASE_URL     = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_KEY      = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const BOT_TOKEN    = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
+const CHANNEL_ID   = Deno.env.get("TELEGRAM_CHANNEL_ID");
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const TG           = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
-const TG = `https://api.telegram.org/bot${BOT_TOKEN}`;
+const CORS = {
+  "Access-Control-Allow-Origin":  "*",
+  "Access-Control-Allow-Headers": "authorization, content-type, x-client-info, apikey",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
-// ─── Telegram helpers ─────────────────────────────────────────────────────────
+function ok(body: unknown = null) {
+  if (body === null) return new Response("ok", { headers: CORS });
+  return new Response(JSON.stringify(body), {
+    headers: { "Content-Type": "application/json", ...CORS },
+  });
+}
+function err(msg: string, status = 400) {
+  return new Response(msg, { status, headers: CORS });
+}
 
-async function sendMessage(chatId: string | number, text: string, extra: object = {}) {
+async function sendMessage(chatId: string | number, text: string) {
   try {
     const res = await fetch(`${TG}/sendMessage`, {
       method: "POST",
