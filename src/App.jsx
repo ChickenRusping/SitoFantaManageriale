@@ -279,7 +279,7 @@ function TeamCard({ team, onClick }) {
   // FPF = netto speso semestre corrente (uscite − entrate, escl. stipendi), passato da mergedTeams
   const fpf = team.fpf ?? null;
   const fpfDisplay = fpf !== null ? `${fpf.toFixed(1)}M` : "—";
-  const fpfColor = fpf === null ? "#555" : fpf > 70 ? "#ef4444" : fpf > 65 ? "#f97316" : fpf > 60 ? "#f59e0b" : fpf > 50 ? "#fbbf24" : fpf > 35 ? "#888" : "#10b981";
+  const fpfColor = fpf === null ? "#555" : fpf > 60 ? "#ef4444" : fpf > 55 ? "#f97316" : fpf > 50 ? "#f59e0b" : "#10b981";
   const scColor = scLive > 75 ? "#ef4444" : scLive > 74 ? "#f97316" : scLive > 70 ? "#f59e0b" : scLive > 65 ? "#fbbf24" : scLive > 60 ? "#888" : "#10b981";
   const scLibero = parseFloat((75 - scLive).toFixed(1));
   const scLiberoColor = scLibero >= 10 ? "#10b981" : scLibero >= 3 ? "#6ee7b7" : scLibero >= 0 ? "#888" : scLibero >= -5 ? "#f59e0b" : scLibero >= -10 ? "#f97316" : "#ef4444";
@@ -290,7 +290,7 @@ function TeamCard({ team, onClick }) {
   const u21Required = giocatori >= 30 ? 3 : giocatori >= 29 ? 2 : giocatori >= 28 ? 1 : 0;
   const u21Color = u21Required === 0 ? "#888" : u21 >= u21Required ? "#10b981" : u21 === u21Required - 1 ? "#f59e0b" : "#ef4444";
   const bilColor = team.bilancio >= 20 ? "#10b981" : team.bilancio >= 10 ? "#888" : team.bilancio >= 5 ? "#fbbf24" : team.bilancio >= 0 ? "#f97316" : "#ef4444";
-  const hasAlert = u21 < u21Required || team.bilancio < 5 || scLive > 75 || (fpf !== null && fpf > 50);
+  const hasAlert = u21 < u21Required || team.bilancio < 5 || scLive > 75 || (fpf !== null && fpf > 50); // FPF warning from 50 (approaching limit)
 
   return (
     <div onClick={onClick} style={{ background: "#ffffff08", border: "1.5px solid #ffffff12", borderRadius: 16, padding: "16px 18px", cursor: "pointer", position: "relative", overflow: "hidden", transition: "all 0.15s" }}
@@ -445,7 +445,7 @@ function CalcolatoreGiornata({ profile, teams }) {
   const [risultato, setRisultato] = useState(""); // "V" | "P" | "S"
   const [rivale, setRivale] = useState(false);   // partita contro la squadra rivale
   const [formazione, setFormazione] = useState(true); // formazione schierata
-  const [stadioPagato, setStadioPagato] = useState(false); // è il 1° del mese?
+  // stadioPagato rimosso — stadio ora automatico il 1° del mese
   const [salvatoMsg, setSalvatoMsg] = useState(null);
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
@@ -484,11 +484,9 @@ function CalcolatoreGiornata({ profile, teams }) {
   ).toFixed(2));
 
   // Stadio (4M se 1° del mese)
-  const guadagnoStadio = stadioPagato ? 4 : 0;
-
-  // Totale grezzo
+  // Totale grezzo (stadio rimosso — ora automatico il 1° del mese)
   let totale = parseFloat((
-    guadagnoGolSegnati + guadagnoGolSubiti + guadagnoRisultato + costoGiocatori + guadagnoStadio
+    guadagnoGolSegnati + guadagnoGolSubiti + guadagnoRisultato + costoGiocatori
   ).toFixed(2));
 
   // Se formazione non schierata: perdite doppie, guadagni 0
@@ -615,7 +613,6 @@ function CalcolatoreGiornata({ profile, teams }) {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
             {[
               [rivale, setRivale, "⚔️ Partita contro rivale", "Vittoria +1M / Pareggio +0.5M"],
-              [stadioPagato, setStadioPagato, "🏟️ 1° del mese", "+4M stadio"],
               [!formazione, v => setFormazione(!v), "⚠️ Formazione non schierata", "Perdite ×2 / Guadagni 0"],
             ].map(([val, setter, lbl, hint], i) => (
               <button key={i} onClick={() => setter(!val)}
@@ -633,7 +630,6 @@ function CalcolatoreGiornata({ profile, teams }) {
             <VoceCalcolo label={`Gol subiti (${golSubiti})`} valore={guadagnoGolSubiti} />
             <VoceCalcolo label={`Risultato${rivale ? " (vs rivale)" : ""}`} valore={guadagnoRisultato} />
             <VoceCalcolo label="Costi/bonus giocatori" valore={costoGiocatori} />
-            <VoceCalcolo label="Stadio (1° del mese)" valore={guadagnoStadio} />
             {!formazione && <div style={{ fontSize: 11, color: "#f59e0b", padding: "4px 0" }}>⚠️ Senza formazione: perdite ×2, guadagni 0</div>}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, paddingTop: 8, borderTop: "1px solid #ffffff12" }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: "#ccc" }}>TOTALE GIORNATA {giornata || "—"}</span>
@@ -760,7 +756,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
   // FPF = netto speso semestre corrente, calcolato centralmente e passato via myTeam.fpf
   const fpf = myTeam?.fpf ?? null;
   const fpfDisplay = fpf !== null ? `${fpf.toFixed(1)}M` : "—";
-  const fpfColor = fpf === null ? "#555" : fpf > 40 ? "#ef4444" : fpf > 25 ? "#f59e0b" : fpf < 0 ? "#10b981" : "#888";
+  const fpfColor = fpf === null ? "#555" : fpf > 60 ? "#ef4444" : fpf > 55 ? "#f97316" : fpf > 50 ? "#f59e0b" : "#10b981";
 
   const inp = { padding: "4px 6px", borderRadius: 5, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 11, width: "100%" };
 
@@ -1010,41 +1006,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
 
-      {/* ── 1. CLASSIFICA ── */}
-      <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 18, padding: 18 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em" }}>🏆 CLASSIFICA FANTACALCIO</div>
-            {classifica[0]?.updated_at && <div style={{ fontSize: 9, color: "#444", marginTop: 2 }}>Agg.: {new Date(classifica[0].updated_at).toLocaleDateString("it-IT",{day:"2-digit",month:"short",year:"numeric"})}</div>}
-          </div>
-          {isAdmin && <button onClick={() => { setEditMode(v=>!v); setEditRow(null); }} style={{ padding:"5px 12px",borderRadius:8,border:"none",background:editMode?"#ef444420":"#6366f120",color:editMode?"#ef4444":"#818cf8",fontSize:11,fontWeight:700,cursor:"pointer" }}>{editMode?"✕ Chiudi":"✏️ Modifica"}</button>}
-        </div>
-        <div style={{ overflowX: "auto" }}>
-          <ClassificaTable classificaRicca={classificaRicca} mySquadra={null} editMode={editMode} editRow={editRow} setEditRow={setEditRow} salvaRiga={salvaRiga} saving={saving} inp={inp} />
-        </div>
-      </div>
-
-      {/* ── 2. ROSE NON REGOLARI ── */}
-      <div style={{ background: roseIrregolari.length>0?"#ef444408":"#ffffff06", border:`1.5px solid ${roseIrregolari.length>0?"#ef444430":"#ffffff12"}`, borderRadius:16, padding:18 }}>
-        <div style={{ fontSize:11, fontWeight:700, color:roseIrregolari.length>0?"#ef4444":"#10b981", letterSpacing:"0.1em", marginBottom:roseIrregolari.length>0?14:0 }}>
-          {roseIrregolari.length>0?"❌ ROSE NON REGOLARI":"✅ TUTTE LE ROSE REGOLARI"}
-        </div>
-        {roseIrregolari.map(([name, comp]) => {
-          const team = teams.find(t=>t.name===name);
-          return (
-            <div key={name} style={{ background:"#ef444410",border:"1px solid #ef444428",borderRadius:10,padding:"10px 14px",marginBottom:6 }}>
-              <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:6 }}>
-                {team && <TeamAvatar team={team} size={22}/>}
-                <span style={{ fontSize:13,fontWeight:700,color:"#f0f0f0" }}>{name}</span>
-              </div>
-              {comp.issues.filter(i=>i.tipo==="error").map((issue,idx) => <div key={idx} style={{ fontSize:11,color:"#ef4444",marginTop:2 }}>⛔ {issue.testo}</div>)}
-              {comp.issues.filter(i=>i.tipo==="warn").map((issue,idx) => <div key={idx} style={{ fontSize:11,color:"#f59e0b",marginTop:2 }}>⚠️ {issue.testo}</div>)}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* ── 3. SCADENZE ── */}
+      {/* ── 1. SCADENZE ── */}
       <div style={{ background:"#ffffff06",border:"1.5px solid #ffffff12",borderRadius:16,padding:18 }}>
         <div style={{ fontSize:11,fontWeight:700,color:"#888",letterSpacing:"0.1em",marginBottom:16 }}>📅 SCADENZE</div>
         <style>{`@media(max-width:700px){.dl-cols{flex-direction:column!important}}`}</style>
@@ -1085,6 +1047,40 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
             })}
           </div>
         </div>
+      </div>
+
+      {/* ── 2. CLASSIFICA ── */}
+      <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 18, padding: 18 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em" }}>🏆 CLASSIFICA FANTACALCIO</div>
+            {classifica[0]?.updated_at && <div style={{ fontSize: 9, color: "#444", marginTop: 2 }}>Agg.: {new Date(classifica[0].updated_at).toLocaleDateString("it-IT",{day:"2-digit",month:"short",year:"numeric"})}</div>}
+          </div>
+          {isAdmin && <button onClick={() => { setEditMode(v=>!v); setEditRow(null); }} style={{ padding:"5px 12px",borderRadius:8,border:"none",background:editMode?"#ef444420":"#6366f120",color:editMode?"#ef4444":"#818cf8",fontSize:11,fontWeight:700,cursor:"pointer" }}>{editMode?"✕ Chiudi":"✏️ Modifica"}</button>}
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <ClassificaTable classificaRicca={classificaRicca} mySquadra={null} editMode={editMode} editRow={editRow} setEditRow={setEditRow} salvaRiga={salvaRiga} saving={saving} inp={inp} />
+        </div>
+      </div>
+
+      {/* ── 3. ROSE NON REGOLARI ── */}
+      <div style={{ background: roseIrregolari.length>0?"#ef444408":"#ffffff06", border:`1.5px solid ${roseIrregolari.length>0?"#ef444430":"#ffffff12"}`, borderRadius:16, padding:18 }}>
+        <div style={{ fontSize:11, fontWeight:700, color:roseIrregolari.length>0?"#ef4444":"#10b981", letterSpacing:"0.1em", marginBottom:roseIrregolari.length>0?14:0 }}>
+          {roseIrregolari.length>0?"❌ ROSE NON REGOLARI":"✅ TUTTE LE ROSE REGOLARI"}
+        </div>
+        {roseIrregolari.map(([name, comp]) => {
+          const team = teams.find(t=>t.name===name);
+          return (
+            <div key={name} style={{ background:"#ef444410",border:"1px solid #ef444428",borderRadius:10,padding:"10px 14px",marginBottom:6 }}>
+              <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:6 }}>
+                {team && <TeamAvatar team={team} size={22}/>}
+                <span style={{ fontSize:13,fontWeight:700,color:"#f0f0f0" }}>{name}</span>
+              </div>
+              {comp.issues.filter(i=>i.tipo==="error").map((issue,idx) => <div key={idx} style={{ fontSize:11,color:"#ef4444",marginTop:2 }}>⛔ {issue.testo}</div>)}
+              {comp.issues.filter(i=>i.tipo==="warn").map((issue,idx) => <div key={idx} style={{ fontSize:11,color:"#f59e0b",marginTop:2 }}>⚠️ {issue.testo}</div>)}
+            </div>
+          );
+        })}
       </div>
 
       {/* ── 4. PREMI ── */}
@@ -2888,7 +2884,7 @@ function FairSpendingSection({ team, isAdmin }) {
   const nettoCalcolato   = parseFloat(movimentiInclusi.reduce((acc, m) => acc + m.contributo, 0).toFixed(2));
   const nettoSpeso       = override !== "" && !isNaN(parseFloat(override)) ? parseFloat(override) : nettoCalcolato;
   const fairResult       = calcolaFairSpending(nettoSpeso);
-  const coloreFPF        = nettoSpeso > 50 ? "#ef4444" : nettoSpeso < 0 ? "#10b981" : "#f0f0f0";
+  const coloreFPF        = nettoSpeso > 60 ? "#ef4444" : nettoSpeso > 55 ? "#f97316" : nettoSpeso > 50 ? "#f59e0b" : "#10b981";
 
   return (
     <div style={{ background: fairResult?.zona === 'sicura' ? "#10b98108" : "#ef444408", border: `1.5px solid ${fairResult?.zona === 'sicura' ? "#10b98125" : "#ef444425"}`, borderRadius: 14, padding: 16 }}>
@@ -2936,12 +2932,10 @@ function FairSpendingSection({ team, isAdmin }) {
           )}
           <div style={{ display: "flex", flexDirection: "column", gap: 3, marginBottom: 10 }}>
             {[
-              { soglia: "≤ 50M",  zona: "sicura", multa: "—",   pt: "—", euro: "—" },
-              { soglia: "50–55M", zona: "50-55",  multa: "5M",  pt: "—", euro: "—" },
-              { soglia: "55–60M", zona: "55-60",  multa: "10M", pt: "—", euro: "—" },
-              { soglia: "60–65M", zona: "60-65",  multa: "15M", pt: "2", euro: "—" },
-              { soglia: "65–70M", zona: "65-70",  multa: "20M", pt: "4", euro: "5€" },
-              { soglia: ">70M",   zona: ">70",    multa: "25M", pt: "6", euro: "10€" },
+              { soglia: "≤ 50M",  zona: "sicura", multa: "—",   pt: "—", euro: "—"  },
+              { soglia: "50–55M", zona: "50-55",  multa: "10M", pt: "—", euro: "—"  },
+              { soglia: "55–60M", zona: "55-60",  multa: "15M", pt: "2", euro: "—"  },
+              { soglia: "> 60M",  zona: ">60",    multa: "20M", pt: "4", euro: "5€" },
             ].map(r => {
               const active = fairResult?.zona === r.zona;
               return (
@@ -3032,6 +3026,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
   const [applicandoTassa, setApplicandoTassa] = useState(false);
   const [euroInput, setEuroInput] = useState("");
   const [savingQuote, setSavingQuote] = useState(false);
+  const [contrattiSort, setContrattiSort] = useState("ruolo"); // "ruolo" | "nome" | "quot"
 
   useEffect(() => {
     getTassePagate(team.name).then(setTasse);
@@ -3337,25 +3332,13 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
           <div style={{ fontSize: 9, color: "#444", marginTop: 4 }}>Reset biennio all'inizio della stagione 2027-28</div>
         </div>
 
-        {/* Milioni extra attivi + ritiro */}
+        {/* Milioni extra attivi (solo visualizzazione, ritiro rimosso dal regolamento) */}
         {mlnOttenuti > 0 && (
           <div style={{ background: "#10b98110", border: "1px solid #10b98125", borderRadius: 10, padding: "10px 12px", marginBottom: 10 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 12, color: "#888" }}>Milioni extra attivi</span>
               <span style={{ fontSize: 16, fontWeight: 900, color: "#10b981", fontFamily: "'Bebas Neue',sans-serif" }}>+{mlnOttenuti.toFixed(1)}M</span>
             </div>
-            <div style={{ fontSize: 10, color: "#666" }}>
-              Ritiro: spendi <b style={{ color: "#f59e0b" }}>{costoRitiro}M</b> (2×) tra 05/01 e martedì post 19ª giornata.
-              Gli {team.euroInvestiti || 0}€ restano spesi nel biennio.
-            </div>
-            {finestraRitiroAperta ? (
-              <button onClick={handleRitira} disabled={savingQuote || bilancio < costoRitiro}
-                style={{ marginTop: 8, padding: "5px 12px", borderRadius: 7, border: "none", background: bilancio >= costoRitiro ? "#f59e0b18" : "#333", color: bilancio >= costoRitiro ? "#f59e0b" : "#555", fontSize: 11, fontWeight: 700, cursor: bilancio >= costoRitiro ? "pointer" : "not-allowed" }}>
-                {savingQuote ? "..." : `💸 Ritira (costa ${costoRitiro}M, ricevi ${mlnOttenuti}M)`}
-              </button>
-            ) : (
-              <div style={{ fontSize: 9, color: "#555", marginTop: 4 }}>Finestra chiusa — disponibile 05/01 → martedì post 19ª giornata</div>
-            )}
           </div>
         )}
 
@@ -3388,13 +3371,29 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
       {/* ── 6. CONTRATTI IN SCADENZA (fine 2° anno — rinnovo biennale) ── */}
       {contrattiScadenza.length > 0 && (
         <div style={{ background: "#f59e0b08", border: "1.5px solid #f59e0b25", borderRadius: 14, padding: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", letterSpacing: "0.08em", marginBottom: 4 }}>📋 RINNOVO BIENNALE — CONFERMA ENTRO 31/05</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4, flexWrap: "wrap", gap: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", letterSpacing: "0.08em" }}>📋 RINNOVO BIENNALE — CONFERMA ENTRO 31/05</div>
+            <div style={{ display: "flex", gap: 4 }}>
+              {[["ruolo","Ruolo"],["nome","Nome"],["quot","Q"]].map(([v,l]) => (
+                <button key={v} onClick={() => setContrattiSort(v)}
+                  style={{ padding: "3px 8px", borderRadius: 6, border: `1px solid ${contrattiSort===v?"#f59e0b60":"#ffffff15"}`, background: contrattiSort===v?"#f59e0b18":"transparent", color: contrattiSort===v?"#f59e0b":"#555", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
           <div style={{ fontSize: 10, color: "#666", marginBottom: 12 }}>
             Questi giocatori sono al <b style={{ color: "#aaa" }}>2° anno di contratto</b>. Devi decidere entro il 31/05 (art. 4.8):<br/>
             • <b style={{ color: "#10b981" }}>Conferma rinnovo</b> → il giocatore resta in rosa, stipendio +20%<br/>
             • <b style={{ color: "#ef4444" }}>Non confermare</b> → il giocatore viene svincolato automaticamente il 01/06
           </div>
-          {contrattiScadenza.map(p => (
+          {[...contrattiScadenza].sort((a, b) => {
+            if (contrattiSort === "nome") return (a.nome||"").localeCompare(b.nome||"");
+            if (contrattiSort === "quot") return (b.quot||0) - (a.quot||0);
+            // ruolo: sort by role category order
+            const roleOrder = (r) => { const f=(r||"").split(";")[0].trim(); if(f==="Por")return 0; if(["Dc","Dd","Ds","B"].includes(f))return 1; if(["E","M","C"].includes(f))return 2; if(["T","W"].includes(f))return 3; return 4; };
+            return roleOrder(a.ruolo) - roleOrder(b.ruolo) || (a.nome||"").localeCompare(b.nome||"");
+          }).map(p => (
             <ContrattoRinnovoRow key={p.id} p={p} team={team} isAdmin={isAdmin} mySquadra={mySquadra} onRefresh={onRefresh} />
           ))}
         </div>
@@ -4491,7 +4490,7 @@ function ClubIdentityRight({ team, clubIdentity, isAdmin, mySquadra, onRefresh }
               canEdit={canEdit} uploading={uploading} teamName={team.name} onUpload={handleUpload} />
           ))}
         </div>
-        {canEdit && <div style={{ fontSize: 9, color: "#555", marginTop: 6, textAlign: "center" }}>Clicca per caricare · max 2MB</div>}
+        {canEdit && <div style={{ fontSize: 9, color: "#555", marginTop: 6, textAlign: "center" }}>Clicca per caricare · max 10MB</div>}
       </div>
 
       {/* Palmares */}
@@ -8417,7 +8416,7 @@ function NewsPage({ profile, isAdmin, teams }) {
     : notizie.filter(n => n.categoria === filtroCategoria);
 
   return (
-    <div style={{ maxWidth: 680, margin: "0 auto" }}>
+    <div style={{ maxWidth: 860, margin: "0 auto" }}>
       <style>{`textarea { font-family: 'Inter', system-ui, sans-serif; }`}</style>
 
       {/* Header */}
@@ -8677,7 +8676,7 @@ function AppInner() {
   const isAdmin = profile?.ruolo === "admin";
   const mySquadra = profile?.squadra;
   const pathname = location.pathname;
-  const currentPage = pathname==='/news'?'news':pathname.startsWith('/presidente')?'squadre':pathname==='/lega'?'lega':pathname==='/mercato'?'mercato':pathname==='/modifica'?'modifica':pathname==='/adminlog'?'adminlog':'news';
+  const currentPage = pathname==='/news'?'news':pathname==='/squadre'?'squadre':pathname.startsWith('/presidente')?'squadre':pathname==='/lega'?'lega':pathname==='/mercato'?'mercato':pathname==='/modifica'?'modifica':pathname==='/adminlog'?'adminlog':'news';
 
   const navItems = [
     { key:"news",    path:"/news",    icon:"📰", label:"News"    },
@@ -8711,7 +8710,7 @@ function AppInner() {
 
   return (
     <div style={{ minHeight:"100vh",background:"#0d0f14",fontFamily:"'Inter',system-ui,sans-serif",color:"#f0f0f0" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#333;border-radius:2px}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}body{background:#0d0f14}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#333;border-radius:2px}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}body{background:#0d0f14}@media(max-width:1100px){.main-content-pad{padding:20px 20px!important}}@media(max-width:900px){.main-content-pad{padding:16px 14px!important}}`}</style>
       {isDesktop ? (
         <div style={{ display:"flex",minHeight:"100vh" }}>
           {/* Sidebar */}
@@ -8769,7 +8768,7 @@ function AppInner() {
               <button onClick={()=>signOut()} style={{ width:"100%",padding:"7px",borderRadius:8,border:"1px solid #ffffff10",background:"transparent",color:"#555",fontSize:11,fontWeight:600,cursor:"pointer" }}>Esci</button>
             </div>
           </div>
-          <div style={{ marginLeft:SIDEBAR_W,flex:1,padding:"28px 32px",minWidth:0,position:"relative" }}>
+          <div className="main-content-pad" style={{ marginLeft:SIDEBAR_W,flex:1,padding:"28px 32px",minWidth:0,position:"relative" }}>
             {pageContent}
           </div>
         </div>
