@@ -3516,6 +3516,121 @@ function AltroTab({ team, isAdmin }) {
   }, [team.name]);
 
   // ── ALLENATORE ───────────────────────────────────────────────────────────────
+  const [coachPreview, setCoachPreview] = useState(null); // nome allenatore di cui mostrare obiettivi
+
+  const OBIETTIVI_ALLENATORI = {
+    "Guardiola": {
+      moduli: "3-5-1-1 / 3-4-2-1",
+      obiettivi: [
+        "Ottieni ≥12 bonus dalla/e M titolare/i",
+        "Vinci almeno ≥5 giornate con punteggio >80",
+        "Per ≥20 giornate 5 giocatori blu e/o viola devono partire titolari",
+      ],
+      ds: ["Acquista ≥2 giocatori con clausola rescissoria"],
+      dg: ["Acquista giocatori per una spesa totale ≥100M", "Mantieni un salary cap sempre ≥67M"],
+    },
+    "Klopp": {
+      moduli: "4-3-3 / 3-4-3",
+      obiettivi: [
+        "Ottieni ≥3 bonus in una giornata dal tridente offensivo ≥5 volte",
+        "Ottieni ≥19 bonus dalle A titolari",
+        "Ottieni il record di giornata ≥5 volte (deve essere ≥78 per valere)",
+      ],
+      ds: ["Compra ≥4 giocatori che migliorino la quotazione di ≥5"],
+      dg: ["Cedi giocatori per un totale di ≥100M", "Non spendere mai ≥25M di parte fissa in un singolo acquisto"],
+    },
+    "Luis Enrique": {
+      moduli: "3-4-1-2 / 4-3-1-2",
+      obiettivi: [
+        "Ottieni ≥105 bonus schierati",
+        "Completa ≥15 partite con ≥2 marcatori diversi",
+        "Vinci contro tutti i presidenti almeno 1 volta, contro il rivale 2",
+      ],
+      ds: ["Mantieni una rosa di minimo 27 giocatori per ≥25 partite"],
+      dg: ["Riduci ≥4 ingaggi a metà stagione", "Ogni ultimo del mese, non puoi avere >2 giocatori con stipendio ≥5M"],
+    },
+    "Conte": {
+      moduli: "3-4-3 / 3-5-1-1",
+      obiettivi: [
+        "Completa ≥11 giornate con il bonus Fair Play attivo",
+        "Ottieni ≥15 bonus dalle tue E e/o W schierate",
+        "Vinci ≥7 giornate con scarto ≥10 punti",
+      ],
+      ds: ["Cedi, anche in prestito, ad altri presidenti ≥3 giocatori ≥31 anni"],
+      dg: ["Concludi la trattativa più costosa in una sessione di mercato", "Spendi max 9M per un singolo investimento"],
+    },
+    "Capello": {
+      moduli: "4-3-1-2 / 4-4-2",
+      obiettivi: [
+        "Mantieni ≥5 giornate con modificatore difesa ≥2 punti",
+        "In ≥4 giornate le 2 Pc devono segnare entrambe",
+        "Completa ≥22 giornate con massimo 1 gol subito",
+      ],
+      ds: ["Devono prendere voto ≥8 giocatori verdi diversi, 2 volte"],
+      dg: ["Aumenta il valore totale rosa di ≥20M a fine anno (15/09→01/06)", "Non essere mai multato e non subire mai penalità"],
+    },
+    "Mourinho": {
+      moduli: "4-2-3-1 / 4-4-1-1",
+      obiettivi: [
+        "≥1 giocatore verde e ≥1 rosso vanno a bonus nella stessa giornata ≥5 volte",
+        "Ottieni ≥4 vittorie consecutive",
+        "Mantieni un blocco difensivo stabile di 3 giocatori verdi per ≥15 giornate",
+      ],
+      ds: ["Fai fare ≥40 presenze ai tuoi over 33 in rosa"],
+      dg: ["Arriva almeno in finale di Coppa e/o sul podio a fine anno", "Mantieni il FPF sotto 25M ai check di ottobre e febbraio"],
+    },
+    "Allegri": {
+      moduli: "3-5-2 / 3-4-1-2",
+      obiettivi: [
+        "Chiudi ≥10 giornate con punteggio tra 66 e 70",
+        "Vinci ≥2 giornate con scarto ≤2 punti",
+        "La somma dei punti totali dei tuoi capitani a fine stagione deve essere ≥12",
+      ],
+      ds: ["Mantieni una rosa di massimo 26 giocatori per ≥25 partite"],
+      dg: ["Acquista ≥2 giocatori per un valore (fisso+bonus) di ≥30M l'uno", "Ottieni ≥75M dai guadagni di giornata"],
+    },
+    "Lippi": {
+      moduli: "4-4-1-1 / 4-1-4-1",
+      obiettivi: [
+        "Ottieni ≥18 clean sheet schierati",
+        "Le tue W e A schierate fanno ≥24 bonus",
+        "Completa ≥12 giornate con 11 voti pieni, non subentrati",
+      ],
+      ds: ["Fai fare ≥50 presenze ai tuoi Under-21 in rosa"],
+      dg: ["Rimani con ≥15M di liquidità a fine mercato invernale", "I tuoi investimenti devono aver fruttato il 150% della spesa iniziale"],
+    },
+    "Sir Ferguson": {
+      moduli: "4-4-2 / 3-5-2",
+      obiettivi: [
+        "Nella stessa partita una Pc segna e una Pc fa assist, ≥1 volta",
+        "Le tue Pc schierate devono realizzare un totale di ≥20 gol",
+        "In ≥4 giornate ≥3 giocatori blu e/o viola devono andare a voto con 6.5+",
+      ],
+      ds: ["Promuovi ≥1 giocatore dal vivaio e cedi/svincola ≥1 giocatore del vivaio"],
+      dg: ["Non pagare ≥2 svincoli ordinari in stagione", "Acquista ≥2 giocatori Under-21 per un valore di ≥25M totali"],
+    },
+    "Ancelotti": {
+      moduli: "3-4-2-1 / 4-3-3",
+      obiettivi: [
+        "Segna in ≥15 giornate con giocatori di ≥2 colori diversi",
+        "Segna con ≥3 colori nella stessa giornata, ≥2 volte",
+        "Completa ≥15 giornate con punteggio ≥75",
+      ],
+      ds: ["Mantieni ≥2 italiani per reparto Verde/Blu/Viola e ≥1 nei Gialli/Rossi; ≥100 presenze totali"],
+      dg: ["Chiudi la stagione con saldo positivo ≥20M", "Ogni ultimo del mese, il valore di ogni colore deve essere ≤30% del totale rosa"],
+    },
+    "Sacchi": {
+      moduli: "4-1-4-1 / 4-2-3-1",
+      obiettivi: [
+        "I tuoi giocatori verdi devono prendere voto 7+ in ≥13 giornate",
+        "Le tue T e W schierate fanno ≥20 bonus",
+        "Nei tuoi incontri deve realizzarsi l'over 3.5 in ≥16 match",
+      ],
+      ds: ["Acquista ≥3 giocatori stranieri con quotazione ≤8, devono fare ≥25 presenze totali"],
+      dg: ["Compra ≥3 giocatori e rivendili a cifra più alta dell'acquisto", "Mantieni sempre ≥7M di liquidità"],
+    },
+  };
+
   const [allenatore, setAllenatore] = useState(null);
   const [obiettivi, setObiettivi] = useState([]);
   const [progresso, setProgresso] = useState([]);
@@ -3694,8 +3809,8 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
           <>
             <div style={{ background:"linear-gradient(135deg,#6366f118,#a855f718)",border:"1.5px solid #6366f133",borderRadius:14,padding:16,marginBottom:12 }}>
               <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8 }}>
-                <div>
-                  <div style={{ fontSize:18,fontWeight:900,color:"#f0f0f0",fontFamily:"'Bebas Neue',sans-serif" }}>{allenatore.nome}</div>
+                <div style={{ cursor:"pointer" }} onClick={()=>setCoachPreview(allenatore.nome)}>
+                  <div style={{ fontSize:18,fontWeight:900,color:"#f0f0f0",fontFamily:"'Bebas Neue',sans-serif" }}>{allenatore.nome} <span style={{ fontSize:11,color:"#6366f1" }}>📋</span></div>
                   <div style={{ fontSize:11,color:"#888" }}>Moduli: <span style={{ color:"#818cf8",fontWeight:700 }}>{allenatore.modulo1}</span> · <span style={{ color:"#818cf8",fontWeight:700 }}>{allenatore.modulo2}</span></div>
                 </div>
                 <div style={{ textAlign:"right" }}>
@@ -3768,17 +3883,75 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
         ):(
           <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
             <div style={{ fontSize:11,color:"#888" }}>Nessun allenatore scelto per {STAGIONE}.{isAdmin&&<span style={{ color:"#6366f1" }}> Scegli una carta (5M).</span>}</div>
+            {/* Coach preview modal */}
+            {coachPreview && (() => {
+              const info = OBIETTIVI_ALLENATORI[coachPreview];
+              const coachAll = tuttiAllenatori.find(a => a.nome === coachPreview);
+              const disp = coachAll && !coachAll.squadra;
+              return (
+                <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16 }}
+                  onClick={()=>setCoachPreview(null)}>
+                  <div style={{ background:"#1a1d26",border:"1.5px solid #6366f133",borderRadius:18,padding:20,maxWidth:420,width:"100%",maxHeight:"85vh",overflowY:"auto" }}
+                    onClick={e=>e.stopPropagation()}>
+                    <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14 }}>
+                      <div>
+                        <div style={{ fontSize:22,fontWeight:900,color:"#f0f0f0",fontFamily:"'Bebas Neue',sans-serif" }}>{coachPreview}</div>
+                        <div style={{ fontSize:11,color:"#818cf8",fontWeight:700 }}>{info?.moduli}</div>
+                        {coachAll?.squadra && <div style={{ fontSize:10,color:"#f97316",marginTop:2 }}>Scelto da: {coachAll.squadra}</div>}
+                      </div>
+                      <button onClick={()=>setCoachPreview(null)} style={{ background:"none",border:"none",color:"#555",fontSize:18,cursor:"pointer",padding:4 }}>✕</button>
+                    </div>
+                    {info ? (
+                      <>
+                        <div style={{ marginBottom:12 }}>
+                          <div style={{ fontSize:10,fontWeight:700,color:"#6366f1",letterSpacing:"0.08em",marginBottom:6 }}>🎯 OBIETTIVI ALLENATORE — +2M cad.</div>
+                          {info.obiettivi.map((o,i)=>(
+                            <div key={i} style={{ background:"#6366f110",border:"1px solid #6366f125",borderRadius:8,padding:"8px 12px",marginBottom:5,fontSize:12,color:"#c7d2fe",lineHeight:1.4 }}>{o}</div>
+                          ))}
+                        </div>
+                        <div style={{ marginBottom:12 }}>
+                          <div style={{ fontSize:10,fontWeight:700,color:"#10b981",letterSpacing:"0.08em",marginBottom:6 }}>🏃 DS — +5M · −2M se fallito</div>
+                          {info.ds.map((o,i)=>(
+                            <div key={i} style={{ background:"#10b98110",border:"1px solid #10b98125",borderRadius:8,padding:"8px 12px",marginBottom:5,fontSize:12,color:"#6ee7b7",lineHeight:1.4 }}>{o}</div>
+                          ))}
+                        </div>
+                        <div style={{ marginBottom:16 }}>
+                          <div style={{ fontSize:10,fontWeight:700,color:"#f59e0b",letterSpacing:"0.08em",marginBottom:6 }}>💼 DG — +5M al 31/05 · −2M se fallito</div>
+                          {info.dg.map((o,i)=>(
+                            <div key={i} style={{ background:"#f59e0b10",border:"1px solid #f59e0b25",borderRadius:8,padding:"8px 12px",marginBottom:5,fontSize:12,color:"#fcd34d",lineHeight:1.4 }}>{o}</div>
+                          ))}
+                        </div>
+                        <div style={{ fontSize:10,color:"#555",marginBottom:14 }}>I moduli devono essere schierati complessivamente per ≥27 partite.</div>
+                      </>
+                    ) : (
+                      <div style={{ color:"#555",fontSize:12 }}>Obiettivi non disponibili.</div>
+                    )}
+                    {isAdmin && disp && (
+                      <button onClick={()=>{ setCoachPreview(null); handleScegli(coachPreview); }} disabled={savingAll}
+                        style={{ width:"100%",padding:"10px",borderRadius:10,border:"1.5px solid #6366f150",background:"#6366f120",color:"#818cf8",fontSize:13,fontWeight:800,cursor:"pointer" }}>
+                        Scegli {coachPreview} — 5M
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
             {tuttiAllenatori.map(all=>{
               const disp=!all.squadra;
               return (
-                <div key={all.nome} style={{ background:disp?"#ffffff08":"#ffffff04",border:`1px solid ${disp?"#ffffff15":"#ffffff08"}`,borderRadius:10,padding:12,opacity:disp?1:0.5 }}>
+                <div key={all.nome} onClick={()=>setCoachPreview(all.nome)}
+                  style={{ background:disp?"#ffffff08":"#ffffff04",border:`1px solid ${disp?"#ffffff15":"#ffffff08"}`,borderRadius:10,padding:12,opacity:disp?1:0.5,cursor:"pointer" }}>
                   <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
                     <div>
                       <div style={{ fontSize:13,fontWeight:800,color:disp?"#f0f0f0":"#555" }}>{all.nome}</div>
                       <div style={{ fontSize:10,color:"#666" }}>{all.modulo1} · {all.modulo2}</div>
                       {all.squadra&&<div style={{ fontSize:9,color:"#ef4444" }}>Scelto da: {all.squadra}</div>}
                     </div>
-                    {isAdmin&&disp&&<button onClick={()=>handleScegli(all.nome)} disabled={savingAll} style={{ padding:"5px 12px",borderRadius:7,border:"none",background:"#6366f122",color:"#818cf8",fontSize:11,fontWeight:700,cursor:"pointer" }}>Scegli −5M</button>}
+                    <div style={{ display:"flex",gap:6,alignItems:"center" }}>
+                      <span style={{ fontSize:10,color:"#555" }}>📋 Dettagli</span>
+                      {isAdmin&&disp&&<button onClick={e=>{e.stopPropagation();handleScegli(all.nome);}} disabled={savingAll} style={{ padding:"5px 12px",borderRadius:7,border:"none",background:"#6366f122",color:"#818cf8",fontSize:11,fontWeight:700,cursor:"pointer" }}>Scegli −5M</button>}
+                    </div>
                   </div>
                 </div>
               );
