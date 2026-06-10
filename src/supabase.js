@@ -140,12 +140,12 @@ export function calcolaScadenzaInteresse(dataChiamata = new Date()) {
     lun.setUTCDate(d.getUTCDate() - giorniDaLun);
     lun.setUTCHours(0, 0, 0, 0);
 
-    // Giovedì = lunedì + 3 giorni, ore 19:00 UTC
+    // Giovedì = lunedì + 3 giorni, ore 20:00 UTC (= 21:00 ora italiana)
     const gio = new Date(lun);
     gio.setUTCDate(lun.getUTCDate() + 3);
-    gio.setUTCHours(19, 0, 0, 0);
+    gio.setUTCHours(20, 0, 0, 0);
 
-    // Se siamo già oltre giovedì 19:00 UTC, vai alla settimana successiva
+    // Se siamo già oltre giovedì 20:00 UTC, vai alla settimana successiva
     if (d >= gio) gio.setUTCDate(gio.getUTCDate() + 7);
     return gio;
   } else {
@@ -172,10 +172,10 @@ export function calcolaScadenzaOfferte(scadenzaInteresse) {
     lun.setUTCDate(d.getUTCDate() - giorniDaLun);
     lun.setUTCHours(0, 0, 0, 0);
 
-    // Venerdì = lunedì + 4 giorni, ore 11:00 UTC
+    // Venerdì = lunedì + 4 giorni, ore 13:00 UTC (= 14:00 Italia)
     const ven = new Date(lun);
     ven.setUTCDate(lun.getUTCDate() + 4);
-    ven.setUTCHours(11, 0, 0, 0);
+    ven.setUTCHours(13, 0, 0, 0);
     return ven;
   } else {
     return new Date(d.getTime() + 24 * 60 * 60 * 1000);
@@ -2463,11 +2463,11 @@ export function getFinestraChiamate() {
   // Infrasettimanale: nessuna asta (gestito manualmente, qui solo info)
   const finestraInteresse =
     (giorno === 2 && oreMin >= 9 * 60) ||   // martedì dalle 9:00
-    (giorno === 3 && oreMin < 20 * 60);      // mercoledì prima delle 20:00
+    (giorno === 3 && oreMin < 21 * 60);      // mercoledì prima delle 21:00
 
   const finestraAltriInteressi =
-    (giorno === 3 && oreMin >= 20 * 60) ||   // mercoledì dalle 20:00
-    (giorno === 4 && oreMin < 20 * 60);      // giovedì prima delle 20:00
+    (giorno === 3 && oreMin >= 21 * 60) ||   // mercoledì dalle 21:00
+    (giorno === 4 && oreMin < 21 * 60);      // giovedì prima delle 21:00
 
   const giornoAste = giorno === 5; // venerdì
 
@@ -2477,9 +2477,9 @@ export function getFinestraChiamate() {
     finestraAltriInteressi,
     giornoAste,
     messaggio: finestraInteresse
-      ? "✅ Finestra aperta — puoi manifestare interesse (fino a mer 20:00)"
+      ? "✅ Finestra aperta — puoi manifestare interesse (fino a mer 21:00)"
       : finestraAltriInteressi
-        ? "⏳ Finestra interesse altri presidenti (fino a gio 20:00)"
+        ? "⏳ Finestra interesse altri presidenti (fino a gio 21:00)"
         : giornoAste
           ? "🏷️ Giorno aste"
           : `Finestra chiusa — riapre martedì alle 9:00`,
@@ -2578,7 +2578,7 @@ export async function creaAstaDaChiamate(nomeGiocatore) {
     // scadenzaInteresse è giovedì 19:00 UTC → +1 giorno = venerdì
     const ven = new Date(scadenzaInteresse);
     ven.setUTCDate(scadenzaInteresse.getUTCDate() + 1); // giovedì → venerdì
-    ven.setUTCHours(11, 0, 0, 0); // 11:00 UTC = 12:00 Italia (slot base)
+    ven.setUTCHours(13, 0, 0, 0); // 13:00 UTC = 14:00 Italia (slot base)
 
     // Quante aste ci sono già quel venerdì → +30min per slot
     const slot = await calcolaSlotVenerdì(ven);
@@ -3282,6 +3282,9 @@ export function subscribeCommenti(notiziaId, callback) { return supabase.channel
  *
  * Never throws — errors are silently swallowed so they don't break app flows.
  */
+// Message types reference (built in Edge Function):
+// ds_masterclass_offerte — private DM with all rival offers before auction reveal
+
 export async function sendTelegramNotification(type, payload = {}, squadra = null) {
   try {
     await supabase.functions.invoke('telegram-notify', {
