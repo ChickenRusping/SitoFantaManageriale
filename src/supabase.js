@@ -23,6 +23,20 @@ export async function getProfile(userId) {
   return data;
 }
 
+export async function updateProfile(userId, fields) {
+  const { error } = await supabase.from('profiles').update(fields).eq('id', userId);
+  if (error) throw error;
+}
+
+export async function uploadAvatar(userId, file) {
+  const ext = file.name.split('.').pop();
+  const path = `avatars/${userId}.${ext}`;
+  const { error } = await supabase.storage.from('team-images').upload(path, file, { upsert: true, contentType: file.type });
+  if (error) throw error;
+  const { data } = supabase.storage.from('team-images').getPublicUrl(path);
+  return data.publicUrl + '?t=' + Date.now();
+}
+
 // ─── SQUADRE ──────────────────────────────────────────────────────────────────
 
 export async function getSquadre() {
