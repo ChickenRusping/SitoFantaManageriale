@@ -245,6 +245,15 @@ function isFPFEscluso(descrizione) {
     d.startsWith('guadagno stadio') ||
     d.startsWith('stadio mensile') ||
     d.includes('guadagno mensile stadio') ||
+    d.includes('entrate stadio') ||
+    d.includes('entrata stadio') ||
+    // Tasse settimanali
+    d.startsWith('tassa settimanale') ||
+    d.includes('tassa sett') ||
+    d.startsWith('tasse settimanali') ||
+    // Stipendi (già coperti ma aggiungiamo varianti da control room)
+    d.includes('stipendi applicati') ||
+    d.includes('stipendi mensili') ||
     // TUTTE le penalità (non sono operazioni di mercato)
     d.startsWith('penalt') ||      // penalità, penalita, penalty...
     d.startsWith('penalit') ||     // variante senza à
@@ -1705,7 +1714,7 @@ export async function applicaPremio(squadra, importoMln, tipo, premioId) {
 // mieiPoints  = punti della squadra
 export function calcolaPremio19a(primoPoints, mieiPoints) {
   const distanza = primoPoints - mieiPoints;
-  return parseFloat((3 + distanza * 1.5).toFixed(2));
+  return parseFloat((3 + distanza * 1).toFixed(2));
 }
 
 // Calcola premi finali (art. 12.2) — inverso: 8° riceve di più
