@@ -39,6 +39,27 @@ async function sendMessage(chatId: string | number, text: string) {
   }
 }
 
+const APP = "https://fanta-manageriale.vercel.app";
+
+const DEEP_LINK: Record<string, string> = {
+  notizia_pinnata:        `${APP}/news`,
+  scadenza_imminente:     `${APP}/news`,
+  mercato_aperto:         `${APP}/mercato`,
+  mercato_chiuso:         `${APP}/mercato`,
+  trattativa_ricevuta:    `${APP}/mercato`,
+  trattativa_accettata:   `${APP}/mercato`,
+  trattativa_rifiutata:   `${APP}/mercato`,
+  chiamata_svincolati:    `${APP}/mercato`,
+  asta_svincolati:        `${APP}/mercato`,
+  asta_vinta:             `${APP}/mercato`,
+  asta_persa:             `${APP}/mercato`,
+  ds_masterclass_offerte: `${APP}/mercato`,
+  movimento_privato:      `${APP}/squadre`,
+  tassa_applicata:        `${APP}/squadre`,
+  stipendi_applicati:     `${APP}/squadre`,
+  stadio_applicato:       `${APP}/squadre`,
+};
+
 // Category badges shown at top of each message
 const CATEGORY_BADGE: Record<string, string> = {
   // 📰 News
@@ -66,39 +87,40 @@ const CATEGORY_BADGE: Record<string, string> = {
 
 function buildMessage(type: string, p: Record<string, unknown>): string | null {
   const badge = CATEGORY_BADGE[type] ? `<b>${CATEGORY_BADGE[type]}</b>\n\n` : "";
+  const link  = DEEP_LINK[type] ? `\n\n🔗 <a href="${DEEP_LINK[type]}">Apri nell'app</a>` : "";
   switch (type) {
     case "chiamata_svincolati":
-      return `${badge}📣 <b>Nuova chiamata!</b>\n\n⚽ <b>${p.giocatore}</b> · Q${p.quotazione}\n🏟 <b>${p.squadra}</b> ha manifestato interesse\n⏰ Asta disponibile tra ${p.ore ?? 24}h se altri si uniscono`;
+      return `${badge}📣 <b>Nuova chiamata!</b>\n\n⚽ <b>${p.giocatore}</b> · Q${p.quotazione}\n🏟 <b>${p.squadra}</b> ha manifestato interesse\n⏰ Asta disponibile tra ${p.ore ?? 24}h se altri si uniscono${link}`;
     case "asta_svincolati":
-      return `${badge}🔔 <b>Asta svincolati aperta!</b>\n\n⚽ <b>${p.giocatore}</b> · Q${p.quotazione}\n📣 Chiamato da: <b>${p.squadra}</b>\n⏰ Scade tra <b>${p.ore ?? 24}h</b> — fate le vostre offerte!`;
+      return `${badge}🔔 <b>Asta svincolati aperta!</b>\n\n⚽ <b>${p.giocatore}</b> · Q${p.quotazione}\n📣 Chiamato da: <b>${p.squadra}</b>\n⏰ Scade tra <b>${p.ore ?? 24}h</b> — fate le vostre offerte!${link}`;
     case "notizia_pinnata":
-      return `${badge}📌 <b>${p.squadra ?? "Lega Admin"}</b>\n\n<b>${p.titolo}</b>\n${String(p.testo ?? "").slice(0, 300)}${String(p.testo ?? "").length > 300 ? "…" : ""}`;
+      return `${badge}📌 <b>${p.squadra ?? "Lega Admin"}</b>\n\n<b>${p.titolo}</b>\n${String(p.testo ?? "").slice(0, 300)}${String(p.testo ?? "").length > 300 ? "…" : ""}${link}`;
     case "scadenza_imminente":
-      return `${badge}⏰ <b>Scadenza tra ${p.giorni} giorn${Number(p.giorni) === 1 ? "o" : "i"}!</b>\n\n📋 ${p.label}\n📅 ${p.data}`;
+      return `${badge}⏰ <b>Scadenza tra ${p.giorni} giorn${Number(p.giorni) === 1 ? "o" : "i"}!</b>\n\n📋 ${p.label}\n📅 ${p.data}${link}`;
     case "mercato_aperto":
-      return `${badge}🟢 <b>Mercato aperto</b> — sessione <b>${p.periodo}</b>\nPotete ora fare offerte e trattative.`;
+      return `${badge}🟢 <b>Mercato aperto</b> — sessione <b>${p.periodo}</b>\nPotete ora fare offerte e trattative.${link}`;
     case "mercato_chiuso":
-      return `${badge}🔴 <b>Mercato chiuso</b>\nLa finestra di trasferimenti è terminata.`;
+      return `${badge}🔴 <b>Mercato chiuso</b>\nLa finestra di trasferimenti è terminata.${link}`;
     case "tassa_applicata":
-      return `${badge}📊 <b>Tasse settimanali applicate</b>\nSettimana del ${p.domenica} — verificate i vostri bilanci.`;
+      return `${badge}📊 <b>Tasse settimanali applicate</b>\nSettimana del ${p.domenica} — verificate i vostri bilanci.${link}`;
     case "stipendi_applicati":
-      return `${badge}💰 <b>Stipendi mensili addebitati</b>\nMese: <b>${p.mese}</b> — verificate i vostri bilanci.`;
+      return `${badge}💰 <b>Stipendi mensili addebitati</b>\nMese: <b>${p.mese}</b> — verificate i vostri bilanci.${link}`;
     case "stadio_applicato":
-      return `${badge}🏟 <b>Entrate stadio accreditate</b>\nMese: <b>${p.mese}</b>\n4M (base) · 5.5M (con Ristrutturazione Stadio)`;
+      return `${badge}🏟 <b>Entrate stadio accreditate</b>\nMese: <b>${p.mese}</b>\n4M (base) · 5.5M (con Ristrutturazione Stadio)${link}`;
     case "trattativa_ricevuta":
-      return `${badge}📨 <b>Nuova offerta ricevuta!</b>\n\n⚽ <b>${p.giocatore}</b>\n💰 Offerta: <b>${p.importo}M</b>\n🏟 Da: <b>${p.da_squadra}</b>\nAccedi all'app per rispondere.`;
+      return `${badge}📨 <b>Nuova offerta ricevuta!</b>\n\n⚽ <b>${p.giocatore}</b>\n💰 Offerta: <b>${p.importo}M</b>\n🏟 Da: <b>${p.da_squadra}</b>${link}`;
     case "trattativa_accettata":
-      return `${badge}✅ <b>Trattativa accettata!</b>\n\n⚽ <b>${p.giocatore}</b> si trasferisce per <b>${p.importo}M</b>`;
+      return `${badge}✅ <b>Trattativa accettata!</b>\n\n⚽ <b>${p.giocatore}</b> si trasferisce per <b>${p.importo}M</b>${link}`;
     case "trattativa_rifiutata":
-      return `${badge}❌ <b>Offerta rifiutata</b>\n\nL'offerta per <b>${p.giocatore}</b> (${p.importo}M) non è stata accettata.`;
+      return `${badge}❌ <b>Offerta rifiutata</b>\n\nL'offerta per <b>${p.giocatore}</b> (${p.importo}M) non è stata accettata.${link}`;
     case "asta_vinta":
-      return `${badge}🏆 <b>Asta vinta!</b>\n\n⚽ <b>${p.giocatore}</b> è tuo per <b>${p.importo}M</b>!\nBenvenuto in rosa 🎉`;
+      return `${badge}🏆 <b>Asta vinta!</b>\n\n⚽ <b>${p.giocatore}</b> è tuo per <b>${p.importo}M</b>!\nBenvenuto in rosa 🎉${link}`;
     case "asta_persa":
-      return `${badge}😔 <b>Asta persa</b>\n\n⚽ <b>${p.giocatore}</b>\nVincitore: <b>${p.vincitore}</b> · ${p.importo}M`;
+      return `${badge}😔 <b>Asta persa</b>\n\n⚽ <b>${p.giocatore}</b>\nVincitore: <b>${p.vincitore}</b> · ${p.importo}M${link}`;
     case "movimento_privato":
-      return `${badge}${p.entrata ? `+${p.entrata}` : `-${p.uscita}`}M — ${p.descrizione}\n💰 Bilancio aggiornato: <b>${p.bilancio}M</b>`;
+      return `${badge}${p.entrata ? `+${p.entrata}` : `-${p.uscita}`}M — ${p.descrizione}\n💰 Bilancio aggiornato: <b>${p.bilancio}M</b>${link}`;
     case "ds_masterclass_offerte":
-      return `${badge}⚽ <b>${p.giocatore}</b>\n\nOfferte avversari:\n${p.riepilogo}\n\n⏰ Hai tempo fino alle <b>${p.scadenza}</b> per formulare la tua offerta.\nAccedi all'app ora!`;
+      return `${badge}⚽ <b>${p.giocatore}</b>\n\nOfferte avversari:\n${p.riepilogo}\n\n⏰ Hai tempo fino alle <b>${p.scadenza}</b> per formulare la tua offerta.${link}`;
     default:
       return null;
   }
