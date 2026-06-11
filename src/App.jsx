@@ -9858,7 +9858,7 @@ function AppInner() {
   const isAdmin = profile?.ruolo === "admin";
   const mySquadra = profile?.squadra;
   const pathname = location.pathname;
-  const currentPage = pathname==='/news'?'news':pathname==='/squadre'?'squadre':pathname.startsWith('/presidente')?'squadre':pathname==='/lega'?'lega':pathname==='/mercato'?'mercato':pathname==='/modifica'?'modifica':pathname==='/adminlog'?'adminlog':pathname==='/admin-control'?'admin-control':'news';
+  const currentPage = pathname==='/news'?'news':pathname==='/squadre'?'squadre':pathname.startsWith('/presidente')?'squadre':pathname==='/lega'?'lega':pathname==='/mercato'?'mercato':pathname==='/modifica'?'modifica':pathname==='/adminlog'?'adminlog':pathname==='/admin-control'?'admin-control':pathname==='/profilo'?'profilo':'news';
 
   const navItems = [
     { key:"news",    path:"/news",    icon:"📰", label:"News"    },
@@ -9948,7 +9948,7 @@ function AppInner() {
               )}
             </nav>
             <div style={{ padding:"12px 16px",borderTop:"1px solid #ffffff0a" }}>
-              {profile && <div onClick={()=>navigate('/profilo')} style={{ display:"flex",alignItems:"center",gap:8,marginBottom:8,cursor:"pointer",padding:"5px 6px",borderRadius:9,transition:"background 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background="#ffffff0a"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{profile.avatar_url?<img src={profile.avatar_url} alt="" style={{ width:26,height:26,borderRadius:7,objectFit:"cover" }}/>:<div style={{ width:26,height:26,borderRadius:7,background:"#ffffff12",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12 }}>👤</div>}<div style={{ flex:1,minWidth:0 }}><div style={{ fontSize:11,fontWeight:700,color:"#ccc",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{profile.nome||profile.email}</div><div style={{ fontSize:9,color:"#444" }}>{isAdmin?"⚡ Admin":profile.squadra}</div></div></div>}
+              {profile && <div onClick={()=>navigate('/profilo')} style={{ display:"flex",alignItems:"center",gap:8,marginBottom:8,cursor:"pointer",padding:"5px 6px",borderRadius:9,transition:"background 0.15s",background:currentPage==='profilo'?"#f59e0b22":"transparent" }} onMouseEnter={e=>{ if(currentPage!=='profilo') e.currentTarget.style.background="#ffffff0a"; }} onMouseLeave={e=>{ e.currentTarget.style.background=currentPage==='profilo'?"#f59e0b22":"transparent"; }}>{profile.avatar_url?<img src={profile.avatar_url} alt="" style={{ width:26,height:26,borderRadius:7,objectFit:"cover",outline:currentPage==='profilo'?"2px solid #f59e0b":"none" }}/>:<div style={{ width:26,height:26,borderRadius:7,background:currentPage==='profilo'?"#f59e0b22":"#ffffff12",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12 }}>👤</div>}<div style={{ flex:1,minWidth:0 }}><div style={{ fontSize:11,fontWeight:700,color:currentPage==='profilo'?"#f59e0b":"#ccc",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{profile.nome||profile.email}</div><div style={{ fontSize:9,color:currentPage==='profilo'?"#f59e0b88":"#444" }}>{isAdmin?"⚡ Admin":profile.squadra}</div></div>{currentPage==='profilo'&&<div style={{ width:6,height:6,borderRadius:"50%",background:"#f59e0b",flexShrink:0 }}/>}</div>}
               <button onClick={()=>signOut()} style={{ width:"100%",padding:"7px",borderRadius:8,border:"1px solid #ffffff10",background:"transparent",color:"#555",fontSize:11,fontWeight:600,cursor:"pointer" }}>Esci</button>
             </div>
           </div>
