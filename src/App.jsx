@@ -161,6 +161,7 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   getStadioInvestimenti, setStadioUpgrade, applicaEntrateStadioTutte,
   applicaTassaATutti, applicaStipendioATutti, getControlRoomStatus,
   // Extra Control Room
+  updateProfile, uploadAvatar,
   getMercatoOverride, setMercatoOverride, getTrasferimentiDifferiti,
   applicaMulteFPFTutte, applicaPremiCampionato,
   // Telegram
@@ -8713,6 +8714,140 @@ function AdminControlRoomPage({ teams }) {
   );
 }
 
+// ─── PROFILE SETTINGS PAGE ──────────────────────────────────────────────────
+function ProfileSettingsPage({ session, profile, onProfileUpdated }) {
+  const [nome, setNome] = useState(profile?.nome || '');
+  const [bio, setBio] = useState(profile?.bio || '');
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || null);
+  const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const fileRef = useRef();
+
+  async function handleAvatarChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAvatar(true);
+    try {
+      const url = await uploadAvatar(session.user.id, file);
+      setAvatarUrl(url);
+      await updateProfile(session.user.id, { avatar_url: url });
+      onProfileUpdated?.();
+      setMsg({ ok: true, text: 'Avatar aggiornato!' });
+    } catch(err) { setMsg({ ok: false, text: err.message }); }
+    finally { setUploadingAvatar(false); }
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await updateProfile(session.user.id, { nome: nome.trim() || null, bio: bio.trim() || null });
+      onProfileUpdated?.();
+      setMsg({ ok: true, text: 'Profilo salvato!' });
+    } catch(err) { setMsg({ ok: false, text: err.message }); }
+    finally { setSaving(false); }
+  }
+
+  const initials = (nome || profile?.email || '?').slice(0, 2).toUpperCase();
+
+  return (
+    <div style={{ maxWidth: 480, margin: '0 auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>👤 IMPOSTAZIONI PROFILO</div>
+
+      {/* Avatar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => fileRef.current?.click()}>
+          {avatarUrl
+            ? <img src={avatarUrl} alt="avatar" style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: '2px solid #6366f140' }} />
+            : <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg,#6366f1,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 900, color: '#fff', fontFamily: "'Bebas Neue',sans-serif" }}>{initials}</div>
+          }
+          <div style={{ position: 'absolute', bottom: 0, right: 0, width: 22, height: 22, borderRadius: '50%', background: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>
+            {uploadingAvatar ? '⏳' : '📷'}
+          </div>
+        </div>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#f0f0f0' }}>{profile?.nome || profile?.email}</div>
+          <div style={{ fontSize: 11, color: '#666' }}>{profile?.squadra || (profile?.ruolo === 'admin' ? '⚡ Admin' : '')}</div>
+          <div style={{ fontSize: 10, color: '#444', marginTop: 4 }}>Clicca per cambiare avatar</div>
+        </div>
+        <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
+      </div>
+
+      {/* Nome / Username */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <label style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.08em' }}>NOME / USERNAME</label>
+        <input
+          value={nome}
+          onChange={e => setNome(e.target.value)}
+          placeholder="Come vuoi essere chiamato?"
+          maxLength={32}
+          style={{ padding: '10px 14px', borderRadius: 10, border: '1px solid #ffffff15', background: '#ffffff08', color: '#f0f0f0', fontSize: 13, outline: 'none' }}
+        />
+        <div style={{ fontSize: 10, color: '#444', textAlign: 'right' }}>{nome.length}/32</div>
+      </div>
+
+      {/* Bio */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <label style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.08em' }}>BIO</label>
+        <textarea
+          value={bio}
+          onChange={e => setBio(e.target.value)}
+          placeholder="Qualcosa su di te o sulla tua squadra..."
+          maxLength={160}
+          rows={3}
+          style={{ padding: '10px 14px', borderRadius: 10, border: '1px solid #ffffff15', background: '#ffffff08', color: '#f0f0f0', fontSize: 13, outline: 'none', resize: 'none', fontFamily: 'inherit' }}
+        />
+        <div style={{ fontSize: 10, color: '#444', textAlign: 'right' }}>{bio.length}/160</div>
+      </div>
+
+      {/* Info non modificabili */}
+      <div style={{ background: '#ffffff06', border: '1px solid #ffffff10', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#555', letterSpacing: '0.08em', marginBottom: 4 }}>INFO ACCOUNT</div>
+        {[
+          { label: 'Email', value: session?.user?.email },
+          { label: 'Ruolo', value: profile?.ruolo === 'admin' ? '⚡ Admin' : '🏟 Presidente' },
+          { label: 'Squadra', value: profile?.squadra || '—' },
+        ].map(({ label, value }) => (
+          <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+            <span style={{ color: '#555' }}>{label}</span>
+            <span style={{ color: '#aaa', fontWeight: 600 }}>{value}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Telegram */}
+      {profile?.squadra && (() => {
+        const slug = btoa(profile.squadra).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        const botUser = import.meta.env.VITE_TELEGRAM_BOT_USERNAME;
+        return (
+          <div style={{ background: '#0088cc10', border: '1px solid #0088cc30', borderRadius: 12, padding: '12px 14px' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#38bdf8', marginBottom: 6 }}>✈️ NOTIFICHE TELEGRAM</div>
+            <div style={{ fontSize: 12, color: '#aaa', marginBottom: 10, lineHeight: 1.5 }}>
+              Ricevi notifiche private sul bot Telegram per trattative, aste e movimenti.
+            </div>
+            <a href={`https://t.me/${botUser}?start=${slug}`} target="_blank" rel="noreferrer"
+              style={{ display: 'inline-block', padding: '8px 16px', borderRadius: 9, background: '#0088cc', color: '#fff', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
+              🤖 Collega Telegram
+            </a>
+          </div>
+        );
+      })()}
+
+      {/* Salva */}
+      <button onClick={handleSave} disabled={saving}
+        style={{ padding: '11px', borderRadius: 11, border: 'none', background: 'linear-gradient(135deg,#6366f1,#a855f7)', color: '#fff', fontSize: 14, fontWeight: 800, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
+        {saving ? 'Salvataggio...' : '💾 Salva modifiche'}
+      </button>
+
+      {msg && (
+        <div style={{ padding: '10px 14px', borderRadius: 10, background: msg.ok ? '#10b98115' : '#ef444415', border: `1px solid ${msg.ok ? '#10b98130' : '#ef444430'}`, color: msg.ok ? '#10b981' : '#ef4444', fontSize: 12, fontWeight: 700 }}>
+          {msg.ok ? '✅' : '❌'} {msg.text}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StatusPill({ ok }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 20, background: ok ? '#10b98118' : '#ffffff08', border: `1px solid ${ok ? '#10b98140' : '#ffffff15'}`, fontSize: 10, fontWeight: 700, color: ok ? '#10b981' : '#555', whiteSpace: 'nowrap' }}>
@@ -9730,6 +9865,7 @@ function AppInner() {
     { key:"squadre", path:"/squadre", icon:"🏟", label:"Squadre" },
     { key:"lega",    path:"/lega",    icon:"📊", label:"Lega"    },
     { key:"mercato", path:"/mercato", icon:"🤝", label:"Mercato" },
+    { key:"profilo", path:"/profilo", icon:"👤", label:"Profilo"  },
   ];
   const SIDEBAR_W = 200;
 
@@ -9750,6 +9886,7 @@ function AppInner() {
       {isAdmin && mergedTeams.length > 0 && <Route path="/modifica" element={<ModificaRosePage teams={mergedTeams} isAdmin={isAdmin} onRefresh={refreshSquadre}/>}/>}
       {isAdmin && <Route path="/adminlog" element={<AdminLogPage profile={profile}/>}/>}
       {isAdmin && <Route path="/admin-control" element={<AdminControlRoomPage teams={mergedTeams}/>}/>}
+      <Route path="/profilo" element={<ProfileSettingsPage session={session} profile={profile} onProfileUpdated={()=>getProfile(session.user.id).then(p=>setProfile(p))}/>}/>
       <Route path="/presidente/:teamId" element={<PresidentePageWrapper mergedTeams={mergedTeams} isAdmin={isAdmin} mySquadra={mySquadra}/>}/>
       <Route path="/presidente/:teamId/:tab" element={<PresidentePageWrapper mergedTeams={mergedTeams} isAdmin={isAdmin} mySquadra={mySquadra}/>}/>
       <Route path="*" element={<Navigate to="/news" replace />}/>
