@@ -1028,7 +1028,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
       {/* ── 1. SCADENZE ── */}
       <div style={{ background:"#ffffff06",border:"1.5px solid #ffffff12",borderRadius:16,padding:18 }}>
         <div style={{ fontSize:11,fontWeight:700,color:"#888",letterSpacing:"0.1em",marginBottom:16 }}>📅 SCADENZE</div>
-        <style>{`@media(max-width:768px){.dl-cols{flex-direction:column!important;align-items:stretch!important}}`}</style>
+        <style>{`@media(max-width:768px){.dl-cols{flex-direction:column!important;align-items:stretch!important}.dl-sep{display:none!important}}`}</style>
         <div className="dl-cols" style={{ display:"flex",gap:16,alignItems:"flex-start" }}>
           <div style={{ flex:"0 0 230px",minWidth:0 }}>
             <div style={{ fontSize:10,fontWeight:700,color:"#555",letterSpacing:"0.1em",marginBottom:8 }}>ULTIME 3 PASSATE</div>
@@ -1043,7 +1043,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
               </div>
             ))}
           </div>
-          <div style={{ width:1,background:"#ffffff10",alignSelf:"stretch",minHeight:100 }}/>
+          <div className="dl-sep" style={{ width:1,background:"#ffffff10",alignSelf:"stretch",minHeight:100 }}/>
           <div style={{ flex:1,minWidth:0 }}>
             <div style={{ fontSize:10,fontWeight:700,color:"#888",letterSpacing:"0.1em",marginBottom:8 }}>PROSSIME 100 GIORNI</div>
             {entro100.length===0 ? <div style={{ fontSize:11,color:"#555",fontStyle:"italic" }}>Nessuna scadenza imminente</div>
@@ -1410,7 +1410,7 @@ function DeadlinePage({ isAdmin }) {
       )}
 
       {/* ── LAYOUT: 2 colonne su desktop (passate | prossime 100gg) ── */}
-      <style>{`@media(max-width:768px){.deadline-cols{flex-direction:column!important;align-items:stretch!important}}`}</style>
+      <style>{`@media(max-width:768px){.deadline-cols{flex-direction:column!important;align-items:stretch!important}.dl-sep{display:none!important}}`}</style>
       <div className="deadline-cols" style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
 
         {/* COLONNA SINISTRA — Scadute recentemente */}
@@ -1438,7 +1438,7 @@ function DeadlinePage({ isAdmin }) {
         </div>
 
         {/* LINEA DIVISORIA verticale */}
-        <div style={{ width: 1, background: "#ffffff10", alignSelf: "stretch", minHeight: 200 }} />
+        <div className="dl-sep" style={{ width: 1, background: "#ffffff10", alignSelf: "stretch", minHeight: 200 }} />
 
         {/* COLONNA DESTRA — Prossime 100 giorni */}
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -1749,6 +1749,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
 
   const maxVivaio=2;
   const alertProm=vivaio.filter(p=>(p.vivaio_presenze||0)>=2);
+  const now=new Date(); const isVivaioPeriod=now.getMonth()>=8; // from Sept 1
 
   if(loading)return <div style={{fontSize:12,color:"#555",padding:12}}>Caricamento rosa...</div>;
 
@@ -1820,6 +1821,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                     {fuori&&<span style={{ marginLeft:5,fontSize:9,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444455",borderRadius:4,padding:"1px 5px",fontWeight:700 }}>FUORI</span>}
                     {!fuori&&p.anni>0&&p.anni<=21&&<span style={{ marginLeft:5,fontSize:9,background:"#8b5cf622",color:"#a78bfa",border:"1px solid #8b5cf644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>U21</span>}
                     {!fuori&&p.anni>=31&&<span style={{ marginLeft:5,fontSize:9,background:"#f9731622",color:"#fb923c",border:"1px solid #f9731644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>31+</span>}
+                    {isVivaioPeriod&&!fuori&&!p.in_vivaio&&p.anni>0&&p.anni<=23&&Number(p.quot||0)<=3&&(p.partite||0)===0&&vivaio.length<maxVivaio&&<span title="Eleggibile vivaio" style={{ marginLeft:4,fontSize:11 }}>🌱</span>}
                   </td>
                   <td style={{ padding:"7px 8px",color:"#666",fontSize:11 }}>{p.squadra_serie_a||"—"}</td>
                   <td style={{ padding:"7px 8px",textAlign:"center",fontWeight:800,color:p.quot>=20?"#f59e0b":"#ccc",fontFamily:"'Bebas Neue',sans-serif",fontSize:14 }}>{p.quot}</td>
