@@ -166,6 +166,8 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   applicaMulteFPFTutte, applicaPremiCampionato,
   // Telegram
   sendTelegramNotification, getTelegramRegistrations, deleteTelegramRegistration,
+  // Albo d'Oro
+  getStagioniPassate, upsertStagione, deleteStagione, getRegolamentoUrl, setRegolamentoUrl, uploadRegolamento,
 } from "./supabase.js";
 
 // ─── SORTABLE TABLE HOOK ──────────────────────────────────────────────────────
@@ -8715,6 +8717,237 @@ function AdminControlRoomPage({ teams }) {
 }
 
 // ─── PROFILE SETTINGS PAGE ──────────────────────────────────────────────────
+// ─── STORICO / ALBO D'ORO ────────────────────────────────────────────────────
+function StoricoPage({ isAdmin, allClubIdentities = [] }) {
+  const [tab, setTab] = useState('albo');
+  const [stagioni, setStagioni] = useState([]);
+  const [regolamentoUrl, setRegolamentoUrlState] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [editStagione, setEditStagione] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+  const pdfInputRef = useRef(null);
+
+  const TROPHIES = [
+    { key: 'campione', label: '🏆 Campione', color: '#f59e0b' },
+    { key: 'vice_campione', label: '🥈 Vice Campione', color: '#94a3b8' },
+    { key: 'coppa_campioni', label: '⚽ Coppa Campioni', color: '#60a5fa' },
+    { key: 'coppa_italia', label: '🇮🇹 Coppa Italia', color: '#34d399' },
+    { key: 'miglior_attacco', label: '⚡ Miglior Attacco', color: '#fb923c' },
+    { key: 'miglior_difesa', label: '🛡 Miglior Difesa', color: '#a78bfa' },
+  ];
+
+  useEffect(() => {
+    Promise.all([getStagioniPassate(), getRegolamentoUrl()]).then(([s, r]) => {
+      setStagioni(s);
+      setRegolamentoUrlState(r);
+      setLoading(false);
+    });
+  }, []);
+
+  const getLogo = (squadra) => {
+    const ci = allClubIdentities?.find(c => c.squadra === squadra);
+    return ci?.logo_url || null;
+  };
+
+  const openEdit = (s) => {
+    setEditStagione(s ? { ...s } : {
+      anno: '', campione: '', vice_campione: '', coppa_campioni: '', coppa_italia: '',
+      miglior_attacco: '', miglior_difesa: '', note: '', maglie: []
+    });
+    setEditMode(true);
+  };
+
+  const salva = async () => {
+    if (!editStagione?.anno) return;
+    setSaving(true);
+    try {
+      await upsertStagione(editStagione);
+      const s = await getStagioniPassate();
+      setStagioni(s);
+      setEditMode(false);
+    } catch(e) { alert('Errore: ' + e.message); }
+    setSaving(false);
+  };
+
+  const elimina = async (anno) => {
+    if (!confirm(`Eliminare la stagione ${anno}?`)) return;
+    await deleteStagione(anno);
+    setStagioni(s => s.filter(x => x.anno !== anno));
+  };
+
+  const uploadPdf = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPdf(true);
+    try {
+      const url = await uploadRegolamento(file);
+      await setRegolamentoUrl(url);
+      setRegolamentoUrlState(url);
+    } catch(er) { alert('Errore upload: ' + er.message); }
+    setUploadingPdf(false);
+  };
+
+  const tabs = [
+    { key: 'albo', label: '🏆 Albo d\'Oro' },
+    { key: 'regolamento', label: '📋 Regolamento' },
+  ];
+
+  const card = { background: '#ffffff08', border: '1px solid #ffffff12', borderRadius: 14, padding: '20px 24px', marginBottom: 16 };
+  const badge = (color, txt) => (
+    <span style={{ background: color + '22', color, border: `1px solid ${color}44`, borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 700 }}>{txt}</span>
+  );
+
+  return (
+    <div style={{ maxWidth: 860, margin: '0 auto', padding: '24px 16px' }}>
+      <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 800, marginBottom: 20 }}>📚 Archivio Lega</h2>
+
+      {/* Tab bar */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+        {tabs.map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)} style={{
+            padding: '8px 18px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13,
+            background: tab === t.key ? '#f59e0b22' : '#ffffff0a',
+            color: tab === t.key ? '#f59e0b' : '#888',
+            borderBottom: tab === t.key ? '2px solid #f59e0b' : '2px solid transparent'
+          }}>{t.label}</button>
+        ))}
+      </div>
+
+      {loading ? <div style={{ color: '#555', textAlign: 'center', padding: 40 }}>Caricamento…</div> : <>
+
+        {/* ── ALBO D'ORO ── */}
+        {tab === 'albo' && (
+          <div>
+            {isAdmin && (
+              <div style={{ marginBottom: 20, display: 'flex', gap: 10 }}>
+                <button onClick={() => openEdit(null)} style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>+ Aggiungi Stagione</button>
+              </div>
+            )}
+
+            {stagioni.length === 0 && (
+              <div style={{ ...card, textAlign: 'center', color: '#555', padding: 48 }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>🏆</div>
+                <div style={{ fontWeight: 700, fontSize: 15 }}>Nessuna stagione registrata</div>
+                {isAdmin && <div style={{ color: '#444', fontSize: 13, marginTop: 6 }}>Usa il pulsante sopra per aggiungere la prima stagione</div>}
+              </div>
+            )}
+
+            {stagioni.map(s => (
+              <div key={s.anno} style={card}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+                  <div>
+                    <span style={{ background: '#f59e0b', color: '#000', borderRadius: 6, padding: '3px 10px', fontSize: 12, fontWeight: 800, marginRight: 10 }}>STAGIONE {s.anno}</span>
+                    {s.note && <span style={{ color: '#666', fontSize: 12 }}>{s.note}</span>}
+                  </div>
+                  {isAdmin && (
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button onClick={() => openEdit(s)} style={{ background: '#ffffff10', border: 'none', borderRadius: 6, color: '#aaa', padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>✏️</button>
+                      <button onClick={() => elimina(s.anno)} style={{ background: '#ef444415', border: 'none', borderRadius: 6, color: '#ef4444', padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>🗑</button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Trophies row */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: s.maglie?.length ? 16 : 0 }}>
+                  {TROPHIES.map(t => s[t.key] ? (
+                    <div key={t.key} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#ffffff08', borderRadius: 10, padding: '8px 14px', minWidth: 160 }}>
+                      {getLogo(s[t.key]) && <img src={getLogo(s[t.key])} style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 4 }} alt="" />}
+                      <div>
+                        <div style={{ color: '#666', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{t.label}</div>
+                        <div style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>{s[t.key]}</div>
+                      </div>
+                    </div>
+                  ) : null)}
+                </div>
+
+                {/* Maglie */}
+                {s.maglie?.length > 0 && (
+                  <div>
+                    <div style={{ color: '#555', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Maglie stagione</div>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      {s.maglie.map((m, i) => (
+                        <div key={i} style={{ textAlign: 'center' }}>
+                          <img src={m.url} style={{ width: 72, height: 72, objectFit: 'contain', borderRadius: 8, background: '#ffffff08', border: '1px solid #ffffff10' }} alt={m.squadra} />
+                          <div style={{ color: '#666', fontSize: 10, marginTop: 4 }}>{m.squadra}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── REGOLAMENTO ── */}
+        {tab === 'regolamento' && (
+          <div>
+            {isAdmin && (
+              <div style={{ marginBottom: 16, display: 'flex', gap: 10, alignItems: 'center' }}>
+                <button onClick={() => pdfInputRef.current?.click()} disabled={uploadingPdf} style={{ background: '#6366f1', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>
+                  {uploadingPdf ? 'Upload…' : '📤 Carica Regolamento PDF'}
+                </button>
+                {regolamentoUrl && <a href={regolamentoUrl} target="_blank" rel="noreferrer" style={{ color: '#6366f1', fontSize: 13 }}>⬇️ Scarica</a>}
+                <input ref={pdfInputRef} type="file" accept="application/pdf" style={{ display: 'none' }} onChange={uploadPdf} />
+              </div>
+            )}
+
+            {regolamentoUrl ? (
+              <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid #ffffff12' }}>
+                <iframe src={regolamentoUrl} style={{ width: '100%', height: '80vh', border: 'none', background: '#fff' }} title="Regolamento" />
+              </div>
+            ) : (
+              <div style={{ ...card, textAlign: 'center', color: '#555', padding: 48 }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
+                <div style={{ fontWeight: 700, fontSize: 15 }}>Regolamento non ancora caricato</div>
+                {isAdmin && <div style={{ color: '#444', fontSize: 13, marginTop: 6 }}>Usa il pulsante sopra per caricare il PDF</div>}
+              </div>
+            )}
+          </div>
+        )}
+      </>}
+
+      {/* ── Edit Modal ── */}
+      {editMode && editStagione && (
+        <div style={{ position: 'fixed', inset: 0, background: '#000000cc', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }} onClick={e => e.target === e.currentTarget && setEditMode(false)}>
+          <div style={{ background: '#1a1d27', borderRadius: 16, padding: 28, width: '100%', maxWidth: 540, maxHeight: '90vh', overflowY: 'auto', border: '1px solid #ffffff15' }}>
+            <h3 style={{ color: '#fff', marginBottom: 20, fontSize: 16, fontWeight: 700 }}>{editStagione.anno ? `Modifica ${editStagione.anno}` : 'Nuova Stagione'}</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[
+                { key: 'anno', label: 'Anno (es. 2024/25)', required: true },
+                { key: 'campione', label: '🏆 Campione' },
+                { key: 'vice_campione', label: '🥈 Vice Campione' },
+                { key: 'coppa_campioni', label: '⚽ Coppa Campioni' },
+                { key: 'coppa_italia', label: '🇮🇹 Coppa Italia' },
+                { key: 'miglior_attacco', label: '⚡ Miglior Attacco' },
+                { key: 'miglior_difesa', label: '🛡 Miglior Difesa' },
+                { key: 'note', label: 'Note (opzionale)' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label style={{ color: '#888', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4 }}>{f.label}</label>
+                  <input
+                    value={editStagione[f.key] || ''}
+                    onChange={e => setEditStagione(p => ({ ...p, [f.key]: e.target.value }))}
+                    style={{ width: '100%', background: '#ffffff0a', border: '1px solid #ffffff18', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 13, boxSizing: 'border-box' }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 20, justifyContent: 'flex-end' }}>
+              <button onClick={() => setEditMode(false)} style={{ background: '#ffffff10', border: 'none', borderRadius: 8, color: '#aaa', padding: '8px 16px', cursor: 'pointer', fontWeight: 700 }}>Annulla</button>
+              <button onClick={salva} disabled={saving} style={{ background: '#f59e0b', border: 'none', borderRadius: 8, color: '#000', padding: '8px 20px', cursor: 'pointer', fontWeight: 700 }}>
+                {saving ? 'Salvo…' : 'Salva'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProfileSettingsPage({ session, profile, onProfileUpdated }) {
   const [nome, setNome] = useState(profile?.nome || '');
   const [bio, setBio] = useState(profile?.bio || '');
@@ -9858,13 +10091,14 @@ function AppInner() {
   const isAdmin = profile?.ruolo === "admin";
   const mySquadra = profile?.squadra;
   const pathname = location.pathname;
-  const currentPage = pathname==='/news'?'news':pathname==='/squadre'?'squadre':pathname.startsWith('/presidente')?'squadre':pathname==='/lega'?'lega':pathname==='/mercato'?'mercato':pathname==='/modifica'?'modifica':pathname==='/adminlog'?'adminlog':pathname==='/admin-control'?'admin-control':pathname==='/profilo'?'profilo':'news';
+  const currentPage = pathname==='/news'?'news':pathname==='/squadre'?'squadre':pathname.startsWith('/presidente')?'squadre':pathname==='/lega'?'lega':pathname==='/mercato'?'mercato':pathname==='/modifica'?'modifica':pathname==='/adminlog'?'adminlog':pathname==='/admin-control'?'admin-control':pathname==='/profilo'?'profilo':pathname==='/storico'?'storico':'news';
 
   const navItems = [
     { key:"news",    path:"/news",    icon:"📰", label:"News"    },
     { key:"squadre", path:"/squadre", icon:"🏟", label:"Squadre" },
     { key:"lega",    path:"/lega",    icon:"📊", label:"Lega"    },
     { key:"mercato", path:"/mercato", icon:"🤝", label:"Mercato" },
+    { key:"storico", path:"/storico", icon:"📚", label:"Archivio" },
   ];
   const SIDEBAR_W = 200;
 
@@ -9885,6 +10119,7 @@ function AppInner() {
       {isAdmin && mergedTeams.length > 0 && <Route path="/modifica" element={<ModificaRosePage teams={mergedTeams} isAdmin={isAdmin} onRefresh={refreshSquadre}/>}/>}
       {isAdmin && <Route path="/adminlog" element={<AdminLogPage profile={profile}/>}/>}
       {isAdmin && <Route path="/admin-control" element={<AdminControlRoomPage teams={mergedTeams}/>}/>}
+      <Route path="/storico" element={<StoricoPage isAdmin={isAdmin} allClubIdentities={Object.entries(clubIdentities).map(([squadra, ci]) => ({ squadra, logo_url: ci.stemma_url }))}/>}/>
       <Route path="/profilo" element={<ProfileSettingsPage session={session} profile={profile} onProfileUpdated={()=>getProfile(session.user.id).then(p=>setProfile(p))}/>}/>
       <Route path="/presidente/:teamId" element={<PresidentePageWrapper mergedTeams={mergedTeams} isAdmin={isAdmin} mySquadra={mySquadra}/>}/>
       <Route path="/presidente/:teamId/:tab" element={<PresidentePageWrapper mergedTeams={mergedTeams} isAdmin={isAdmin} mySquadra={mySquadra}/>}/>
