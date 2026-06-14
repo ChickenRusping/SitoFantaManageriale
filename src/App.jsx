@@ -806,7 +806,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
           </div>
 
           {/* Stats bar — ruoli + U21 + 31+ */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 6 }}>
+          <div className="grid-stats-8" style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 6 }}>
             {[
               { label: "ROSA",      value: rosaAttiva.length, color: rosaAttiva.length < 25 || rosaAttiva.length > 30 ? "#ef4444" : "#10b981" },
               { label: "POR",       value: ruoliCount.Por, color: "#f59e0b" },
@@ -1021,7 +1021,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
       {/* ── 1. SCADENZE ── */}
       <div style={{ background:"#ffffff06",border:"1.5px solid #ffffff12",borderRadius:16,padding:18 }}>
         <div style={{ fontSize:11,fontWeight:700,color:"#888",letterSpacing:"0.1em",marginBottom:16 }}>📅 SCADENZE</div>
-        <style>{`@media(max-width:700px){.dl-cols{flex-direction:column!important}}`}</style>
+        <style>{`@media(max-width:768px){.dl-cols{flex-direction:column!important}}`}</style>
         <div className="dl-cols" style={{ display:"flex",gap:16,alignItems:"flex-start" }}>
           <div style={{ flex:"0 0 230px",minWidth:0 }}>
             <div style={{ fontSize:10,fontWeight:700,color:"#555",letterSpacing:"0.1em",marginBottom:8 }}>RECENTI (30gg)</div>
@@ -1404,7 +1404,7 @@ function DeadlinePage({ isAdmin }) {
       )}
 
       {/* ── LAYOUT: 2 colonne su desktop (passate | prossime 100gg) ── */}
-      <style>{`@media(max-width:700px){.deadline-cols{flex-direction:column!important}}`}</style>
+      <style>{`@media(max-width:768px){.deadline-cols{flex-direction:column!important}}`}</style>
       <div className="deadline-cols" style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
 
         {/* COLONNA SINISTRA — Scadute recentemente */}
@@ -1692,12 +1692,13 @@ Passa all'anno 3.`))return;
     e.stopPropagation();
     setTipoSvincolo('ordinario'); setEstero(false); setOfferMode('cessione');
     const rect = e.currentTarget.getBoundingClientRect();
-    const popupW = 310, popupEstH = 420;
+    const popupW = Math.min(310, window.innerWidth - 16);
+    const popupEstH = 420;
     const x = Math.max(8, Math.min(rect.left, window.innerWidth - popupW - 8));
     const belowY = rect.bottom + 4;
     const aboveY = rect.top - popupEstH - 4;
     const y = belowY + popupEstH < window.innerHeight ? belowY : Math.max(8, aboveY);
-    setPopup({ player, mode, x, y });
+    setPopup({ player, mode, x, y, w: popupW });
   }
 
   async function handleDemoteToVivaio(player) {
@@ -1850,7 +1851,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
         <div
           onClick={e=>e.stopPropagation()}
           onTouchEnd={e=>e.stopPropagation()}
-          style={{ position:"fixed",zIndex:9999,left:popup.x,top:popup.y,width:310,background:"#1a1d26",border:"1.5px solid #ffffff18",borderRadius:14,boxShadow:"0 8px 32px #00000099",padding:16,maxHeight:"90vh",overflowY:"auto" }}>
+          style={{ position:"fixed",zIndex:9999,left:popup.x,top:popup.y,width:popup.w||310,background:"#1a1d26",border:"1.5px solid #ffffff18",borderRadius:14,boxShadow:"0 8px 32px #00000099",padding:16,maxHeight:"90vh",overflowY:"auto" }}>
           {/* Header */}
           <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14 }}>
             <div>
@@ -2193,7 +2194,7 @@ function SvincoliTab({ team, isAdmin }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
       {/* ── Contatori stagione ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+      <div className="grid-stats-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
         {[
           { label: "TOTALE STAGIONE", value: `${contatori?.count_totale || 0} / 14`, color: (contatori?.count_totale || 0) >= 14 ? "#ef4444" : (contatori?.count_totale || 0) >= 12 ? "#f59e0b" : "#10b981" },
           { label: `STRAORD. ${isEstate ? 'ESTIVI' : 'INVERNALI'}`, value: `${usatiStraord} / ${maxStraord}`, color: usatiStraord >= maxStraord ? "#ef4444" : usatiStraord >= maxStraord - 1 ? "#f59e0b" : "#888" },
@@ -2973,7 +2974,7 @@ function FairSpendingSection({ team, isAdmin }) {
                 MOVIMENTI {inizioStr} → {fineStr}
                 {isAdmin && <span style={{ color: "#444", fontWeight: 400, marginLeft: 6 }}>· clicca 🚫 per escludere/includere manualmente dal FPF</span>}
               </div>
-              <div style={{ maxHeight: 300, overflowY: "auto" }}>
+              <div style={{ maxHeight: 300, overflowY: "auto", overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 10 }}>
                   <thead style={{ position: "sticky", top: 0, background: "#0d0f14" }}>
                     <tr style={{ borderBottom: "1px solid #ffffff12" }}>
@@ -5745,7 +5746,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                     )}
 
                     {form.bonusRows.map((row, idx) => (
-                      <div key={idx} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1.5fr auto", gap: 6, alignItems: "end", marginBottom: 6 }}>
+                      <div key={idx} style={{ display: "grid", gridTemplateColumns: "minmax(100px,2fr) minmax(60px,1fr) minmax(60px,1fr) minmax(80px,1.5fr) auto", gap: 6, alignItems: "end", marginBottom: 6 }}>
                         <div>
                           {idx === 0 && <div style={{ fontSize: 9, color: "#555", marginBottom: 3 }}>TIPO</div>}
                           <select style={{ ...sel, fontSize: 11 }} value={row.tipo_bonus}
@@ -7398,7 +7399,7 @@ function ModificaRosePage({ teams, onRefresh, isAdmin = true }) {
             {anteprima && (
               <>
                 {/* Riepilogo */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8 }}>
+                <div className="grid-stats-4" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8 }}>
                   {[
                     { label: "TOTALE", val: anteprima.length, color: "#888", key: "tutti" },
                     { label: "📈 RIALZI", val: rialziCount, color: "#10b981", key: "rialzi" },
@@ -8990,7 +8991,7 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
       {/* ── Stagione Modal ── */}
       {editMode && editStagione && (
         <div style={{ position:'fixed', inset:0, background:'#000000cc', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }} onClick={e => e.target===e.currentTarget && setEditMode(false)}>
-          <div style={{ background:'#1a1d27', borderRadius:16, padding:28, width:'100%', maxWidth:600, maxHeight:'92vh', overflowY:'auto', border:'1px solid #ffffff15' }}>
+          <div className="modal-pad" style={{ background:'#1a1d27', borderRadius:16, padding:28, width:'100%', maxWidth:600, maxHeight:'92vh', overflowY:'auto', border:'1px solid #ffffff15' }}>
             <h3 style={{ color:'#fff', marginBottom:20, fontSize:16, fontWeight:700 }}>{editStagione.anno ? `Modifica ${editStagione.anno}` : 'Nuova Stagione'}</h3>
 
             {/* Base fields */}
@@ -9079,7 +9080,7 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
       {/* ── Articolo Modal ── */}
       {editArt && (
         <div style={{ position:'fixed', inset:0, background:'#000000cc', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }} onClick={e => e.target===e.currentTarget && setEditArt(null)}>
-          <div style={{ background:'#1a1d27', borderRadius:16, padding:28, width:'100%', maxWidth:560, maxHeight:'90vh', overflowY:'auto', border:'1px solid #ffffff15' }}>
+          <div className="modal-pad" style={{ background:'#1a1d27', borderRadius:16, padding:28, width:'100%', maxWidth:560, maxHeight:'90vh', overflowY:'auto', border:'1px solid #ffffff15' }}>
             <h3 style={{ color:'#fff', marginBottom:20, fontSize:16, fontWeight:700 }}>{editArt.id ? 'Modifica Articolo' : 'Nuovo Articolo'}</h3>
             <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
               <div style={{ display:'flex', gap:10 }}>
@@ -10293,7 +10294,7 @@ function AppInner() {
 
   return (
     <div style={{ minHeight:"100vh",background:"#0d0f14",fontFamily:"'Inter',system-ui,sans-serif",color:"#f0f0f0" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#333;border-radius:2px}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}body{background:#0d0f14}@media(max-width:1100px){.main-content-pad{padding:20px 20px!important}}@media(max-width:900px){.main-content-pad{padding:16px 14px!important}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#333;border-radius:2px}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}body{background:#0d0f14}@media(max-width:1100px){.main-content-pad{padding:20px 20px!important}}@media(max-width:900px){.main-content-pad{padding:16px 14px!important}}@media(max-width:768px){input,select,textarea{font-size:16px!important;-webkit-text-size-adjust:100%}.table-mob{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px}.grid-stats-8{grid-template-columns:repeat(4,1fr)!important}.grid-stats-3{grid-template-columns:repeat(3,1fr)!important}.grid-stats-4{grid-template-columns:repeat(2,1fr)!important}.modal-pad{padding:16px!important}}@media(max-width:400px){.grid-stats-8{grid-template-columns:repeat(4,1fr)!important}.grid-stats-3{grid-template-columns:1fr 1fr!important}}`}</style>
       {isDesktop ? (
         <div style={{ display:"flex",minHeight:"100vh" }}>
           {/* Sidebar */}
