@@ -10356,7 +10356,7 @@ function AppInner() {
           </div>
         </div>
       ) : (
-        <div style={{ paddingBottom:72 }}>
+        <div style={{ paddingBottom:"calc(68px + env(safe-area-inset-bottom,0px))" }}>
           {!pathname.startsWith('/presidente') && (
             <div style={{ borderBottom:"1px solid #ffffff0e",background:"#0d0f14f0",backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:100,padding:"0 16px" }}>
               <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",height:50 }}>
@@ -10371,17 +10371,17 @@ function AppInner() {
           <div style={{ padding:"16px 14px",position:"relative" }}>
             {pageContent}
           </div>
-          <div style={{ position:"fixed",bottom:0,left:0,right:0,background:"#13151cee",backdropFilter:"blur(16px)",borderTop:"1px solid #ffffff10",display:"flex",zIndex:200,height:68 }}>
+          <div style={{ position:"fixed",bottom:0,left:0,right:0,background:"#13151cee",backdropFilter:"blur(16px)",borderTop:"1px solid #ffffff10",display:"flex",flexDirection:"column",zIndex:200,paddingBottom:"env(safe-area-inset-bottom,0px)" }}><div style={{ display:"flex",height:68 }}>
             {navItems.map(item => {
               const active = currentPage === item.key;
               const badge = item.key === "mercato" && offerteInAttesa.length > 0 ? offerteInAttesa.length : 0;
-              return <button key={item.key} onClick={()=>navigate(item.path)} style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,border:"none",background:"transparent",cursor:"pointer",padding:"8px 0",position:"relative" }}>
+              return <button key={item.key} onClick={()=>navigate(item.path)} style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,border:"none",background:"transparent",cursor:"pointer",padding:"8px 0",position:"relative",minHeight:44 }}>
                 {active&&<div style={{ position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:28,height:3,borderRadius:"0 0 3px 3px",background:"#6366f1" }}/>}
                 <span style={{ fontSize:20,position:"relative" }}>{item.icon}{badge>0&&<span style={{ position:"absolute",top:-3,right:-5,background:"#ef4444",color:"#fff",borderRadius:"50%",fontSize:8,width:13,height:13,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900 }}>{badge}</span>}</span>
                 <span style={{ fontSize:10,fontWeight:700,color:active?"#6366f1":"#666" }}>{item.label}</span>
               </button>;
             })}
-          </div>
+          </div></div>
         </div>
       )}
     </div>
