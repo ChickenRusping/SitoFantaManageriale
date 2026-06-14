@@ -166,8 +166,9 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   applicaMulteFPFTutte, applicaPremiCampionato,
   // Telegram
   sendTelegramNotification, getTelegramRegistrations, deleteTelegramRegistration,
-  // Albo d'Oro
-  getStagioniPassate, upsertStagione, deleteStagione, getRegolamentoUrl, setRegolamentoUrl, uploadRegolamento,
+  // Albo d'Oro & Regolamento
+  getStagioniPassate, upsertStagione, deleteStagione,
+  getRegolamentoArticoli, upsertRegolamentoArticolo, insertRegolamentoArticolo, deleteRegolamentoArticolo,
 } from "./supabase.js";
 
 // ─── SORTABLE TABLE HOOK ──────────────────────────────────────────────────────
@@ -8721,161 +8722,185 @@ function AdminControlRoomPage({ teams }) {
 function StoricoPage({ isAdmin, allClubIdentities = [] }) {
   const [tab, setTab] = useState('albo');
   const [stagioni, setStagioni] = useState([]);
-  const [regolamentoUrl, setRegolamentoUrlState] = useState(null);
+  const [articoli, setArticoli] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [editStagione, setEditStagione] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [uploadingPdf, setUploadingPdf] = useState(false);
-  const pdfInputRef = useRef(null);
+  const [openArticoli, setOpenArticoli] = useState({});
+  const [editArt, setEditArt] = useState(null);
+  const [savingArt, setSavingArt] = useState(false);
 
   const TROPHIES = [
-    { key: 'campione', label: '🏆 Campione', color: '#f59e0b' },
-    { key: 'vice_campione', label: '🥈 Vice Campione', color: '#94a3b8' },
-    { key: 'coppa_campioni', label: '⚽ Coppa Campioni', color: '#60a5fa' },
-    { key: 'coppa_italia', label: '🇮🇹 Coppa Italia', color: '#34d399' },
-    { key: 'miglior_attacco', label: '⚡ Miglior Attacco', color: '#fb923c' },
-    { key: 'miglior_difesa', label: '🛡 Miglior Difesa', color: '#a78bfa' },
+    { key: 'campione',       label: '🏆 Campione',        color: '#f59e0b' },
+    { key: 'vice_campione',  label: '🥈 Vice Campione',   color: '#94a3b8' },
+    { key: 'supercoppa',     label: '⭐ Supercoppa',       color: '#60a5fa' },
+    { key: 'coppa_italia',   label: '🇮🇹 Coppa Italia',   color: '#34d399' },
+    { key: 'miglior_attacco',label: '⚡ Miglior Attacco', color: '#fb923c' },
+    { key: 'miglior_difesa', label: '🛡 Miglior Difesa',  color: '#a78bfa' },
   ];
 
   useEffect(() => {
-    Promise.all([getStagioniPassate(), getRegolamentoUrl()]).then(([s, r]) => {
+    Promise.all([getStagioniPassate(), getRegolamentoArticoli()]).then(([s, a]) => {
       setStagioni(s);
-      setRegolamentoUrlState(r);
+      setArticoli(a);
       setLoading(false);
     });
   }, []);
 
-  const getLogo = (squadra) => {
-    const ci = allClubIdentities?.find(c => c.squadra === squadra);
-    return ci?.logo_url || null;
-  };
+  const getLogo = (squadra) => allClubIdentities?.find(c => c.squadra === squadra)?.logo_url || null;
 
+  // ── Stagione edit ──
+  const EMPTY_STAGIONE = { anno: '', campione: '', vice_campione: '', supercoppa: '', coppa_italia: '', miglior_attacco: '', miglior_difesa: '', mvp: '', cucchiaio: '', record_giornata_squadra: '', record_giornata_punti: '', affare_anno: '', note: '', classifica: [], maglie: [] };
   const openEdit = (s) => {
-    setEditStagione(s ? { ...s } : {
-      anno: '', campione: '', vice_campione: '', coppa_campioni: '', coppa_italia: '',
-      miglior_attacco: '', miglior_difesa: '', note: '', maglie: []
-    });
+    setEditStagione(s ? { ...EMPTY_STAGIONE, ...s } : { ...EMPTY_STAGIONE });
     setEditMode(true);
   };
-
-  const salva = async () => {
+  const salvaStagione = async () => {
     if (!editStagione?.anno) return;
     setSaving(true);
     try {
       await upsertStagione(editStagione);
-      const s = await getStagioniPassate();
-      setStagioni(s);
+      setStagioni(await getStagioniPassate());
       setEditMode(false);
     } catch(e) { alert('Errore: ' + e.message); }
     setSaving(false);
   };
-
-  const elimina = async (anno) => {
+  const eliminaStagione = async (anno) => {
     if (!confirm(`Eliminare la stagione ${anno}?`)) return;
     await deleteStagione(anno);
     setStagioni(s => s.filter(x => x.anno !== anno));
   };
 
-  const uploadPdf = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingPdf(true);
+  // ── Articolo edit ──
+  const openEditArt = (a) => setEditArt(a ? { ...a } : { numero: '', titolo: '', testo: '', ordine: articoli.length });
+  const salvaArticolo = async () => {
+    if (!editArt?.titolo) return;
+    setSavingArt(true);
     try {
-      const url = await uploadRegolamento(file);
-      await setRegolamentoUrl(url);
-      setRegolamentoUrlState(url);
-    } catch(er) { alert('Errore upload: ' + er.message); }
-    setUploadingPdf(false);
+      if (editArt.id) await upsertRegolamentoArticolo(editArt);
+      else await insertRegolamentoArticolo(editArt);
+      setArticoli(await getRegolamentoArticoli());
+      setEditArt(null);
+    } catch(e) { alert('Errore: ' + e.message); }
+    setSavingArt(false);
+  };
+  const eliminaArticolo = async (id) => {
+    if (!confirm('Eliminare questo articolo?')) return;
+    await deleteRegolamentoArticolo(id);
+    setArticoli(a => a.filter(x => x.id !== id));
   };
 
-  const tabs = [
-    { key: 'albo', label: '🏆 Albo d\'Oro' },
-    { key: 'regolamento', label: '📋 Regolamento' },
-  ];
-
-  const card = { background: '#ffffff08', border: '1px solid #ffffff12', borderRadius: 14, padding: '20px 24px', marginBottom: 16 };
-  const badge = (color, txt) => (
-    <span style={{ background: color + '22', color, border: `1px solid ${color}44`, borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 700 }}>{txt}</span>
-  );
+  const card = { background: '#ffffff08', border: '1px solid #ffffff12', borderRadius: 14, padding: '20px 24px', marginBottom: 14 };
+  const inp = { width: '100%', background: '#ffffff0a', border: '1px solid #ffffff18', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 13, boxSizing: 'border-box' };
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto', padding: '24px 16px' }}>
       <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 800, marginBottom: 20 }}>📚 Archivio Lega</h2>
 
-      {/* Tab bar */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-        {tabs.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)} style={{
-            padding: '8px 18px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13,
-            background: tab === t.key ? '#f59e0b22' : '#ffffff0a',
-            color: tab === t.key ? '#f59e0b' : '#888',
-            borderBottom: tab === t.key ? '2px solid #f59e0b' : '2px solid transparent'
-          }}>{t.label}</button>
+        {[{ key:'albo', label:"🏆 Albo d'Oro" }, { key:'regolamento', label:'📋 Regolamento' }].map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: tab===t.key?'#f59e0b22':'#ffffff0a', color: tab===t.key?'#f59e0b':'#888', borderBottom: tab===t.key?'2px solid #f59e0b':'2px solid transparent' }}>{t.label}</button>
         ))}
       </div>
 
-      {loading ? <div style={{ color: '#555', textAlign: 'center', padding: 40 }}>Caricamento…</div> : <>
+      {loading ? <div style={{ color:'#555', textAlign:'center', padding:40 }}>Caricamento…</div> : <>
 
         {/* ── ALBO D'ORO ── */}
         {tab === 'albo' && (
           <div>
-            {isAdmin && (
-              <div style={{ marginBottom: 20, display: 'flex', gap: 10 }}>
-                <button onClick={() => openEdit(null)} style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>+ Aggiungi Stagione</button>
-              </div>
-            )}
+            {isAdmin && <button onClick={() => openEdit(null)} style={{ background:'#f59e0b', color:'#000', border:'none', borderRadius:8, padding:'8px 16px', fontWeight:700, cursor:'pointer', fontSize:13, marginBottom:20 }}>+ Aggiungi Stagione</button>}
 
             {stagioni.length === 0 && (
-              <div style={{ ...card, textAlign: 'center', color: '#555', padding: 48 }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>🏆</div>
-                <div style={{ fontWeight: 700, fontSize: 15 }}>Nessuna stagione registrata</div>
-                {isAdmin && <div style={{ color: '#444', fontSize: 13, marginTop: 6 }}>Usa il pulsante sopra per aggiungere la prima stagione</div>}
+              <div style={{ ...card, textAlign:'center', color:'#555', padding:48 }}>
+                <div style={{ fontSize:40, marginBottom:12 }}>🏆</div>
+                <div style={{ fontWeight:700, fontSize:15 }}>Nessuna stagione registrata</div>
+                {isAdmin && <div style={{ color:'#444', fontSize:13, marginTop:6 }}>Usa il pulsante sopra per aggiungere la prima stagione</div>}
               </div>
             )}
 
             {stagioni.map(s => (
               <div key={s.anno} style={card}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
-                  <div>
-                    <span style={{ background: '#f59e0b', color: '#000', borderRadius: 6, padding: '3px 10px', fontSize: 12, fontWeight: 800, marginRight: 10 }}>STAGIONE {s.anno}</span>
-                    {s.note && <span style={{ color: '#666', fontSize: 12 }}>{s.note}</span>}
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:16, flexWrap:'wrap', gap:8 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+                    <span style={{ background:'#f59e0b', color:'#000', borderRadius:6, padding:'3px 10px', fontSize:12, fontWeight:800 }}>STAGIONE {s.anno}</span>
+                    {s.note && <span style={{ color:'#666', fontSize:12 }}>{s.note}</span>}
                   </div>
                   {isAdmin && (
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={() => openEdit(s)} style={{ background: '#ffffff10', border: 'none', borderRadius: 6, color: '#aaa', padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>✏️</button>
-                      <button onClick={() => elimina(s.anno)} style={{ background: '#ef444415', border: 'none', borderRadius: 6, color: '#ef4444', padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>🗑</button>
+                    <div style={{ display:'flex', gap:6 }}>
+                      <button onClick={() => openEdit(s)} style={{ background:'#ffffff10', border:'none', borderRadius:6, color:'#aaa', padding:'4px 10px', cursor:'pointer', fontSize:12 }}>✏️</button>
+                      <button onClick={() => eliminaStagione(s.anno)} style={{ background:'#ef444415', border:'none', borderRadius:6, color:'#ef4444', padding:'4px 10px', cursor:'pointer', fontSize:12 }}>🗑</button>
                     </div>
                   )}
                 </div>
 
-                {/* Trophies row */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: s.maglie?.length ? 16 : 0 }}>
-                  {TROPHIES.map(t => s[t.key] ? (
-                    <div key={t.key} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#ffffff08', borderRadius: 10, padding: '8px 14px', minWidth: 160 }}>
-                      {getLogo(s[t.key]) && <img src={getLogo(s[t.key])} style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 4 }} alt="" />}
-                      <div>
-                        <div style={{ color: '#666', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{t.label}</div>
-                        <div style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>{s[t.key]}</div>
-                      </div>
-                    </div>
-                  ) : null)}
-                </div>
+                {/* Main content: trophies + extra info left, classifica + maglie right */}
+                <div style={{ display:'flex', gap:20, flexWrap:'wrap' }}>
 
-                {/* Maglie */}
-                {s.maglie?.length > 0 && (
-                  <div>
-                    <div style={{ color: '#555', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Maglie stagione</div>
-                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                      {s.maglie.map((m, i) => (
-                        <div key={i} style={{ textAlign: 'center' }}>
-                          <img src={m.url} style={{ width: 72, height: 72, objectFit: 'contain', borderRadius: 8, background: '#ffffff08', border: '1px solid #ffffff10' }} alt={m.squadra} />
-                          <div style={{ color: '#666', fontSize: 10, marginTop: 4 }}>{m.squadra}</div>
+                  {/* LEFT: trophies + extra */}
+                  <div style={{ flex:'1 1 300px', display:'flex', flexDirection:'column', gap:8 }}>
+                    {TROPHIES.map(t => s[t.key] ? (
+                      <div key={t.key} style={{ display:'flex', alignItems:'center', gap:10, background:'#ffffff06', borderRadius:10, padding:'8px 12px' }}>
+                        {getLogo(s[t.key]) && <img src={getLogo(s[t.key])} style={{ width:26, height:26, objectFit:'contain', borderRadius:4, flexShrink:0 }} alt="" />}
+                        <div style={{ minWidth:0 }}>
+                          <div style={{ color:'#555', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>{t.label}</div>
+                          <div style={{ color:'#fff', fontSize:13, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s[t.key]}</div>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ) : null)}
+
+                    {/* Extra highlights */}
+                    {[
+                      { key:'mvp',                    icon:'🌟', label:'MVP Stagione' },
+                      { key:'cucchiaio',               icon:'🥄', label:'Cucchiaio di Legno' },
+                      { key:'affare_anno',             icon:'💼', label:"Affare dell'Anno" },
+                      { key:'record_giornata_squadra', icon:'⚡', label:'Record Giornata', suffix: s.record_giornata_punti ? ` · ${s.record_giornata_punti} pts` : '' },
+                    ].filter(x => s[x.key]).map(x => (
+                      <div key={x.key} style={{ display:'flex', alignItems:'center', gap:10, background:'#ffffff06', borderRadius:10, padding:'8px 12px' }}>
+                        <span style={{ fontSize:18, flexShrink:0 }}>{x.icon}</span>
+                        <div style={{ minWidth:0 }}>
+                          <div style={{ color:'#555', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>{x.label}</div>
+                          <div style={{ color:'#fff', fontSize:13, fontWeight:700 }}>{s[x.key]}{x.suffix||''}</div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                )}
+
+                  {/* RIGHT: classifica + maglie */}
+                  <div style={{ flex:'0 0 220px', display:'flex', flexDirection:'column', gap:16 }}>
+                    {s.classifica?.length > 0 && (
+                      <div style={{ background:'#ffffff06', borderRadius:12, padding:'12px 14px' }}>
+                        <div style={{ color:'#555', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Classifica Finale</div>
+                        {s.classifica.map((r, i) => {
+                          const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':null;
+                          return (
+                            <div key={i} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 0', borderBottom: i < s.classifica.length-1 ? '1px solid #ffffff08' : 'none' }}>
+                              <span style={{ color: i<3?'#f59e0b':'#444', fontSize:11, fontWeight:700, width:18, textAlign:'center' }}>{medal || `${i+1}.`}</span>
+                              {getLogo(r.squadra) && <img src={getLogo(r.squadra)} style={{ width:18, height:18, objectFit:'contain', borderRadius:2, flexShrink:0 }} alt="" />}
+                              <span style={{ color: i===0?'#fff':'#bbb', fontSize:12, fontWeight: i===0?700:400, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.squadra}</span>
+                              {r.punti != null && <span style={{ color:'#555', fontSize:11, flexShrink:0 }}>{r.punti}p</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {s.maglie?.length > 0 && (
+                      <div>
+                        <div style={{ color:'#555', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Maglie Stagione</div>
+                        <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                          {s.maglie.map((m, i) => (
+                            <div key={i} style={{ textAlign:'center' }}>
+                              <img src={m.url} style={{ width:56, height:56, objectFit:'contain', borderRadius:8, background:'#ffffff08', border:'1px solid #ffffff10' }} alt={m.squadra} />
+                              <div style={{ color:'#666', fontSize:9, marginTop:3, maxWidth:56, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.squadra}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
               </div>
             ))}
           </div>
@@ -8885,61 +8910,150 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
         {tab === 'regolamento' && (
           <div>
             {isAdmin && (
-              <div style={{ marginBottom: 16, display: 'flex', gap: 10, alignItems: 'center' }}>
-                <button onClick={() => pdfInputRef.current?.click()} disabled={uploadingPdf} style={{ background: '#6366f1', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>
-                  {uploadingPdf ? 'Upload…' : '📤 Carica Regolamento PDF'}
-                </button>
-                {regolamentoUrl && <a href={regolamentoUrl} target="_blank" rel="noreferrer" style={{ color: '#6366f1', fontSize: 13 }}>⬇️ Scarica</a>}
-                <input ref={pdfInputRef} type="file" accept="application/pdf" style={{ display: 'none' }} onChange={uploadPdf} />
+              <button onClick={() => openEditArt(null)} style={{ background:'#6366f1', color:'#fff', border:'none', borderRadius:8, padding:'8px 16px', fontWeight:700, cursor:'pointer', fontSize:13, marginBottom:20 }}>+ Aggiungi Articolo</button>
+            )}
+
+            {articoli.length === 0 && (
+              <div style={{ ...card, textAlign:'center', color:'#555', padding:48 }}>
+                <div style={{ fontSize:40, marginBottom:12 }}>📋</div>
+                <div style={{ fontWeight:700, fontSize:15 }}>Regolamento non ancora inserito</div>
+                {isAdmin && <div style={{ color:'#444', fontSize:13, marginTop:6 }}>Usa il pulsante sopra per aggiungere articoli</div>}
               </div>
             )}
 
-            {regolamentoUrl ? (
-              <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid #ffffff12' }}>
-                <iframe src={regolamentoUrl} style={{ width: '100%', height: '80vh', border: 'none', background: '#fff' }} title="Regolamento" />
-              </div>
-            ) : (
-              <div style={{ ...card, textAlign: 'center', color: '#555', padding: 48 }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
-                <div style={{ fontWeight: 700, fontSize: 15 }}>Regolamento non ancora caricato</div>
-                {isAdmin && <div style={{ color: '#444', fontSize: 13, marginTop: 6 }}>Usa il pulsante sopra per caricare il PDF</div>}
-              </div>
-            )}
+            {articoli.map(a => {
+              const open = !!openArticoli[a.id];
+              return (
+                <div key={a.id} style={{ ...card, padding:0, overflow:'hidden' }}>
+                  <div
+                    onClick={() => setOpenArticoli(p => ({ ...p, [a.id]: !open }))}
+                    style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'14px 20px', cursor:'pointer', userSelect:'none' }}
+                  >
+                    <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                      {a.numero && <span style={{ background:'#6366f122', color:'#818cf8', borderRadius:6, padding:'2px 8px', fontSize:11, fontWeight:800, whiteSpace:'nowrap' }}>{a.numero}</span>}
+                      <span style={{ color:'#fff', fontWeight:700, fontSize:14 }}>{a.titolo}</span>
+                    </div>
+                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                      {isAdmin && (
+                        <>
+                          <button onClick={e => { e.stopPropagation(); openEditArt(a); }} style={{ background:'#ffffff10', border:'none', borderRadius:6, color:'#aaa', padding:'3px 8px', cursor:'pointer', fontSize:11 }}>✏️</button>
+                          <button onClick={e => { e.stopPropagation(); eliminaArticolo(a.id); }} style={{ background:'#ef444415', border:'none', borderRadius:6, color:'#ef4444', padding:'3px 8px', cursor:'pointer', fontSize:11 }}>🗑</button>
+                        </>
+                      )}
+                      <span style={{ color:'#555', fontSize:16, transition:'transform 0.2s', display:'inline-block', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
+                    </div>
+                  </div>
+                  {open && (
+                    <div style={{ padding:'0 20px 16px', borderTop:'1px solid #ffffff0a' }}>
+                      <p style={{ color:'#ccc', fontSize:13, lineHeight:1.7, whiteSpace:'pre-wrap', margin:'12px 0 0' }}>{a.testo}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </>}
 
-      {/* ── Edit Modal ── */}
+      {/* ── Stagione Modal ── */}
       {editMode && editStagione && (
-        <div style={{ position: 'fixed', inset: 0, background: '#000000cc', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }} onClick={e => e.target === e.currentTarget && setEditMode(false)}>
-          <div style={{ background: '#1a1d27', borderRadius: 16, padding: 28, width: '100%', maxWidth: 540, maxHeight: '90vh', overflowY: 'auto', border: '1px solid #ffffff15' }}>
-            <h3 style={{ color: '#fff', marginBottom: 20, fontSize: 16, fontWeight: 700 }}>{editStagione.anno ? `Modifica ${editStagione.anno}` : 'Nuova Stagione'}</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ position:'fixed', inset:0, background:'#000000cc', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }} onClick={e => e.target===e.currentTarget && setEditMode(false)}>
+          <div style={{ background:'#1a1d27', borderRadius:16, padding:28, width:'100%', maxWidth:600, maxHeight:'92vh', overflowY:'auto', border:'1px solid #ffffff15' }}>
+            <h3 style={{ color:'#fff', marginBottom:20, fontSize:16, fontWeight:700 }}>{editStagione.anno ? `Modifica ${editStagione.anno}` : 'Nuova Stagione'}</h3>
+
+            {/* Base fields */}
+            <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:20 }}>
               {[
-                { key: 'anno', label: 'Anno (es. 2024/25)', required: true },
-                { key: 'campione', label: '🏆 Campione' },
-                { key: 'vice_campione', label: '🥈 Vice Campione' },
-                { key: 'coppa_campioni', label: '⚽ Coppa Campioni' },
-                { key: 'coppa_italia', label: '🇮🇹 Coppa Italia' },
-                { key: 'miglior_attacco', label: '⚡ Miglior Attacco' },
-                { key: 'miglior_difesa', label: '🛡 Miglior Difesa' },
-                { key: 'note', label: 'Note (opzionale)' },
+                { key:'anno',                    label:'Anno (es. 2024/25)' },
+                { key:'campione',                label:'🏆 Campione' },
+                { key:'vice_campione',           label:'🥈 Vice Campione' },
+                { key:'supercoppa',              label:'⭐ Supercoppa' },
+                { key:'coppa_italia',            label:'🇮🇹 Coppa Italia' },
+                { key:'miglior_attacco',         label:'⚡ Miglior Attacco' },
+                { key:'miglior_difesa',          label:'🛡 Miglior Difesa' },
+                { key:'mvp',                     label:'🌟 MVP Stagione' },
+                { key:'cucchiaio',               label:'🥄 Cucchiaio di Legno (ultimo)' },
+                { key:'affare_anno',             label:"💼 Affare dell'Anno" },
+                { key:'record_giornata_squadra', label:'⚡ Record Giornata (squadra)' },
+                { key:'record_giornata_punti',   label:'⚡ Record Giornata (punti)' },
+                { key:'note',                    label:'Note (opzionale)' },
               ].map(f => (
                 <div key={f.key}>
-                  <label style={{ color: '#888', fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4 }}>{f.label}</label>
-                  <input
-                    value={editStagione[f.key] || ''}
-                    onChange={e => setEditStagione(p => ({ ...p, [f.key]: e.target.value }))}
-                    style={{ width: '100%', background: '#ffffff0a', border: '1px solid #ffffff18', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 13, boxSizing: 'border-box' }}
-                  />
+                  <label style={{ color:'#888', fontSize:11, fontWeight:700, display:'block', marginBottom:3 }}>{f.label}</label>
+                  <input value={editStagione[f.key]||''} onChange={e => setEditStagione(p => ({ ...p, [f.key]: e.target.value }))} style={inp} />
                 </div>
               ))}
             </div>
-            <div style={{ display: 'flex', gap: 10, marginTop: 20, justifyContent: 'flex-end' }}>
-              <button onClick={() => setEditMode(false)} style={{ background: '#ffffff10', border: 'none', borderRadius: 8, color: '#aaa', padding: '8px 16px', cursor: 'pointer', fontWeight: 700 }}>Annulla</button>
-              <button onClick={salva} disabled={saving} style={{ background: '#f59e0b', border: 'none', borderRadius: 8, color: '#000', padding: '8px 20px', cursor: 'pointer', fontWeight: 700 }}>
-                {saving ? 'Salvo…' : 'Salva'}
-              </button>
+
+            {/* Classifica editor */}
+            <div style={{ borderTop:'1px solid #ffffff10', paddingTop:16, marginBottom:20 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+                <label style={{ color:'#888', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>📊 Classifica Finale</label>
+                <button onClick={() => setEditStagione(p => ({ ...p, classifica: [...(p.classifica||[]), { squadra:'', punti:'' }] }))}
+                  style={{ background:'#ffffff15', border:'none', borderRadius:6, color:'#aaa', padding:'3px 10px', cursor:'pointer', fontSize:12 }}>+ Riga</button>
+              </div>
+              {(editStagione.classifica||[]).map((r, i) => (
+                <div key={i} style={{ display:'flex', gap:6, marginBottom:6, alignItems:'center' }}>
+                  <span style={{ color:'#555', fontSize:12, width:20, textAlign:'center' }}>{i+1}.</span>
+                  <input placeholder="Squadra" value={r.squadra||''} onChange={e => setEditStagione(p => { const c=[...p.classifica]; c[i]={...c[i],squadra:e.target.value}; return {...p,classifica:c}; })} style={{ ...inp, flex:1 }} />
+                  <input placeholder="Punti" value={r.punti||''} onChange={e => setEditStagione(p => { const c=[...p.classifica]; c[i]={...c[i],punti:e.target.value}; return {...p,classifica:c}; })} style={{ ...inp, width:70 }} />
+                  <button onClick={() => setEditStagione(p => ({ ...p, classifica: p.classifica.filter((_,j)=>j!==i) }))} style={{ background:'#ef444418', border:'none', borderRadius:6, color:'#ef4444', padding:'4px 8px', cursor:'pointer', fontSize:12 }}>✕</button>
+                </div>
+              ))}
+            </div>
+
+            {/* Maglie editor */}
+            <div style={{ borderTop:'1px solid #ffffff10', paddingTop:16, marginBottom:20 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+                <label style={{ color:'#888', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>👕 Maglie Stagione</label>
+                <button onClick={() => setEditStagione(p => ({ ...p, maglie: [...(p.maglie||[]), { squadra:'', url:'' }] }))}
+                  style={{ background:'#ffffff15', border:'none', borderRadius:6, color:'#aaa', padding:'3px 10px', cursor:'pointer', fontSize:12 }}>+ Maglia</button>
+              </div>
+              {(editStagione.maglie||[]).map((m, i) => (
+                <div key={i} style={{ display:'flex', gap:6, marginBottom:6, alignItems:'center' }}>
+                  <input placeholder="Squadra" value={m.squadra||''} onChange={e => setEditStagione(p => { const mg=[...p.maglie]; mg[i]={...mg[i],squadra:e.target.value}; return {...p,maglie:mg}; })} style={{ ...inp, flex:'0 0 130px' }} />
+                  <input placeholder="URL immagine maglia" value={m.url||''} onChange={e => setEditStagione(p => { const mg=[...p.maglie]; mg[i]={...mg[i],url:e.target.value}; return {...p,maglie:mg}; })} style={{ ...inp, flex:1 }} />
+                  <button onClick={() => setEditStagione(p => ({ ...p, maglie: p.maglie.filter((_,j)=>j!==i) }))} style={{ background:'#ef444418', border:'none', borderRadius:6, color:'#ef4444', padding:'4px 8px', cursor:'pointer', fontSize:12 }}>✕</button>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
+              <button onClick={() => setEditMode(false)} style={{ background:'#ffffff10', border:'none', borderRadius:8, color:'#aaa', padding:'8px 16px', cursor:'pointer', fontWeight:700 }}>Annulla</button>
+              <button onClick={salvaStagione} disabled={saving} style={{ background:'#f59e0b', border:'none', borderRadius:8, color:'#000', padding:'8px 20px', cursor:'pointer', fontWeight:700 }}>{saving ? 'Salvo…' : 'Salva'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Articolo Modal ── */}
+      {editArt && (
+        <div style={{ position:'fixed', inset:0, background:'#000000cc', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }} onClick={e => e.target===e.currentTarget && setEditArt(null)}>
+          <div style={{ background:'#1a1d27', borderRadius:16, padding:28, width:'100%', maxWidth:560, maxHeight:'90vh', overflowY:'auto', border:'1px solid #ffffff15' }}>
+            <h3 style={{ color:'#fff', marginBottom:20, fontSize:16, fontWeight:700 }}>{editArt.id ? 'Modifica Articolo' : 'Nuovo Articolo'}</h3>
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              <div style={{ display:'flex', gap:10 }}>
+                <div style={{ flex:'0 0 100px' }}>
+                  <label style={{ color:'#888', fontSize:12, fontWeight:700, display:'block', marginBottom:4 }}>Numero</label>
+                  <input value={editArt.numero||''} onChange={e => setEditArt(p=>({...p, numero:e.target.value}))} placeholder="Art. 1" style={inp} />
+                </div>
+                <div style={{ flex:1 }}>
+                  <label style={{ color:'#888', fontSize:12, fontWeight:700, display:'block', marginBottom:4 }}>Titolo</label>
+                  <input value={editArt.titolo||''} onChange={e => setEditArt(p=>({...p, titolo:e.target.value}))} style={inp} />
+                </div>
+              </div>
+              <div>
+                <label style={{ color:'#888', fontSize:12, fontWeight:700, display:'block', marginBottom:4 }}>Testo</label>
+                <textarea value={editArt.testo||''} onChange={e => setEditArt(p=>({...p, testo:e.target.value}))} rows={10} style={{ ...inp, resize:'vertical', fontFamily:'inherit', lineHeight:1.6 }} />
+              </div>
+              <div>
+                <label style={{ color:'#888', fontSize:12, fontWeight:700, display:'block', marginBottom:4 }}>Ordine</label>
+                <input type="number" value={editArt.ordine||0} onChange={e => setEditArt(p=>({...p, ordine:Number(e.target.value)}))} style={{ ...inp, width:80 }} />
+              </div>
+            </div>
+            <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
+              <button onClick={() => setEditArt(null)} style={{ background:'#ffffff10', border:'none', borderRadius:8, color:'#aaa', padding:'8px 16px', cursor:'pointer', fontWeight:700 }}>Annulla</button>
+              <button onClick={salvaArticolo} disabled={savingArt} style={{ background:'#6366f1', border:'none', borderRadius:8, color:'#fff', padding:'8px 20px', cursor:'pointer', fontWeight:700 }}>{savingArt ? 'Salvo…' : 'Salva'}</button>
             </div>
           </div>
         </div>
