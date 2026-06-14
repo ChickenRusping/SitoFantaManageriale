@@ -3388,6 +3388,15 @@ export async function deleteStagione(anno) {
   const { error } = await supabase.from('stagioni_passate').delete().eq('anno', anno);
   if (error) throw error;
 }
+export async function uploadMaglia(stagione, squadra, file) {
+  const ext = file.name.split('.').pop();
+  const path = `maglie/${stagione.replace(/\//g,'-')}/${squadra}.${ext}`;
+  const { error } = await supabase.storage.from('team-images').upload(path, file, { upsert: true, contentType: file.type });
+  if (error) throw error;
+  const { data } = supabase.storage.from('team-images').getPublicUrl(path);
+  return data.publicUrl + '?t=' + Date.now();
+}
+
 export async function getRegolamentoArticoli() {
   const { data, error } = await supabase.from('regolamento_articoli').select('*').order('ordine').order('id');
   if (error) throw error;
