@@ -273,20 +273,8 @@ function TeamAvatar({ team, size = 38 }) {
 }
 
 /* ─── TEAM CARD ─────────────────────────────────────────────────────────────── */
-function TeamCard({ team, onClick }) {
-  const [scLive, setScLive] = useState(team.salaryUsed || 0);
-  const [allenatoreReale, setAllenatoreReale] = useState(null);
-
-  useEffect(() => {
-    getRosa(team.name).then(data => {
-      if (data) setScLive(data.filter(p=>!p.in_vivaio).reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0));
-    });
-    getAllenatoreBySquadra(team.name, '2026-27').then(all => setAllenatoreReale(all?.nome || null));
-    const sub = subscribeRosa(team.name, () => {
-      getRosa(team.name).then(data => { if (data) setScLive(data.filter(p=>!p.in_vivaio).reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0)); });
-    });
-    return () => supabase.removeChannel(sub);
-  }, [team.name]);
+function TeamCard({ team, onClick, scLive: scLiveProp, allenatore: allenatoreReale }) {
+  const scLive = scLiveProp ?? team.salaryUsed ?? 0;
 
   // FPF = netto speso semestre corrente (uscite − entrate, escl. stipendi), passato da mergedTeams
   const fpf = team.fpf ?? null;
@@ -680,6 +668,8 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
   const [myRosa, setMyRosa] = useState([]);
   const [myAllenatore, setMyAllenatore] = useState(null);
   const [roseCountMap, setRoseCountMap] = useState({});
+  const [scLiveMap, setScLiveMap] = useState({});
+  const [allenatoriMap, setAllenatoriMap] = useState({});
   const [editMode, setEditMode] = useState(false);
   const [editRow, setEditRow] = useState(null); // { squadra, g, v, n, p, gf, gs, dr, pt, pt_totali }
   const [saving, setSaving] = useState(false);
@@ -712,16 +702,33 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
 
   useEffect(() => {
     if (!mySquadra) return;
-    getRosa(mySquadra).then(d => setMyRosa(d || []));
-    getAllenatoreBySquadra(mySquadra, '2026-27').then(all => setMyAllenatore(all?.nome || null));
+    cachedFetch('rosa_' + mySquadra, () => getRosa(mySquadra), 120000).then(d => setMyRosa(d || []));
   }, [mySquadra]);
+  // Allenatore: aggiornato quando allenatoriMap è popolato
+  useEffect(() => {
+    if (mySquadra && allenatoriMap[mySquadra] !== undefined) setMyAllenatore(allenatoriMap[mySquadra] || null);
+  }, [mySquadra, allenatoriMap]);
 
-  // Load live rosa counts for all teams to avoid stale `giocatori` field
+  // Batch load: rosa counts + scLive per team + allenatori
   const teamNamesKey = teams.map(t => t.name).join(',');
   useEffect(() => {
     if (!teams.length) return;
-    Promise.all(teams.map(t => getRosa(t.name).then(d => [t.name, (d || []).filter(p => !p.in_vivaio).length])))
-      .then(entries => setRoseCountMap(Object.fromEntries(entries)));
+    // One fetch per team (rose) — popola cache; single batch per allenatori
+    Promise.all([
+      Promise.all(teams.map(t => cachedFetch('rosa_' + t.name, () => getRosa(t.name), 120000).then(d => {
+        const rosa = (d || []).filter(p => !p.in_vivaio);
+        return [t.name, { count: rosa.length, sc: rosa.reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0) }];
+      }))),
+      getAllenatori('2026-27'),
+    ]).then(([rosaEntries, allCoaches]) => {
+      const counts = {}, scs = {};
+      rosaEntries.forEach(([name, { count, sc }]) => { counts[name] = count; scs[name] = sc; });
+      setRoseCountMap(counts);
+      setScLiveMap(scs);
+      const allMap = {};
+      (allCoaches || []).forEach(a => { allMap[a.squadra] = a.nome; });
+      setAllenatoriMap(allMap);
+    });
   }, [teamNamesKey]);
 
   // Merge classifica con colori/loghi delle squadre
@@ -845,7 +852,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
             .map(team => {
               const liveCount = roseCountMap[team.name];
               const teamLive = liveCount !== undefined ? { ...team, giocatori: liveCount } : team;
-              return <TeamCard key={team.id} team={teamLive} onClick={() => onSelectTeam(team)} />;
+              return <TeamCard key={team.id} team={teamLive} onClick={() => onSelectTeam(team)} scLive={scLiveMap[team.name]} allenatore={allenatoriMap[team.name] ?? null} />;
             })}
         </div>
       </div>
@@ -8858,30 +8865,25 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
                   )}
                 </div>
 
-                {/* Main content: trophies + extra info left, classifica + maglie right */}
-                <style>{`@media(max-width:768px){.storico-right{flex:1 1 100%!important}}`}</style>
-                <div style={{ display:'flex', gap:20, flexWrap:'wrap' }}>
-
-                  {/* LEFT: trophies + extra */}
-                  <div style={{ flex:'1 1 280px', display:'flex', flexDirection:'column', gap:8 }}>
+                {/* Trofei */}
+                <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
                     {TROPHIES.map(t => s[t.key] ? (
-                      <div key={t.key} style={{ display:'flex', alignItems:'center', gap:10, background:'#ffffff06', borderRadius:10, padding:'8px 12px' }}>
-                        {getLogo(s[t.key]) && <img src={getLogo(s[t.key])} style={{ width:26, height:26, objectFit:'contain', borderRadius:4, flexShrink:0 }} alt="" />}
+                      <div key={t.key} style={{ display:'flex', alignItems:'center', gap:10, background:'#ffffff06', borderRadius:10, padding:'8px 12px', flex:'1 1 200px', minWidth:0 }}>
+                        {getLogo(s[t.key]) && <img src={getLogo(s[t.key])} style={{ width:24, height:24, objectFit:'contain', borderRadius:4, flexShrink:0 }} alt="" />}
                         <div style={{ minWidth:0 }}>
                           <div style={{ color:'#555', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>{t.label}</div>
                           <div style={{ color:'#fff', fontSize:13, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s[t.key]}</div>
                         </div>
                       </div>
                     ) : null)}
-
-                    {/* Extra highlights */}
                     {[
                       { key:'mvp',                    icon:'🌟', label:'MVP Stagione' },
                       { key:'cucchiaio',               icon:'🥄', label:'Cucchiaio di Legno' },
                       { key:'affare_anno',             icon:'💼', label:"Affare dell'Anno" },
                       { key:'record_giornata_squadra', icon:'⚡', label:'Record Giornata', suffix: s.record_giornata_punti ? ` · ${s.record_giornata_punti} pts` : '' },
                     ].filter(x => s[x.key]).map(x => (
-                      <div key={x.key} style={{ display:'flex', alignItems:'center', gap:10, background:'#ffffff06', borderRadius:10, padding:'8px 12px' }}>
+                      <div key={x.key} style={{ display:'flex', alignItems:'center', gap:10, background:'#ffffff06', borderRadius:10, padding:'8px 12px', flex:'1 1 200px', minWidth:0 }}>
                         <span style={{ fontSize:18, flexShrink:0 }}>{x.icon}</span>
                         <div style={{ minWidth:0 }}>
                           <div style={{ color:'#555', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>{x.label}</div>
@@ -8890,63 +8892,63 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
                       </div>
                     ))}
                   </div>
-
-                  {/* RIGHT: classifica + maglie */}
-                  <div className="storico-right" style={{ flex:'0 0 220px', display:'flex', flexDirection:'column', gap:16 }}>
-                    {s.classifica?.length > 0 && (
-                      <div style={{ background:'#ffffff06', borderRadius:12, padding:'12px 14px', overflowX:'auto' }}>
-                        <div style={{ color:'#555', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Classifica Finale</div>
-                        <table style={{ width:'100%', minWidth:560, borderCollapse:'collapse', fontSize:11 }}>
-                          <thead>
-                            <tr style={{ borderBottom:'1px solid #ffffff12' }}>
-                              {['#','Squadra','G','V','N','P','G+','G−','DR','Pt','Pt Tot'].map(h => (
-                                <th key={h} style={{ padding:'3px 5px', color:'#444', fontWeight:700, textAlign: h==='Squadra'?'left':'center', whiteSpace:'nowrap' }}>{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {s.classifica.map((r, i) => {
-                              const rowColor = i===0?'#f59e0b':i===1?'#9ca3af':i===2?'#cd7f32':null;
-                              const dr = r.dr ?? ((r.gf||0) - (r.gs||0));
-                              return (
-                                <tr key={i} style={{ borderBottom:'1px solid #ffffff06' }}>
-                                  <td style={{ padding:'5px 5px', textAlign:'center', fontWeight:900, color: rowColor||'#555', fontSize:13 }}>{i+1}</td>
-                                  <td style={{ padding:'5px 5px', minWidth:100 }}>
-                                    <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-                                      {getLogo(r.squadra) && <img src={getLogo(r.squadra)} style={{ width:16, height:16, objectFit:'contain', borderRadius:2, flexShrink:0 }} alt="" />}
-                                      <span style={{ color: i===0?'#fff':'#bbb', fontWeight: i===0?700:400, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:90 }}>{r.squadra}</span>
-                                    </div>
-                                  </td>
-                                  {[r.g, r.v, r.n, r.p, r.gf, r.gs].map((v,ci) => (
-                                    <td key={ci} style={{ padding:'5px 5px', textAlign:'center', color:'#888' }}>{v ?? '—'}</td>
-                                  ))}
-                                  <td style={{ padding:'5px 5px', textAlign:'center', color: dr>0?'#10b981':dr<0?'#ef4444':'#666', fontWeight:600 }}>{dr>0?'+':''}{dr ?? '—'}</td>
-                                  <td style={{ padding:'5px 5px', textAlign:'center', fontWeight:900, color: rowColor||'#f0f0f0', fontSize:13 }}>{r.pt ?? r.punti ?? '—'}</td>
-                                  <td style={{ padding:'5px 5px', textAlign:'center', color:'#555' }}>{r.pt_totali ?? '—'}</td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-
-                    {s.maglie?.length > 0 && (
-                      <div>
-                        <div style={{ color:'#555', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Maglie Stagione</div>
-                        <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                          {s.maglie.map((m, i) => (
-                            <div key={i} style={{ textAlign:'center' }}>
-                              <img src={m.url} style={{ width:56, height:56, objectFit:'contain', borderRadius:8, background:'#ffffff08', border:'1px solid #ffffff10' }} alt={m.squadra} />
-                              <div style={{ color:'#666', fontSize:9, marginTop:3, maxWidth:56, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.squadra}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
                 </div>
+
+                {/* Classifica — sempre a larghezza piena, scroll orizzontale garantito */}
+                {s.classifica?.length > 0 && (
+                  <div style={{ background:'#ffffff06', borderRadius:12, padding:'10px 0', marginBottom:12 }}>
+                    <div style={{ color:'#555', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:8, padding:'0 14px' }}>Classifica Finale</div>
+                    <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
+                      <table style={{ width:'100%', minWidth:520, borderCollapse:'collapse', fontSize:11 }}>
+                        <thead>
+                          <tr style={{ borderBottom:'1px solid #ffffff12' }}>
+                            {['#','Squadra','G','V','N','P','G+','G−','DR','Pt','Pt Tot'].map(h => (
+                              <th key={h} style={{ padding:'4px 8px', color:'#444', fontWeight:700, textAlign: h==='Squadra'?'left':'center', whiteSpace:'nowrap' }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {s.classifica.map((r, i) => {
+                            const rowColor = i===0?'#f59e0b':i===1?'#9ca3af':i===2?'#cd7f32':null;
+                            const dr = r.dr ?? ((r.gf||0) - (r.gs||0));
+                            return (
+                              <tr key={i} style={{ borderBottom:'1px solid #ffffff06' }}>
+                                <td style={{ padding:'5px 8px', textAlign:'center', fontWeight:900, color: rowColor||'#555', fontSize:13 }}>{i+1}</td>
+                                <td style={{ padding:'5px 8px', minWidth:100 }}>
+                                  <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                                    {getLogo(r.squadra) && <img src={getLogo(r.squadra)} style={{ width:16, height:16, objectFit:'contain', borderRadius:2, flexShrink:0 }} alt="" />}
+                                    <span style={{ color: i===0?'#fff':'#bbb', fontWeight: i===0?700:400, whiteSpace:'nowrap' }}>{r.squadra}</span>
+                                  </div>
+                                </td>
+                                {[r.g, r.v, r.n, r.p, r.gf, r.gs].map((v,ci) => (
+                                  <td key={ci} style={{ padding:'5px 8px', textAlign:'center', color:'#888' }}>{v ?? '—'}</td>
+                                ))}
+                                <td style={{ padding:'5px 8px', textAlign:'center', color: dr>0?'#10b981':dr<0?'#ef4444':'#666', fontWeight:600 }}>{dr>0?'+':''}{dr ?? '—'}</td>
+                                <td style={{ padding:'5px 8px', textAlign:'center', fontWeight:900, color: rowColor||'#f0f0f0', fontSize:13 }}>{r.pt ?? r.punti ?? '—'}</td>
+                                <td style={{ padding:'5px 8px', textAlign:'center', color:'#555' }}>{r.pt_totali ?? '—'}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Maglie */}
+                {s.maglie?.length > 0 && (
+                  <div>
+                    <div style={{ color:'#555', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Maglie Stagione</div>
+                    <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                      {s.maglie.map((m, i) => (
+                        <div key={i} style={{ textAlign:'center' }}>
+                          <img src={m.url} style={{ width:56, height:56, objectFit:'contain', borderRadius:8, background:'#ffffff08', border:'1px solid #ffffff10' }} alt={m.squadra} />
+                          <div style={{ color:'#666', fontSize:9, marginTop:3, maxWidth:56, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.squadra}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
