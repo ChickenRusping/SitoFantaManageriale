@@ -363,7 +363,7 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
 
   return (
     <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+      <table style={{ width: "100%", minWidth: 560, borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
           <tr style={{ borderBottom: "1px solid #ffffff15" }}>
             <th style={{ padding: "6px 8px", fontSize: 10, fontWeight: 700, color: "#555", whiteSpace: "nowrap" }}>#</th>
@@ -940,7 +940,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
     return { dateObj: d, dateStr: `${String(def.day).padStart(2,'0')} ${mesi[def.month-1]} ${d.getFullYear()}`, days: Math.round((d - today) / 86400000) };
   }
   const resolvedDeadlines = DEADLINE_DEFS.map(def => ({ ...def, ...resolveDeadline(def) })).sort((a, b) => a.dateObj - b.dateObj);
-  const entro100 = resolvedDeadlines.filter(d => d.days <= 100 && d.days >= 0);
+  const entro100 = resolvedDeadlines.filter(d => d.days <= 60 && d.days >= 0);
   const recenti = DEADLINE_DEFS.map(def => {
     const r = resolveDeadline(def);
     let prev = new Date(r.dateObj);
@@ -950,7 +950,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
     if (daysAgo < 0 || daysAgo > 30) return null;
     const mesi = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
     return { ...def, dateObj: prev, dateStr: `${String(prev.getDate()).padStart(2,'0')} ${mesi[prev.getMonth()]} ${prev.getFullYear()}`, days: -daysAgo, daysAgo };
-  }).filter(Boolean);
+  }).filter(Boolean).sort((a,b) => a.daysAgo - b.daysAgo).slice(0, 3);
   const sC = { Mercato: "#6366f1", Quote: "#818cf8", Rosa: "#10b981", Stipendi: "#f97316" };
   const sI = { Mercato: "🤝", Quote: "💶", Rosa: "🌿", Stipendi: "💰" };
   // ── Premi ────────────────────────────────────────────────────────────────────
@@ -1024,7 +1024,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
         <style>{`@media(max-width:768px){.dl-cols{flex-direction:column!important}}`}</style>
         <div className="dl-cols" style={{ display:"flex",gap:16,alignItems:"flex-start" }}>
           <div style={{ flex:"0 0 230px",minWidth:0 }}>
-            <div style={{ fontSize:10,fontWeight:700,color:"#555",letterSpacing:"0.1em",marginBottom:8 }}>RECENTI (30gg)</div>
+            <div style={{ fontSize:10,fontWeight:700,color:"#555",letterSpacing:"0.1em",marginBottom:8 }}>ULTIME 3 PASSATE</div>
             {recenti.length===0 ? <div style={{ fontSize:11,color:"#333",fontStyle:"italic" }}>Nessuna scadenza recente</div>
             : recenti.map((d,i) => (
               <div key={i} style={{ display:"flex",gap:10,padding:"6px 0",borderBottom:"1px solid #ffffff06",opacity:0.5 }}>
@@ -1323,13 +1323,12 @@ function DeadlinePage({ isAdmin }) {
   // Prossima scadenza assoluta
   const prossima = resolvedDeadlines[0];
 
-  // Deadline entro 100 giorni (per timeline)
-  const entro100 = resolvedDeadlines.filter(d => d.days <= 100 && d.days >= 0);
-  // Deadline scadute di recente (ultimi 30 giorni)
+  // Deadline entro 60 giorni (per timeline)
+  const entro100 = resolvedDeadlines.filter(d => d.days <= 60 && d.days >= 0);
+  // Ultime 3 deadline scadute di recente
   const recenti = DEADLINE_DEFS.map(def => {
     const r = resolveDeadline(def);
     if (!r) return null;
-    // Calcola la scadenza PRECEDENTE (quella già passata)
     let prev;
     if (def.type === 'monthly') {
       prev = new Date(now.getFullYear(), now.getMonth(), def.day);
@@ -1344,10 +1343,10 @@ function DeadlinePage({ isAdmin }) {
     }
     if (!prev) return null;
     const daysAgo = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - prev) / 86400000);
-    if (daysAgo < 0 || daysAgo > 30) return null;
+    if (daysAgo < 0) return null;
     const mesi = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
     return { ...def, dateObj: prev, dateStr: `${String(def.type==='monthly'?def.day:def.day).padStart(2,'0')} ${def.type==='monthly'?mesi[now.getMonth()-1]||mesi[11]:mesi[def.month-1]}`, daysAgo };
-  }).filter(Boolean).sort((a, b) => a.daysAgo - b.daysAgo);
+  }).filter(Boolean).sort((a, b) => a.daysAgo - b.daysAgo).slice(0, 3);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -1411,7 +1410,7 @@ function DeadlinePage({ isAdmin }) {
         <div style={{ flex: "0 0 280px", minWidth: 0 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: "#555", letterSpacing: "0.1em", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#555", display: "inline-block" }} />
-            RECENTI (ultimi 30gg)
+            ULTIME 3 PASSATE
           </div>
           {recenti.length === 0 ? (
             <div style={{ fontSize: 11, color: "#333", fontStyle: "italic" }}>Nessuna scadenza negli ultimi 30 giorni</div>
@@ -1477,10 +1476,10 @@ function DeadlinePage({ isAdmin }) {
             );
           })}
 
-          {/* Altre deadline oltre 100gg */}
-          {resolvedDeadlines.filter(d => d.days > 100).length > 0 && (
+          {/* Altre deadline oltre 60gg */}
+          {resolvedDeadlines.filter(d => d.days > 60).length > 0 && (
             <div style={{ marginTop: 8, fontSize: 10, color: "#333", fontStyle: "italic" }}>
-              + {resolvedDeadlines.filter(d => d.days > 100).length} scadenze oltre 100 giorni
+              + {resolvedDeadlines.filter(d => d.days > 60).length} scadenze oltre 60 giorni
             </div>
           )}
         </div>
@@ -1778,8 +1777,8 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
       </div>
 
       {/* ── Tabella ── */}
-      <div style={{ overflowX:"auto" }}>
-        <table style={{ width:"100%",borderCollapse:"collapse",fontSize:12 }}>
+      <div style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
+        <table style={{ width:"100%",minWidth:680,borderCollapse:"collapse",fontSize:12 }}>
           <thead>
             <tr>
               <SortTh col="_ruoloOrd" label="Ruolo" align="center"/>
@@ -2345,7 +2344,7 @@ function SvincoliTab({ team, isAdmin }) {
 function ClausoleRescissorieTable({ rescissorie }) {
   const { sorted, SortTh } = useSortableTable(rescissorie, "clausola", "desc");
   return (
-    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+    <table style={{ width: "100%", minWidth: 360, borderCollapse: "collapse", fontSize: 11 }}>
       <thead>
         <tr>
           <SortTh col="nome"         label="Giocatore"  align="left"   />
@@ -5116,10 +5115,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
   useEffect(() => {
     if (!mySquadra) return;
-    const myTeam = teams.find(t => t.name === mySquadra);
-    if (!myTeam) return;
-    getRosa(myTeam.id).then(r => setMyRosa((r || []).filter(p => !p.in_vivaio).sort((a,b) => a.nome.localeCompare(b.nome))));
-  }, [mySquadra, teams]);
+    getRosa(mySquadra).then(r => setMyRosa((r || []).filter(p => !p.in_vivaio).sort((a,b) => a.nome.localeCompare(b.nome))));
+  }, [mySquadra]);
 
   // ── Polling auto-close aste rialzo scadute (ogni minuto) ─────────────────
   useEffect(() => {
@@ -6465,7 +6462,7 @@ function SvincolatiTable({ filtered, chiamateAttive, mySquadra, isAdmin, setShow
         {isAdmin && !finestra.aperta && <span style={{ fontSize: 9, color: "#6366f1" }}>Admin: puoi chiamare sempre</span>}
       </div>
 
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+      <table style={{ width: "100%", minWidth: 480, borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
           <tr>
             <SortTh col="ruolo"     label="Ruolo"  align="center" />
@@ -7028,7 +7025,7 @@ function ModificaRosaTable({ rosa, editGiocatore, setEditGiocatore, salvaGiocato
 
   return (
     <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+      <table style={{ width: "100%", minWidth: 480, borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
           <tr style={{ borderBottom: "1px solid #ffffff15" }}>
             <SortTh col="ruolo" label="Ruolo" align="center" />
@@ -7430,8 +7427,8 @@ function ModificaRosePage({ teams, onRefresh, isAdmin = true }) {
                 </div>
 
                 {/* Tabella anteprima */}
-                <div style={{ maxHeight: 360, overflowY: "auto", background: "#ffffff06", borderRadius: 10, border: "1px solid #ffffff10" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                <div style={{ maxHeight: 360, overflowY: "auto", overflowX: "auto", background: "#ffffff06", borderRadius: 10, border: "1px solid #ffffff10" }}>
+                  <table style={{ width: "100%", minWidth: 520, borderCollapse: "collapse", fontSize: 11 }}>
                     <thead style={{ position: "sticky", top: 0, background: "#0d0f14" }}>
                       <tr style={{ borderBottom: "1px solid #ffffff15" }}>
                         {["Squadra","Nome","Ruolo","Q prima","Q dopo","Δ","Stip prima","Stip dopo"].map(h => (
@@ -8227,7 +8224,7 @@ function AdminControlRoomPage({ teams }) {
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em', marginBottom: 14 }}>STATO SQUADRE — {status.meseISO}</div>
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <table style={{ width: '100%', minWidth: 520, borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid #ffffff15' }}>
                       {['Squadra', 'Bilancio', 'Tassa (dom.)', 'Stipendi (mese)', 'Stadio (mese)', 'Entrate stadio'].map(h => (
@@ -8899,7 +8896,7 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
                     {s.classifica?.length > 0 && (
                       <div style={{ background:'#ffffff06', borderRadius:12, padding:'12px 14px', overflowX:'auto' }}>
                         <div style={{ color:'#555', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Classifica Finale</div>
-                        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:11 }}>
+                        <table style={{ width:'100%', minWidth:560, borderCollapse:'collapse', fontSize:11 }}>
                           <thead>
                             <tr style={{ borderBottom:'1px solid #ffffff12' }}>
                               {['#','Squadra','G','V','N','P','G+','G−','DR','Pt','Pt Tot'].map(h => (
@@ -10311,7 +10308,7 @@ function AppInner() {
 
   return (
     <div style={{ minHeight:"100vh",background:"#0d0f14",fontFamily:"'Inter',system-ui,sans-serif",color:"#f0f0f0" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#333;border-radius:2px}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}body{background:#0d0f14}@media(max-width:1100px){.main-content-pad{padding:20px 20px!important}}@media(max-width:900px){.main-content-pad{padding:16px 14px!important}}@media(max-width:768px){input,select,textarea{font-size:16px!important;-webkit-text-size-adjust:100%}.table-mob{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px}.grid-stats-8{grid-template-columns:repeat(4,1fr)!important}.grid-stats-3{grid-template-columns:repeat(3,1fr)!important}.grid-stats-4{grid-template-columns:repeat(2,1fr)!important}.modal-pad{padding:16px!important}}@media(max-width:400px){.grid-stats-8{grid-template-columns:repeat(4,1fr)!important}.grid-stats-3{grid-template-columns:1fr 1fr!important}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#333;border-radius:2px}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}body{background:#0d0f14}@media(max-width:1100px){.main-content-pad{padding:20px 20px!important}}@media(max-width:900px){.main-content-pad{padding:16px 14px!important}}@media(max-width:768px){input,select,textarea{font-size:16px!important;-webkit-text-size-adjust:100%}.table-mob{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px}.grid-stats-8{grid-template-columns:repeat(4,1fr)!important}.grid-stats-3{grid-template-columns:repeat(3,1fr)!important}.grid-stats-4{grid-template-columns:repeat(2,1fr)!important}.modal-pad{padding:16px!important}div:has(>table){overflow-x:auto;-webkit-overflow-scrolling:touch}table{min-width:max-content}}@media(max-width:400px){.grid-stats-8{grid-template-columns:repeat(4,1fr)!important}.grid-stats-3{grid-template-columns:1fr 1fr!important}}`}</style>
       {isDesktop ? (
         <div style={{ display:"flex",minHeight:"100vh" }}>
           {/* Sidebar */}
