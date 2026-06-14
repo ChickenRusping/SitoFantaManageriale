@@ -2637,7 +2637,23 @@ function ContrattoRinnovoRow({ p, team, isAdmin, mySquadra, onRefresh }) {
         </div>
         {(isAdmin || team.name === mySquadra) && (
           p.rinnovo_confermato
-            ? <span style={{ fontSize: 10, color: "#10b981", fontWeight: 700 }}>✓ Rinnovato</span>
+            ? <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                <span style={{ fontSize: 10, color: "#10b981", fontWeight: 700 }}>✓ Rinnovato</span>
+                <button
+                  disabled={confermando}
+                  onClick={async () => {
+                    if (!window.confirm(`Annullare la conferma di rinnovo per ${p.nome}?`)) return;
+                    setConfermando(true);
+                    try {
+                      await supabase.from('rosa').update({ rinnovo_confermato: false }).eq('id', p.id);
+                      await onRefresh();
+                    } catch(e) { alert(e.message); }
+                    finally { setConfermando(false); }
+                  }}
+                  style={{ padding: "3px 8px", borderRadius: 6, border: "1px solid #ef444430", background: "#ef444410", color: "#ef4444", fontSize: 9, fontWeight: 700, cursor: "pointer" }}>
+                  {confermando ? "…" : "✕ Annulla"}
+                </button>
+              </div>
             : <button
                 disabled={confermando}
                 onClick={async () => {
