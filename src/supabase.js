@@ -3374,6 +3374,35 @@ export async function deleteTelegramRegistration(squadra) {
   if (error) throw error;
 }
 
+// ── Albo d'Oro ────────────────────────────────────────────────────────────────
+export async function getStagioniPassate() {
+  const { data, error } = await supabase.from('stagioni_passate').select('*').order('anno', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+export async function upsertStagione(stagione) {
+  const { error } = await supabase.from('stagioni_passate').upsert(stagione, { onConflict: 'anno' });
+  if (error) throw error;
+}
+export async function deleteStagione(anno) {
+  const { error } = await supabase.from('stagioni_passate').delete().eq('anno', anno);
+  if (error) throw error;
+}
+export async function getRegolamentoUrl() {
+  const { data } = await supabase.from('impostazioni').select('valore').eq('chiave', 'regolamento_url').single();
+  return data?.valore || null;
+}
+export async function setRegolamentoUrl(url) {
+  await supabase.from('impostazioni').upsert({ chiave: 'regolamento_url', valore: url }, { onConflict: 'chiave' });
+}
+export async function uploadRegolamento(file) {
+  const path = `regolamento/regolamento.pdf`;
+  const { error } = await supabase.storage.from('team-images').upload(path, file, { upsert: true, contentType: 'application/pdf' });
+  if (error) throw error;
+  const { data } = supabase.storage.from('team-images').getPublicUrl(path);
+  return data.publicUrl + '?t=' + Date.now();
+}
+
 export async function rimuoviAllenatore(squadra, nomeAllenatore, rimborso = 0) {
   await supabase.from('allenatori_carte').update({ squadra: null }).eq('nome', nomeAllenatore).eq('squadra', squadra);
   if (rimborso > 0) {
