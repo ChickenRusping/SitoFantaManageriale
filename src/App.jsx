@@ -1021,7 +1021,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
       {/* ── 1. SCADENZE ── */}
       <div style={{ background:"#ffffff06",border:"1.5px solid #ffffff12",borderRadius:16,padding:18 }}>
         <div style={{ fontSize:11,fontWeight:700,color:"#888",letterSpacing:"0.1em",marginBottom:16 }}>📅 SCADENZE</div>
-        <style>{`@media(max-width:768px){.dl-cols{flex-direction:column!important}}`}</style>
+        <style>{`@media(max-width:768px){.dl-cols{flex-direction:column!important;align-items:stretch!important}}`}</style>
         <div className="dl-cols" style={{ display:"flex",gap:16,alignItems:"flex-start" }}>
           <div style={{ flex:"0 0 230px",minWidth:0 }}>
             <div style={{ fontSize:10,fontWeight:700,color:"#555",letterSpacing:"0.1em",marginBottom:8 }}>ULTIME 3 PASSATE</div>
@@ -1403,7 +1403,7 @@ function DeadlinePage({ isAdmin }) {
       )}
 
       {/* ── LAYOUT: 2 colonne su desktop (passate | prossime 100gg) ── */}
-      <style>{`@media(max-width:768px){.deadline-cols{flex-direction:column!important}}`}</style>
+      <style>{`@media(max-width:768px){.deadline-cols{flex-direction:column!important;align-items:stretch!important}}`}</style>
       <div className="deadline-cols" style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
 
         {/* COLONNA SINISTRA — Scadute recentemente */}
@@ -4434,11 +4434,11 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
       </div>
 
       {/* Two-column layout: tabs left, club identity right */}
-      <style>{`@media(max-width:768px){.pres-layout{flex-direction:column!important}.pres-right{width:100%!important}}`}</style>
+      <style>{`@media(max-width:768px){.pres-layout{flex-direction:column!important;align-items:stretch!important}.pres-left{width:100%!important;min-width:0!important}.pres-right{width:100%!important}}`}</style>
       <div className="pres-layout" style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
 
         {/* LEFT — tabs */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="pres-left" style={{ flex: 1, minWidth: 0 }}>
           {/* Tab buttons */}
           <div style={{ display: "flex", gap: 4, marginBottom: 14, overflowX: "auto", paddingBottom: 2 }}>
             {tabs.map(t => (
@@ -10308,7 +10308,7 @@ function AppInner() {
 
   return (
     <div style={{ minHeight:"100vh",background:"#0d0f14",fontFamily:"'Inter',system-ui,sans-serif",color:"#f0f0f0" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#333;border-radius:2px}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}body{background:#0d0f14}@media(max-width:1100px){.main-content-pad{padding:20px 20px!important}}@media(max-width:900px){.main-content-pad{padding:16px 14px!important}}@media(max-width:768px){input,select,textarea{font-size:16px!important;-webkit-text-size-adjust:100%}.table-mob{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px}.grid-stats-8{grid-template-columns:repeat(4,1fr)!important}.grid-stats-3{grid-template-columns:repeat(3,1fr)!important}.grid-stats-4{grid-template-columns:repeat(2,1fr)!important}.modal-pad{padding:16px!important}div:has(>table){overflow-x:auto;-webkit-overflow-scrolling:touch}table{min-width:max-content}}@media(max-width:400px){.grid-stats-8{grid-template-columns:repeat(4,1fr)!important}.grid-stats-3{grid-template-columns:1fr 1fr!important}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#333;border-radius:2px}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}body{background:#0d0f14}@media(max-width:1100px){.main-content-pad{padding:20px 20px!important}}@media(max-width:900px){.main-content-pad{padding:16px 14px!important}}@media(max-width:768px){input,select,textarea{font-size:16px!important;-webkit-text-size-adjust:100%}.table-mob{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px}.grid-stats-8{grid-template-columns:repeat(4,1fr)!important}.grid-stats-3{grid-template-columns:repeat(3,1fr)!important}.grid-stats-4{grid-template-columns:repeat(2,1fr)!important}.modal-pad{padding:16px!important}div:has(>table){overflow-x:auto!important;-webkit-overflow-scrolling:touch}table{min-width:max-content}}@media(max-width:400px){.grid-stats-8{grid-template-columns:repeat(4,1fr)!important}.grid-stats-3{grid-template-columns:1fr 1fr!important}}`}</style>
       {isDesktop ? (
         <div style={{ display:"flex",minHeight:"100vh" }}>
           {/* Sidebar */}
