@@ -167,7 +167,7 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   // Telegram
   sendTelegramNotification, getTelegramRegistrations, deleteTelegramRegistration,
   // Albo d'Oro & Regolamento
-  getStagioniPassate, upsertStagione, deleteStagione,
+  getStagioniPassate, upsertStagione, deleteStagione, uploadMaglia,
   getRegolamentoArticoli, upsertRegolamentoArticolo, insertRegolamentoArticolo, deleteRegolamentoArticolo,
 } from "./supabase.js";
 
@@ -8756,6 +8756,17 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
     setEditStagione(s ? { ...EMPTY_STAGIONE, ...s } : { ...EMPTY_STAGIONE });
     setEditMode(true);
   };
+  const [uploadingMaglia, setUploadingMaglia] = useState({});
+  const uploadMagliaFile = async (i, file) => {
+    if (!editStagione?.anno) return;
+    const squadra = editStagione.maglie[i]?.squadra || `maglia-${i}`;
+    setUploadingMaglia(p => ({ ...p, [i]: true }));
+    try {
+      const url = await uploadMaglia(editStagione.anno, squadra, file);
+      setEditStagione(p => { const mg = [...p.maglie]; mg[i] = { ...mg[i], url }; return { ...p, maglie: mg }; });
+    } catch(e) { alert('Errore upload: ' + e.message); }
+    setUploadingMaglia(p => ({ ...p, [i]: false }));
+  };
   const salvaStagione = async () => {
     if (!editStagione?.anno) return;
     setSaving(true);
@@ -9010,10 +9021,16 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
                   style={{ background:'#ffffff15', border:'none', borderRadius:6, color:'#aaa', padding:'3px 10px', cursor:'pointer', fontSize:12 }}>+ Maglia</button>
               </div>
               {(editStagione.maglie||[]).map((m, i) => (
-                <div key={i} style={{ display:'flex', gap:6, marginBottom:6, alignItems:'center' }}>
-                  <input placeholder="Squadra" value={m.squadra||''} onChange={e => setEditStagione(p => { const mg=[...p.maglie]; mg[i]={...mg[i],squadra:e.target.value}; return {...p,maglie:mg}; })} style={{ ...inp, flex:'0 0 130px' }} />
-                  <input placeholder="URL immagine maglia" value={m.url||''} onChange={e => setEditStagione(p => { const mg=[...p.maglie]; mg[i]={...mg[i],url:e.target.value}; return {...p,maglie:mg}; })} style={{ ...inp, flex:1 }} />
-                  <button onClick={() => setEditStagione(p => ({ ...p, maglie: p.maglie.filter((_,j)=>j!==i) }))} style={{ background:'#ef444418', border:'none', borderRadius:6, color:'#ef4444', padding:'4px 8px', cursor:'pointer', fontSize:12 }}>✕</button>
+                <div key={i} style={{ display:'flex', gap:8, marginBottom:8, alignItems:'center', background:'#ffffff06', borderRadius:8, padding:'8px 10px' }}>
+                  {m.url && <img src={m.url} style={{ width:40, height:40, objectFit:'contain', borderRadius:6, background:'#ffffff10', flexShrink:0 }} alt="" />}
+                  <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4 }}>
+                    <input placeholder="Nome squadra" value={m.squadra||''} onChange={e => setEditStagione(p => { const mg=[...p.maglie]; mg[i]={...mg[i],squadra:e.target.value}; return {...p,maglie:mg}; })} style={{ ...inp, fontSize:12 }} />
+                    <label style={{ background:'#6366f120', color:'#818cf8', border:'1px solid #6366f140', borderRadius:6, padding:'4px 10px', cursor:'pointer', fontSize:11, fontWeight:700, textAlign:'center', display:'block' }}>
+                      {uploadingMaglia[i] ? 'Caricamento…' : m.url ? '🔄 Cambia immagine' : '📤 Carica immagine'}
+                      <input type="file" accept="image/*" style={{ display:'none' }} onChange={e => { const f=e.target.files?.[0]; if(f) uploadMagliaFile(i,f); }} />
+                    </label>
+                  </div>
+                  <button onClick={() => setEditStagione(p => ({ ...p, maglie: p.maglie.filter((_,j)=>j!==i) }))} style={{ background:'#ef444418', border:'none', borderRadius:6, color:'#ef4444', padding:'4px 8px', cursor:'pointer', fontSize:12, flexShrink:0 }}>✕</button>
                 </div>
               ))}
             </div>
