@@ -4435,7 +4435,8 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
       </div>
 
       {/* Two-column layout: tabs left, club identity right */}
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+      <style>{`@media(max-width:768px){.pres-layout{flex-direction:column!important}.pres-right{width:100%!important}}`}</style>
+      <div className="pres-layout" style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
 
         {/* LEFT — tabs */}
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -4567,7 +4568,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
         </div>
 
         {/* RIGHT — club identity, always visible */}
-        <div style={{ width: 280, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className="pres-right" style={{ width: 280, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>
           <ClubIdentityRight
             team={team}
             clubIdentity={clubIdentity}
@@ -5082,6 +5083,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   // Form nuova asta
   const emptyAstaForm = { giocatore: "", quot: "", tipo_asta: "rialzo", note: "" };
   const [astaForm, setAstaForm] = useState(emptyAstaForm);
+  const [myRosa, setMyRosa] = useState([]);
 
   const mySquadra = profile?.squadra;
   const mercato = getMercatoStatus();
@@ -5111,6 +5113,13 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     const s3 = subscribeAsteSvincolati(loadAll);
     return () => { supabase.removeChannel(s1); supabase.removeChannel(s2); supabase.removeChannel(s3); };
   }, [loadAll]);
+
+  useEffect(() => {
+    if (!mySquadra) return;
+    const myTeam = teams.find(t => t.name === mySquadra);
+    if (!myTeam) return;
+    getRosa(myTeam.id).then(r => setMyRosa((r || []).filter(p => !p.in_vivaio).sort((a,b) => a.nome.localeCompare(b.nome))));
+  }, [mySquadra, teams]);
 
   // ── Polling auto-close aste rialzo scadute (ogni minuto) ─────────────────
   useEffect(() => {
@@ -5941,7 +5950,13 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
                 <div>
                   <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>GIOCATORE</div>
-                  <input style={inp} placeholder="Nome" value={astaForm.giocatore} onChange={e => setAstaForm(f => ({ ...f, giocatore: e.target.value }))} />
+                  <select style={inp} value={astaForm.giocatore} onChange={e => {
+                    const p = myRosa.find(x => x.nome === e.target.value);
+                    setAstaForm(f => ({ ...f, giocatore: e.target.value, quot: p ? String(p.quot) : f.quot }));
+                  }}>
+                    <option value="">— Seleziona —</option>
+                    {myRosa.map(p => <option key={p.id} value={p.nome}>{p.nome} (Q{p.quot})</option>)}
+                  </select>
                 </div>
                 <div>
                   <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>QUOTAZIONE</div>
@@ -8847,10 +8862,11 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
                 </div>
 
                 {/* Main content: trophies + extra info left, classifica + maglie right */}
+                <style>{`@media(max-width:768px){.storico-right{flex:1 1 100%!important}}`}</style>
                 <div style={{ display:'flex', gap:20, flexWrap:'wrap' }}>
 
                   {/* LEFT: trophies + extra */}
-                  <div style={{ flex:'1 1 300px', display:'flex', flexDirection:'column', gap:8 }}>
+                  <div style={{ flex:'1 1 280px', display:'flex', flexDirection:'column', gap:8 }}>
                     {TROPHIES.map(t => s[t.key] ? (
                       <div key={t.key} style={{ display:'flex', alignItems:'center', gap:10, background:'#ffffff06', borderRadius:10, padding:'8px 12px' }}>
                         {getLogo(s[t.key]) && <img src={getLogo(s[t.key])} style={{ width:26, height:26, objectFit:'contain', borderRadius:4, flexShrink:0 }} alt="" />}
@@ -8879,7 +8895,7 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
                   </div>
 
                   {/* RIGHT: classifica + maglie */}
-                  <div style={{ flex:'0 0 220px', display:'flex', flexDirection:'column', gap:16 }}>
+                  <div className="storico-right" style={{ flex:'0 0 220px', display:'flex', flexDirection:'column', gap:16 }}>
                     {s.classifica?.length > 0 && (
                       <div style={{ background:'#ffffff06', borderRadius:12, padding:'12px 14px', overflowX:'auto' }}>
                         <div style={{ color:'#555', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Classifica Finale</div>
@@ -10256,7 +10272,7 @@ function AppInner() {
   const isAdmin = profile?.ruolo === "admin";
   const mySquadra = profile?.squadra;
   const pathname = location.pathname;
-  const currentPage = pathname==='/news'?'news':pathname==='/squadre'?'squadre':pathname.startsWith('/presidente')?'squadre':pathname==='/lega'?'lega':pathname==='/mercato'?'mercato':pathname==='/modifica'?'modifica':pathname==='/adminlog'?'adminlog':pathname==='/admin-control'?'admin-control':pathname==='/profilo'?'profilo':pathname==='/storico'?'storico':'news';
+  const currentPage = pathname==='/news'?'news':pathname==='/squadre'?'squadre':pathname.startsWith('/presidente')?'squadre':pathname==='/lega'?'lega':pathname==='/mercato'?'mercato':pathname==='/modifica'?'admin-control':pathname==='/adminlog'?'admin-control':pathname==='/admin-control'?'admin-control':pathname==='/profilo'?'profilo':pathname==='/storico'?'storico':'news';
 
   const navItems = [
     { key:"news",    path:"/news",    icon:"📰", label:"News"    },
@@ -10264,6 +10280,7 @@ function AppInner() {
     { key:"lega",    path:"/lega",    icon:"📊", label:"Lega"    },
     { key:"mercato", path:"/mercato", icon:"🤝", label:"Mercato" },
     { key:"storico", path:"/storico", icon:"📚", label:"Archivio" },
+    ...(isAdmin ? [{ key:"admin-control", path:"/admin-control", icon:"⚡", label:"Admin" }] : []),
   ];
   const SIDEBAR_W = 200;
 
