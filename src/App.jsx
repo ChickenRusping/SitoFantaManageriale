@@ -8880,19 +8880,40 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
                   {/* RIGHT: classifica + maglie */}
                   <div style={{ flex:'0 0 220px', display:'flex', flexDirection:'column', gap:16 }}>
                     {s.classifica?.length > 0 && (
-                      <div style={{ background:'#ffffff06', borderRadius:12, padding:'12px 14px' }}>
+                      <div style={{ background:'#ffffff06', borderRadius:12, padding:'12px 14px', overflowX:'auto' }}>
                         <div style={{ color:'#555', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>Classifica Finale</div>
-                        {s.classifica.map((r, i) => {
-                          const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':null;
-                          return (
-                            <div key={i} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 0', borderBottom: i < s.classifica.length-1 ? '1px solid #ffffff08' : 'none' }}>
-                              <span style={{ color: i<3?'#f59e0b':'#444', fontSize:11, fontWeight:700, width:18, textAlign:'center' }}>{medal || `${i+1}.`}</span>
-                              {getLogo(r.squadra) && <img src={getLogo(r.squadra)} style={{ width:18, height:18, objectFit:'contain', borderRadius:2, flexShrink:0 }} alt="" />}
-                              <span style={{ color: i===0?'#fff':'#bbb', fontSize:12, fontWeight: i===0?700:400, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.squadra}</span>
-                              {r.punti != null && <span style={{ color:'#555', fontSize:11, flexShrink:0 }}>{r.punti}p</span>}
-                            </div>
-                          );
-                        })}
+                        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:11 }}>
+                          <thead>
+                            <tr style={{ borderBottom:'1px solid #ffffff12' }}>
+                              {['#','Squadra','G','V','N','P','G+','G−','DR','Pt','Pt Tot'].map(h => (
+                                <th key={h} style={{ padding:'3px 5px', color:'#444', fontWeight:700, textAlign: h==='Squadra'?'left':'center', whiteSpace:'nowrap' }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {s.classifica.map((r, i) => {
+                              const rowColor = i===0?'#f59e0b':i===1?'#9ca3af':i===2?'#cd7f32':null;
+                              const dr = r.dr ?? ((r.gf||0) - (r.gs||0));
+                              return (
+                                <tr key={i} style={{ borderBottom:'1px solid #ffffff06' }}>
+                                  <td style={{ padding:'5px 5px', textAlign:'center', fontWeight:900, color: rowColor||'#555', fontSize:13 }}>{i+1}</td>
+                                  <td style={{ padding:'5px 5px', minWidth:100 }}>
+                                    <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                                      {getLogo(r.squadra) && <img src={getLogo(r.squadra)} style={{ width:16, height:16, objectFit:'contain', borderRadius:2, flexShrink:0 }} alt="" />}
+                                      <span style={{ color: i===0?'#fff':'#bbb', fontWeight: i===0?700:400, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:90 }}>{r.squadra}</span>
+                                    </div>
+                                  </td>
+                                  {[r.g, r.v, r.n, r.p, r.gf, r.gs].map((v,ci) => (
+                                    <td key={ci} style={{ padding:'5px 5px', textAlign:'center', color:'#888' }}>{v ?? '—'}</td>
+                                  ))}
+                                  <td style={{ padding:'5px 5px', textAlign:'center', color: dr>0?'#10b981':dr<0?'#ef4444':'#666', fontWeight:600 }}>{dr>0?'+':''}{dr ?? '—'}</td>
+                                  <td style={{ padding:'5px 5px', textAlign:'center', fontWeight:900, color: rowColor||'#f0f0f0', fontSize:13 }}>{r.pt ?? r.punti ?? '—'}</td>
+                                  <td style={{ padding:'5px 5px', textAlign:'center', color:'#555' }}>{r.pt_totali ?? '—'}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
                     )}
 
@@ -9003,14 +9024,26 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
                 <button onClick={() => setEditStagione(p => ({ ...p, classifica: [...(p.classifica||[]), { squadra:'', punti:'' }] }))}
                   style={{ background:'#ffffff15', border:'none', borderRadius:6, color:'#aaa', padding:'3px 10px', cursor:'pointer', fontSize:12 }}>+ Riga</button>
               </div>
-              {(editStagione.classifica||[]).map((r, i) => (
-                <div key={i} style={{ display:'flex', gap:6, marginBottom:6, alignItems:'center' }}>
-                  <span style={{ color:'#555', fontSize:12, width:20, textAlign:'center' }}>{i+1}.</span>
-                  <input placeholder="Squadra" value={r.squadra||''} onChange={e => setEditStagione(p => { const c=[...p.classifica]; c[i]={...c[i],squadra:e.target.value}; return {...p,classifica:c}; })} style={{ ...inp, flex:1 }} />
-                  <input placeholder="Punti" value={r.punti||''} onChange={e => setEditStagione(p => { const c=[...p.classifica]; c[i]={...c[i],punti:e.target.value}; return {...p,classifica:c}; })} style={{ ...inp, width:70 }} />
-                  <button onClick={() => setEditStagione(p => ({ ...p, classifica: p.classifica.filter((_,j)=>j!==i) }))} style={{ background:'#ef444418', border:'none', borderRadius:6, color:'#ef4444', padding:'4px 8px', cursor:'pointer', fontSize:12 }}>✕</button>
-                </div>
-              ))}
+              {(editStagione.classifica||[]).map((r, i) => {
+                const upd = (f, v) => setEditStagione(p => { const c=[...p.classifica]; c[i]={...c[i],[f]:v}; return {...p,classifica:c}; });
+                return (
+                  <div key={i} style={{ background:'#ffffff06', borderRadius:8, padding:'8px 10px', marginBottom:6 }}>
+                    <div style={{ display:'flex', gap:6, alignItems:'center', marginBottom:6 }}>
+                      <span style={{ color:'#555', fontSize:12, width:20, flexShrink:0 }}>{i+1}.</span>
+                      <input placeholder="Squadra" value={r.squadra||''} onChange={e=>upd('squadra',e.target.value)} style={{ ...inp, flex:1 }} />
+                      <button onClick={() => setEditStagione(p => ({ ...p, classifica: p.classifica.filter((_,j)=>j!==i) }))} style={{ background:'#ef444418', border:'none', borderRadius:6, color:'#ef4444', padding:'4px 8px', cursor:'pointer', fontSize:12, flexShrink:0 }}>✕</button>
+                    </div>
+                    <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
+                      {[['g','G'],['v','V'],['n','N'],['p','P'],['gf','G+'],['gs','G−'],['pt','Pt'],['pt_totali','Pt Tot']].map(([f,label]) => (
+                        <div key={f} style={{ textAlign:'center' }}>
+                          <div style={{ color:'#555', fontSize:9, marginBottom:2 }}>{label}</div>
+                          <input type="number" value={r[f]??''} onChange={e=>upd(f, e.target.value===''?'':Number(e.target.value))} style={{ ...inp, width:42, padding:'4px 6px', fontSize:12, textAlign:'center' }} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Maglie editor */}
