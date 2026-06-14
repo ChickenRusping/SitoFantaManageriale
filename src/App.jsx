@@ -1821,7 +1821,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                     {fuori&&<span style={{ marginLeft:5,fontSize:9,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444455",borderRadius:4,padding:"1px 5px",fontWeight:700 }}>FUORI</span>}
                     {!fuori&&p.anni>0&&p.anni<=21&&<span style={{ marginLeft:5,fontSize:9,background:"#8b5cf622",color:"#a78bfa",border:"1px solid #8b5cf644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>U21</span>}
                     {!fuori&&p.anni>=31&&<span style={{ marginLeft:5,fontSize:9,background:"#f9731622",color:"#fb923c",border:"1px solid #f9731644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>31+</span>}
-                    {isVivaioPeriod&&!fuori&&!p.in_vivaio&&p.anni>0&&p.anni<=23&&Number(p.quot||0)<=3&&(p.partite||0)===0&&vivaio.length<maxVivaio&&<span title="Eleggibile vivaio" style={{ marginLeft:4,fontSize:11 }}>🌱</span>}
+                    {!fuori&&!p.in_vivaio&&p.anni>0&&p.anni<=23&&Number(p.quot||0)<=3&&(p.partite||0)===0&&vivaio.length<maxVivaio&&<span title="Eleggibile vivaio" style={{ marginLeft:4,fontSize:11 }}>🌱</span>}
                   </td>
                   <td style={{ padding:"7px 8px",color:"#666",fontSize:11 }}>{p.squadra_serie_a||"—"}</td>
                   <td style={{ padding:"7px 8px",textAlign:"center",fontWeight:800,color:p.quot>=20?"#f59e0b":"#ccc",fontFamily:"'Bebas Neue',sans-serif",fontSize:14 }}>{p.quot}</td>
