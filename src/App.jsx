@@ -8170,6 +8170,7 @@ function AdminControlRoomPage({ teams }) {
   const [dbImportPreview, setDbImportPreview] = useState(null); // { rosaAggiornati, svinAggiornati, nonTrovati, totale }
   const [dbImportBusy, setDbImportBusy] = useState(false);
   const [dbImportDone, setDbImportDone] = useState(null);
+  const [dbTipo, setDbTipo] = useState('settimanale');
 
   async function load() {
     setLoading(true);
@@ -8952,7 +8953,6 @@ function AdminControlRoomPage({ teams }) {
 
           {/* ── DATABASE FANTA ── */}
           {tab === 'database' && (() => {
-            const [dbTipo, setDbTipo] = React.useState('settimanale');
             const TIPI = [
               { key: 'settimanale', label: '📅 Settimanale', desc: 'Stats + quot reale. Quota in rosa invariata.' },
               { key: '01/01',       label: '🗓 01/01',        desc: 'Top 5 rialzo obbligatorio + finestra ribasso fino 05/01 20:00.' },
