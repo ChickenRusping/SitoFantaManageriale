@@ -166,6 +166,7 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   applicaMulteFPFTutte, applicaPremiCampionato,
   // Database Fanta import + Rivalità lock
   importDatabaseFanta, getRivalitaLock, setRivalitaLock,
+  calcolaTop5GlobaleQuotReale, applica01Gennaio, applica01GiugnoAgosto,
   // Telegram
   sendTelegramNotification, getTelegramRegistrations, deleteTelegramRegistration,
   // Albo d'Oro & Regolamento
@@ -8950,75 +8951,165 @@ function AdminControlRoomPage({ teams }) {
           })()}
 
           {/* ── DATABASE FANTA ── */}
-          {tab === 'database' && (
+          {tab === 'database' && (() => {
+            const [dbTipo, setDbTipo] = React.useState('settimanale');
+            const TIPI = [
+              { key: 'settimanale', label: '📅 Settimanale', desc: 'Stats + quot reale. Quota in rosa invariata.' },
+              { key: '01/01',       label: '🗓 01/01',        desc: 'Top 5 rialzo obbligatorio + finestra ribasso fino 05/01 20:00.' },
+              { key: '01/06',       label: '☀️ 01/06',        desc: 'Aggiornamento completo quotazioni per tutti.' },
+              { key: '01/08',       label: '🏖 01/08',        desc: 'Aggiornamento completo quotazioni per tutti.' },
+            ];
+            const tipoColor = { settimanale: '#818cf8', '01/01': '#f59e0b', '01/06': '#10b981', '01/08': '#10b981' };
+            const c = tipoColor[dbTipo] || '#818cf8';
+
+            return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>📊 IMPORT DATABASE FANTA.XLSX</div>
-              <div style={{ background: '#6366f108', border: '1px solid #6366f125', borderRadius: 10, padding: '12px 14px', fontSize: 12, color: '#aaa', lineHeight: 1.7 }}>
-                Carica il file <b style={{ color: '#818cf8' }}>Database Fanta.xlsx</b> per aggiornare il database:<br/>
-                • <b>Giocatori in rosa</b>: aggiorna statistiche + salva la nuova <b>Quotazione Reale</b> (visible in mercato al momento del trasferimento)<br/>
-                • <b>Svincolati</b>: aggiorna statistiche + quotazione/stipendio/clausola<br/>
-                • Le quotazioni dei giocatori già in rosa <b>non vengono toccate</b> finché non vengono ceduti
+
+              {/* Selettore tipo */}
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {TIPI.map(t => (
+                  <button key={t.key} onClick={() => { setDbTipo(t.key); setDbImportPreview(null); setDbImportDone(null); }}
+                    style={{ padding: '7px 14px', borderRadius: 9, border: `1.5px solid ${dbTipo===t.key ? tipoColor[t.key]+'80' : '#ffffff15'}`, background: dbTipo===t.key ? tipoColor[t.key]+'18' : 'transparent', color: dbTipo===t.key ? tipoColor[t.key] : '#555', fontSize: 11, fontWeight: 700, cursor: 'pointer', textAlign: 'left' }}>
+                    {t.label}<br/><span style={{ fontSize: 9, fontWeight: 400, opacity: 0.7 }}>{t.desc}</span>
+                  </button>
+                ))}
               </div>
 
               {/* Upload */}
               <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                <label style={{ padding: '8px 16px', borderRadius: 9, border: '1.5px solid #6366f150', background: '#6366f115', color: '#818cf8', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <label style={{ padding: '8px 16px', borderRadius: 9, border: `1.5px solid ${c}50`, background: `${c}15`, color: c, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                   📂 Carica Database Fanta.xlsx
                   <input type="file" accept=".xlsx" style={{ display: 'none' }}
                     onChange={async e => {
                       const file = e.target.files[0];
                       if (!file) return;
-                      setDbImportPreview(null);
-                      setDbImportDone(null);
-                      setDbImportBusy(true);
+                      setDbImportPreview(null); setDbImportDone(null); setDbImportBusy(true);
                       try {
                         const XLSX = await import("https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs");
                         const buf = await file.arrayBuffer();
                         const wb = XLSX.read(buf);
                         const ws = wb.Sheets[wb.SheetNames[0]];
                         const rows = XLSX.utils.sheet_to_json(ws);
-                        // Anteprima rapida prima di applicare
                         const rosaCheck = rows.filter(r => r['FantaSquadra']).length;
                         const svinCheck = rows.filter(r => !r['FantaSquadra'] && r['QUOT.'] > 0).length;
-                        setDbImportPreview({ rows, rosaCheck, svinCheck, nomeFile: file.name });
-                      } catch(err) { alert('Errore lettura file: ' + err.message); }
+                        // Per 01/01: carica anteprima top5 dopo import
+                        let top5Preview = null;
+                        if (dbTipo === '01/01') {
+                          // Prima importa il file per aggiornare quot_reale, poi calcola top5
+                          await importDatabaseFanta(rows, STAGIONE_CR);
+                          top5Preview = await calcolaTop5GlobaleQuotReale();
+                        }
+                        setDbImportPreview({ rows, rosaCheck, svinCheck, nomeFile: file.name, top5Preview });
+                      } catch(err) { alert('Errore: ' + err.message); }
                       finally { setDbImportBusy(false); e.target.value = ''; }
                     }}
                   />
                 </label>
-                {dbImportBusy && <span style={{ fontSize: 12, color: '#555' }}>⏳ Lettura file…</span>}
+                {dbImportBusy && <span style={{ fontSize: 12, color: '#555' }}>⏳ {dbTipo === '01/01' ? 'Import + calcolo top5…' : 'Lettura file…'}</span>}
               </div>
 
               {/* Anteprima */}
               {dbImportPreview && !dbImportDone && (
-                <div style={{ background: '#ffffff06', border: '1px solid #ffffff12', borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.06em' }}>ANTEPRIMA — {dbImportPreview.nomeFile}</div>
+                <div style={{ background: '#ffffff06', border: '1px solid #ffffff12', borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.06em' }}>ANTEPRIMA — {dbImportPreview.nomeFile} ({TIPI.find(t=>t.key===dbTipo)?.label})</div>
+
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     {[
-                      { label: 'Righe totali', value: dbImportPreview.rows.length, color: '#818cf8' },
-                      { label: 'In rosa (solo stats + quot reale)', value: dbImportPreview.rosaCheck, color: '#f59e0b' },
-                      { label: 'Svincolati (stats + quotazione)', value: dbImportPreview.svinCheck, color: '#10b981' },
+                      { label: 'Righe totali', value: dbImportPreview.rows.length, color: c },
+                      { label: 'In rosa', value: dbImportPreview.rosaCheck, color: '#f59e0b' },
+                      { label: 'Svincolati', value: dbImportPreview.svinCheck, color: '#10b981' },
                     ].map(s => (
-                      <div key={s.label} style={{ flex: '1 1 130px', background: s.color + '10', border: `1px solid ${s.color}25`, borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
+                      <div key={s.label} style={{ flex: '1 1 100px', background: s.color + '10', border: `1px solid ${s.color}25`, borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
                         <div style={{ fontSize: 8, color: s.color, fontWeight: 700, letterSpacing: '0.06em', marginBottom: 4 }}>{s.label.toUpperCase()}</div>
                         <div style={{ fontSize: 22, fontWeight: 900, color: s.color, fontFamily: "'Bebas Neue',sans-serif", lineHeight: 1 }}>{s.value}</div>
                       </div>
                     ))}
                   </div>
+
+                  {/* 01/01: mostra top5 rialzo e ribasso */}
+                  {dbTipo === '01/01' && dbImportPreview.top5Preview && (
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                      {/* Top 5 rialzo */}
+                      <div style={{ flex: 1, minWidth: 200 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: '#10b981', letterSpacing: '0.06em', marginBottom: 8 }}>📈 TOP 5 RIALZO OBBLIGATORIO</div>
+                        {dbImportPreview.top5Preview.rialzi.length === 0
+                          ? <div style={{ fontSize: 11, color: '#555' }}>Nessun rialzo</div>
+                          : dbImportPreview.top5Preview.rialzi.map(p => (
+                            <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: '1px solid #ffffff08' }}>
+                              <div>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: '#f0f0f0' }}>{p.nome}</span>
+                                <span style={{ fontSize: 10, color: '#666', marginLeft: 6 }}>{p.squadra}</span>
+                              </div>
+                              <div style={{ textAlign: 'right' }}>
+                                <span style={{ fontSize: 11, color: '#10b981', fontWeight: 700 }}>+{p.delta} Q</span>
+                                <div style={{ fontSize: 9, color: '#555' }}>{p.quot} → {p.quot_reale}</div>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                      {/* Top 5 ribasso */}
+                      <div style={{ flex: 1, minWidth: 200 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b', letterSpacing: '0.06em', marginBottom: 8 }}>📉 TOP 5 RIBASSO (scelta presidenti entro 05/01 20:00)</div>
+                        {dbImportPreview.top5Preview.ribassi.length === 0
+                          ? <div style={{ fontSize: 11, color: '#555' }}>Nessun ribasso</div>
+                          : dbImportPreview.top5Preview.ribassi.map(p => {
+                            const isU21 = p.anni > 0 && p.anni <= 21;
+                            const is3031 = p.anni >= 31;
+                            return (
+                              <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: '1px solid #ffffff08' }}>
+                                <div>
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: '#f0f0f0' }}>{p.nome}</span>
+                                  <span style={{ fontSize: 10, color: '#666', marginLeft: 6 }}>{p.squadra}</span>
+                                  {isU21 && <span style={{ fontSize: 9, color: '#ef4444', marginLeft: 4 }}>U21 ✗</span>}
+                                  {!isU21 && !is3031 && <span style={{ fontSize: 9, color: '#f97316', marginLeft: 4 }}>22-30 (cedere)</span>}
+                                  {is3031 && <span style={{ fontSize: 9, color: '#10b981', marginLeft: 4 }}>31+ OK</span>}
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                  <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700 }}>{p.delta} Q</span>
+                                  <div style={{ fontSize: 9, color: '#555' }}>{p.quot} → {p.quot_reale}</div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 01/06 / 01/08: nota */}
+                  {(dbTipo === '01/06' || dbTipo === '01/08') && (
+                    <div style={{ background: '#10b98110', border: '1px solid #10b98130', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: '#10b981' }}>
+                      ✅ Aggiornamento completo: quot = quot_reale per tutti i giocatori in rosa (U21: stip invariato).
+                    </div>
+                  )}
+
                   <button
                     disabled={dbImportBusy}
                     onClick={async () => {
-                      if (!window.confirm(`Applicare l'import di ${dbImportPreview.rows.length} giocatori dal file "${dbImportPreview.nomeFile}"?\n\nVerranno aggiornate statistiche per tutti i giocatori. Le quotazioni in rosa non verranno modificate.`)) return;
+                      const label = TIPI.find(t=>t.key===dbTipo)?.label || dbTipo;
+                      if (!window.confirm(`Applicare aggiornamento ${label}?\n\n${dbTipo==='01/01' ? `• Top 5 rialzo: quotazioni applicate subito\n• Top 5 ribasso: finestra aperta per i presidenti fino al 05/01 20:00` : dbTipo==='settimanale' ? 'Stats + quot_reale aggiornati. Quotazioni in rosa invariate.' : 'Tutte le quotazioni in rosa verranno aggiornate a quot_reale.'}`)) return;
                       setDbImportBusy(true);
                       try {
-                        const result = await importDatabaseFanta(dbImportPreview.rows, STAGIONE_CR);
+                        let result;
+                        if (dbTipo === 'settimanale') {
+                          result = await importDatabaseFanta(dbImportPreview.rows, STAGIONE_CR);
+                        } else if (dbTipo === '01/01') {
+                          // Import già fatto al caricamento file, ora applica i rialzi
+                          const { rialziApplicati } = await applica01Gennaio(dbImportPreview.top5Preview.rialzi, STAGIONE_CR);
+                          result = { rosaAggiornati: rialziApplicati, svinAggiornati: 0, nonTrovati: [], totale: dbImportPreview.rows.length, note: 'Top 5 rialzi applicati. Finestra ribasso aperta per i presidenti.' };
+                        } else {
+                          // 01/06 o 01/08: prima importa (per aggiornare quot_reale), poi applica
+                          await importDatabaseFanta(dbImportPreview.rows, STAGIONE_CR);
+                          const { aggiornati, totale } = await applica01GiugnoAgosto(STAGIONE_CR);
+                          result = { rosaAggiornati: aggiornati, svinAggiornati: 0, nonTrovati: [], totale, note: 'Quotazioni complete aggiornate per tutti i giocatori in rosa.' };
+                        }
                         setDbImportDone(result);
                         setDbImportPreview(null);
-                      } catch(err) { alert('Errore import: ' + err.message); }
+                      } catch(err) { alert('Errore: ' + err.message); }
                       finally { setDbImportBusy(false); }
                     }}
-                    style={{ padding: '9px 20px', borderRadius: 10, border: '1.5px solid #10b98150', background: '#10b98115', color: '#10b981', fontSize: 13, fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start' }}>
-                    {dbImportBusy ? '⏳ Import in corso…' : '▶️ Applica import'}
+                    style={{ padding: '9px 20px', borderRadius: 10, border: `1.5px solid ${c}50`, background: `${c}15`, color: c, fontSize: 13, fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start' }}>
+                    {dbImportBusy ? '⏳ In corso…' : `▶️ Applica aggiornamento ${TIPI.find(t=>t.key===dbTipo)?.label}`}
                   </button>
                 </div>
               )}
@@ -9026,23 +9117,23 @@ function AdminControlRoomPage({ teams }) {
               {/* Risultato */}
               {dbImportDone && (
                 <div style={{ background: '#10b98110', border: '1px solid #10b98130', borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#10b981' }}>✅ Import completato</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#10b981' }}>✅ Aggiornamento completato</div>
+                  {dbImportDone.note && <div style={{ fontSize: 12, color: '#aaa' }}>{dbImportDone.note}</div>}
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     {[
-                      { label: 'In rosa aggiornati', value: dbImportDone.rosaAggiornati, color: '#f59e0b' },
-                      { label: 'Svincolati aggiornati', value: dbImportDone.svinAggiornati, color: '#10b981' },
-                      { label: 'Non trovati nel DB', value: dbImportDone.nonTrovati.length, color: dbImportDone.nonTrovati.length > 0 ? '#ef4444' : '#555' },
+                      { label: 'Giocatori aggiornati', value: dbImportDone.rosaAggiornati, color: '#f59e0b' },
+                      { label: 'Non trovati', value: dbImportDone.nonTrovati?.length || 0, color: (dbImportDone.nonTrovati?.length || 0) > 0 ? '#ef4444' : '#555' },
                     ].map(s => (
-                      <div key={s.label} style={{ flex: '1 1 130px', background: s.color + '10', border: `1px solid ${s.color}25`, borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
+                      <div key={s.label} style={{ flex: '1 1 120px', background: s.color + '10', border: `1px solid ${s.color}25`, borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
                         <div style={{ fontSize: 8, color: s.color, fontWeight: 700, letterSpacing: '0.06em', marginBottom: 4 }}>{s.label.toUpperCase()}</div>
                         <div style={{ fontSize: 22, fontWeight: 900, color: s.color, fontFamily: "'Bebas Neue',sans-serif", lineHeight: 1 }}>{s.value}</div>
                       </div>
                     ))}
                   </div>
-                  {dbImportDone.nonTrovati.length > 0 && (
+                  {(dbImportDone.nonTrovati?.length || 0) > 0 && (
                     <details style={{ fontSize: 11, color: '#ef4444' }}>
-                      <summary style={{ cursor: 'pointer', color: '#ef4444' }}>⚠️ {dbImportDone.nonTrovati.length} giocatori non trovati nel database</summary>
-                      <div style={{ marginTop: 8, background: '#ef444408', borderRadius: 8, padding: '8px 12px', maxHeight: 200, overflowY: 'auto', lineHeight: 1.7, color: '#f87171', fontSize: 11 }}>
+                      <summary style={{ cursor: 'pointer' }}>⚠️ {dbImportDone.nonTrovati.length} non trovati</summary>
+                      <div style={{ marginTop: 8, background: '#ef444408', borderRadius: 8, padding: '8px 12px', maxHeight: 160, overflowY: 'auto', lineHeight: 1.7, color: '#f87171', fontSize: 11 }}>
                         {dbImportDone.nonTrovati.join(' · ')}
                       </div>
                     </details>
@@ -9053,7 +9144,8 @@ function AdminControlRoomPage({ teams }) {
                 </div>
               )}
             </div>
-          )}
+            );
+          })()}
 
           {/* ── PREMI ── */}
           {tab === 'premi' && (
