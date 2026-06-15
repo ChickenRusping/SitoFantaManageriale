@@ -940,7 +940,7 @@ function GironeTable({ classifica, isAdmin, onEdit }) {
           return (
             <tr key={r.sq} style={{ borderBottom:'1px solid #ffffff06' }}>
               <td style={{ padding:'5px', textAlign:'center', fontSize:10, fontWeight:900, color }}>{i+1}</td>
-              <td style={{ padding:'5px', fontWeight:700, color:'#ddd', whiteSpace:'nowrap', maxWidth:110, overflow:'hidden', textOverflow:'ellipsis' }}>{r.sq}</td>
+              <td style={{ padding:'5px', fontWeight:700, color:'#ddd', wordBreak:'break-word', maxWidth:130 }}>{r.sq}</td>
               {isAdmin ? (
                 <>
                   {['v','n','p','gf','gs'].map(f => (
@@ -972,7 +972,7 @@ function BracketMatch({ label, gLabel, squadra_a, squadra_b, gol_a, gol_b, isAdm
   const giocata = gol_a !== null && gol_b !== null;
   const tbd = !squadra_a || !squadra_b;
   return (
-    <div style={{ background:'#ffffff06', border:'1px solid #ffffff12', borderRadius:10, padding:'10px 12px', minWidth:190 }}>
+    <div style={{ background:'#ffffff06', border:'1px solid #ffffff12', borderRadius:10, padding:'10px 12px' }}>
       {label && <div style={{ fontSize:9, color:'#555', fontWeight:700, letterSpacing:'0.1em', marginBottom:6 }}>{label}{gLabel && <span style={{ color:'#333', marginLeft:6 }}>· {gLabel}</span>}</div>}
       {[{sq:squadra_a,gol:gol_a,field:'gol_a'},{sq:squadra_b,gol:gol_b,field:'gol_b'}].map(({sq,gol,field},i) => (
         <div key={i} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 0', borderBottom: i===0?'1px solid #ffffff08':'none' }}>
@@ -996,7 +996,7 @@ function BracketSFCoppa({ sf, isAdmin, onChange }) {
   const hasAndata = sf.gol_aa !== null && sf.gol_ba !== null;
   const hasRitorno = sf.gol_ar !== null && sf.gol_br !== null;
   return (
-    <div style={{ background:'#ffffff06', border:'1px solid #ffffff12', borderRadius:10, padding:'10px 12px', minWidth:220 }}>
+    <div style={{ background:'#ffffff06', border:'1px solid #ffffff12', borderRadius:10, padding:'10px 12px' }}>
       <div style={{ fontSize:9, color:'#555', fontWeight:700, letterSpacing:'0.1em', marginBottom:8 }}>
         {sf.label} · <span style={{ color:'#333' }}>G{sf.g_andata} (and.) · G{sf.g_ritorno} (rit.)</span>
       </div>
@@ -1115,7 +1115,7 @@ function TorneiSection({ isAdmin, forcedTab }) {
           {/* Gironi */}
           <div style={card}>
             <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em', marginBottom:16 }}>🏟 FASE A GIRONI · G10–G22</div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))', gap:20 }}>
               {['A','B'].map(g => (
                 <div key={g}>
                   <div style={{ fontSize:12, fontWeight:800, color:'#818cf8', marginBottom:8 }}>Girone {g}</div>
@@ -1132,7 +1132,7 @@ function TorneiSection({ isAdmin, forcedTab }) {
             <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em', marginBottom:16 }}>⚔️ TABELLONE ELIMINAZIONE DIRETTA</div>
             <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
               <div style={{ fontSize:9, color:'#555', fontWeight:700, letterSpacing:'0.08em' }}>SEMIFINALI</div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))', gap:12 }}>
                 {coppa.semifinali.map(sf => (
                   <BracketSFCoppa key={sf.id} sf={sf} isAdmin={isAdmin}
                     onChange={(field, val) => updateSF(sf.id, field, val)} />
@@ -1140,7 +1140,7 @@ function TorneiSection({ isAdmin, forcedTab }) {
               </div>
               <div style={{ textAlign:'center', fontSize:16, color:'#333' }}>↓</div>
               <div style={{ fontSize:9, color:'#555', fontWeight:700, letterSpacing:'0.08em' }}>FINALE · G{coppa.finale.g}</div>
-              <div style={{ maxWidth:260 }}>
+              <div style={{ maxWidth:340 }}>
                 <BracketMatch
                   squadra_a={coppa.finale.squadra_a} squadra_b={coppa.finale.squadra_b}
                   gol_a={coppa.finale.gol_a} gol_b={coppa.finale.gol_b}
@@ -1167,29 +1167,30 @@ function TorneiSection({ isAdmin, forcedTab }) {
             Borjcellona ha vinto sia campionato che coppa 2025/26 → Shalpe 104 (finalista coppa) e AK Toio (3° campionato) ripescati.<br/>
             <b style={{ color:'#666' }}>SF1</b> Shalpe 104 vs Agnus Dei FC · <b style={{ color:'#666' }}>SF2</b> AK Toio vs Borjcellona
           </div>
-          <div style={{ display:'flex', alignItems:'flex-start', gap:20, flexWrap:'wrap' }}>
-            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-              <div style={{ fontSize:9, color:'#555', fontWeight:700, letterSpacing:'0.08em' }}>SEMIFINALI · G6</div>
-              {superc.semifinali.map(sf => (
-                <BracketMatch key={sf.id} label={sf.label} gLabel={`G${sf.g}`}
-                  squadra_a={sf.squadra_a} squadra_b={sf.squadra_b}
-                  gol_a={sf.gol_a} gol_b={sf.gol_b}
-                  isAdmin={isAdmin} onChange={(f,v) => updateSCSF(sf.id, f, v)} />
-              ))}
-            </div>
-            <div style={{ fontSize:22, color:'#333', alignSelf:'center' }}>→</div>
-            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-              <div style={{ fontSize:9, color:'#555', fontWeight:700, letterSpacing:'0.08em' }}>FINALE · G8</div>
-              <BracketMatch
-                squadra_a={superc.finale.squadra_a} squadra_b={superc.finale.squadra_b}
-                gol_a={superc.finale.gol_a} gol_b={superc.finale.gol_b}
-                isAdmin={isAdmin} onChange={(f,v) => { const n=JSON.parse(JSON.stringify(superc)); n.finale[f]=v; saveSuperc(n); }} />
-              {vincSC && (
-                <div style={{ background:'#f59e0b12', border:'1px solid #f59e0b30', borderRadius:10, padding:'10px 14px' }}>
-                  <div style={{ fontSize:9, color:'#f59e0b', fontWeight:700 }}>⭐ VINCITORE SUPERCOPPA</div>
-                  <div style={{ fontSize:16, fontWeight:900, color:'#f0f0f0', fontFamily:"'Bebas Neue',sans-serif" }}>{vincSC}</div>
-                </div>
-              )}
+          <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))', gap:12 }}>
+              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                <div style={{ fontSize:9, color:'#555', fontWeight:700, letterSpacing:'0.08em' }}>SEMIFINALI · G6</div>
+                {superc.semifinali.map(sf => (
+                  <BracketMatch key={sf.id} label={sf.label} gLabel={`G${sf.g}`}
+                    squadra_a={sf.squadra_a} squadra_b={sf.squadra_b}
+                    gol_a={sf.gol_a} gol_b={sf.gol_b}
+                    isAdmin={isAdmin} onChange={(f,v) => updateSCSF(sf.id, f, v)} />
+                ))}
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                <div style={{ fontSize:9, color:'#555', fontWeight:700, letterSpacing:'0.08em' }}>FINALE · G8</div>
+                <BracketMatch
+                  squadra_a={superc.finale.squadra_a} squadra_b={superc.finale.squadra_b}
+                  gol_a={superc.finale.gol_a} gol_b={superc.finale.gol_b}
+                  isAdmin={isAdmin} onChange={(f,v) => { const n=JSON.parse(JSON.stringify(superc)); n.finale[f]=v; saveSuperc(n); }} />
+                {vincSC && (
+                  <div style={{ background:'#f59e0b12', border:'1px solid #f59e0b30', borderRadius:10, padding:'10px 14px' }}>
+                    <div style={{ fontSize:9, color:'#f59e0b', fontWeight:700 }}>⭐ VINCITORE SUPERCOPPA</div>
+                    <div style={{ fontSize:16, fontWeight:900, color:'#f0f0f0', fontFamily:"'Bebas Neue',sans-serif" }}>{vincSC}</div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
