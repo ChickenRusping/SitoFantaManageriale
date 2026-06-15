@@ -5372,6 +5372,18 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
         await aggiornaFantaSquadraListone(t.giocatore, t.a_squadra);
         await aggiornaStipendioDopoTrasferimento(t.giocatore, t.a_squadra);
         await logAzione({ utente: 'admin', squadra: t.da_squadra, azione: 'trasferimento', entita: 'trattative', entitaId: t.id, descrizione: `Trasferimento: ${t.giocatore} da ${t.da_squadra} a ${t.a_squadra} — ${t.prezzo}M (${t.tipo})`, dataPrima: { trattativa: t }, rollbackPossibile: false });
+        // Controlla se il giocatore è eleggibile per il vivaio dell'acquirente
+        const { data: newPlayer } = await supabase.from('rosa').select('id, anni, quot, partite').eq('squadra', t.a_squadra).ilike('nome', `%${t.giocatore}%`).single();
+        if (newPlayer && newPlayer.anni > 0 && newPlayer.anni <= 23 && Number(newPlayer.quot || 0) <= 3 && (newPlayer.partite || 0) === 0) {
+          const { count: vivCount } = await supabase.from('rosa').select('id', { count: 'exact', head: true }).eq('squadra', t.a_squadra).eq('in_vivaio', true);
+          const maxViv = 3;
+          if ((vivCount || 0) < maxViv) {
+            const sceltaVivaio = window.confirm(`🌱 ${t.giocatore} è eleggibile per il vivaio di ${t.a_squadra} (U23 · Q≤3 · 0 presenze).\n\nSlot vivaio disponibili: ${maxViv - (vivCount||0)}/${maxViv}\n\nVuoi destinarlo al VIVAIO?\n\n[OK = Vivaio · Annulla = Rosa normale]`);
+            if (sceltaVivaio) {
+              await supabase.from('rosa').update({ in_vivaio: true, vivaio_presenze: 0, data_entrata_vivaio: new Date().toISOString().slice(0, 10) }).eq('id', newPlayer.id);
+            }
+          }
+        }
         // Notify both teams via Telegram DM
         sendTelegramNotification('trattativa_accettata', { giocatore: t.giocatore, importo: t.prezzo }, t.da_squadra);
         sendTelegramNotification('trattativa_accettata', { giocatore: t.giocatore, importo: t.prezzo }, t.a_squadra);
