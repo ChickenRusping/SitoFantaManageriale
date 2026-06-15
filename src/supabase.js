@@ -3596,3 +3596,85 @@ export async function applica01GiugnoAgosto(stagione = '2026-27') {
   }
   return { aggiornati, totale: players.length };
 }
+
+// Aggiornamento 01/08 – full import con creazione nuove voci per giocatori non presenti.
+// Per ogni riga del file:
+//   - Se il giocatore è in rosa (match per nome case-insensitive): aggiorna stats + quot_reale + squadra_serie_a + anni + ruolo, poi applica quot=quot_reale
+//   - Se è in svincolati: aggiorna tutti i campi
+//   - Se non esiste né in rosa né in svincolati: crea nuova voce in svincolati
+export async function importa01Agosto(rows, stagione = '2026-27') {
+  // Prima aggiorna listone completo
+  await importListoneDaExcel(rows);
+
+  const { data: rosaAll } = await supabase.from('rosa').select('id, nome, anni, stip').eq('in_vivaio', false);
+  const { data: svinAll }  = await supabase.from('svincolati').select('id, nome').eq('stagione', stagione);
+
+  const rosaMap  = {};
+  for (const p of (rosaAll  || [])) rosaMap[p.nome.trim().toLowerCase()]  = p;
+  const svinMap  = {};
+  for (const s of (svinAll  || [])) svinMap[s.nome.trim().toLowerCase()]  = s;
+
+  let rosaAggiornati = 0, svinAggiornati = 0, nuoviCreati = 0;
+  const nonTrovati = [];
+  const BATCH = 50;
+
+  const validRows = rows.filter(r => (r['Nome'] || '').trim());
+
+  for (let i = 0; i < validRows.length; i += BATCH) {
+    await Promise.all(validRows.slice(i, i + BATCH).map(async r => {
+      const nome = (r['Nome'] || '').trim();
+      const nomeLower = nome.toLowerCase();
+      const quot = Number(r['QUOT.'] || 0);
+      const squadra_serie_a = (r['Sq.'] || '').trim() || null;
+      const anni = Number(r['Under'] || r['Età'] || 0) || null;
+      const ruolo = (r['R.MANTRA'] || '').trim() || null;
+      const stip = parseFloat((quot / 5).toFixed(2));
+      const clausola = parseFloat((quot * 1.75).toFixed(2));
+      const stats = {
+        partite_voto:     Number(r['Partite a voto'] || 0),
+        media_voto:       parseFloat(r['Media Voto'] || 0) || 0,
+        media_fantavoto:  parseFloat(r['Media Fantavoto'] || 0) || 0,
+        gol_fatti:        Number(r['Gol fatti'] || 0),
+        gol_subiti:       Number(r['Gol subiti'] || 0),
+        rigori_parati:    Number(r['Rigori Parati'] || 0),
+        rigori_segnati:   Number(r['Rigori Segnati'] || 0),
+        rigori_sbagliati: Number(r['Rigori Sbagliati'] || 0),
+        assist:           Number(r['Assist'] || 0),
+        ammonizioni:      Number(r['Ammonizioni'] || 0),
+        espulsioni:       Number(r['Espulsioni'] || 0),
+        autogol:          Number(r['Autogol'] || 0),
+      };
+
+      if (rosaMap[nomeLower]) {
+        const p = rosaMap[nomeLower];
+        const isU21 = (anni || p.anni || 0) > 0 && (anni || p.anni || 0) <= 21;
+        await supabase.from('rosa').update({
+          quot_reale: quot, quot, squadra_serie_a, anni, ruolo,
+          stip: isU21 ? Number(p.stip) : stip,
+          stip_originale: isU21 ? Number(p.stip) : stip,
+          clausola, quot_precedente: p.quot || quot,
+          ...stats,
+        }).eq('id', p.id);
+        rosaAggiornati++;
+      } else if (svinMap[nomeLower]) {
+        await supabase.from('svincolati').update({
+          quot, stip, clausola, squadra_serie_a: squadra_serie_a || null,
+          ...stats,
+        }).eq('id', svinMap[nomeLower].id);
+        svinAggiornati++;
+      } else if (quot > 0) {
+        // Nuovo giocatore: inserisce in svincolati
+        await supabase.from('svincolati').insert({
+          nome, quot, stip, clausola, ruolo, stagione,
+          squadra_serie_a: squadra_serie_a || null,
+          ...stats,
+        });
+        nuoviCreati++;
+      } else {
+        nonTrovati.push(nome);
+      }
+    }));
+  }
+
+  return { rosaAggiornati, svinAggiornati, nuoviCreati, nonTrovati, totale: validRows.length };
+}
