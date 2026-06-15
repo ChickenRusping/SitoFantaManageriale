@@ -11408,6 +11408,14 @@ table td,table th{white-space:normal!important;word-break:break-word}
                 </div>
                 <div style={{ display:"flex",gap:6,alignItems:"center" }}>
                   <button onClick={()=>window.location.reload()} title="Aggiorna" style={{ width:28,height:28,borderRadius:7,border:"1px solid #ffffff12",background:"transparent",color:"#555",fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>↻</button>
+                  {profile && (
+                    <div onClick={()=>navigate('/profilo')} style={{ cursor:"pointer",display:"flex",alignItems:"center" }}>
+                      {profile.avatar_url
+                        ? <img src={profile.avatar_url} alt="" style={{ width:28,height:28,borderRadius:7,objectFit:"cover",outline:currentPage==='profilo'?"2px solid #f59e0b":"1px solid #ffffff18" }} />
+                        : <div style={{ width:28,height:28,borderRadius:7,background:currentPage==='profilo'?"#f59e0b22":"#ffffff10",border:currentPage==='profilo'?"1px solid #f59e0b44":"1px solid #ffffff18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13 }}>👤</div>
+                      }
+                    </div>
+                  )}
                   <button onClick={()=>signOut()} style={{ padding:"5px 10px",borderRadius:7,border:"1px solid #ffffff12",background:"transparent",color:"#555",fontSize:11,cursor:"pointer" }}>Esci</button>
                 </div>
               </div>
