@@ -11367,6 +11367,12 @@ function AppInner() {
             </div>
           </div>
           <div className="main-content-pad" style={{ marginLeft:SIDEBAR_W,flex:1,padding:"28px 32px",minWidth:0,position:"relative" }}>
+            <button onClick={() => window.location.reload()} title="Aggiorna pagina"
+              style={{ position:"absolute",top:18,right:24,zIndex:50,background:"#ffffff08",border:"1px solid #ffffff12",borderRadius:8,color:"#555",fontSize:14,width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"background 0.15s,color 0.15s" }}
+              onMouseEnter={e=>{e.currentTarget.style.background="#ffffff14";e.currentTarget.style.color="#aaa";}}
+              onMouseLeave={e=>{e.currentTarget.style.background="#ffffff08";e.currentTarget.style.color="#555";}}>
+              ↻
+            </button>
             {pageContent}
           </div>
         </div>
@@ -11379,7 +11385,10 @@ function AppInner() {
                   <div style={{ width:28,height:28,borderRadius:8,background:"linear-gradient(135deg,#6366f1,#a855f7)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14 }}>⚽</div>
                   <div style={{ fontSize:13,fontWeight:900,color:"#f0f0f0",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:"1px" }}>FANTA MANAGERIALE</div>
                 </div>
-                <button onClick={()=>signOut()} style={{ padding:"5px 10px",borderRadius:7,border:"1px solid #ffffff12",background:"transparent",color:"#555",fontSize:11,cursor:"pointer" }}>Esci</button>
+                <div style={{ display:"flex",gap:6,alignItems:"center" }}>
+                  <button onClick={()=>window.location.reload()} title="Aggiorna" style={{ width:28,height:28,borderRadius:7,border:"1px solid #ffffff12",background:"transparent",color:"#555",fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>↻</button>
+                  <button onClick={()=>signOut()} style={{ padding:"5px 10px",borderRadius:7,border:"1px solid #ffffff12",background:"transparent",color:"#555",fontSize:11,cursor:"pointer" }}>Esci</button>
+                </div>
               </div>
             </div>
           )}
