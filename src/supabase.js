@@ -1150,7 +1150,7 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
 export function calcolaTassa(bilancio) {
   if (bilancio <= 0) return { perc: 0, importo: 0 };
   const m = new Date().getMonth(); // 0-based
-  const isPeriodoFlat = m === 5 || m === 6 || m === 7; // giu(5), lug(6), ago(7 = 01/08)
+  const isPeriodoFlat = m === 5 || m === 6; // giu(5), lug(6) — art. 7.1.2: flat 1% solo dal 01/06 al 01/08
   if (isPeriodoFlat) return { perc: 1, importo: parseFloat((bilancio * 0.01).toFixed(2)), flat: true };
   if (bilancio <= 20)  return { perc: 1,  importo: parseFloat((bilancio * 0.01).toFixed(2)) };
   if (bilancio <= 40)  return { perc: 2,  importo: parseFloat((bilancio * 0.02).toFixed(2)) };
