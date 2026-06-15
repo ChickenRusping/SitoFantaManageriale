@@ -3692,3 +3692,12 @@ export async function importa01Agosto(rows, stagione = '2026-27') {
 
   return { rosaAggiornati, svinAggiornati, nuoviCreati, nonTrovati, totale: validRows.length };
 }
+
+// ─── STAGIONE ─────────────────────────────────────────────────────────────────
+export async function getStagioneLabel() {
+  const { data } = await supabase.from('impostazioni').select('valore').eq('chiave', 'stagione_label').single();
+  return data?.valore || '2026/27';
+}
+export async function setStagioneLabel(label) {
+  await supabase.from('impostazioni').upsert({ chiave: 'stagione_label', valore: label }, { onConflict: 'chiave' });
+}
