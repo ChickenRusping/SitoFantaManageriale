@@ -3446,83 +3446,66 @@ export async function setRivalitaLock(bloccata) {
 
 // ─── IMPORT DATABASE FANTA.XLSX ───────────────────────────────────────────────
 
-// Mappatura colonne del file Database Fanta.xlsx
-function parseRowFanta(r) {
-  return {
-    nome:             (r['Nome'] || '').trim(),
-    quot:             Number(r['QUOT.']  || 0),
-    squadra_serie_a:  r['Sq.']  || null,
-    ruolo:            r['R.MANTRA'] || null,
-    anni:             Number(r['Under'] || 0),
-    fantaSquadra:     r['FantaSquadra'] || null,
-    fuori_lista:      r['Fuori lista'] === '*',
-    partite:          Number(r['Partite a voto']  || 0),
-    media_voto:       Number(r['Media Voto']       || 0),
-    media_fantavoto:  Number(r['Media Fantavoto']  || 0),
-    gol:              Number(r['Gol fatti']         || 0),
-    gol_subiti:       Number(r['Gol subiti']        || 0),
-    rigori_parati:    Number(r['Rigori Parati']     || 0),
-    rigori_segnati:   Number(r['Rigori Segnati']    || 0),
-    rigori_sbagliati: Number(r['Rigori Sbagliati']  || 0),
-    assist:           Number(r['Assist']            || 0),
-    ammonizioni:      Number(r['Ammonizioni']       || 0),
-    espulsioni:       Number(r['Espulsioni']        || 0),
-    autogol:          Number(r['Autogol']           || 0),
-  };
-}
-
 export async function importDatabaseFanta(rows, stagione = '2026-27') {
-  const BATCH = 50;
+  // 1. Aggiorna listone + stats rosa via funzione esistente (match case-insensitive per nome)
+  const totaleListone = await importListoneDaExcel(rows);
 
-  // Carica tutte le rose (id + nome)
-  const { data: rosaAll } = await supabase.from('rosa').select('id, nome, quot, stip, clausola').eq('in_vivaio', false);
+  // 2. Carica rose (id + nome) per aggiornare quot_reale
+  const { data: rosaAll } = await supabase.from('rosa').select('id, nome').eq('in_vivaio', false);
   const rosaMap = {};
-  for (const p of (rosaAll || [])) rosaMap[p.nome.trim()] = p;
+  for (const p of (rosaAll || [])) rosaMap[p.nome.trim().toLowerCase()] = p;
 
-  // Carica tutti gli svincolati (id + nome)
-  const { data: svinAll } = await supabase.from('svincolati').select('id, nome').eq('stagione', stagione);
-  const svinMap = {};
-  for (const s of (svinAll || [])) svinMap[s.nome.trim()] = s;
+  // 3. Costruisci mappa nome→quot dal file
+  const quotMap = {};
+  for (const r of rows) {
+    const nome = (r['Nome'] || '').trim();
+    const quot = Number(r['QUOT.'] || 0);
+    if (nome && quot > 0) quotMap[nome.toLowerCase()] = { nome, quot, squadra_serie_a: r['Sq.'] || null };
+  }
 
-  const statsFields = ['partite','media_voto','media_fantavoto','gol','gol_subiti','rigori_parati','rigori_segnati','rigori_sbagliati','assist','ammonizioni','espulsioni','autogol'];
-
-  const parsed = rows.map(parseRowFanta).filter(r => r.nome && r.quot > 0);
-
-  let rosaAggiornati = 0, svinAggiornati = 0, nonTrovati = [];
-
-  // Suddividi in batch
-  for (let i = 0; i < parsed.length; i += BATCH) {
-    const batch = parsed.slice(i, i + BATCH);
-    await Promise.all(batch.map(async r => {
-      const stats = {};
-      statsFields.forEach(f => { stats[f] = r[f]; });
-
-      if (rosaMap[r.nome]) {
-        // In rosa: aggiorna stats + quota reale (non cambia quot/stip/clausola correnti)
-        const { error } = await supabase.from('rosa').update({
-          ...stats,
-          quot_reale: r.quot,
-          squadra_serie_a: r.squadra_serie_a || rosaMap[r.nome].squadra_serie_a,
-        }).eq('id', rosaMap[r.nome].id);
-        if (!error) rosaAggiornati++;
-      } else if (svinMap[r.nome]) {
-        // Svincolato: aggiorna tutto (stats + quot/stip/clausola)
-        const stip = parseFloat((r.quot / 5).toFixed(2));
-        const clausola = parseFloat((r.quot * 1.75).toFixed(2));
-        const { error } = await supabase.from('svincolati').update({
-          ...stats,
-          quot: r.quot,
-          stip,
-          clausola,
-          squadra_serie_a: r.squadra_serie_a || undefined,
-          quot_reale: r.quot,
-        }).eq('id', svinMap[r.nome].id);
-        if (!error) svinAggiornati++;
-      } else {
-        nonTrovati.push(r.nome);
-      }
+  // 4. Aggiorna quot_reale in rosa (case-insensitive)
+  let rosaAggiornati = 0, nonTrovati = [];
+  const BATCH = 50;
+  const rosaEntries = Object.entries(rosaMap);
+  for (let i = 0; i < rosaEntries.length; i += BATCH) {
+    await Promise.all(rosaEntries.slice(i, i + BATCH).map(async ([nomeLower, p]) => {
+      const q = quotMap[nomeLower];
+      if (!q) { nonTrovati.push(p.nome); return; }
+      await supabase.from('rosa').update({ quot_reale: q.quot, squadra_serie_a: q.squadra_serie_a }).eq('id', p.id);
+      rosaAggiornati++;
     }));
   }
 
-  return { rosaAggiornati, svinAggiornati, nonTrovati, totale: parsed.length };
+  // 5. Aggiorna svincolati: quot/stip/clausola + stats (già fatto dal listone, ma anche nella tabella svincolati)
+  const { data: svinAll } = await supabase.from('svincolati').select('id, nome').eq('stagione', stagione);
+  let svinAggiornati = 0;
+  for (let i = 0; i < (svinAll || []).length; i += BATCH) {
+    await Promise.all((svinAll || []).slice(i, i + BATCH).map(async s => {
+      const q = quotMap[s.nome.trim().toLowerCase()];
+      if (!q) return;
+      const stip = parseFloat((q.quot / 5).toFixed(2));
+      const clausola = parseFloat((q.quot * 1.75).toFixed(2));
+      // Trova riga completa per le stats
+      const row = rows.find(r => (r['Nome'] || '').trim().toLowerCase() === s.nome.trim().toLowerCase());
+      if (!row) return;
+      await supabase.from('svincolati').update({
+        quot: q.quot, stip, clausola,
+        partite: Number(row['Partite a voto'] || 0),
+        media_voto: Number(row['Media Voto'] || 0),
+        media_fantavoto: Number(row['Media Fantavoto'] || 0),
+        gol: Number(row['Gol fatti'] || 0),
+        gol_subiti: Number(row['Gol subiti'] || 0),
+        rigori_parati: Number(row['Rigori Parati'] || 0),
+        rigori_segnati: Number(row['Rigori Segnati'] || 0),
+        rigori_sbagliati: Number(row['Rigori Sbagliati'] || 0),
+        assist: Number(row['Assist'] || 0),
+        ammonizioni: Number(row['Ammonizioni'] || 0),
+        espulsioni: Number(row['Espulsioni'] || 0),
+        autogol: Number(row['Autogol'] || 0),
+      }).eq('id', s.id);
+      svinAggiornati++;
+    }));
+  }
+
+  return { rosaAggiornati, svinAggiornati, nonTrovati, totale: totaleListone };
 }
