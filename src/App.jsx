@@ -11399,9 +11399,12 @@ table td,table th{white-space:normal!important;word-break:break-word}
           {!pathname.startsWith('/presidente') && (
             <div style={{ borderBottom:"1px solid #ffffff0e",background:"#0d0f14f0",backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:100,padding:"0 16px" }}>
               <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",height:50 }}>
-                <div style={{ display:"flex",alignItems:"center",gap:10 }}>
-                  <div style={{ width:28,height:28,borderRadius:8,background:"linear-gradient(135deg,#6366f1,#a855f7)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14 }}>⚽</div>
-                  <div style={{ fontSize:13,fontWeight:900,color:"#f0f0f0",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:"1px" }}>FANTA MANAGERIALE</div>
+                <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                  <img src="/icon-192.png" alt="logo" style={{ width:28,height:28,borderRadius:8,objectFit:"cover",flexShrink:0 }} />
+                  <div style={{ minWidth:0 }}>
+                    <div style={{ fontSize:14,fontWeight:900,color:"#f0f0f0",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:"1.5px",lineHeight:1 }}>FantaManager</div>
+                    <div style={{ fontSize:9,color:"#555",lineHeight:1.2 }}>{stagioneLabel}</div>
+                  </div>
                 </div>
                 <div style={{ display:"flex",gap:6,alignItems:"center" }}>
                   <button onClick={()=>window.location.reload()} title="Aggiorna" style={{ width:28,height:28,borderRadius:7,border:"1px solid #ffffff12",background:"transparent",color:"#555",fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>↻</button>
