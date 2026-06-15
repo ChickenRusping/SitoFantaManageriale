@@ -8121,6 +8121,10 @@ function AdminControlRoomPage({ teams }) {
   const [fpfData, setFpfData] = useState(null);
   const [differiti, setDifferiti] = useState([]);
   const [classifica, setClassifica] = useState([]);
+  const [svincoliAll, setSvincoliAll] = useState({}); // { squadra: stagione_svincoli }
+  const [svincoliLoading, setSvincoliLoading] = useState(false);
+  const [bilancioNegData, setBilancioNegData] = useState(null); // loaded on demand
+  const [bilancioNegBusy, setBilancioNegBusy] = useState(null);
 
   async function load() {
     setLoading(true);
@@ -8202,18 +8206,20 @@ function AdminControlRoomPage({ teams }) {
   }
 
   const tabs = [
-    { key: 'panoramica',  icon: '📊', label: 'Panoramica' },
-    { key: 'mercato',     icon: '🏪', label: 'Mercato' },
-    { key: 'aste',        icon: '🔔', label: 'Aste' },
-    { key: 'stadio',      icon: '🏟', label: 'Stadio' },
-    { key: 'tasse',       icon: '📅', label: 'Tasse' },
-    { key: 'stipendi',    icon: '💰', label: 'Stipendi' },
-    { key: 'fpf',         icon: '⚖️', label: 'FPF' },
-    { key: 'premi',       icon: '🏆', label: 'Premi' },
-    { key: 'contratti',   icon: '📋', label: 'Contratti' },
-    { key: 'differiti',   icon: '⏳', label: 'Differiti' },
-    { key: 'stagione',    icon: '⚙️', label: 'Stagione' },
-    { key: 'telegram',    icon: '✈️', label: 'Telegram' },
+    { key: 'panoramica',   icon: '📊', label: 'Panoramica' },
+    { key: 'mercato',      icon: '🏪', label: 'Mercato' },
+    { key: 'aste',         icon: '🔔', label: 'Aste' },
+    { key: 'stadio',       icon: '🏟', label: 'Stadio' },
+    { key: 'tasse',        icon: '📅', label: 'Tasse' },
+    { key: 'stipendi',     icon: '💰', label: 'Stipendi' },
+    { key: 'fpf',          icon: '⚖️', label: 'FPF' },
+    { key: 'bilancio_neg', icon: '🔴', label: 'Bilancio −' },
+    { key: 'svincoli_cr',  icon: '✂️', label: 'Svincoli' },
+    { key: 'premi',        icon: '🏆', label: 'Premi' },
+    { key: 'contratti',    icon: '📋', label: 'Contratti' },
+    { key: 'differiti',    icon: '⏳', label: 'Differiti' },
+    { key: 'stagione',     icon: '⚙️', label: 'Stagione' },
+    { key: 'telegram',     icon: '✈️', label: 'Telegram' },
   ];
 
   const isBusy = !!busy;
@@ -8603,10 +8609,11 @@ function AdminControlRoomPage({ teams }) {
           {/* ── FPF ── */}
           {tab === 'fpf' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>⚖️ FAIR PLAY FINANZIARIO — MULTA BULK</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>⚖️ FAIR PLAY FINANZIARIO — CONTROLLO SEMESTRALE (art. 7.3)</div>
               <div style={{ background: '#ef444408', border: '1px solid #ef444420', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#aaa', lineHeight: 1.6 }}>
-                Calcola e applica le multe FPF a tutte le squadre che hanno sforato i limiti di spesa netta.<br/>
-                <b style={{ color: '#f87171' }}>Operazione irreversibile</b> — esegui solo a fine stagione.
+                Eseguire a <b style={{ color: '#f87171' }}>metà stagione (15/02)</b> e a <b style={{ color: '#f87171' }}>fine stagione (01/06)</b>.<br/>
+                Soglia: <b>50M</b> netto speso per semestre · Multa: <b>20% dell'eccedenza</b> · Oltre 60M: penale punti aggiuntiva.<br/>
+                <b style={{ color: '#f87171' }}>Operazione irreversibile</b> — verifica i dati prima di applicare.
               </div>
               <button onClick={loadFpf} style={{ alignSelf: 'flex-start', padding: '7px 16px', borderRadius: 9, border: '1px solid #6366f130', background: '#6366f110', color: '#818cf8', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>📊 Calcola situazione FPF</button>
               {fpfData && (
@@ -8638,6 +8645,152 @@ function AdminControlRoomPage({ teams }) {
                     style={{ marginTop: 8, padding: '9px 20px', borderRadius: 10, border: '1.5px solid #ef444450', background: '#ef444415', color: '#ef4444', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
                     ⚖️ Applica multe FPF a tutte le squadre
                   </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── BILANCIO NEGATIVO (art. 7.2) ── */}
+          {tab === 'bilancio_neg' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>🔴 BUDGET NEGATIVO — PENALIZZAZIONI (art. 7.2)</div>
+              <div style={{ background: '#ef444408', border: '1px solid #ef444420', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#aaa', lineHeight: 1.6 }}>
+                Squadre con bilancio negativo ricevono penalizzazioni punti ogni settimana:<br/>
+                <b style={{ color: '#f87171' }}>0 → −10M</b>: −5 pt · <b style={{ color: '#f87171' }}>−10 → −20M</b>: −10 pt · <b style={{ color: '#f87171' }}>−20 → −30M</b>: −15 pt · <b style={{ color: '#f87171' }}>oltre −30M</b>: −15 pt (stessa fascia)
+              </div>
+              <button
+                onClick={() => {
+                  const neg = (teams || []).filter(t => (t.bilancio || 0) < 0);
+                  setBilancioNegData(neg.map(t => ({
+                    ...t,
+                    fascia: getFasciaBilancioNeg(t.bilancio),
+                    settimane: t.bilancioNegSettimane || 0,
+                  })));
+                }}
+                style={{ alignSelf: 'flex-start', padding: '7px 16px', borderRadius: 9, border: '1px solid #ef444430', background: '#ef444410', color: '#f87171', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                🔍 Controlla squadre in negativo
+              </button>
+
+              {bilancioNegData !== null && (
+                bilancioNegData.length === 0
+                  ? <div style={{ fontSize: 13, color: '#10b981', fontWeight: 700 }}>✓ Nessuna squadra in negativo</div>
+                  : <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {bilancioNegData.map(t => {
+                        const penPunti = t.fascia?.pts || 0;
+                        const isBusyThis = bilancioNegBusy === t.name;
+                        return (
+                          <div key={t.name} style={{ background: '#ef444408', border: '1px solid #ef444425', borderRadius: 12, padding: '12px 14px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                              <div>
+                                <div style={{ fontSize: 13, fontWeight: 800, color: '#f0f0f0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <TeamAvatar team={t} size={20} />
+                                  {t.name}
+                                </div>
+                                <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
+                                  Bilancio: <span style={{ color: '#ef4444', fontWeight: 700 }}>{(t.bilancio || 0).toFixed(1)}M</span>
+                                  {' · '}Settimane in neg.: <span style={{ color: '#f97316', fontWeight: 700 }}>{t.settimane}</span>
+                                  {' · '}Fascia: <span style={{ color: '#f87171', fontWeight: 700 }}>−{penPunti} pt/sett.</span>
+                                </div>
+                              </div>
+                              <button
+                                disabled={isBusyThis || !penPunti}
+                                onClick={async () => {
+                                  if (!window.confirm(`Applicare penalizzazione di −${penPunti} pt a ${t.name}?\n\nBilancio: ${(t.bilancio||0).toFixed(1)}M`)) return;
+                                  setBilancioNegBusy(t.name);
+                                  try {
+                                    await insertPenalita({
+                                      squadra: t.name,
+                                      stagione: STAGIONE_CR,
+                                      codice_tipo: 'budget_negativo',
+                                      descrizione: `Budget negativo ${(t.bilancio||0).toFixed(1)}M — penale ${penPunti} pt (art. 7.2)`,
+                                      punti: -penPunti,
+                                      data_multa: new Date().toISOString().slice(0, 10),
+                                      applicata: true,
+                                    });
+                                    await updateClassificaSquadra(t.name, { punti: Math.max(0, ((teams.find(x=>x.name===t.name)?.penalita)||0) - penPunti) });
+                                    alert(`✓ Penale −${penPunti} pt applicata a ${t.name}`);
+                                  } catch(e) { alert(e.message); }
+                                  finally { setBilancioNegBusy(null); }
+                                }}
+                                style={{ padding: '6px 14px', borderRadius: 8, border: '1.5px solid #ef444450', background: '#ef444415', color: '#ef4444', fontSize: 11, fontWeight: 700, cursor: 'pointer', opacity: penPunti ? 1 : 0.4 }}>
+                                {isBusyThis ? '…' : `⚠️ Applica −${penPunti} pt`}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+              )}
+            </div>
+          )}
+
+          {/* ── SVINCOLI PANORAMICA (art. 6.5) ── */}
+          {tab === 'svincoli_cr' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>✂️ SVINCOLI STAGIONE — PANORAMICA (art. 6.5)</div>
+              <div style={{ background: '#6366f108', border: '1px solid #6366f125', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#aaa', lineHeight: 1.6 }}>
+                Monitoraggio svincoli per ogni squadra. Oltre 14 svincoli stagionali: penale <b style={{ color: '#f87171' }}>+2M</b> per ogni svincolo eccedente (art. 6.5).
+              </div>
+              <button
+                disabled={svincoliLoading}
+                onClick={async () => {
+                  setSvincoliLoading(true);
+                  try {
+                    const results = await Promise.all((teams || []).map(t =>
+                      getStagioneSvincoli(t.name).then(d => [t.name, d])
+                    ));
+                    const map = {};
+                    results.forEach(([name, d]) => { map[name] = d; });
+                    setSvincoliAll(map);
+                  } catch(e) { alert(e.message); }
+                  finally { setSvincoliLoading(false); }
+                }}
+                style={{ alignSelf: 'flex-start', padding: '7px 16px', borderRadius: 9, border: '1px solid #6366f130', background: '#6366f110', color: '#818cf8', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                {svincoliLoading ? '⏳ Caricamento…' : '📊 Carica svincoli tutte le squadre'}
+              </button>
+
+              {Object.keys(svincoliAll).length > 0 && (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #ffffff15' }}>
+                        {['Squadra', 'Totale', 'Ordinari', 'Straord.', 'Stato'].map(h => (
+                          <th key={h} style={{ padding: '6px 10px', textAlign: 'left', color: '#555', fontWeight: 700, fontSize: 10 }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(teams || [])
+                        .map(t => ({ t, d: svincoliAll[t.name] || {} }))
+                        .sort((a, b) => (b.d.count_totale || 0) - (a.d.count_totale || 0))
+                        .map(({ t, d }) => {
+                          const tot = d.count_totale || 0;
+                          const overLimit = tot > 14;
+                          const atLimit = tot === 14;
+                          const color = overLimit ? '#ef4444' : atLimit ? '#f59e0b' : tot >= 12 ? '#f97316' : '#10b981';
+                          return (
+                            <tr key={t.name} style={{ borderBottom: '1px solid #ffffff08' }}
+                              onMouseEnter={e => e.currentTarget.style.background = '#ffffff05'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                              <td style={{ padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <TeamAvatar team={t} size={20} />
+                                <span style={{ fontWeight: 600, color: '#ddd' }}>{t.name}</span>
+                              </td>
+                              <td style={{ padding: '8px 10px', fontWeight: 900, color, fontFamily: "'Bebas Neue',sans-serif", fontSize: 16 }}>{tot}<span style={{ fontSize: 10, color: '#444' }}>/14</span></td>
+                              <td style={{ padding: '8px 10px', color: '#888' }}>{d.count_ordinari || 0}</td>
+                              <td style={{ padding: '8px 10px', color: '#888' }}>{(d.count_straord_estivi || 0) + (d.count_straord_invernali || 0)}</td>
+                              <td style={{ padding: '8px 10px' }}>
+                                {overLimit
+                                  ? <span style={{ fontSize: 10, fontWeight: 700, color: '#ef4444', background: '#ef444415', border: '1px solid #ef444430', borderRadius: 6, padding: '2px 7px' }}>⚠️ Penale +{(tot - 14) * 2}M</span>
+                                  : atLimit
+                                    ? <span style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b', background: '#f59e0b15', border: '1px solid #f59e0b30', borderRadius: 6, padding: '2px 7px' }}>Al limite</span>
+                                    : <span style={{ fontSize: 10, color: '#10b981' }}>✓ OK</span>}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
