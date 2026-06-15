@@ -4759,11 +4759,13 @@ function ClubIdentityRight({ team, clubIdentity, isAdmin, mySquadra, onRefresh }
   }
 
   const TEAMS_LIST = ["Alcool Campi","AK Toio","Agnus Dei FC","Balillareal","Borjcellona","Wehrmacht FC","Finocchiona AC","Shalpe 104"];
-  const squadreRivali = TEAMS_LIST.filter(n => n !== team.name);
+  const altreSquadre = TEAMS_LIST.filter(n => n !== team.name);
 
-  // Rivale: bloccato dopo la scelta — solo admin può cambiarlo (art. 8.3)
-  const rivaleGiaScelto = !!(clubIdentity?.rivali);
-  const canEditRivale = isAdmin || !rivaleGiaScelto;
+  // Rivale e Gemellato: bloccati dopo la scelta — solo admin può modificarli
+  const rivaleGiaScelto   = !!(clubIdentity?.rivali);
+  const gemellataGiaScelto = !!(clubIdentity?.gemellato);
+  const canEditRivale   = isAdmin || !rivaleGiaScelto;
+  const canEditGemellato = isAdmin || !gemellataGiaScelto;
 
   const inp = { width: "100%", padding: "5px 8px", borderRadius: 7, border: "1px solid #ffffff15", background: "#0d0f14", color: "#f0f0f0", fontSize: 11, outline: "none" };
 
@@ -4824,10 +4826,9 @@ function ClubIdentityRight({ team, clubIdentity, isAdmin, mySquadra, onRefresh }
         <div style={{ fontSize: 10, fontWeight: 700, color: "#666", letterSpacing: "0.1em", marginBottom: 12 }}>📋 INFO CLUB</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {[
-            { key: "fondazione", label: "FONDAZIONE", placeholder: "es. 2021",         type: "text"   },
-            { key: "stadio",     label: "STADIO",     placeholder: "Nome stadio",       type: "text"   },
-            { key: "gemellato",  label: "GEMELLATO",  placeholder: "Club gemellato",    type: "text"   },
-            { key: "motto",      label: "MOTTO",      placeholder: "Motto del club",    type: "text"   },
+            { key: "fondazione", label: "FONDAZIONE", placeholder: "es. 2021",      type: "text" },
+            { key: "stadio",     label: "STADIO",     placeholder: "Nome stadio",   type: "text" },
+            { key: "motto",      label: "MOTTO",      placeholder: "Motto del club", type: "text" },
           ].map(r => (
             <div key={r.key}>
               <div style={{ fontSize: 9, color: "#555", letterSpacing: "0.06em", marginBottom: 3 }}>{r.label}</div>
@@ -4839,13 +4840,41 @@ function ClubIdentityRight({ team, clubIdentity, isAdmin, mySquadra, onRefresh }
                   </div>}
             </div>
           ))}
+
+          {/* Gemellato — menu tendina con lock dopo scelta */}
+          {(() => {
+            const val = clubIdentity?.gemellato;
+            return (
+              <div>
+                <div style={{ fontSize: 9, color: "#555", letterSpacing: "0.06em", marginBottom: 3 }}>GEMELLATO</div>
+                {editing && canEditGemellato
+                  ? <select value={form?.gemellato || ""} onChange={e => setForm(f => ({...f, gemellato: e.target.value}))} style={inp}>
+                      <option value="">— Nessun gemellato —</option>
+                      {altreSquadre.map(n => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  : <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <div style={{ fontSize: 12, color: "#a78bfa", fontWeight: 700 }}>
+                        {val || <span style={{ color: "#444", fontWeight: 400 }}>—</span>}
+                      </div>
+                      {gemellataGiaScelto && !isAdmin && (
+                        <span style={{ fontSize: 9, color: "#555", background: "#ffffff08", border: "1px solid #ffffff12", borderRadius: 4, padding: "1px 5px" }}>🔒 fisso</span>
+                      )}
+                    </div>
+                }
+                {editing && !canEditGemellato && (
+                  <div style={{ fontSize: 9, color: "#555", marginTop: 2 }}>Il gemellato è già stato scelto e non può essere modificato (solo admin)</div>
+                )}
+              </div>
+            );
+          })()}
+
           {/* Rivale — menu tendina con lock dopo scelta */}
           <div>
             <div style={{ fontSize: 9, color: "#555", letterSpacing: "0.06em", marginBottom: 3 }}>RIVALE</div>
             {editing && canEditRivale
               ? <select value={form?.rivali || ""} onChange={e => setForm(f => ({...f, rivali: e.target.value}))} style={inp}>
                   <option value="">— Nessun rivale —</option>
-                  {squadreRivali.map(n => <option key={n} value={n}>{n}</option>)}
+                  {altreSquadre.map(n => <option key={n} value={n}>{n}</option>)}
                 </select>
               : <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <div style={{ fontSize: 12, color: team.color, fontWeight: 700 }}>
@@ -4853,12 +4882,6 @@ function ClubIdentityRight({ team, clubIdentity, isAdmin, mySquadra, onRefresh }
                   </div>
                   {rivaleGiaScelto && !isAdmin && (
                     <span style={{ fontSize: 9, color: "#555", background: "#ffffff08", border: "1px solid #ffffff12", borderRadius: 4, padding: "1px 5px" }}>🔒 fisso</span>
-                  )}
-                  {rivaleGiaScelto && isAdmin && editing && (
-                    <button onClick={() => setForm(f => ({...f, rivali: ""}))}
-                      style={{ fontSize: 9, color: "#f59e0b", background: "#f59e0b12", border: "1px solid #f59e0b30", borderRadius: 4, padding: "1px 6px", cursor: "pointer" }}>
-                      admin: cambia
-                    </button>
                   )}
                 </div>
             }
@@ -8125,6 +8148,8 @@ function AdminControlRoomPage({ teams }) {
   const [svincoliLoading, setSvincoliLoading] = useState(false);
   const [bilancioNegData, setBilancioNegData] = useState(null); // loaded on demand
   const [bilancioNegBusy, setBilancioNegBusy] = useState(null);
+  const [rivalitaData, setRivalitaData] = useState(null); // all club_identity rivali+gemellati
+  const [rivalitaBusy, setRivalitaBusy] = useState(null);
 
   async function load() {
     setLoading(true);
@@ -8215,6 +8240,7 @@ function AdminControlRoomPage({ teams }) {
     { key: 'fpf',          icon: '⚖️', label: 'FPF' },
     { key: 'bilancio_neg', icon: '🔴', label: 'Bilancio −' },
     { key: 'svincoli_cr',  icon: '✂️', label: 'Svincoli' },
+    { key: 'rivalita',     icon: '⚔️', label: 'Rivalità' },
     { key: 'premi',        icon: '🏆', label: 'Premi' },
     { key: 'contratti',    icon: '📋', label: 'Contratti' },
     { key: 'differiti',    icon: '⏳', label: 'Differiti' },
@@ -8791,6 +8817,103 @@ function AdminControlRoomPage({ teams }) {
                         })}
                     </tbody>
                   </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── RIVALITÀ & GEMELLATI ── */}
+          {tab === 'rivalita' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>⚔️ RIVALITÀ & GEMELLATI — GESTIONE ADMIN</div>
+              <div style={{ background: '#6366f108', border: '1px solid #6366f125', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#aaa', lineHeight: 1.6 }}>
+                Rivale: bloccato dopo la scelta del presidente (art. 8.3 — tra 3ª e 4ª giornata).<br/>
+                Gemellato: bloccato dopo la scelta. Come admin puoi resettare entrambi i valori.
+              </div>
+              <button
+                disabled={!!rivalitaBusy}
+                onClick={async () => {
+                  setRivalitaBusy('load');
+                  try {
+                    const { data } = await supabase.from('club_identity').select('squadra, rivali, gemellato');
+                    setRivalitaData(data || []);
+                  } catch(e) { alert(e.message); }
+                  finally { setRivalitaBusy(null); }
+                }}
+                style={{ alignSelf: 'flex-start', padding: '7px 16px', borderRadius: 9, border: '1px solid #6366f130', background: '#6366f110', color: '#818cf8', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                {rivalitaBusy === 'load' ? '⏳ Caricamento…' : '📋 Carica dati rivalità'}
+              </button>
+
+              {rivalitaData && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {(teams || []).map(t => {
+                    const ci = rivalitaData.find(r => r.squadra === t.name) || {};
+                    const TEAMS_LIST = ["Alcool Campi","AK Toio","Agnus Dei FC","Balillareal","Borjcellona","Wehrmacht FC","Finocchiona AC","Shalpe 104"];
+                    const altre = TEAMS_LIST.filter(n => n !== t.name);
+                    const isRivBusy = rivalitaBusy === `riv_${t.name}`;
+                    const isGemBusy = rivalitaBusy === `gem_${t.name}`;
+                    const selStyle = { padding: '4px 8px', borderRadius: 6, border: '1px solid #ffffff15', background: '#0d0f14', color: '#f0f0f0', fontSize: 11 };
+                    return (
+                      <div key={t.name} style={{ background: '#ffffff06', border: '1px solid #ffffff10', borderRadius: 12, padding: '12px 14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                          <TeamAvatar team={t} size={22} />
+                          <span style={{ fontWeight: 700, color: '#f0f0f0', fontSize: 13 }}>{t.name}</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                          {/* Rivale */}
+                          <div style={{ flex: 1, minWidth: 180 }}>
+                            <div style={{ fontSize: 9, color: '#555', letterSpacing: '0.06em', marginBottom: 4 }}>RIVALE (art. 8.3)</div>
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                              <select
+                                value={ci.rivali || ""}
+                                onChange={async e => {
+                                  const val = e.target.value;
+                                  if (!window.confirm(`Impostare rivale di ${t.name} → ${val || '(nessuno)'}?`)) return;
+                                  setRivalitaBusy(`riv_${t.name}`);
+                                  try {
+                                    await supabase.from('club_identity').upsert({ squadra: t.name, rivali: val || null, updated_at: new Date().toISOString() }, { onConflict: 'squadra' });
+                                    const { data } = await supabase.from('club_identity').select('squadra, rivali, gemellato');
+                                    setRivalitaData(data || []);
+                                  } catch(e) { alert(e.message); }
+                                  finally { setRivalitaBusy(null); }
+                                }}
+                                disabled={isRivBusy}
+                                style={selStyle}>
+                                <option value="">— Nessuno —</option>
+                                {altre.map(n => <option key={n} value={n}>{n}</option>)}
+                              </select>
+                              {ci.rivali && <span style={{ fontSize: 9, color: '#ef4444', background: '#ef444415', border: '1px solid #ef444430', borderRadius: 4, padding: '1px 6px' }}>🔒 {ci.rivali}</span>}
+                            </div>
+                          </div>
+                          {/* Gemellato */}
+                          <div style={{ flex: 1, minWidth: 180 }}>
+                            <div style={{ fontSize: 9, color: '#555', letterSpacing: '0.06em', marginBottom: 4 }}>GEMELLATO</div>
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                              <select
+                                value={ci.gemellato || ""}
+                                onChange={async e => {
+                                  const val = e.target.value;
+                                  if (!window.confirm(`Impostare gemellato di ${t.name} → ${val || '(nessuno)'}?`)) return;
+                                  setRivalitaBusy(`gem_${t.name}`);
+                                  try {
+                                    await supabase.from('club_identity').upsert({ squadra: t.name, gemellato: val || null, updated_at: new Date().toISOString() }, { onConflict: 'squadra' });
+                                    const { data } = await supabase.from('club_identity').select('squadra, rivali, gemellato');
+                                    setRivalitaData(data || []);
+                                  } catch(e) { alert(e.message); }
+                                  finally { setRivalitaBusy(null); }
+                                }}
+                                disabled={isGemBusy}
+                                style={selStyle}>
+                                <option value="">— Nessuno —</option>
+                                {altre.map(n => <option key={n} value={n}>{n}</option>)}
+                              </select>
+                              {ci.gemellato && <span style={{ fontSize: 9, color: '#a78bfa', background: '#a78bfa15', border: '1px solid #a78bfa30', borderRadius: 4, padding: '1px 6px' }}>🔒 {ci.gemellato}</span>}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -10477,8 +10600,6 @@ function AppInner() {
       <Route path="/squadre" element={<SquadrePage onSelectTeam={t=>navigate(`/presidente/${t.id}`)} teams={mergedTeams} profile={profile} isAdmin={isAdmin}/>}/>
       <Route path="/lega" element={<LegaPage teams={mergedTeams} isAdmin={isAdmin}/>}/>
       <Route path="/mercato" element={<MercatoPage profile={profile} isAdmin={isAdmin} teams={mergedTeams} offerteInAttesa={offerteInAttesa} statoMercato={statoMercato}/>}/>
-      {isAdmin && mergedTeams.length > 0 && <Route path="/modifica" element={<ModificaRosePage teams={mergedTeams} isAdmin={isAdmin} onRefresh={refreshSquadre}/>}/>}
-      {isAdmin && <Route path="/adminlog" element={<AdminLogPage profile={profile}/>}/>}
       {isAdmin && <Route path="/admin-control" element={<AdminControlRoomPage teams={mergedTeams}/>}/>}
       <Route path="/storico" element={<StoricoPage isAdmin={isAdmin} allClubIdentities={Object.entries(clubIdentities).map(([squadra, ci]) => ({ squadra, logo_url: ci.stemma_url }))}/>}/>
       <Route path="/profilo" element={<ProfileSettingsPage session={session} profile={profile} onProfileUpdated={()=>getProfile(session.user.id).then(p=>setProfile(p))}/>}/>
@@ -10527,7 +10648,7 @@ function AppInner() {
               {isAdmin && (
                 <div style={{ marginTop:20 }}>
                   <div style={{ fontSize:9,color:"#333",letterSpacing:"0.1em",fontWeight:700,padding:"0 12px",marginBottom:8 }}>⚡ ADMIN</div>
-                  {[{key:"admin-control",path:"/admin-control",icon:"⚡",label:"Control Room"},{key:"modifica",path:"/modifica",icon:"✏️",label:"Modifica Rose"},{key:"adminlog",path:"/adminlog",icon:"🗂️",label:"Audit Log"}].map(item => {
+                  {[{key:"admin-control",path:"/admin-control",icon:"⚡",label:"Control Room"}].map(item => {
                     const active = currentPage === item.key;
                     return <button key={item.key} onClick={()=>navigate(item.path)} style={{ width:"100%",display:"flex",alignItems:"center",gap:12,padding:"10px 12px",borderRadius:10,border:"none",background:active?"#f59e0b22":"transparent",color:active?"#f59e0b":"#555",fontWeight:700,fontSize:12,cursor:"pointer",marginBottom:3,textAlign:"left" }} onMouseEnter={e=>{if(!active){e.currentTarget.style.background="#ffffff08";e.currentTarget.style.color="#aaa";}}} onMouseLeave={e=>{if(!active){e.currentTarget.style.background="transparent";e.currentTarget.style.color="#555";}}}><span style={{ fontSize:16 }}>{item.icon}</span>{item.label}{active&&<div style={{ marginLeft:"auto",width:6,height:6,borderRadius:"50%",background:"#f59e0b" }}/>}</button>;
                   })}
