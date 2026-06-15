@@ -3701,3 +3701,13 @@ export async function getStagioneLabel() {
 export async function setStagioneLabel(label) {
   await supabase.from('impostazioni').upsert({ chiave: 'stagione_label', valore: label }, { onConflict: 'chiave' });
 }
+
+// ─── TORNEI (Coppa Italia + Supercoppa) ──────────────────────────────────────
+export async function getTorneo(chiave) {
+  const { data } = await supabase.from('impostazioni').select('valore').eq('chiave', chiave).single();
+  if (!data?.valore) return null;
+  try { return JSON.parse(data.valore); } catch { return null; }
+}
+export async function setTorneo(chiave, obj) {
+  await supabase.from('impostazioni').upsert({ chiave, valore: JSON.stringify(obj) }, { onConflict: 'chiave' });
+}
