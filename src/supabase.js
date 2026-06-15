@@ -2861,10 +2861,10 @@ export async function importListoneDaExcel(rows) {
     const riga = mapped.find(r => r.nome.toLowerCase() === p.nome.toLowerCase());
     if (!riga) continue;
     await supabase.from('rosa').update({
-      partite_voto:     riga.partite_voto,
+      partite:          riga.partite_voto,
       media_voto:       riga.media_voto,
       media_fantavoto:  riga.media_fantavoto,
-      gol_fatti:        riga.gol_fatti,
+      gol:              riga.gol_fatti,
       gol_subiti:       riga.gol_subiti,
       rigori_parati:    riga.rigori_parati,
       rigori_segnati:   riga.rigori_segnati,
@@ -3630,11 +3630,11 @@ export async function importa01Agosto(rows, stagione = '2026-27') {
       const ruolo = (r['R.MANTRA'] || '').trim() || null;
       const stip = parseFloat((quot / 5).toFixed(2));
       const clausola = parseFloat((quot * 1.75).toFixed(2));
-      const stats = {
-        partite_voto:     Number(r['Partite a voto'] || 0),
+      const statsRosa = {
+        partite:          Number(r['Partite a voto'] || 0),
         media_voto:       parseFloat(r['Media Voto'] || 0) || 0,
         media_fantavoto:  parseFloat(r['Media Fantavoto'] || 0) || 0,
-        gol_fatti:        Number(r['Gol fatti'] || 0),
+        gol:              Number(r['Gol fatti'] || 0),
         gol_subiti:       Number(r['Gol subiti'] || 0),
         rigori_parati:    Number(r['Rigori Parati'] || 0),
         rigori_segnati:   Number(r['Rigori Segnati'] || 0),
@@ -3643,6 +3643,20 @@ export async function importa01Agosto(rows, stagione = '2026-27') {
         ammonizioni:      Number(r['Ammonizioni'] || 0),
         espulsioni:       Number(r['Espulsioni'] || 0),
         autogol:          Number(r['Autogol'] || 0),
+      };
+      const statsSvin = {
+        partite:          statsRosa.partite,
+        media_voto:       statsRosa.media_voto,
+        media_fantavoto:  statsRosa.media_fantavoto,
+        gol:              statsRosa.gol,
+        gol_subiti:       statsRosa.gol_subiti,
+        rigori_parati:    statsRosa.rigori_parati,
+        rigori_segnati:   statsRosa.rigori_segnati,
+        rigori_sbagliati: statsRosa.rigori_sbagliati,
+        assist:           statsRosa.assist,
+        ammonizioni:      statsRosa.ammonizioni,
+        espulsioni:       statsRosa.espulsioni,
+        autogol:          statsRosa.autogol,
       };
 
       if (rosaMap[nomeLower]) {
@@ -3653,13 +3667,13 @@ export async function importa01Agosto(rows, stagione = '2026-27') {
           stip: isU21 ? Number(p.stip) : stip,
           stip_originale: isU21 ? Number(p.stip) : stip,
           clausola, quot_precedente: p.quot || quot,
-          ...stats,
+          ...statsRosa,
         }).eq('id', p.id);
         rosaAggiornati++;
       } else if (svinMap[nomeLower]) {
         await supabase.from('svincolati').update({
           quot, stip, clausola, squadra_serie_a: squadra_serie_a || null,
-          ...stats,
+          ...statsSvin,
         }).eq('id', svinMap[nomeLower].id);
         svinAggiornati++;
       } else if (quot > 0) {
@@ -3667,7 +3681,7 @@ export async function importa01Agosto(rows, stagione = '2026-27') {
         await supabase.from('svincolati').insert({
           nome, quot, stip, clausola, ruolo, stagione,
           squadra_serie_a: squadra_serie_a || null,
-          ...stats,
+          ...statsSvin,
         });
         nuoviCreati++;
       } else {
