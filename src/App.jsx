@@ -164,6 +164,8 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   updateProfile, uploadAvatar,
   getMercatoOverride, setMercatoOverride, getTrasferimentiDifferiti,
   applicaMulteFPFTutte, applicaPremiCampionato,
+  // Database Fanta import + Rivalità lock
+  importDatabaseFanta, getRivalitaLock, setRivalitaLock,
   // Telegram
   sendTelegramNotification, getTelegramRegistrations, deleteTelegramRegistration,
   // Albo d'Oro & Regolamento
@@ -1824,7 +1826,15 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                     {!p.in_vivaio&&p.anni>0&&p.anni<=23&&Number(p.quot||0)<=3&&(p.partite||0)===0&&vivaio.length<maxVivaio&&<span title="Eleggibile vivaio" style={{ marginLeft:4,fontSize:11 }}>🌱</span>}
                   </td>
                   <td style={{ padding:"7px 8px",color:"#666",fontSize:11 }}>{p.squadra_serie_a||"—"}</td>
-                  <td style={{ padding:"7px 8px",textAlign:"center",fontWeight:800,color:p.quot>=20?"#f59e0b":"#ccc",fontFamily:"'Bebas Neue',sans-serif",fontSize:14 }}>{p.quot}</td>
+                  <td style={{ padding:"7px 8px",textAlign:"center",fontWeight:800,color:p.quot>=20?"#f59e0b":"#ccc",fontFamily:"'Bebas Neue',sans-serif",fontSize:14 }}>
+                    {p.quot}
+                    {p.quot_reale && Number(p.quot_reale) !== Number(p.quot) && (
+                      <div title={`Quotazione reale aggiornata: ${p.quot_reale} (stip. trasferimento: ${(p.quot_reale/5).toFixed(2)}M)`}
+                        style={{ fontSize:9,fontWeight:700,color:Number(p.quot_reale)>Number(p.quot)?"#10b981":"#f97316",letterSpacing:0,fontFamily:"sans-serif",marginTop:1 }}>
+                        {Number(p.quot_reale)>Number(p.quot)?'↑':'↓'}{p.quot_reale}
+                      </div>
+                    )}
+                  </td>
                   <td style={{ padding:"7px 8px",textAlign:"center" }}>
                     <span style={{ color: p._stipDiff ? "#f59e0b" : "#aaa", fontWeight: p._stipDiff ? 700 : 400 }}
                       title={p._stipDiff ? `Stip. salvato: ${Number(p.stip).toFixed(2)}M · Calcolato: ${p._stipCorretto.toFixed(2)}M` : `Q${p.quot}/5${p._acNum>=2&&!(p.anni>0&&p.anni<=21)?" +incremento contratto":""}`}>
@@ -1865,6 +1875,11 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
             <div>
               <div style={{ fontSize:14,fontWeight:800,color:"#f0f0f0" }}>{popup.player.nome}</div>
               <div style={{ fontSize:11,color:"#888" }}>Q{popup.player.quot} · {popup.player.ruolo} · {popup.player.anni}aa · {calcolaStipCorretto(Number(popup.player.quot||0),Number(popup.player.anni_contratto||0),Number(popup.player.anni||0)).toFixed(2)}M</div>
+              {popup.player.quot_reale && Number(popup.player.quot_reale) !== Number(popup.player.quot) && (
+                <div style={{ marginTop:4,fontSize:10,background:"#f9731615",border:"1px solid #f9731630",borderRadius:6,padding:"3px 8px",color:"#f97316",fontWeight:600 }}>
+                  ⚠️ Quot. reale aggiornata: <b>Q{popup.player.quot_reale}</b> → stip. trasferimento <b>{(popup.player.quot_reale/5).toFixed(2)}M</b>
+                </div>
+              )}
             </div>
             <button onClick={()=>setPopup(null)} style={{ background:"none",border:"none",color:"#555",fontSize:18,cursor:"pointer",padding:"0 4px",lineHeight:1 }}>✕</button>
           </div>
@@ -4761,11 +4776,11 @@ function ClubIdentityRight({ team, clubIdentity, isAdmin, mySquadra, onRefresh }
   const TEAMS_LIST = ["Alcool Campi","AK Toio","Agnus Dei FC","Balillareal","Borjcellona","Wehrmacht FC","Finocchiona AC","Shalpe 104"];
   const altreSquadre = TEAMS_LIST.filter(n => n !== team.name);
 
-  // Rivale e Gemellato: bloccati dopo la scelta — solo admin può modificarli
-  const rivaleGiaScelto   = !!(clubIdentity?.rivali);
+  // Rivale e Gemellato: bloccati se lock globale attivo OPPURE già scelti — solo admin può sempre modificare
+  const rivaleGiaScelto    = !!(clubIdentity?.rivali);
   const gemellataGiaScelto = !!(clubIdentity?.gemellato);
-  const canEditRivale   = isAdmin || !rivaleGiaScelto;
-  const canEditGemellato = isAdmin || !gemellataGiaScelto;
+  const canEditRivale    = isAdmin || (!_rivalitaBloccata && !rivaleGiaScelto);
+  const canEditGemellato = isAdmin || (!_rivalitaBloccata && !gemellataGiaScelto);
 
   const inp = { width: "100%", padding: "5px 8px", borderRadius: 7, border: "1px solid #ffffff15", background: "#0d0f14", color: "#f0f0f0", fontSize: 11, outline: "none" };
 
@@ -4922,6 +4937,7 @@ function ClubIdentityCard({ team, isAdmin, mySquadra }) {
 
 // Module-level override set by App on load
 let _mercatoOverride = null;
+let _rivalitaBloccata = false; // caricato all'avvio
 
 // Finestre di mercato (art. 5.1)
 // Estivo:   01/06 09:00 → 15/09 24:00
@@ -8150,6 +8166,9 @@ function AdminControlRoomPage({ teams }) {
   const [bilancioNegBusy, setBilancioNegBusy] = useState(null);
   const [rivalitaData, setRivalitaData] = useState(null); // all club_identity rivali+gemellati
   const [rivalitaBusy, setRivalitaBusy] = useState(null);
+  const [dbImportPreview, setDbImportPreview] = useState(null); // { rosaAggiornati, svinAggiornati, nonTrovati, totale }
+  const [dbImportBusy, setDbImportBusy] = useState(false);
+  const [dbImportDone, setDbImportDone] = useState(null);
 
   async function load() {
     setLoading(true);
@@ -8241,6 +8260,7 @@ function AdminControlRoomPage({ teams }) {
     { key: 'bilancio_neg', icon: '🔴', label: 'Bilancio −' },
     { key: 'svincoli_cr',  icon: '✂️', label: 'Svincoli' },
     { key: 'rivalita',     icon: '⚔️', label: 'Rivalità' },
+    { key: 'database',     icon: '📊', label: 'Database' },
     { key: 'premi',        icon: '🏆', label: 'Premi' },
     { key: 'contratti',    icon: '📋', label: 'Contratti' },
     { key: 'differiti',    icon: '⏳', label: 'Differiti' },
@@ -8823,13 +8843,41 @@ function AdminControlRoomPage({ teams }) {
           )}
 
           {/* ── RIVALITÀ & GEMELLATI ── */}
-          {tab === 'rivalita' && (
+          {tab === 'rivalita' && (() => {
+            const [lockGlobale, setLockGlobale] = React.useState(_rivalitaBloccata);
+            const [lockBusy, setLockBusy] = React.useState(false);
+            async function toggleLock() {
+              if (!window.confirm(lockGlobale ? 'Sbloccare le scelte? I presidenti potranno modificare rivale e gemellato.' : 'Bloccare le scelte? Nessun presidente potrà più modificare rivale o gemellato.')) return;
+              setLockBusy(true);
+              try {
+                await setRivalitaLock(!lockGlobale);
+                _rivalitaBloccata = !lockGlobale;
+                setLockGlobale(!lockGlobale);
+              } catch(e) { alert(e.message); }
+              finally { setLockBusy(false); }
+            }
+            return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>⚔️ RIVALITÀ & GEMELLATI — GESTIONE ADMIN</div>
-              <div style={{ background: '#6366f108', border: '1px solid #6366f125', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#aaa', lineHeight: 1.6 }}>
-                Rivale: bloccato dopo la scelta del presidente (art. 8.3 — tra 3ª e 4ª giornata).<br/>
-                Gemellato: bloccato dopo la scelta. Come admin puoi resettare entrambi i valori.
+
+              {/* Lock globale */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: lockGlobale ? '#ef444410' : '#10b98110', border: `1px solid ${lockGlobale ? '#ef444430' : '#10b98130'}`, borderRadius: 12, padding: '12px 16px', gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: lockGlobale ? '#ef4444' : '#10b981' }}>
+                    {lockGlobale ? '🔒 Scelte bloccate' : '🔓 Scelte aperte'}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>
+                    {lockGlobale ? 'I presidenti non possono modificare rivale/gemellato' : 'I presidenti possono scegliere o cambiare rivale/gemellato'}
+                  </div>
+                </div>
+                <button
+                  disabled={lockBusy}
+                  onClick={toggleLock}
+                  style={{ padding: '8px 18px', borderRadius: 9, border: `1.5px solid ${lockGlobale ? '#10b98150' : '#ef444450'}`, background: lockGlobale ? '#10b98115' : '#ef444415', color: lockGlobale ? '#10b981' : '#ef4444', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  {lockBusy ? '…' : lockGlobale ? '🔓 Sblocca' : '🔒 Blocca'}
+                </button>
               </div>
+
               <button
                 disabled={!!rivalitaBusy}
                 onClick={async () => {
@@ -8848,11 +8896,22 @@ function AdminControlRoomPage({ teams }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {(teams || []).map(t => {
                     const ci = rivalitaData.find(r => r.squadra === t.name) || {};
-                    const TEAMS_LIST = ["Alcool Campi","AK Toio","Agnus Dei FC","Balillareal","Borjcellona","Wehrmacht FC","Finocchiona AC","Shalpe 104"];
-                    const altre = TEAMS_LIST.filter(n => n !== t.name);
+                    const TEAMS_LIST_CR = ["Alcool Campi","AK Toio","Agnus Dei FC","Balillareal","Borjcellona","Wehrmacht FC","Finocchiona AC","Shalpe 104"];
+                    const altre = TEAMS_LIST_CR.filter(n => n !== t.name);
                     const isRivBusy = rivalitaBusy === `riv_${t.name}`;
                     const isGemBusy = rivalitaBusy === `gem_${t.name}`;
                     const selStyle = { padding: '4px 8px', borderRadius: 6, border: '1px solid #ffffff15', background: '#0d0f14', color: '#f0f0f0', fontSize: 11 };
+                    async function salvaRivalita(field, val) {
+                      const confirm_msg = field === 'rivali' ? `Impostare rivale di ${t.name} → ${val || '(nessuno)'}?` : `Impostare gemellato di ${t.name} → ${val || '(nessuno)'}?`;
+                      if (!window.confirm(confirm_msg)) return;
+                      setRivalitaBusy(`${field === 'rivali' ? 'riv' : 'gem'}_${t.name}`);
+                      try {
+                        await supabase.from('club_identity').upsert({ squadra: t.name, [field]: val || null, updated_at: new Date().toISOString() }, { onConflict: 'squadra' });
+                        const { data } = await supabase.from('club_identity').select('squadra, rivali, gemellato');
+                        setRivalitaData(data || []);
+                      } catch(e) { alert(e.message); }
+                      finally { setRivalitaBusy(null); }
+                    }
                     return (
                       <div key={t.name} style={{ background: '#ffffff06', border: '1px solid #ffffff10', borderRadius: 12, padding: '12px 14px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
@@ -8860,60 +8919,137 @@ function AdminControlRoomPage({ teams }) {
                           <span style={{ fontWeight: 700, color: '#f0f0f0', fontSize: 13 }}>{t.name}</span>
                         </div>
                         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                          {/* Rivale */}
                           <div style={{ flex: 1, minWidth: 180 }}>
                             <div style={{ fontSize: 9, color: '#555', letterSpacing: '0.06em', marginBottom: 4 }}>RIVALE (art. 8.3)</div>
                             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                              <select
-                                value={ci.rivali || ""}
-                                onChange={async e => {
-                                  const val = e.target.value;
-                                  if (!window.confirm(`Impostare rivale di ${t.name} → ${val || '(nessuno)'}?`)) return;
-                                  setRivalitaBusy(`riv_${t.name}`);
-                                  try {
-                                    await supabase.from('club_identity').upsert({ squadra: t.name, rivali: val || null, updated_at: new Date().toISOString() }, { onConflict: 'squadra' });
-                                    const { data } = await supabase.from('club_identity').select('squadra, rivali, gemellato');
-                                    setRivalitaData(data || []);
-                                  } catch(e) { alert(e.message); }
-                                  finally { setRivalitaBusy(null); }
-                                }}
-                                disabled={isRivBusy}
-                                style={selStyle}>
+                              <select value={ci.rivali || ""} onChange={e => salvaRivalita('rivali', e.target.value)} disabled={isRivBusy} style={selStyle}>
                                 <option value="">— Nessuno —</option>
                                 {altre.map(n => <option key={n} value={n}>{n}</option>)}
                               </select>
-                              {ci.rivali && <span style={{ fontSize: 9, color: '#ef4444', background: '#ef444415', border: '1px solid #ef444430', borderRadius: 4, padding: '1px 6px' }}>🔒 {ci.rivali}</span>}
+                              {ci.rivali && <span style={{ fontSize: 9, color: '#ef4444', background: '#ef444415', border: '1px solid #ef444430', borderRadius: 4, padding: '1px 6px' }}>⚔️ {ci.rivali}</span>}
                             </div>
                           </div>
-                          {/* Gemellato */}
                           <div style={{ flex: 1, minWidth: 180 }}>
                             <div style={{ fontSize: 9, color: '#555', letterSpacing: '0.06em', marginBottom: 4 }}>GEMELLATO</div>
                             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                              <select
-                                value={ci.gemellato || ""}
-                                onChange={async e => {
-                                  const val = e.target.value;
-                                  if (!window.confirm(`Impostare gemellato di ${t.name} → ${val || '(nessuno)'}?`)) return;
-                                  setRivalitaBusy(`gem_${t.name}`);
-                                  try {
-                                    await supabase.from('club_identity').upsert({ squadra: t.name, gemellato: val || null, updated_at: new Date().toISOString() }, { onConflict: 'squadra' });
-                                    const { data } = await supabase.from('club_identity').select('squadra, rivali, gemellato');
-                                    setRivalitaData(data || []);
-                                  } catch(e) { alert(e.message); }
-                                  finally { setRivalitaBusy(null); }
-                                }}
-                                disabled={isGemBusy}
-                                style={selStyle}>
+                              <select value={ci.gemellato || ""} onChange={e => salvaRivalita('gemellato', e.target.value)} disabled={isGemBusy} style={selStyle}>
                                 <option value="">— Nessuno —</option>
                                 {altre.map(n => <option key={n} value={n}>{n}</option>)}
                               </select>
-                              {ci.gemellato && <span style={{ fontSize: 9, color: '#a78bfa', background: '#a78bfa15', border: '1px solid #a78bfa30', borderRadius: 4, padding: '1px 6px' }}>🔒 {ci.gemellato}</span>}
+                              {ci.gemellato && <span style={{ fontSize: 9, color: '#a78bfa', background: '#a78bfa15', border: '1px solid #a78bfa30', borderRadius: 4, padding: '1px 6px' }}>💜 {ci.gemellato}</span>}
                             </div>
                           </div>
                         </div>
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </div>
+            );
+          })()}
+
+          {/* ── DATABASE FANTA ── */}
+          {tab === 'database' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>📊 IMPORT DATABASE FANTA.XLSX</div>
+              <div style={{ background: '#6366f108', border: '1px solid #6366f125', borderRadius: 10, padding: '12px 14px', fontSize: 12, color: '#aaa', lineHeight: 1.7 }}>
+                Carica il file <b style={{ color: '#818cf8' }}>Database Fanta.xlsx</b> per aggiornare il database:<br/>
+                • <b>Giocatori in rosa</b>: aggiorna statistiche + salva la nuova <b>Quotazione Reale</b> (visible in mercato al momento del trasferimento)<br/>
+                • <b>Svincolati</b>: aggiorna statistiche + quotazione/stipendio/clausola<br/>
+                • Le quotazioni dei giocatori già in rosa <b>non vengono toccate</b> finché non vengono ceduti
+              </div>
+
+              {/* Upload */}
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <label style={{ padding: '8px 16px', borderRadius: 9, border: '1.5px solid #6366f150', background: '#6366f115', color: '#818cf8', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  📂 Carica Database Fanta.xlsx
+                  <input type="file" accept=".xlsx" style={{ display: 'none' }}
+                    onChange={async e => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      setDbImportPreview(null);
+                      setDbImportDone(null);
+                      setDbImportBusy(true);
+                      try {
+                        const XLSX = await import("https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs");
+                        const buf = await file.arrayBuffer();
+                        const wb = XLSX.read(buf);
+                        const ws = wb.Sheets[wb.SheetNames[0]];
+                        const rows = XLSX.utils.sheet_to_json(ws);
+                        // Anteprima rapida prima di applicare
+                        const rosaCheck = rows.filter(r => r['FantaSquadra']).length;
+                        const svinCheck = rows.filter(r => !r['FantaSquadra'] && r['QUOT.'] > 0).length;
+                        setDbImportPreview({ rows, rosaCheck, svinCheck, nomeFile: file.name });
+                      } catch(err) { alert('Errore lettura file: ' + err.message); }
+                      finally { setDbImportBusy(false); e.target.value = ''; }
+                    }}
+                  />
+                </label>
+                {dbImportBusy && <span style={{ fontSize: 12, color: '#555' }}>⏳ Lettura file…</span>}
+              </div>
+
+              {/* Anteprima */}
+              {dbImportPreview && !dbImportDone && (
+                <div style={{ background: '#ffffff06', border: '1px solid #ffffff12', borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.06em' }}>ANTEPRIMA — {dbImportPreview.nomeFile}</div>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    {[
+                      { label: 'Righe totali', value: dbImportPreview.rows.length, color: '#818cf8' },
+                      { label: 'In rosa (solo stats + quot reale)', value: dbImportPreview.rosaCheck, color: '#f59e0b' },
+                      { label: 'Svincolati (stats + quotazione)', value: dbImportPreview.svinCheck, color: '#10b981' },
+                    ].map(s => (
+                      <div key={s.label} style={{ flex: '1 1 130px', background: s.color + '10', border: `1px solid ${s.color}25`, borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
+                        <div style={{ fontSize: 8, color: s.color, fontWeight: 700, letterSpacing: '0.06em', marginBottom: 4 }}>{s.label.toUpperCase()}</div>
+                        <div style={{ fontSize: 22, fontWeight: 900, color: s.color, fontFamily: "'Bebas Neue',sans-serif", lineHeight: 1 }}>{s.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    disabled={dbImportBusy}
+                    onClick={async () => {
+                      if (!window.confirm(`Applicare l'import di ${dbImportPreview.rows.length} giocatori dal file "${dbImportPreview.nomeFile}"?\n\nVerranno aggiornate statistiche per tutti i giocatori. Le quotazioni in rosa non verranno modificate.`)) return;
+                      setDbImportBusy(true);
+                      try {
+                        const result = await importDatabaseFanta(dbImportPreview.rows, STAGIONE_CR);
+                        setDbImportDone(result);
+                        setDbImportPreview(null);
+                      } catch(err) { alert('Errore import: ' + err.message); }
+                      finally { setDbImportBusy(false); }
+                    }}
+                    style={{ padding: '9px 20px', borderRadius: 10, border: '1.5px solid #10b98150', background: '#10b98115', color: '#10b981', fontSize: 13, fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start' }}>
+                    {dbImportBusy ? '⏳ Import in corso…' : '▶️ Applica import'}
+                  </button>
+                </div>
+              )}
+
+              {/* Risultato */}
+              {dbImportDone && (
+                <div style={{ background: '#10b98110', border: '1px solid #10b98130', borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#10b981' }}>✅ Import completato</div>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    {[
+                      { label: 'In rosa aggiornati', value: dbImportDone.rosaAggiornati, color: '#f59e0b' },
+                      { label: 'Svincolati aggiornati', value: dbImportDone.svinAggiornati, color: '#10b981' },
+                      { label: 'Non trovati nel DB', value: dbImportDone.nonTrovati.length, color: dbImportDone.nonTrovati.length > 0 ? '#ef4444' : '#555' },
+                    ].map(s => (
+                      <div key={s.label} style={{ flex: '1 1 130px', background: s.color + '10', border: `1px solid ${s.color}25`, borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
+                        <div style={{ fontSize: 8, color: s.color, fontWeight: 700, letterSpacing: '0.06em', marginBottom: 4 }}>{s.label.toUpperCase()}</div>
+                        <div style={{ fontSize: 22, fontWeight: 900, color: s.color, fontFamily: "'Bebas Neue',sans-serif", lineHeight: 1 }}>{s.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {dbImportDone.nonTrovati.length > 0 && (
+                    <details style={{ fontSize: 11, color: '#ef4444' }}>
+                      <summary style={{ cursor: 'pointer', color: '#ef4444' }}>⚠️ {dbImportDone.nonTrovati.length} giocatori non trovati nel database</summary>
+                      <div style={{ marginTop: 8, background: '#ef444408', borderRadius: 8, padding: '8px 12px', maxHeight: 200, overflowY: 'auto', lineHeight: 1.7, color: '#f87171', fontSize: 11 }}>
+                        {dbImportDone.nonTrovati.join(' · ')}
+                      </div>
+                    </details>
+                  )}
+                  <button onClick={() => setDbImportDone(null)} style={{ alignSelf: 'flex-start', padding: '5px 12px', borderRadius: 7, border: '1px solid #ffffff15', background: 'transparent', color: '#555', fontSize: 11, cursor: 'pointer' }}>
+                    Nuovo import
+                  </button>
                 </div>
               )}
             </div>
@@ -10494,6 +10630,7 @@ function AppInner() {
   useEffect(() => {
     if (!session) return;
     getMercatoOverride().then(v => { _mercatoOverride = v; setMercatoOverride_state(v); }).catch(() => {});
+    getRivalitaLock().then(v => { _rivalitaBloccata = v; }).catch(() => {});
   }, [session]);
 
   // ── Offerte in attesa: solo realtime, nessun polling ─────────────────────
