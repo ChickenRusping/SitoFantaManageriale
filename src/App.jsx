@@ -166,7 +166,7 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   applicaMulteFPFTutte, applicaPremiCampionato,
   // Database Fanta import + Rivalità lock
   importDatabaseFanta, getRivalitaLock, setRivalitaLock,
-  calcolaTop5GlobaleQuotReale, applica01Gennaio, applica01GiugnoAgosto,
+  calcolaTop5GlobaleQuotReale, applica01Gennaio, applica01GiugnoAgosto, importa01Agosto,
   // Telegram
   sendTelegramNotification, getTelegramRegistrations, deleteTelegramRegistration,
   // Albo d'Oro & Regolamento
@@ -1837,10 +1837,14 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                     )}
                   </td>
                   <td style={{ padding:"7px 8px",textAlign:"center" }}>
-                    <span style={{ color: p._stipDiff ? "#f59e0b" : "#aaa", fontWeight: p._stipDiff ? 700 : 400 }}
-                      title={p._stipDiff ? `Stip. salvato: ${Number(p.stip).toFixed(2)}M · Calcolato: ${p._stipCorretto.toFixed(2)}M` : `Q${p.quot}/5${p._acNum>=2&&!(p.anni>0&&p.anni<=21)?" +incremento contratto":""}`}>
-                      {p._stipCorretto.toFixed(2)}M{p._stipDiff ? " ⚠" : ""}
-                    </span>
+                    {(()=>{
+                      const isU21s = p.anni > 0 && p.anni <= 21;
+                      const ac1 = (p.anni_contratto||0) <= 1;
+                      const color = isU21s ? "#10b981" : p._stipDiff ? "#f59e0b" : ac1 ? "#aaa" : "#aaa";
+                      const fw = (isU21s || p._stipDiff) ? 700 : 400;
+                      const ttip = p._stipDiff ? `Stip. salvato: ${Number(p.stip).toFixed(2)}M · Calcolato: ${p._stipCorretto.toFixed(2)}M` : `Q${p.quot}/5${p._acNum>=2&&!isU21s?" +incremento contratto":""}`;
+                      return <span style={{ color, fontWeight: fw }} title={ttip}>{p._stipCorretto.toFixed(2)}M</span>;
+                    })()}
                   </td>
                   <td style={{ padding:"7px 8px",textAlign:"center" }}>
                     {(()=>{const ac=p.anni_contratto||0,isU21=p.anni>0&&p.anni<=21,color=ac===0?"#555":ac>=4?"#10b981":ac>=3?"#f59e0b":"#818cf8";
@@ -9097,11 +9101,14 @@ function AdminControlRoomPage({ teams }) {
                           // Import già fatto al caricamento file, ora applica i rialzi
                           const { rialziApplicati } = await applica01Gennaio(dbImportPreview.top5Preview.rialzi, STAGIONE_CR);
                           result = { rosaAggiornati: rialziApplicati, svinAggiornati: 0, nonTrovati: [], totale: dbImportPreview.rows.length, note: 'Top 5 rialzi applicati. Finestra ribasso aperta per i presidenti.' };
-                        } else {
-                          // 01/06 o 01/08: prima importa (per aggiornare quot_reale), poi applica
+                        } else if (dbTipo === '01/06') {
                           await importDatabaseFanta(dbImportPreview.rows, STAGIONE_CR);
                           const { aggiornati, totale } = await applica01GiugnoAgosto(STAGIONE_CR);
-                          result = { rosaAggiornati: aggiornati, svinAggiornati: 0, nonTrovati: [], totale, note: 'Quotazioni complete aggiornate per tutti i giocatori in rosa.' };
+                          result = { rosaAggiornati: aggiornati, svinAggiornati: 0, nonTrovati: [], totale, note: 'Quotazioni aggiornate per tutti i giocatori in rosa.' };
+                        } else {
+                          // 01/08: full import con creazione nuovi giocatori
+                          const r = await importa01Agosto(dbImportPreview.rows, STAGIONE_CR);
+                          result = { rosaAggiornati: r.rosaAggiornati, svinAggiornati: r.svinAggiornati, nonTrovati: r.nonTrovati, totale: r.totale, note: `Aggiornamento completo: ${r.rosaAggiornati} in rosa, ${r.svinAggiornati} svincolati aggiornati, ${r.nuoviCreati} nuovi creati.` };
                         }
                         setDbImportDone(result);
                         setDbImportPreview(null);
