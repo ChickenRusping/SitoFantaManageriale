@@ -869,42 +869,16 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
 /* ─── TORNEI SECTION ─────────────────────────────────────────────────────────── */
 
 // Dati iniziali hard-coded per la stagione 2026/27
+const _COPPA_SQUADRE_A = ["Borjcellona","Finocchiona","AK Toio","Balillareal"];
+const _COPPA_SQUADRE_B = ["Agnus Dei FC","Alcool Campi","Wehrmacht FC","Shalpe 104"];
+function _emptyGirone(squadre) {
+  return squadre.map(sq => ({ sq, g:0, v:0, n:0, p:0, gf:0, gs:0, dr:0, pt:0 }));
+}
+
 const COPPA_INIT = {
   gironi: {
-    A: {
-      squadre: ["Borjcellona","Finocchiona","AK Toio","Balillareal"],
-      partite: [
-        {id:"A1",g:10,casa:"Borjcellona",trasf:"Finocchiona",gc:null,gt:null},
-        {id:"A2",g:10,casa:"AK Toio",trasf:"Balillareal",gc:null,gt:null},
-        {id:"A3",g:12,casa:"Borjcellona",trasf:"AK Toio",gc:null,gt:null},
-        {id:"A4",g:12,casa:"Finocchiona",trasf:"Balillareal",gc:null,gt:null},
-        {id:"A5",g:14,casa:"Borjcellona",trasf:"Balillareal",gc:null,gt:null},
-        {id:"A6",g:14,casa:"Finocchiona",trasf:"AK Toio",gc:null,gt:null},
-        {id:"A7",g:18,casa:"Finocchiona",trasf:"Borjcellona",gc:null,gt:null},
-        {id:"A8",g:18,casa:"Balillareal",trasf:"AK Toio",gc:null,gt:null},
-        {id:"A9",g:20,casa:"AK Toio",trasf:"Borjcellona",gc:null,gt:null},
-        {id:"A10",g:20,casa:"Balillareal",trasf:"Finocchiona",gc:null,gt:null},
-        {id:"A11",g:22,casa:"Balillareal",trasf:"Borjcellona",gc:null,gt:null},
-        {id:"A12",g:22,casa:"AK Toio",trasf:"Finocchiona",gc:null,gt:null},
-      ],
-    },
-    B: {
-      squadre: ["Agnus Dei FC","Alcool Campi","Wehrmacht FC","Shalpe 104"],
-      partite: [
-        {id:"B1",g:10,casa:"Agnus Dei FC",trasf:"Alcool Campi",gc:null,gt:null},
-        {id:"B2",g:10,casa:"Wehrmacht FC",trasf:"Shalpe 104",gc:null,gt:null},
-        {id:"B3",g:12,casa:"Agnus Dei FC",trasf:"Wehrmacht FC",gc:null,gt:null},
-        {id:"B4",g:12,casa:"Alcool Campi",trasf:"Shalpe 104",gc:null,gt:null},
-        {id:"B5",g:14,casa:"Agnus Dei FC",trasf:"Shalpe 104",gc:null,gt:null},
-        {id:"B6",g:14,casa:"Alcool Campi",trasf:"Wehrmacht FC",gc:null,gt:null},
-        {id:"B7",g:18,casa:"Alcool Campi",trasf:"Agnus Dei FC",gc:null,gt:null},
-        {id:"B8",g:18,casa:"Shalpe 104",trasf:"Wehrmacht FC",gc:null,gt:null},
-        {id:"B9",g:20,casa:"Wehrmacht FC",trasf:"Agnus Dei FC",gc:null,gt:null},
-        {id:"B10",g:20,casa:"Shalpe 104",trasf:"Alcool Campi",gc:null,gt:null},
-        {id:"B11",g:22,casa:"Shalpe 104",trasf:"Agnus Dei FC",gc:null,gt:null},
-        {id:"B12",g:22,casa:"Wehrmacht FC",trasf:"Alcool Campi",gc:null,gt:null},
-      ],
-    },
+    A: { classifica: _emptyGirone(_COPPA_SQUADRE_A) },
+    B: { classifica: _emptyGirone(_COPPA_SQUADRE_B) },
   },
   semifinali: [
     {id:"SF1",label:"1°A vs 2°B",g_andata:26,g_ritorno:28,squadra_a:null,squadra_b:null,gol_aa:null,gol_ba:null,gol_ar:null,gol_br:null},
@@ -921,90 +895,65 @@ const SUPERCOPPA_INIT = {
   finale: {g:8,squadra_a:null,squadra_b:null,gol_a:null,gol_b:null},
 };
 
-function calcolaGirone(squadre, partite) {
-  const s = {};
-  squadre.forEach(sq => { s[sq] = {sq,g:0,v:0,n:0,p:0,gf:0,gs:0,dr:0,pt:0}; });
-  partite.forEach(({ casa, trasf, gc, gt }) => {
-    if (gc === null || gt === null || gc === '' || gt === '') return;
-    const a = Number(gc), b = Number(gt);
-    s[casa].g++;  s[trasf].g++;
-    s[casa].gf += a; s[casa].gs += b;
-    s[trasf].gf += b; s[trasf].gs += a;
-    if (a > b)      { s[casa].v++;  s[trasf].p++;  s[casa].pt += 3; }
-    else if (a < b) { s[trasf].v++; s[casa].p++;   s[trasf].pt += 3; }
-    else            { s[casa].n++;  s[trasf].n++;   s[casa].pt++;  s[trasf].pt++; }
-  });
-  Object.values(s).forEach(r => { r.dr = r.gf - r.gs; });
-  return Object.values(s).sort((a,b) => b.pt-a.pt || b.dr-a.dr || b.gf-a.gf);
-}
-
 function vincitore(sf) {
-  if (sf.gol_a === null && sf.gol_b === null) return null;
-  const a = Number(sf.gol_a||0), b = Number(sf.gol_b||0);
+  if (sf.gol_a === null || sf.gol_b === null) return null;
+  const a = Number(sf.gol_a), b = Number(sf.gol_b);
   if (a > b) return sf.squadra_a;
   if (b > a) return sf.squadra_b;
-  return null; // pareggio = TBD
+  return null;
 }
 
 function vincitoreSFCoppa(sf) {
-  const aa = Number(sf.gol_aa??''), ba = Number(sf.gol_ba??'');
-  const ar = Number(sf.gol_ar??''), br = Number(sf.gol_br??'');
-  const hasAndata = sf.gol_aa !== null && sf.gol_ba !== null;
-  const hasRitorno = sf.gol_ar !== null && sf.gol_br !== null;
-  if (!hasAndata) return null;
-  if (!hasRitorno) return null;
-  const totA = aa + ar, totB = ba + br;
+  if (sf.gol_aa === null || sf.gol_ba === null || sf.gol_ar === null || sf.gol_br === null) return null;
+  const totA = Number(sf.gol_aa) + Number(sf.gol_ar);
+  const totB = Number(sf.gol_ba) + Number(sf.gol_br);
   if (totA > totB) return sf.squadra_a;
   if (totB > totA) return sf.squadra_b;
   return null;
 }
 
-function ScoreInput({ val, onChange, style }) {
+function ScoreInput({ val, onChange }) {
   return (
     <input type="number" min="0" value={val??''} onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}
-      style={{ width:30, padding:'3px 4px', borderRadius:5, border:'1px solid #ffffff20', background:'#ffffff10', color:'#f0f0f0', fontSize:12, fontWeight:700, textAlign:'center', outline:'none', ...style }} />
+      style={{ width:32, padding:'3px 4px', borderRadius:5, border:'1px solid #ffffff20', background:'#ffffff10', color:'#f0f0f0', fontSize:12, fontWeight:700, textAlign:'center', outline:'none' }} />
   );
 }
 
-function MatchRow({ p, isAdmin, onChange }) {
-  const giocata = p.gc !== null && p.gt !== null;
-  return (
-    <div style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 8px', borderRadius:8, background:'#ffffff04', marginBottom:3 }}>
-      <span style={{ fontSize:9, color:'#444', minWidth:20, textAlign:'center', fontWeight:700 }}>G{p.g}</span>
-      <span style={{ flex:1, fontSize:11, color: giocata?'#ddd':'#666', textAlign:'right', fontWeight:600 }}>{p.casa}</span>
-      {isAdmin ? (
-        <div style={{ display:'flex', alignItems:'center', gap:4 }}>
-          <ScoreInput val={p.gc} onChange={v => onChange({...p, gc:v})} />
-          <span style={{ color:'#444', fontSize:11, fontWeight:700 }}>-</span>
-          <ScoreInput val={p.gt} onChange={v => onChange({...p, gt:v})} />
-        </div>
-      ) : (
-        <span style={{ fontSize:12, fontWeight:800, color:'#aaa', minWidth:36, textAlign:'center' }}>
-          {giocata ? `${p.gc} - ${p.gt}` : 'vs'}
-        </span>
-      )}
-      <span style={{ flex:1, fontSize:11, color: giocata?'#ddd':'#666', fontWeight:600 }}>{p.trasf}</span>
-    </div>
-  );
-}
-
-function GironeTable({ classifica }) {
-  const cols = ['','Sq','G','V','N','P','G+','G−','DR','Pt'];
+function GironeTable({ classifica, isAdmin, onEdit }) {
+  const sorted = [...classifica].sort((a,b) => b.pt-a.pt || b.dr-a.dr || b.gf-a.gf);
+  const numInp = { width:28, padding:'3px 2px', borderRadius:5, border:'1px solid #ffffff18', background:'#ffffff08', color:'#f0f0f0', fontSize:11, fontWeight:600, textAlign:'center', outline:'none' };
   return (
     <table style={{ width:'100%', borderCollapse:'collapse', fontSize:11 }}>
       <thead>
-        <tr>{cols.map((c,i) => <th key={i} style={{ padding:'4px 5px', color:'#555', fontWeight:700, fontSize:9, textAlign: i<=1?'left':'center', letterSpacing:'0.05em' }}>{c}</th>)}</tr>
+        <tr>{['#','Squadra','V','N','P','G+','G−','DR','Pt'].map((c,i) => (
+          <th key={i} style={{ padding:'4px 5px', color:'#555', fontWeight:700, fontSize:9, textAlign: i<=1?'left':'center', letterSpacing:'0.05em' }}>{c}</th>
+        ))}</tr>
       </thead>
       <tbody>
-        {classifica.map((r,i) => {
+        {sorted.map((r,i) => {
           const color = i===0?'#10b981':i===1?'#f59e0b':'#666';
           return (
             <tr key={r.sq} style={{ borderBottom:'1px solid #ffffff06' }}>
               <td style={{ padding:'5px', textAlign:'center', fontSize:10, fontWeight:900, color }}>{i+1}</td>
-              <td style={{ padding:'5px', fontWeight:700, color:'#ddd', whiteSpace:'nowrap', maxWidth:100, overflow:'hidden', textOverflow:'ellipsis' }}>{r.sq}</td>
-              {[r.g,r.v,r.n,r.p,r.gf,r.gs].map((v,k) => <td key={k} style={{ padding:'5px', textAlign:'center', color:'#888' }}>{v}</td>)}
-              <td style={{ padding:'5px', textAlign:'center', color: r.dr>0?'#10b981':r.dr<0?'#ef4444':'#666', fontWeight:600 }}>{r.dr>0?'+':''}{r.dr}</td>
-              <td style={{ padding:'5px', textAlign:'center', fontWeight:900, color, fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>{r.pt}</td>
+              <td style={{ padding:'5px', fontWeight:700, color:'#ddd', whiteSpace:'nowrap', maxWidth:110, overflow:'hidden', textOverflow:'ellipsis' }}>{r.sq}</td>
+              {isAdmin ? (
+                <>
+                  {['v','n','p','gf','gs'].map(f => (
+                    <td key={f} style={{ padding:'2px 3px', textAlign:'center' }}>
+                      <input type="number" min="0" value={r[f]??''} style={numInp}
+                        onChange={e => onEdit(r.sq, f, e.target.value === '' ? 0 : Number(e.target.value))} />
+                    </td>
+                  ))}
+                  <td style={{ padding:'5px', textAlign:'center', color: r.dr>0?'#10b981':r.dr<0?'#ef4444':'#555', fontWeight:600, fontSize:11 }}>{r.dr>0?'+':''}{r.dr}</td>
+                  <td style={{ padding:'5px', textAlign:'center', fontWeight:900, color, fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>{r.pt}</td>
+                </>
+              ) : (
+                <>
+                  {[r.v,r.n,r.p,r.gf,r.gs].map((v,k) => <td key={k} style={{ padding:'5px', textAlign:'center', color:'#888' }}>{v}</td>)}
+                  <td style={{ padding:'5px', textAlign:'center', color: r.dr>0?'#10b981':r.dr<0?'#ef4444':'#555', fontWeight:600 }}>{r.dr>0?'+':''}{r.dr}</td>
+                  <td style={{ padding:'5px', textAlign:'center', fontWeight:900, color, fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>{r.pt}</td>
+                </>
+              )}
             </tr>
           );
         })}
@@ -1013,22 +962,20 @@ function GironeTable({ classifica }) {
   );
 }
 
-function BracketMatch({ label, giornata, squadra_a, squadra_b, gol_a, gol_b, isAdmin, onChange, note }) {
+function BracketMatch({ label, gLabel, squadra_a, squadra_b, gol_a, gol_b, isAdmin, onChange }) {
   const vic = vincitore({ squadra_a, squadra_b, gol_a, gol_b });
   const giocata = gol_a !== null && gol_b !== null;
   const tbd = !squadra_a || !squadra_b;
   return (
-    <div style={{ background:'#ffffff06', border:'1px solid #ffffff12', borderRadius:10, padding:'10px 12px', minWidth:180 }}>
-      {label && <div style={{ fontSize:9, color:'#555', fontWeight:700, letterSpacing:'0.1em', marginBottom:6 }}>{label} · G{giornata}</div>}
-      {note && <div style={{ fontSize:9, color:'#666', marginBottom:6, fontStyle:'italic' }}>{note}</div>}
+    <div style={{ background:'#ffffff06', border:'1px solid #ffffff12', borderRadius:10, padding:'10px 12px', minWidth:190 }}>
+      {label && <div style={{ fontSize:9, color:'#555', fontWeight:700, letterSpacing:'0.1em', marginBottom:6 }}>{label}{gLabel && <span style={{ color:'#333', marginLeft:6 }}>· {gLabel}</span>}</div>}
       {[{sq:squadra_a,gol:gol_a,field:'gol_a'},{sq:squadra_b,gol:gol_b,field:'gol_b'}].map(({sq,gol,field},i) => (
-        <div key={i} style={{ display:'flex', alignItems:'center', gap:6, padding:'4px 0', borderBottom: i===0?'1px solid #ffffff08':'none' }}>
-          <span style={{ flex:1, fontSize:11, fontWeight: vic===sq?800:600, color: tbd?'#444': vic===sq?'#10b981':'#ddd', fontStyle: tbd?'italic':'normal', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-            {sq || '?'}
-          </span>
+        <div key={i} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 0', borderBottom: i===0?'1px solid #ffffff08':'none' }}>
+          <span style={{ flex:1, fontSize:11, fontWeight: vic===sq?800:600, color: tbd?'#444': vic===sq?'#10b981':'#ccc', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontStyle: tbd?'italic':'normal' }}>
+            {sq||'?'}</span>
           {isAdmin && !tbd
             ? <ScoreInput val={gol} onChange={v => onChange(field, v)} />
-            : <span style={{ fontSize:12, fontWeight:800, color: vic===sq?'#10b981':'#aaa', minWidth:18, textAlign:'center' }}>{giocata ? gol : '–'}</span>
+            : <span style={{ fontSize:12, fontWeight:800, color: vic===sq?'#10b981':'#666', minWidth:20, textAlign:'center' }}>{giocata ? gol : '–'}</span>
           }
         </div>
       ))}
@@ -1036,42 +983,80 @@ function BracketMatch({ label, giornata, squadra_a, squadra_b, gol_a, gol_b, isA
   );
 }
 
-function TorneiSection({ isAdmin }) {
+function BracketSFCoppa({ sf, isAdmin, onChange }) {
+  const totA = Number(sf.gol_aa??0) + Number(sf.gol_ar??0);
+  const totB = Number(sf.gol_ba??0) + Number(sf.gol_br??0);
+  const vin = vincitoreSFCoppa(sf);
+  const tbd = !sf.squadra_a || !sf.squadra_b;
+  const hasAndata = sf.gol_aa !== null && sf.gol_ba !== null;
+  const hasRitorno = sf.gol_ar !== null && sf.gol_br !== null;
+  return (
+    <div style={{ background:'#ffffff06', border:'1px solid #ffffff12', borderRadius:10, padding:'10px 12px', minWidth:220 }}>
+      <div style={{ fontSize:9, color:'#555', fontWeight:700, letterSpacing:'0.1em', marginBottom:8 }}>
+        {sf.label} · <span style={{ color:'#333' }}>G{sf.g_andata} (and.) · G{sf.g_ritorno} (rit.)</span>
+      </div>
+      {[{sq:sf.squadra_a,fA:'gol_aa',fR:'gol_ar',tot:totA},{sq:sf.squadra_b,fA:'gol_ba',fR:'gol_br',tot:totB}].map(({sq,fA,fR,tot},i) => (
+        <div key={i} style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 0', borderBottom: i===0?'1px solid #ffffff08':'none' }}>
+          <span style={{ flex:1, fontSize:11, fontWeight: vin===sq?800:600, color: tbd?'#444': vin===sq?'#10b981':'#ccc', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{sq||'?'}</span>
+          {isAdmin && !tbd ? (
+            <div style={{ display:'flex', gap:3, alignItems:'center' }}>
+              <ScoreInput val={sf[fA]} onChange={v => onChange(fA, v)} />
+              <span style={{ fontSize:9, color:'#333' }}>+</span>
+              <ScoreInput val={sf[fR]} onChange={v => onChange(fR, v)} />
+              {(hasAndata||hasRitorno) && <span style={{ fontSize:10, color: vin===sq?'#10b981':'#555', fontWeight:800, minWidth:24 }}>={tot}</span>}
+            </div>
+          ) : (
+            <span style={{ fontSize:11, fontWeight:700, color: vin===sq?'#10b981':'#777' }}>
+              {hasAndata ? `${sf[fA]}+${sf[fR]||'?'}=${tot}` : '–'}
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TorneiSection({ isAdmin, forcedTab }) {
   const [coppa, setCoppa] = useState(null);
   const [superc, setSuperc] = useState(null);
-  const [tab, setTab] = useState('coppa');
+  const [tab, setTab] = useState(forcedTab || 'coppa');
   const [saving, setSaving] = useState(false);
 
+  // Sync tab when parent switches via forcedTab prop
+  useEffect(() => { if (forcedTab) setTab(forcedTab); }, [forcedTab]);
+
   useEffect(() => {
-    getTorneo('coppa_italia_2627').then(d => setCoppa(d || JSON.parse(JSON.stringify(COPPA_INIT))));
+    getTorneo('coppa_italia_2627').then(d => {
+      const init = JSON.parse(JSON.stringify(COPPA_INIT));
+      // compatibilità con versioni precedenti che avevano partite invece di classifica
+      if (d && d.gironi) {
+        ['A','B'].forEach(g => {
+          if (d.gironi[g] && !d.gironi[g].classifica) d.gironi[g].classifica = init.gironi[g].classifica;
+        });
+      }
+      setCoppa(d || init);
+    });
     getTorneo('supercoppa_2627').then(d => setSuperc(d || JSON.parse(JSON.stringify(SUPERCOPPA_INIT))));
   }, []);
 
-  async function saveCoppa(next) {
-    setCoppa(next);
-    setSaving(true);
-    await setTorneo('coppa_italia_2627', next).catch(()=>{});
-    setSaving(false);
-  }
-  async function saveSuperc(next) {
-    setSuperc(next);
-    setSaving(true);
-    await setTorneo('supercoppa_2627', next).catch(()=>{});
-    setSaving(false);
-  }
+  async function saveCoppa(next) { setCoppa(next); setSaving(true); await setTorneo('coppa_italia_2627', next).catch(()=>{}); setSaving(false); }
+  async function saveSuperc(next) { setSuperc(next); setSaving(true); await setTorneo('supercoppa_2627', next).catch(()=>{}); setSaving(false); }
 
-  function updatePartita(gruppo, id, changes) {
+  function editGirone(gruppo, sq, field, val) {
     const next = JSON.parse(JSON.stringify(coppa));
-    const arr = next.gironi[gruppo].partite;
-    const i = arr.findIndex(p => p.id === id);
-    if (i >= 0) arr[i] = { ...arr[i], ...changes };
-    // Aggiorna qualificate nelle semifinali
-    const clA = calcolaGirone(next.gironi.A.squadre, next.gironi.A.partite);
-    const clB = calcolaGirone(next.gironi.B.squadre, next.gironi.B.partite);
-    next.semifinali[0].squadra_a = clA[0]?.sq || null; // 1°A
-    next.semifinali[0].squadra_b = clB[1]?.sq || null; // 2°B
-    next.semifinali[1].squadra_a = clB[0]?.sq || null; // 1°B
-    next.semifinali[1].squadra_b = clA[1]?.sq || null; // 2°A
+    const row = next.gironi[gruppo].classifica.find(r => r.sq === sq);
+    if (!row) return;
+    row[field] = val;
+    row.g = row.v + row.n + row.p;
+    row.pt = row.v * 3 + row.n;
+    row.dr = row.gf - row.gs;
+    // Propaga qualificate alle semifinali
+    const sortG = g => [...next.gironi[g].classifica].sort((a,b) => b.pt-a.pt||b.dr-a.dr||b.gf-a.gf);
+    const sA = sortG('A'), sB = sortG('B');
+    next.semifinali[0].squadra_a = sA[0]?.sq||null;
+    next.semifinali[0].squadra_b = sB[1]?.sq||null;
+    next.semifinali[1].squadra_a = sB[0]?.sq||null;
+    next.semifinali[1].squadra_b = sA[1]?.sq||null;
     saveCoppa(next);
   }
 
@@ -1079,11 +1064,8 @@ function TorneiSection({ isAdmin }) {
     const next = JSON.parse(JSON.stringify(coppa));
     const sf = next.semifinali.find(s => s.id === sfId);
     if (sf) sf[field] = val;
-    // Aggiorna finale con vincitori
-    const v0 = vincitoreSFCoppa(next.semifinali[0]);
-    const v1 = vincitoreSFCoppa(next.semifinali[1]);
-    next.finale.squadra_a = v0;
-    next.finale.squadra_b = v1;
+    next.finale.squadra_a = vincitoreSFCoppa(next.semifinali[0]);
+    next.finale.squadra_b = vincitoreSFCoppa(next.semifinali[1]);
     saveCoppa(next);
   }
 
@@ -1097,131 +1079,74 @@ function TorneiSection({ isAdmin }) {
     const next = JSON.parse(JSON.stringify(superc));
     const sf = next.semifinali.find(s => s.id === sfId);
     if (sf) sf[field] = val;
-    const v0 = vincitore(next.semifinali[0]);
-    const v1 = vincitore(next.semifinali[1]);
-    next.finale.squadra_a = v0;
-    next.finale.squadra_b = v1;
-    saveSuperc(next);
-  }
-
-  function updateSCFinale(field, val) {
-    const next = JSON.parse(JSON.stringify(superc));
-    next.finale[field] = val;
+    next.finale.squadra_a = vincitore(next.semifinali[0]);
+    next.finale.squadra_b = vincitore(next.semifinali[1]);
     saveSuperc(next);
   }
 
   if (!coppa || !superc) return <div style={{ padding:20, color:'#555', fontSize:12 }}>⏳ Caricamento tornei…</div>;
 
-  const clA = calcolaGirone(coppa.gironi.A.squadre, coppa.gironi.A.partite);
-  const clB = calcolaGirone(coppa.gironi.B.squadre, coppa.gironi.B.partite);
-  const giornateGironi = [10,12,14,18,20,22];
-
-  const cardStyle = { background:'#ffffff06', border:'1.5px solid #ffffff12', borderRadius:18, padding:18 };
+  const card = { background:'#ffffff06', border:'1.5px solid #ffffff12', borderRadius:18, padding:18 };
+  const vincCoppa = vincitore(coppa.finale);
+  const vincSC = vincitore(superc.finale);
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:22 }}>
-      {/* Tab switcher */}
-      <div style={{ display:'flex', gap:8 }}>
-        {[['coppa','🏆 Coppa Italia'],['supercoppa','⭐ Supercoppa']].map(([k,l]) => (
-          <button key={k} onClick={() => setTab(k)}
-            style={{ padding:'7px 16px', borderRadius:9, border:'none', background: tab===k?'#6366f125':'transparent', color: tab===k?'#818cf8':'#555', fontWeight:700, fontSize:12, cursor:'pointer', borderBottom: tab===k?'2px solid #6366f1':'2px solid transparent' }}>
-            {l}
-          </button>
-        ))}
-        {saving && <span style={{ fontSize:10, color:'#555', alignSelf:'center' }}>⏳ salvataggio…</span>}
-      </div>
+      {!forcedTab && (
+        <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+          {[['coppa','🏆 Coppa Italia'],['supercoppa','⭐ Supercoppa']].map(([k,l]) => (
+            <button key={k} onClick={() => setTab(k)}
+              style={{ padding:'7px 16px', borderRadius:9, border:'none', background: tab===k?'#6366f125':'transparent', color: tab===k?'#818cf8':'#555', fontWeight:700, fontSize:12, cursor:'pointer', borderBottom: tab===k?'2px solid #6366f1':'2px solid transparent' }}>
+              {l}
+            </button>
+          ))}
+          {saving && <span style={{ fontSize:10, color:'#555' }}>⏳</span>}
+        </div>
+      )}
+      {saving && forcedTab && <span style={{ fontSize:10, color:'#555' }}>⏳</span>}
 
-      {/* ── COPPA ITALIA ── */}
       {tab === 'coppa' && (
         <>
           {/* Gironi */}
-          <div style={cardStyle}>
-            <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em', marginBottom:16 }}>🏟 FASE A GIRONI</div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
-              {['A','B'].map(g => {
-                const cl = g==='A' ? clA : clB;
-                const girone = coppa.gironi[g];
-                return (
-                  <div key={g} style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                    <div style={{ fontSize:12, fontWeight:800, color:'#818cf8' }}>Girone {g}</div>
-                    <GironeTable classifica={cl} />
-                    <div style={{ fontSize:9, color:'#555', marginTop:4, letterSpacing:'0.05em', fontWeight:700 }}>CALENDARIO</div>
-                    {giornateGironi.map(gg => {
-                      const partite = girone.partite.filter(p => p.g === gg);
-                      return (
-                        <div key={gg}>
-                          {partite.map(p => (
-                            <MatchRow key={p.id} p={p} isAdmin={isAdmin}
-                              onChange={changes => updatePartita(g, p.id, changes)} />
-                          ))}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
+          <div style={card}>
+            <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em', marginBottom:16 }}>🏟 FASE A GIRONI · G10–G22</div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20 }}>
+              {['A','B'].map(g => (
+                <div key={g}>
+                  <div style={{ fontSize:12, fontWeight:800, color:'#818cf8', marginBottom:8 }}>Girone {g}</div>
+                  <GironeTable classifica={coppa.gironi[g].classifica} isAdmin={isAdmin}
+                    onEdit={(sq, field, val) => editGirone(g, sq, field, val)} />
+                  {isAdmin && <div style={{ fontSize:9, color:'#444', marginTop:6 }}>V/N/P e G+/G− editabili · Pt e DR calcolati automaticamente</div>}
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Eliminazione diretta */}
-          <div style={cardStyle}>
-            <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em', marginBottom:16 }}>⚔️ FASE AD ELIMINAZIONE DIRETTA</div>
-            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-              {/* Semifinali */}
-              <div style={{ fontSize:10, fontWeight:700, color:'#666', letterSpacing:'0.08em' }}>SEMIFINALI (G26 andata · G28 ritorno)</div>
+          {/* Tabellone */}
+          <div style={card}>
+            <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em', marginBottom:16 }}>⚔️ TABELLONE ELIMINAZIONE DIRETTA</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+              <div style={{ fontSize:9, color:'#555', fontWeight:700, letterSpacing:'0.08em' }}>SEMIFINALI</div>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                {coppa.semifinali.map(sf => {
-                  const totA = (sf.gol_aa??0) + (sf.gol_ar??0);
-                  const totB = (sf.gol_ba??0) + (sf.gol_br??0);
-                  const vin = vincitoreSFCoppa(sf);
-                  const tbd = !sf.squadra_a || !sf.squadra_b;
-                  return (
-                    <div key={sf.id} style={{ background:'#ffffff06', border:'1px solid #ffffff12', borderRadius:10, padding:'10px 12px' }}>
-                      <div style={{ fontSize:9, color:'#555', fontWeight:700, letterSpacing:'0.1em', marginBottom:8 }}>{sf.label}</div>
-                      {['a','b'].map(lato => {
-                        const sq = lato==='a' ? sf.squadra_a : sf.squadra_b;
-                        const tot = lato==='a' ? totA : totB;
-                        return (
-                          <div key={lato} style={{ display:'flex', alignItems:'center', gap:6, padding:'4px 0', borderBottom: lato==='a'?'1px solid #ffffff08':'none' }}>
-                            <span style={{ flex:1, fontSize:11, fontWeight: vin===sq?800:600, color: tbd?'#444': vin===sq?'#10b981':'#ddd', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{sq||'?'}</span>
-                            {isAdmin && !tbd ? (
-                              <div style={{ display:'flex', gap:3, alignItems:'center' }}>
-                                <ScoreInput val={lato==='a'?sf.gol_aa:sf.gol_ba} onChange={v => updateSF(sf.id, lato==='a'?'gol_aa':'gol_ba', v)} />
-                                <span style={{ fontSize:9, color:'#444' }}>+</span>
-                                <ScoreInput val={lato==='a'?sf.gol_ar:sf.gol_br} onChange={v => updateSF(sf.id, lato==='a'?'gol_ar':'gol_br', v)} />
-                                <span style={{ fontSize:10, color:'#555', fontWeight:800 }}>= {tot}</span>
-                              </div>
-                            ) : (
-                              <span style={{ fontSize:11, fontWeight:700, color: vin===sq?'#10b981':'#888' }}>
-                                {sf.gol_aa!==null ? `${lato==='a'?sf.gol_aa:sf.gol_ba}+${lato==='a'?sf.gol_ar:sf.gol_br}=${tot}` : '–'}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
+                {coppa.semifinali.map(sf => (
+                  <BracketSFCoppa key={sf.id} sf={sf} isAdmin={isAdmin}
+                    onChange={(field, val) => updateSF(sf.id, field, val)} />
+                ))}
               </div>
-              {/* Frecce */}
-              <div style={{ textAlign:'center', fontSize:18, color:'#333', lineHeight:1 }}>↓</div>
-              {/* Finale */}
-              <div style={{ fontSize:10, fontWeight:700, color:'#666', letterSpacing:'0.08em' }}>FINALE · G{coppa.finale.g}</div>
-              <div style={{ maxWidth:280 }}>
+              <div style={{ textAlign:'center', fontSize:16, color:'#333' }}>↓</div>
+              <div style={{ fontSize:9, color:'#555', fontWeight:700, letterSpacing:'0.08em' }}>FINALE · G{coppa.finale.g}</div>
+              <div style={{ maxWidth:260 }}>
                 <BracketMatch
                   squadra_a={coppa.finale.squadra_a} squadra_b={coppa.finale.squadra_b}
                   gol_a={coppa.finale.gol_a} gol_b={coppa.finale.gol_b}
-                  giornata={coppa.finale.g}
-                  isAdmin={isAdmin}
-                  onChange={(field, val) => updateFinale(field, val)}
-                />
+                  isAdmin={isAdmin} onChange={(f,v) => updateFinale(f,v)} />
               </div>
-              {vincitore(coppa.finale) && (
-                <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#f59e0b15', border:'1px solid #f59e0b30', borderRadius:10, padding:'10px 16px', alignSelf:'flex-start' }}>
-                  <span style={{ fontSize:20 }}>🏆</span>
+              {vincCoppa && (
+                <div style={{ display:'inline-flex', alignItems:'center', gap:10, background:'#f59e0b12', border:'1px solid #f59e0b30', borderRadius:12, padding:'10px 16px', alignSelf:'flex-start' }}>
+                  <span style={{ fontSize:22 }}>🏆</span>
                   <div>
                     <div style={{ fontSize:9, color:'#f59e0b', fontWeight:700, letterSpacing:'0.1em' }}>VINCITORE COPPA ITALIA 2026/27</div>
-                    <div style={{ fontSize:15, fontWeight:900, color:'#f0f0f0', fontFamily:"'Bebas Neue',sans-serif" }}>{vincitore(coppa.finale)}</div>
+                    <div style={{ fontSize:16, fontWeight:900, color:'#f0f0f0', fontFamily:"'Bebas Neue',sans-serif" }}>{vincCoppa}</div>
                   </div>
                 </div>
               )}
@@ -1230,44 +1155,34 @@ function TorneiSection({ isAdmin }) {
         </>
       )}
 
-      {/* ── SUPERCOPPA ── */}
       {tab === 'supercoppa' && (
-        <div style={cardStyle}>
+        <div style={card}>
           <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em', marginBottom:6 }}>⭐ SUPERCOPPA 2026/27</div>
-          <div style={{ fontSize:10, color:'#555', marginBottom:16, lineHeight:1.6 }}>
-            Borjcellona ha vinto sia il campionato sia la coppa nella stagione 2025/26, quindi si considera Shalpe 104 come finalista coppa e AK Toio come terzo in campionato.<br/>
-            <b style={{ color:'#666' }}>SF1:</b> Shalpe 104 vs Agnus Dei FC · <b style={{ color:'#666' }}>SF2:</b> AK Toio vs Borjcellona
+          <div style={{ fontSize:10, color:'#555', marginBottom:16, lineHeight:1.7 }}>
+            Borjcellona ha vinto sia campionato che coppa 2025/26 → Shalpe 104 (finalista coppa) e AK Toio (3° campionato) ripescati.<br/>
+            <b style={{ color:'#666' }}>SF1</b> Shalpe 104 vs Agnus Dei FC · <b style={{ color:'#666' }}>SF2</b> AK Toio vs Borjcellona
           </div>
-          <div style={{ display:'flex', alignItems:'flex-start', gap:16, flexWrap:'wrap' }}>
-            {/* Semifinali */}
-            <div style={{ display:'flex', flexDirection:'column', gap:8, minWidth:180 }}>
+          <div style={{ display:'flex', alignItems:'flex-start', gap:20, flexWrap:'wrap' }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
               <div style={{ fontSize:9, color:'#555', fontWeight:700, letterSpacing:'0.08em' }}>SEMIFINALI · G6</div>
               {superc.semifinali.map(sf => (
-                <BracketMatch key={sf.id}
-                  label={sf.label} giornata={sf.g}
+                <BracketMatch key={sf.id} label={sf.label} gLabel={`G${sf.g}`}
                   squadra_a={sf.squadra_a} squadra_b={sf.squadra_b}
                   gol_a={sf.gol_a} gol_b={sf.gol_b}
-                  isAdmin={isAdmin}
-                  onChange={(field, val) => updateSCSF(sf.id, field, val)}
-                />
+                  isAdmin={isAdmin} onChange={(f,v) => updateSCSF(sf.id, f, v)} />
               ))}
             </div>
-            {/* Freccia */}
-            <div style={{ fontSize:24, color:'#333', alignSelf:'center' }}>→</div>
-            {/* Finale */}
-            <div style={{ display:'flex', flexDirection:'column', gap:8, minWidth:180 }}>
+            <div style={{ fontSize:22, color:'#333', alignSelf:'center' }}>→</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
               <div style={{ fontSize:9, color:'#555', fontWeight:700, letterSpacing:'0.08em' }}>FINALE · G8</div>
               <BracketMatch
                 squadra_a={superc.finale.squadra_a} squadra_b={superc.finale.squadra_b}
                 gol_a={superc.finale.gol_a} gol_b={superc.finale.gol_b}
-                giornata={superc.finale.g}
-                isAdmin={isAdmin}
-                onChange={(field, val) => updateSCFinale(field, val)}
-              />
-              {vincitore(superc.finale) && (
-                <div style={{ background:'#f59e0b15', border:'1px solid #f59e0b30', borderRadius:10, padding:'10px 14px', marginTop:4 }}>
-                  <div style={{ fontSize:9, color:'#f59e0b', fontWeight:700 }}>⭐ VINCITORE</div>
-                  <div style={{ fontSize:16, fontWeight:900, color:'#f0f0f0', fontFamily:"'Bebas Neue',sans-serif" }}>{vincitore(superc.finale)}</div>
+                isAdmin={isAdmin} onChange={(f,v) => { const n=JSON.parse(JSON.stringify(superc)); n.finale[f]=v; saveSuperc(n); }} />
+              {vincSC && (
+                <div style={{ background:'#f59e0b12', border:'1px solid #f59e0b30', borderRadius:10, padding:'10px 14px' }}>
+                  <div style={{ fontSize:9, color:'#f59e0b', fontWeight:700 }}>⭐ VINCITORE SUPERCOPPA</div>
+                  <div style={{ fontSize:16, fontWeight:900, color:'#f0f0f0', fontFamily:"'Bebas Neue',sans-serif" }}>{vincSC}</div>
                 </div>
               )}
             </div>
@@ -1278,13 +1193,15 @@ function TorneiSection({ isAdmin }) {
   );
 }
 
+
 /* ─── LEGA PAGE ─────────────────────────────────────────────────────────────── */
 function LegaPage({ teams = TEAMS, isAdmin }) {
   // ── Classifica ──────────────────────────────────────────────────────────────
   const [classifica, setClassifica] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editDraft, setEditDraft] = useState({}); // squadra → { g,v,n,p,gf,gs,pt,pt_totali }
+  const [editDraft, setEditDraft] = useState({});
   const [saving, setSaving] = useState(false);
+  const [compTab, setCompTab] = useState('serie_a');
   useEffect(() => {
     cachedFetch('classifica', () => getClassifica(), 60000).then(d => setClassifica(d || []));
     const sub = subscribeClassifica(() => {
@@ -1505,75 +1422,88 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
         </div>
       </div>
 
-      {/* ── 2. CLASSIFICA ── */}
-      <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 18, padding: 18 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em" }}>🏆 CLASSIFICA FANTACALCIO</div>
-            {classifica[0]?.updated_at && <div style={{ fontSize: 9, color: "#444", marginTop: 2 }}>Agg.: {new Date(classifica[0].updated_at).toLocaleDateString("it-IT",{day:"2-digit",month:"short",year:"numeric"})}</div>}
-          </div>
-          {isAdmin && <button onClick={apriModal} style={{ padding:"6px 14px",borderRadius:8,border:"none",background:"#6366f120",color:"#818cf8",fontSize:11,fontWeight:700,cursor:"pointer" }}>✏️ Aggiorna classifica</button>}
-        </div>
-        <div style={{ overflowX: "auto" }}>
-          <ClassificaTable classificaRicca={classificaRicca} mySquadra={null} editMode={false} editRow={null} setEditRow={()=>{}} salvaRiga={()=>{}} saving={false} inp={{}} />
-        </div>
-      </div>
+      {/* ── 2. COMPETIZIONI (Serie A + Coppa Italia + Supercoppa) ── */}
+      {(()=>{
+        const COMP_TABS = [
+          { key: 'serie_a',    label: '🏅 FantaSerie A' },
+          { key: 'coppa',      label: '🏆 FantaCoppa Italia' },
+          { key: 'supercoppa', label: '⭐ FantaSupercoppa' },
+        ];
+        return (
+          <div style={{ background:"#ffffff06", border:"1.5px solid #ffffff12", borderRadius:18, padding:18 }}>
+            {/* Tab bar */}
+            <div style={{ display:"flex", gap:4, marginBottom:18, borderBottom:"1px solid #ffffff0a", paddingBottom:12, flexWrap:"wrap" }}>
+              {COMP_TABS.map(t => (
+                <button key={t.key} onClick={() => setCompTab(t.key)}
+                  style={{ padding:"6px 14px", borderRadius:8, border:"none", background: compTab===t.key?"#6366f125":"transparent", color: compTab===t.key?"#818cf8":"#555", fontWeight:700, fontSize:12, cursor:"pointer", borderBottom: compTab===t.key?"2px solid #6366f1":"2px solid transparent" }}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
 
-      {/* ── MODAL MODIFICA CLASSIFICA ── */}
+            {/* FantaSerie A */}
+            {compTab === 'serie_a' && (
+              <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8 }}>
+                  <div>
+                    <div style={{ fontSize:11, fontWeight:700, color:"#888", letterSpacing:"0.1em" }}>CLASSIFICA</div>
+                    {classifica[0]?.updated_at && <div style={{ fontSize:9, color:"#444", marginTop:2 }}>Agg.: {new Date(classifica[0].updated_at).toLocaleDateString("it-IT",{day:"2-digit",month:"short",year:"numeric"})}</div>}
+                  </div>
+                  {isAdmin && <button onClick={apriModal} style={{ padding:"6px 14px",borderRadius:8,border:"none",background:"#6366f120",color:"#818cf8",fontSize:11,fontWeight:700,cursor:"pointer" }}>✏️ Aggiorna</button>}
+                </div>
+                <div style={{ overflowX:"auto" }}>
+                  <ClassificaTable classificaRicca={classificaRicca} mySquadra={null} editMode={false} editRow={null} setEditRow={()=>{}} salvaRiga={()=>{}} saving={false} inp={{}} />
+                </div>
+              </div>
+            )}
+
+            {/* FantaCoppa Italia + FantaSupercoppa */}
+            {(compTab === 'coppa' || compTab === 'supercoppa') && (
+              <TorneiSection isAdmin={isAdmin} forcedTab={compTab === 'coppa' ? 'coppa' : 'supercoppa'} />
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ── MODAL MODIFICA CLASSIFICA SERIE A ── */}
       {showEditModal && (
         <div style={{ position:"fixed",inset:0,background:"#000000cc",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,padding:16 }}
           onClick={e => e.target===e.currentTarget && setShowEditModal(false)}>
           <div style={{ background:"#0d0f14",border:"1px solid #ffffff15",borderRadius:18,padding:24,width:"100%",maxWidth:680,maxHeight:"90vh",overflowY:"auto",display:"flex",flexDirection:"column",gap:16 }}>
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
               <div>
-                <div style={{ fontSize:13,fontWeight:800,color:"#f0f0f0" }}>✏️ Aggiorna classifica</div>
-                <div style={{ fontSize:10,color:"#555",marginTop:2 }}>Pt e DR sono calcolati automaticamente da V/N/P e G+/G−</div>
+                <div style={{ fontSize:13,fontWeight:800,color:"#f0f0f0" }}>✏️ Aggiorna FantaSerie A</div>
+                <div style={{ fontSize:10,color:"#555",marginTop:2 }}>Pt e DR calcolati automaticamente · Pt Tot = tiebreaker stagionale</div>
               </div>
               <button onClick={() => setShowEditModal(false)} style={{ background:"transparent",border:"none",color:"#555",fontSize:18,cursor:"pointer",lineHeight:1 }}>✕</button>
             </div>
-
-            {/* Header colonne */}
             <div style={{ display:"grid",gridTemplateColumns:"1fr 44px 44px 44px 44px 44px 60px 60px",gap:4,alignItems:"center",padding:"0 4px" }}>
-              {["Squadra","V","N","P","G+","G−","Pt Tot",""].map((h,i) => (
+              {["Squadra","V","N","P","G+","G−","Pt Tot","Pt"].map((h,i) => (
                 <div key={i} style={{ fontSize:9,fontWeight:700,color:"#555",textAlign:i>0?"center":"left",letterSpacing:"0.05em" }}>{h}</div>
               ))}
             </div>
-
-            {/* Righe squadre */}
             {classificaRicca.map(row => {
               const d = editDraft[row.squadra] || {};
               const numInp = { padding:"5px 6px",borderRadius:7,border:"1px solid #ffffff15",background:"#ffffff08",color:"#f0f0f0",fontSize:12,fontWeight:600,textAlign:"center",width:"100%",outline:"none",boxSizing:"border-box" };
               return (
                 <div key={row.squadra} style={{ display:"grid",gridTemplateColumns:"1fr 44px 44px 44px 44px 44px 44px 44px",gap:4,alignItems:"center",background:"#ffffff04",borderRadius:10,padding:"8px 10px",border:"1px solid #ffffff08" }}>
-                  {/* Squadra */}
                   <div style={{ display:"flex",alignItems:"center",gap:8,minWidth:0 }}>
                     {row.team && <TeamAvatar team={row.team} size={22} />}
                     <span style={{ fontSize:11,fontWeight:700,color:"#ddd",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{row.squadra}</span>
                   </div>
-                  {/* V */}
                   <input type="number" min="0" style={numInp} value={d.v??''} onChange={e => setField(row.squadra,'v',e.target.value)} />
-                  {/* N */}
                   <input type="number" min="0" style={numInp} value={d.n??''} onChange={e => setField(row.squadra,'n',e.target.value)} />
-                  {/* P */}
                   <input type="number" min="0" style={numInp} value={d.p??''} onChange={e => setField(row.squadra,'p',e.target.value)} />
-                  {/* G+ */}
                   <input type="number" min="0" style={numInp} value={d.gf??''} onChange={e => setField(row.squadra,'gf',e.target.value)} />
-                  {/* G− */}
                   <input type="number" min="0" style={numInp} value={d.gs??''} onChange={e => setField(row.squadra,'gs',e.target.value)} />
-                  {/* Pt totali */}
                   <input type="number" min="0" style={numInp} value={d.pt_totali??''} onChange={e => setEditDraft(p => ({ ...p, [row.squadra]: { ...p[row.squadra], pt_totali: e.target.value } }))} />
-                  {/* Pt calcolato (read-only) */}
                   <div style={{ textAlign:"center",fontSize:13,fontWeight:900,color:"#818cf8",fontFamily:"'Bebas Neue',sans-serif" }}>{d.pt??0}</div>
                 </div>
               );
             })}
-
-            {/* Legenda */}
             <div style={{ fontSize:9,color:"#444",lineHeight:1.6 }}>
-              <b style={{ color:"#555" }}>Pt</b> = V×3 + N · <b style={{ color:"#555" }}>G</b> = V+N+P · <b style={{ color:"#555" }}>DR</b> = G+−G− (tutti calcolati automaticamente)<br/>
-              <b style={{ color:"#555" }}>Pt Tot</b> = punti totali stagionali (tiebreaker)
+              <b style={{ color:"#555" }}>Pt</b> = V×3 + N · <b style={{ color:"#555" }}>G</b> = V+N+P · <b style={{ color:"#555" }}>DR</b> = G+−G−
             </div>
-
             <button onClick={salvaTutto} disabled={saving}
               style={{ padding:"10px 0",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366f1,#a855f7)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",marginTop:4 }}>
               {saving ? "⏳ Salvataggio…" : "✅ Salva classifica"}
@@ -1581,9 +1511,6 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
           </div>
         </div>
       )}
-
-      {/* ── 3. TORNEI ── */}
-      <TorneiSection isAdmin={isAdmin} />
 
       {/* ── 4. ROSE NON REGOLARI ── */}
       <div style={{ background: roseIrregolari.length>0?"#ef444408":"#ffffff06", border:`1.5px solid ${roseIrregolari.length>0?"#ef444430":"#ffffff12"}`, borderRadius:16, padding:18 }}>
