@@ -167,6 +167,7 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   // Database Fanta import + Rivalità lock
   importDatabaseFanta, getRivalitaLock, setRivalitaLock,
   calcolaTop5GlobaleQuotReale, applica01Gennaio, applica01GiugnoAgosto, importa01Agosto,
+  getStagioneLabel, setStagioneLabel,
   // Telegram
   sendTelegramNotification, getTelegramRegistrations, deleteTelegramRegistration,
   // Albo d'Oro & Regolamento
@@ -868,8 +869,8 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
 function LegaPage({ teams = TEAMS, isAdmin }) {
   // ── Classifica ──────────────────────────────────────────────────────────────
   const [classifica, setClassifica] = useState([]);
-  const [editMode, setEditMode] = useState(false);
-  const [editRow, setEditRow] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editDraft, setEditDraft] = useState({}); // squadra → { g,v,n,p,gf,gs,pt,pt_totali }
   const [saving, setSaving] = useState(false);
   useEffect(() => {
     cachedFetch('classifica', () => getClassifica(), 60000).then(d => setClassifica(d || []));
@@ -880,15 +881,35 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
     return () => supabase.removeChannel(sub);
   }, []);
   const classificaRicca = [...classifica].sort((a, b) => b.pt - a.pt || b.pt_totali - a.pt_totali).map(c => ({ ...c, team: teams.find(t => t.name === c.squadra) }));
-  async function salvaRiga() {
-    if (!editRow) return;
+
+  function apriModal() {
+    const draft = {};
+    for (const r of classifica) draft[r.squadra] = { g: r.g||0, v: r.v||0, n: r.n||0, p: r.p||0, gf: r.gf||0, gs: r.gs||0, pt: r.pt||0, pt_totali: r.pt_totali||0 };
+    setEditDraft(draft);
+    setShowEditModal(true);
+  }
+
+  function setField(squadra, field, val) {
+    setEditDraft(prev => {
+      const row = { ...prev[squadra], [field]: val };
+      // auto-calcola pt da V/N/P e DR da GF/GS
+      row.dr = Number(row.gf) - Number(row.gs);
+      row.pt = Number(row.v) * 3 + Number(row.n);
+      row.g  = Number(row.v) + Number(row.n) + Number(row.p);
+      return { ...prev, [squadra]: row };
+    });
+  }
+
+  async function salvaTutto() {
     setSaving(true);
     try {
-      const ag = { g: Number(editRow.g), v: Number(editRow.v), n: Number(editRow.n), p: Number(editRow.p), gf: Number(editRow.gf), gs: Number(editRow.gs), dr: Number(editRow.gf) - Number(editRow.gs), pt: Number(editRow.pt), pt_totali: Number(editRow.pt_totali) };
-      const rigaPrima = classifica.find(cl => cl.squadra === editRow.squadra);
-      await updateClassificaSquadra(editRow.squadra, ag);
-      await logAzione({ utente: 'admin', squadra: editRow.squadra, azione: 'classifica_modifica', entita: 'classifica', descrizione: `Classifica: ${editRow.squadra}`, dataPrima: { riga: rigaPrima }, dataDopo: { riga: { ...rigaPrima, ...ag } }, rollbackPossibile: true });
-      setEditRow(null); setEditMode(false);
+      for (const [squadra, row] of Object.entries(editDraft)) {
+        const ag = { g: Number(row.g), v: Number(row.v), n: Number(row.n), p: Number(row.p), gf: Number(row.gf), gs: Number(row.gs), dr: Number(row.gf)-Number(row.gs), pt: Number(row.pt), pt_totali: Number(row.pt_totali) };
+        const prima = classifica.find(c => c.squadra === squadra);
+        await updateClassificaSquadra(squadra, ag);
+        await logAzione({ utente: 'admin', squadra, azione: 'classifica_modifica', entita: 'classifica', descrizione: `Classifica: ${squadra}`, dataPrima: { riga: prima }, dataDopo: { riga: { ...prima, ...ag } }, rollbackPossibile: true });
+      }
+      setShowEditModal(false);
     } finally { setSaving(false); }
   }
   // ── Rose non regolari ────────────────────────────────────────────────────────
@@ -1078,12 +1099,75 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
             <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em" }}>🏆 CLASSIFICA FANTACALCIO</div>
             {classifica[0]?.updated_at && <div style={{ fontSize: 9, color: "#444", marginTop: 2 }}>Agg.: {new Date(classifica[0].updated_at).toLocaleDateString("it-IT",{day:"2-digit",month:"short",year:"numeric"})}</div>}
           </div>
-          {isAdmin && <button onClick={() => { setEditMode(v=>!v); setEditRow(null); }} style={{ padding:"5px 12px",borderRadius:8,border:"none",background:editMode?"#ef444420":"#6366f120",color:editMode?"#ef4444":"#818cf8",fontSize:11,fontWeight:700,cursor:"pointer" }}>{editMode?"✕ Chiudi":"✏️ Modifica"}</button>}
+          {isAdmin && <button onClick={apriModal} style={{ padding:"6px 14px",borderRadius:8,border:"none",background:"#6366f120",color:"#818cf8",fontSize:11,fontWeight:700,cursor:"pointer" }}>✏️ Aggiorna classifica</button>}
         </div>
         <div style={{ overflowX: "auto" }}>
-          <ClassificaTable classificaRicca={classificaRicca} mySquadra={null} editMode={editMode} editRow={editRow} setEditRow={setEditRow} salvaRiga={salvaRiga} saving={saving} inp={inp} />
+          <ClassificaTable classificaRicca={classificaRicca} mySquadra={null} editMode={false} editRow={null} setEditRow={()=>{}} salvaRiga={()=>{}} saving={false} inp={{}} />
         </div>
       </div>
+
+      {/* ── MODAL MODIFICA CLASSIFICA ── */}
+      {showEditModal && (
+        <div style={{ position:"fixed",inset:0,background:"#000000cc",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,padding:16 }}
+          onClick={e => e.target===e.currentTarget && setShowEditModal(false)}>
+          <div style={{ background:"#0d0f14",border:"1px solid #ffffff15",borderRadius:18,padding:24,width:"100%",maxWidth:680,maxHeight:"90vh",overflowY:"auto",display:"flex",flexDirection:"column",gap:16 }}>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
+              <div>
+                <div style={{ fontSize:13,fontWeight:800,color:"#f0f0f0" }}>✏️ Aggiorna classifica</div>
+                <div style={{ fontSize:10,color:"#555",marginTop:2 }}>Pt e DR sono calcolati automaticamente da V/N/P e G+/G−</div>
+              </div>
+              <button onClick={() => setShowEditModal(false)} style={{ background:"transparent",border:"none",color:"#555",fontSize:18,cursor:"pointer",lineHeight:1 }}>✕</button>
+            </div>
+
+            {/* Header colonne */}
+            <div style={{ display:"grid",gridTemplateColumns:"1fr 44px 44px 44px 44px 44px 60px 60px",gap:4,alignItems:"center",padding:"0 4px" }}>
+              {["Squadra","V","N","P","G+","G−","Pt Tot",""].map((h,i) => (
+                <div key={i} style={{ fontSize:9,fontWeight:700,color:"#555",textAlign:i>0?"center":"left",letterSpacing:"0.05em" }}>{h}</div>
+              ))}
+            </div>
+
+            {/* Righe squadre */}
+            {classificaRicca.map(row => {
+              const d = editDraft[row.squadra] || {};
+              const numInp = { padding:"5px 6px",borderRadius:7,border:"1px solid #ffffff15",background:"#ffffff08",color:"#f0f0f0",fontSize:12,fontWeight:600,textAlign:"center",width:"100%",outline:"none",boxSizing:"border-box" };
+              return (
+                <div key={row.squadra} style={{ display:"grid",gridTemplateColumns:"1fr 44px 44px 44px 44px 44px 44px 44px",gap:4,alignItems:"center",background:"#ffffff04",borderRadius:10,padding:"8px 10px",border:"1px solid #ffffff08" }}>
+                  {/* Squadra */}
+                  <div style={{ display:"flex",alignItems:"center",gap:8,minWidth:0 }}>
+                    {row.team && <TeamAvatar team={row.team} size={22} />}
+                    <span style={{ fontSize:11,fontWeight:700,color:"#ddd",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{row.squadra}</span>
+                  </div>
+                  {/* V */}
+                  <input type="number" min="0" style={numInp} value={d.v??''} onChange={e => setField(row.squadra,'v',e.target.value)} />
+                  {/* N */}
+                  <input type="number" min="0" style={numInp} value={d.n??''} onChange={e => setField(row.squadra,'n',e.target.value)} />
+                  {/* P */}
+                  <input type="number" min="0" style={numInp} value={d.p??''} onChange={e => setField(row.squadra,'p',e.target.value)} />
+                  {/* G+ */}
+                  <input type="number" min="0" style={numInp} value={d.gf??''} onChange={e => setField(row.squadra,'gf',e.target.value)} />
+                  {/* G− */}
+                  <input type="number" min="0" style={numInp} value={d.gs??''} onChange={e => setField(row.squadra,'gs',e.target.value)} />
+                  {/* Pt totali */}
+                  <input type="number" min="0" style={numInp} value={d.pt_totali??''} onChange={e => setEditDraft(p => ({ ...p, [row.squadra]: { ...p[row.squadra], pt_totali: e.target.value } }))} />
+                  {/* Pt calcolato (read-only) */}
+                  <div style={{ textAlign:"center",fontSize:13,fontWeight:900,color:"#818cf8",fontFamily:"'Bebas Neue',sans-serif" }}>{d.pt??0}</div>
+                </div>
+              );
+            })}
+
+            {/* Legenda */}
+            <div style={{ fontSize:9,color:"#444",lineHeight:1.6 }}>
+              <b style={{ color:"#555" }}>Pt</b> = V×3 + N · <b style={{ color:"#555" }}>G</b> = V+N+P · <b style={{ color:"#555" }}>DR</b> = G+−G− (tutti calcolati automaticamente)<br/>
+              <b style={{ color:"#555" }}>Pt Tot</b> = punti totali stagionali (tiebreaker)
+            </div>
+
+            <button onClick={salvaTutto} disabled={saving}
+              style={{ padding:"10px 0",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366f1,#a855f7)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",marginTop:4 }}>
+              {saving ? "⏳ Salvataggio…" : "✅ Salva classifica"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── 3. ROSE NON REGOLARI ── */}
       <div style={{ background: roseIrregolari.length>0?"#ef444408":"#ffffff06", border:`1.5px solid ${roseIrregolari.length>0?"#ef444430":"#ffffff12"}`, borderRadius:16, padding:18 }}>
@@ -10689,6 +10773,9 @@ function AppInner() {
   const [clubIdentities, setClubIdentities] = useState({});
   const [offerteInAttesa, setOfferteInAttesa] = useState([]);
   const [mercatoOverride, setMercatoOverride_state] = useState(null); // null=auto, 'aperto', 'chiuso'
+  const [stagioneLabel, setStagioneLabelState] = useState('2026/27');
+  const [editingStagione, setEditingStagione] = useState(false);
+  const [editingStagioneVal, setEditingStagioneVal] = useState('');
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -10742,6 +10829,7 @@ function AppInner() {
     if (!session) return;
     getMercatoOverride().then(v => { _mercatoOverride = v; setMercatoOverride_state(v); }).catch(() => {});
     getRivalitaLock().then(v => { _rivalitaBloccata = v; }).catch(() => {});
+    getStagioneLabel().then(v => { setStagioneLabelState(v); }).catch(() => {});
   }, [session]);
 
   // ── Offerte in attesa: solo realtime, nessun polling ─────────────────────
@@ -10866,11 +10954,29 @@ function AppInner() {
           <div style={{ width:SIDEBAR_W,flexShrink:0,background:"#0a0c11",borderRight:"1px solid #ffffff0e",display:"flex",flexDirection:"column",position:"fixed",top:0,left:0,height:"100vh",zIndex:100 }}>
             <div style={{ padding:"20px 18px 16px",borderBottom:"1px solid #ffffff0a" }}>
               <div style={{ display:"flex",alignItems:"center",gap:10 }}>
-                <div style={{ width:34,height:34,borderRadius:10,background:"linear-gradient(135deg,#6366f1,#a855f7)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17 }}>⚽</div>
-                <div>
-                  <div style={{ fontSize:13,fontWeight:900,color:"#f0f0f0",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:"1px",lineHeight:1 }}>FANTA</div>
-                  <div style={{ fontSize:13,fontWeight:900,color:"#f0f0f0",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:"1px",lineHeight:1 }}>MANAGERIALE</div>
-                  <div style={{ fontSize:10,color:"#555",marginTop:2 }}>2026/27</div>
+                <img src="/icon-192.png" alt="logo" style={{ width:34,height:34,borderRadius:10,objectFit:"cover",flexShrink:0 }} />
+                <div style={{ minWidth:0 }}>
+                  <div style={{ fontSize:15,fontWeight:900,color:"#f0f0f0",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:"1.5px",lineHeight:1 }}>FantaManager</div>
+                  {editingStagione && isAdmin ? (
+                    <form onSubmit={async e => { e.preventDefault(); await setStagioneLabel(editingStagioneVal); setStagioneLabelState(editingStagioneVal); setEditingStagione(false); }} style={{ display:"flex",alignItems:"center",gap:4,marginTop:3 }}>
+                      <input
+                        value={editingStagioneVal}
+                        onChange={e => setEditingStagioneVal(e.target.value)}
+                        autoFocus
+                        style={{ fontSize:10,background:"#ffffff12",border:"1px solid #6366f150",borderRadius:5,color:"#aaa",padding:"2px 5px",width:60,outline:"none" }}
+                      />
+                      <button type="submit" style={{ fontSize:9,background:"#6366f120",border:"none",borderRadius:4,color:"#818cf8",padding:"2px 5px",cursor:"pointer",fontWeight:700 }}>✓</button>
+                      <button type="button" onClick={() => setEditingStagione(false)} style={{ fontSize:9,background:"transparent",border:"none",color:"#555",cursor:"pointer" }}>✕</button>
+                    </form>
+                  ) : (
+                    <div
+                      style={{ fontSize:10,color:"#555",marginTop:2,cursor:isAdmin?"pointer":"default",display:"inline-flex",alignItems:"center",gap:4 }}
+                      onClick={() => { if (isAdmin) { setEditingStagioneVal(stagioneLabel); setEditingStagione(true); } }}
+                      title={isAdmin ? "Clicca per modificare la stagione" : undefined}
+                    >
+                      {stagioneLabel}{isAdmin && <span style={{ fontSize:8,opacity:0.4 }}>✏️</span>}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
