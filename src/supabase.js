@@ -3509,3 +3509,90 @@ export async function importDatabaseFanta(rows, stagione = '2026-27') {
 
   return { rosaAggiornati, svinAggiornati, nonTrovati, totale: totaleListone };
 }
+
+// ─── AGGIORNAMENTI PERIODICI DATABASE ────────────────────────────────────────
+
+// Calcola top5 rialzo/ribasso globale basandosi su quot_reale vs quot
+export async function calcolaTop5GlobaleQuotReale() {
+  const { data } = await supabase
+    .from('rosa')
+    .select('id, nome, anni, ruolo, quot, quot_reale, stip, squadra, rinnovo_ribasso, da_cedere')
+    .eq('in_vivaio', false)
+    .not('quot_reale', 'is', null);
+
+  const conDelta = (data || [])
+    .map(p => ({
+      ...p,
+      delta: parseFloat((Number(p.quot_reale) - Number(p.quot)).toFixed(2)),
+      stipNuovo: parseFloat((Number(p.quot_reale) / 5).toFixed(2)),
+    }))
+    .filter(p => p.delta !== 0);
+
+  const rialzi  = [...conDelta].filter(p => p.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 5);
+  const ribassi = [...conDelta].filter(p => p.delta < 0).sort((a, b) => a.delta - b.delta).slice(0, 5);
+  return { rialzi, ribassi };
+}
+
+// Applica aggiornamento 01/01:
+// - top 5 rialzo: overwrite quot/stip con quot_reale
+// - top 5 ribasso: nessuna azione automatica (i presidenti scelgono entro 05/01)
+export async function applica01Gennaio(top5Rialzo, stagione = '2026-27') {
+  const oggi = new Date().toISOString().slice(0, 10);
+  let rialziApplicati = 0;
+  for (const p of top5Rialzo) {
+    const nuovaQuot = Number(p.quot_reale);
+    const nuovoStip = parseFloat((nuovaQuot / 5).toFixed(2));
+    const nuovaClausola = parseFloat((nuovaQuot * 1.75).toFixed(2));
+    await supabase.from('rosa').update({
+      quot: nuovaQuot,
+      stip: nuovoStip,
+      stip_originale: nuovoStip,
+      clausola: nuovaClausola,
+      quot_precedente: p.quot,
+      quot_reale: nuovaQuot,
+    }).eq('id', p.id);
+    await supabase.from('aggiornamenti_stipendi').upsert({
+      squadra: p.squadra, giocatore_id: p.id, nome: p.nome,
+      quot_prima: p.quot, quot_dopo: nuovaQuot, delta: p.delta,
+      tipo: 'rialzo', rinnovo_effettuato: true,
+      nuovo_stip: nuovoStip, data_aggiornamento: oggi, stagione,
+    }, { onConflict: 'stagione,giocatore_id' });
+    rialziApplicati++;
+  }
+  return { rialziApplicati };
+}
+
+// Applica aggiornamento 01/06 o 01/08:
+// Tutti i giocatori in rosa: quot = quot_reale, stip/clausola ricalcolati
+export async function applica01GiugnoAgosto(stagione = '2026-27') {
+  const { data } = await supabase
+    .from('rosa')
+    .select('id, nome, anni, quot, quot_reale, stip, squadra')
+    .eq('in_vivaio', false)
+    .not('quot_reale', 'is', null);
+
+  const oggi = new Date().toISOString().slice(0, 10);
+  let aggiornati = 0;
+  const BATCH = 50;
+  const players = (data || []).filter(p => Number(p.quot_reale) > 0);
+
+  for (let i = 0; i < players.length; i += BATCH) {
+    await Promise.all(players.slice(i, i + BATCH).map(async p => {
+      const nuovaQuot = Number(p.quot_reale);
+      const isU21 = p.anni > 0 && p.anni <= 21;
+      const nuovoStip = isU21
+        ? Number(p.stip) // U21: stip invariato per art. 4.8.1
+        : parseFloat((nuovaQuot / 5).toFixed(2));
+      const nuovaClausola = parseFloat((nuovaQuot * 1.75).toFixed(2));
+      await supabase.from('rosa').update({
+        quot: nuovaQuot,
+        stip: nuovoStip,
+        stip_originale: nuovoStip,
+        clausola: nuovaClausola,
+        quot_precedente: p.quot,
+      }).eq('id', p.id);
+      aggiornati++;
+    }));
+  }
+  return { aggiornati, totale: players.length };
+}
