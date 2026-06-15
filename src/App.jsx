@@ -8183,6 +8183,8 @@ function AdminControlRoomPage({ teams }) {
   const [bilancioNegBusy, setBilancioNegBusy] = useState(null);
   const [rivalitaData, setRivalitaData] = useState(null); // all club_identity rivali+gemellati
   const [rivalitaBusy, setRivalitaBusy] = useState(null);
+  const [lockGlobale, setLockGlobale] = useState(_rivalitaBloccata);
+  const [lockBusy, setLockBusy] = useState(false);
   const [dbImportPreview, setDbImportPreview] = useState(null); // { rosaAggiornati, svinAggiornati, nonTrovati, totale }
   const [dbImportBusy, setDbImportBusy] = useState(false);
   const [dbImportDone, setDbImportDone] = useState(null);
@@ -8862,8 +8864,6 @@ function AdminControlRoomPage({ teams }) {
 
           {/* ── RIVALITÀ & GEMELLATI ── */}
           {tab === 'rivalita' && (() => {
-            const [lockGlobale, setLockGlobale] = React.useState(_rivalitaBloccata);
-            const [lockBusy, setLockBusy] = React.useState(false);
             async function toggleLock() {
               if (!window.confirm(lockGlobale ? 'Sbloccare le scelte? I presidenti potranno modificare rivale e gemellato.' : 'Bloccare le scelte? Nessun presidente potrà più modificare rivale o gemellato.')) return;
               setLockBusy(true);
