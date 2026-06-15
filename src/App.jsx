@@ -4393,6 +4393,8 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
     if (!movForm.descrizione) return;
     const entrata = movForm.entrata ? parseFloat(movForm.entrata) : null;
     const uscita  = movForm.uscita  ? parseFloat(movForm.uscita)  : null;
+    const dettaglio = entrata ? `Entrata: +${entrata}M` : uscita ? `Uscita: −${uscita}M` : "Nessun importo";
+    if (!window.confirm(`Registrare il movimento?\n\n"${movForm.descrizione}"\n${dettaglio}`)) return;
     await insertMovimento({
       squadra: team.name,
       descrizione: movForm.descrizione,
@@ -4416,6 +4418,8 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
   }
 
   async function rimuoviMovimento(id) {
+    const mov = movimenti.find(m => m.id === id);
+    if (!window.confirm(`Eliminare il movimento?\n\n"${mov?.descrizione || ''}"`)) return;
     const rimanenti = movimenti.filter(m => m.id !== id);
     const nuovoBilancio = parseFloat(rimanenti.reduce((s, m) => s + (m.entrata || 0) - (m.uscita || 0), 0).toFixed(2));
     await updateSquadra(team.name, { bilancio: nuovoBilancio });
@@ -5263,6 +5267,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
     const da = isAdmin ? form.squadraTarget : mySquadra;
     const scad = form.tipo.startsWith('prestito') ? scadenzaPrestito(parseInt(form.durata_mesi)) : null;
+    const tipoLabel = { cessione:'Acquisto diretto', clausola:'Clausola rescissoria', prestito:'Prestito con riscatto', prestito_secco:'Prestito secco' }[form.tipo] || form.tipo;
+    if (!window.confirm(`Inviare offerta?\n\n${tipoLabel}: ${form.giocatoreNome}\nDa: ${mySquadra} → ${form.squadraTarget}\nPrezzo: ${(form.tipo === 'clausola' ? valoreClausola(Number(form.quot)) : parseFloat(form.prezzo)||0).toFixed(2)}M`)) return;
 
     const trattativa = await insertTrattativa({
       da_squadra: mySquadra,
@@ -5401,6 +5407,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   async function salvaAsta() {
     const quot = parseFloat(astaForm.quot) || 0;
     const prezzoBase = parseFloat((quot / 2).toFixed(2));
+    if (!window.confirm(`Indire asta per ${astaForm.giocatore} (Q${quot})?\nTipo: ${astaForm.tipo_asta === 'rialzo' ? 'Al rialzo' : 'Al ribasso'} · Prezzo base: ${prezzoBase}M`)) return;
     await insertAsta({
       proprietario: mySquadra || TEAMS[0].name,
       giocatore: astaForm.giocatore,
@@ -6096,7 +6103,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 800, color: "#aaa", fontFamily: "'Bebas Neue',sans-serif" }}>{t.prezzo}M</div>
                   <Badge color={statoColor[t.stato] || "#888"}>{t.stato}</Badge>
-                  {isAdmin && <button onClick={() => deleteTrattativa(t.id)} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#ef444415", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>✕</button>}
+                  {isAdmin && <button onClick={() => { if (window.confirm(`Eliminare la trattativa per ${t.giocatore}?`)) deleteTrattativa(t.id); }} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#ef444415", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>✕</button>}
                 </div>
               );
             })
@@ -6359,6 +6366,7 @@ function OffertaInlineForm({ asta, squadra, onRefresh, isCaller, dsMasterclass }
   async function invia() {
     const val = parseFloat(importo);
     if (!val || val < minOfferta) { alert(`Min ${minOfferta}M`); return; }
+    if (!window.confirm(`Confermare offerta di ${val.toFixed(2)}M per ${asta.giocatore}?`)) return;
     setSaving(true);
     try {
       await upsertOffertaAsta(asta.id, squadra, val, asta.per_vivaio);
@@ -6627,6 +6635,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
       c.giocatore === player.nome && c.squadra === squadra && c.stato !== 'conclusa'
     );
     if (giaChiamato) { alert("Hai già manifestato interesse per questo giocatore"); return; }
+    if (!window.confirm(`Manifestare interesse per ${player.nome} (Q${player.quot})${perVivaio ? ' per il vivaio' : ''}?`)) return;
 
     await insertChiamata({
       giocatore: player.nome, ruolo: player.ruolo, quot: player.quot,
