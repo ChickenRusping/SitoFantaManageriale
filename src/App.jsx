@@ -203,12 +203,13 @@ function useSortableTable(data, defaultKey, defaultDir = "asc") {
   });
 
   // th component factory
-  function SortTh({ col, label, align = "center", style: extraStyle = {} }) {
+  function SortTh({ col, label, align = "center", style: extraStyle = {}, className }) {
     const active = sortKey === col;
     const arrow = active ? (sortDir === "asc" ? " ↑" : " ↓") : "";
     return (
       <th
         onClick={() => handleSort(col)}
+        className={className}
         style={{
           padding: "6px 8px",
           textAlign: align,
@@ -356,20 +357,20 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
 
   return (
     <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", minWidth: 560, borderCollapse: "collapse", fontSize: 12 }}>
+      <table style={{ width: "100%", minWidth: 0, borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
           <tr style={{ borderBottom: "1px solid #ffffff15" }}>
-            <th style={{ padding: "6px 8px", fontSize: 10, fontWeight: 700, color: "#555", whiteSpace: "nowrap" }}>#</th>
-            <SortTh col="squadra"   label="Squadra"   align="left"   style={{ minWidth: 130 }} />
-            <SortTh col="g"         label="G"         align="center" />
+            <th style={{ padding: "6px 8px", fontSize: 10, fontWeight: 700, color: "#555" }}>#</th>
+            <SortTh col="squadra"   label="Squadra"   align="left"   style={{ minWidth: 100 }} />
+            <SortTh col="g"         label="G"         align="center" className="mob-hide" />
             <SortTh col="v"         label="V"         align="center" />
             <SortTh col="n"         label="N"         align="center" />
             <SortTh col="p"         label="P"         align="center" />
-            <SortTh col="gf"        label="G+"        align="center" />
-            <SortTh col="gs"        label="G−"        align="center" />
-            <SortTh col="dr"        label="DR"        align="center" />
+            <SortTh col="gf"        label="G+"        align="center" className="mob-hide" />
+            <SortTh col="gs"        label="G−"        align="center" className="mob-hide" />
+            <SortTh col="dr"        label="DR"        align="center" className="mob-hide" />
             <SortTh col="pt"        label="Pt"        align="center" />
-            <SortTh col="pt_totali" label="Pt Totali" align="center" />
+            <SortTh col="pt_totali" label="Pt Tot"    align="center" className="mob-hide" />
             {editMode && <th style={{ width: 60 }}></th>}
           </tr>
         </thead>
@@ -385,11 +386,11 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
                 onMouseEnter={e => { if (!isMe) e.currentTarget.style.background = "#ffffff05"; }}
                 onMouseLeave={e => { if (!isMe) e.currentTarget.style.background = isMe ? "#6366f110" : "transparent"; }}
               >
-                <td style={{ padding: "9px 8px", textAlign: "center", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif", fontSize: 15, color: rowColor || "#555", minWidth: 28 }}>{pos}</td>
-                <td style={{ padding: "9px 8px", minWidth: 140 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    {row.team && <TeamAvatar team={row.team} size={24} />}
-                    <span style={{ fontSize: 12, fontWeight: isMe ? 800 : 600, color: isMe ? "#f0f0f0" : "#ccc", whiteSpace: "nowrap" }}>
+                <td style={{ padding: "9px 4px", textAlign: "center", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif", fontSize: 15, color: rowColor || "#555" }}>{pos}</td>
+                <td style={{ padding: "9px 6px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {row.team && <TeamAvatar team={row.team} size={22} />}
+                    <span style={{ fontSize: 11, fontWeight: isMe ? 800 : 600, color: isMe ? "#f0f0f0" : "#ccc", wordBreak: "break-word" }}>
                       {row.squadra}
                       {isMe && <span style={{ fontSize: 8, color: "#6366f1", marginLeft: 5, background: "#6366f120", border: "1px solid #6366f133", borderRadius: 3, padding: "1px 4px" }}>TU</span>}
                     </span>
@@ -398,7 +399,8 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
                 {isEditing ? (
                   <>
                     {["g","v","n","p","gf","gs","pt","pt_totali"].map(f => (
-                      <td key={f} style={{ padding: "4px" }}>
+                      <td key={f} style={{ padding: "4px" }}
+                        className={['g','gf','gs','pt_totali'].includes(f)?'mob-hide':undefined}>
                         <input style={inp} type="number" value={editRow[f]}
                           onChange={e => setEditRow(r => ({ ...r, [f]: e.target.value,
                             dr: f === 'gf' ? Number(e.target.value) - Number(r.gs)
@@ -406,20 +408,23 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
                               : r.dr }))} />
                       </td>
                     ))}
-                    <td style={{ padding: "4px 8px", textAlign: "center", color: (Number(editRow.gf)-Number(editRow.gs)) >= 0 ? "#10b981" : "#ef4444", fontWeight: 700, fontSize: 12 }}>
+                    <td style={{ padding: "4px 8px", textAlign: "center", color: (Number(editRow.gf)-Number(editRow.gs)) >= 0 ? "#10b981" : "#ef4444", fontWeight: 700, fontSize: 12 }} className="mob-hide">
                       {Number(editRow.gf)-Number(editRow.gs) >= 0 ? "+" : ""}{Number(editRow.gf)-Number(editRow.gs)}
                     </td>
                   </>
                 ) : (
                   <>
-                    {[row.g, row.v, row.n, row.p, row.gf, row.gs].map((v, ci) => (
-                      <td key={ci} style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{v}</td>
-                    ))}
-                    <td style={{ padding: "9px 8px", textAlign: "center", color: row.dr > 0 ? "#10b981" : row.dr < 0 ? "#ef4444" : "#888", fontSize: 12, fontWeight: 600 }}>
+                    <td className="mob-hide" style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.g}</td>
+                    <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.v}</td>
+                    <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.n}</td>
+                    <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.p}</td>
+                    <td className="mob-hide" style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.gf}</td>
+                    <td className="mob-hide" style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.gs}</td>
+                    <td className="mob-hide" style={{ padding: "9px 8px", textAlign: "center", color: row.dr > 0 ? "#10b981" : row.dr < 0 ? "#ef4444" : "#888", fontSize: 12, fontWeight: 600 }}>
                       {row.dr > 0 ? "+" : ""}{row.dr}
                     </td>
                     <td style={{ padding: "9px 8px", textAlign: "center", fontSize: 14, fontWeight: 900, color: rowColor || "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif" }}>{row.pt}</td>
-                    <td style={{ padding: "9px 8px", textAlign: "center", fontSize: 12, color: "#888", fontWeight: 600 }}>{row.pt_totali}</td>
+                    <td className="mob-hide" style={{ padding: "9px 8px", textAlign: "center", fontSize: 12, color: "#888", fontWeight: 600 }}>{row.pt_totali}</td>
                   </>
                 )}
                 {editMode && (
@@ -2216,21 +2221,21 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
 
       {/* ── Tabella ── */}
       <div style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-        <table style={{ width:"100%",minWidth:680,borderCollapse:"collapse",fontSize:12 }}>
+        <table style={{ width:"100%",minWidth:0,borderCollapse:"collapse",fontSize:12 }}>
           <thead>
             <tr>
-              <SortTh col="_ruoloOrd" label="Ruolo" align="center"/>
-              <SortTh col="_anniNum"  label="Età"   align="center"/>
+              <SortTh col="_ruoloOrd" label="R"     align="center"/>
+              <SortTh col="_anniNum"  label="Età"   align="center" className="mob-hide"/>
               <SortTh col="nome"      label="Nome"  align="left"/>
-              <SortTh col="squadra_serie_a" label="SA" align="left"/>
+              <SortTh col="squadra_serie_a" label="SA" align="left" className="mob-hide"/>
               <SortTh col="_quotNum"  label="Q"     align="center"/>
               <SortTh col="_stipNum"  label="Stip." align="center"/>
-              <SortTh col="_acNum"    label="A.C."  align="center"/>
-              <SortTh col="clausola"  label="Claus." align="center"/>
-              <SortTh col="_mvNum"    label="MV"    align="center"/>
-              <SortTh col="_mfvNum"   label="MFV"   align="center"/>
-              <SortTh col="_golNum"   label="Gol"   align="center"/>
-              <SortTh col="_assNum"   label="Ass"   align="center"/>
+              <SortTh col="_acNum"    label="A.C."  align="center" className="mob-hide"/>
+              <SortTh col="clausola"  label="Cl."   align="center" className="mob-hide"/>
+              <SortTh col="_mvNum"    label="MV"    align="center" className="mob-hide"/>
+              <SortTh col="_mfvNum"   label="MFV"   align="center" className="mob-hide"/>
+              <SortTh col="_golNum"   label="Gol"   align="center" className="mob-hide"/>
+              <SortTh col="_assNum"   label="Ass"   align="center" className="mob-hide"/>
             </tr>
           </thead>
           <tbody>
@@ -2242,19 +2247,19 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                   style={{ borderBottom:"1px solid #ffffff06",background:sel?"#6366f118":fuori?"#ef444408":"transparent",cursor:canEdit?"pointer":"default",transition:"background 0.1s" }}
                   onMouseEnter={e=>{if(!sel)e.currentTarget.style.background=fuori?"#ef444415":"#ffffff0c";}}
                   onMouseLeave={e=>{e.currentTarget.style.background=sel?"#6366f118":fuori?"#ef444408":"transparent";}}>
-                  <td style={{ padding:"7px 8px",textAlign:"center" }}>
-                    <span style={{ background:rc.bg,color:rc.text,border:`1px solid ${rc.border}`,borderRadius:5,padding:"2px 5px",fontSize:10,fontWeight:700,whiteSpace:"nowrap" }}>{p.ruolo}</span>
+                  <td style={{ padding:"7px 6px",textAlign:"center" }}>
+                    <span style={{ background:rc.bg,color:rc.text,border:`1px solid ${rc.border}`,borderRadius:5,padding:"2px 4px",fontSize:10,fontWeight:700 }}>{p.ruolo}</span>
                   </td>
-                  <td style={{ padding:"7px 8px",textAlign:"center",color:p.anni<=21?"#a78bfa":p.anni>=31?"#f97316":"#888" }}>{p.anni||"—"}</td>
-                  <td style={{ padding:"7px 8px",color:fuori?"#ef4444":"#e0e0e0",fontWeight:600,whiteSpace:"nowrap" }}>
+                  <td className="mob-hide" style={{ padding:"7px 8px",textAlign:"center",color:p.anni<=21?"#a78bfa":p.anni>=31?"#f97316":"#888" }}>{p.anni||"—"}</td>
+                  <td style={{ padding:"7px 6px",color:fuori?"#ef4444":"#e0e0e0",fontWeight:600,wordBreak:"break-word" }}>
                     {p.nome}
-                    {fuori&&<span style={{ marginLeft:5,fontSize:9,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444455",borderRadius:4,padding:"1px 5px",fontWeight:700 }}>FUORI</span>}
-                    {!fuori&&p.anni>0&&p.anni<=21&&<span style={{ marginLeft:5,fontSize:9,background:"#8b5cf622",color:"#a78bfa",border:"1px solid #8b5cf644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>U21</span>}
-                    {!fuori&&p.anni>=31&&<span style={{ marginLeft:5,fontSize:9,background:"#f9731622",color:"#fb923c",border:"1px solid #f9731644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>31+</span>}
+                    {fuori&&<span style={{ marginLeft:4,fontSize:9,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444455",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>FUORI</span>}
+                    {!fuori&&p.anni>0&&p.anni<=21&&<span style={{ marginLeft:4,fontSize:9,background:"#8b5cf622",color:"#a78bfa",border:"1px solid #8b5cf644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>U21</span>}
+                    {!fuori&&p.anni>=31&&<span style={{ marginLeft:4,fontSize:9,background:"#f9731622",color:"#fb923c",border:"1px solid #f9731644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>31+</span>}
                     {!p.in_vivaio&&p.anni>0&&p.anni<=23&&Number(p.quot||0)<=3&&(p.partite||0)===0&&vivaio.length<maxVivaio&&<span title="Eleggibile vivaio" style={{ marginLeft:4,fontSize:11 }}>🌱</span>}
                   </td>
-                  <td style={{ padding:"7px 8px",color:"#666",fontSize:11 }}>{p.squadra_serie_a||"—"}</td>
-                  <td style={{ padding:"7px 8px",textAlign:"center",fontWeight:800,color:p.quot>=20?"#f59e0b":"#ccc",fontFamily:"'Bebas Neue',sans-serif",fontSize:14 }}>
+                  <td className="mob-hide" style={{ padding:"7px 8px",color:"#666",fontSize:11 }}>{p.squadra_serie_a||"—"}</td>
+                  <td style={{ padding:"7px 6px",textAlign:"center",fontWeight:800,color:p.quot>=20?"#f59e0b":"#ccc",fontFamily:"'Bebas Neue',sans-serif",fontSize:14 }}>
                     {p.quot}
                     {p.quot_reale && Number(p.quot_reale) !== Number(p.quot) && (
                       <div title={`Quotazione reale aggiornata: ${p.quot_reale} (stip. trasferimento: ${(p.quot_reale/5).toFixed(2)}M)`}
@@ -2263,7 +2268,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                       </div>
                     )}
                   </td>
-                  <td style={{ padding:"7px 8px",textAlign:"center" }}>
+                  <td style={{ padding:"7px 6px",textAlign:"center" }}>
                     {(()=>{
                       const isU21s = p.anni > 0 && p.anni <= 21;
                       const ac1 = (p.anni_contratto||0) <= 1;
@@ -2273,15 +2278,15 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                       return <span style={{ color, fontWeight: fw }} title={ttip}>{p._stipCorretto.toFixed(2)}M</span>;
                     })()}
                   </td>
-                  <td style={{ padding:"7px 8px",textAlign:"center" }}>
+                  <td className="mob-hide" style={{ padding:"7px 8px",textAlign:"center" }}>
                     {(()=>{const ac=p.anni_contratto||0,isU21=p.anni>0&&p.anni<=21,color=ac===0?"#555":ac>=4?"#10b981":ac>=3?"#f59e0b":"#818cf8";
                     return <span style={{ background:color+"22",color,border:`1px solid ${color}44`,borderRadius:5,padding:"1px 6px",fontSize:10,fontWeight:700 }}>{ac||"—"}</span>;})()}
                   </td>
-                  <td style={{ padding:"7px 8px",textAlign:"center",color:"#666" }}>{p.clausola}M</td>
-                  <td style={{ padding:"7px 8px",textAlign:"center",color:p.media_voto>=6.5?"#10b981":p.media_voto>=6?"#f59e0b":"#888" }}>{p.media_voto>0?Number(p.media_voto).toFixed(2):"—"}</td>
-                  <td style={{ padding:"7px 8px",textAlign:"center",color:p.media_fantavoto>=7?"#10b981":p.media_fantavoto>=6?"#f59e0b":"#888" }}>{p.media_fantavoto>0?Number(p.media_fantavoto).toFixed(2):"—"}</td>
-                  <td style={{ padding:"7px 8px",textAlign:"center",color:p.gol>0?"#10b981":"#555" }}>{p.gol>0?p.gol:"—"}</td>
-                  <td style={{ padding:"7px 8px",textAlign:"center",color:p.assist>0?"#60a5fa":"#555" }}>{p.assist>0?p.assist:"—"}</td>
+                  <td className="mob-hide" style={{ padding:"7px 8px",textAlign:"center",color:"#666" }}>{p.clausola}M</td>
+                  <td className="mob-hide" style={{ padding:"7px 8px",textAlign:"center",color:p.media_voto>=6.5?"#10b981":p.media_voto>=6?"#f59e0b":"#888" }}>{p.media_voto>0?Number(p.media_voto).toFixed(2):"—"}</td>
+                  <td className="mob-hide" style={{ padding:"7px 8px",textAlign:"center",color:p.media_fantavoto>=7?"#10b981":p.media_fantavoto>=6?"#f59e0b":"#888" }}>{p.media_fantavoto>0?Number(p.media_fantavoto).toFixed(2):"—"}</td>
+                  <td className="mob-hide" style={{ padding:"7px 8px",textAlign:"center",color:p.gol>0?"#10b981":"#555" }}>{p.gol>0?p.gol:"—"}</td>
+                  <td className="mob-hide" style={{ padding:"7px 8px",textAlign:"center",color:p.assist>0?"#60a5fa":"#555" }}>{p.assist>0?p.assist:"—"}</td>
                 </tr>
               );
             })}
@@ -11290,7 +11295,19 @@ function AppInner() {
 
   return (
     <div style={{ minHeight:"100vh",background:"#0d0f14",fontFamily:"'Inter',system-ui,sans-serif",color:"#f0f0f0" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#333;border-radius:2px}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}body{background:#0d0f14}@media(max-width:1100px){.main-content-pad{padding:20px 20px!important}}@media(max-width:900px){.main-content-pad{padding:16px 14px!important}}@media(max-width:768px){input,select,textarea{font-size:16px!important;-webkit-text-size-adjust:100%}.table-mob{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px}.grid-stats-8{grid-template-columns:repeat(4,1fr)!important}.grid-stats-3{grid-template-columns:repeat(3,1fr)!important}.grid-stats-4{grid-template-columns:repeat(2,1fr)!important}.modal-pad{padding:16px!important}div:has(>table){overflow-x:auto!important;-webkit-overflow-scrolling:touch}table{min-width:max-content}}@media(max-width:400px){.grid-stats-8{grid-template-columns:repeat(4,1fr)!important}.grid-stats-3{grid-template-columns:1fr 1fr!important}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#333;border-radius:2px}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}body{background:#0d0f14}@media(max-width:1100px){.main-content-pad{padding:20px 20px!important}}@media(max-width:900px){.main-content-pad{padding:16px 14px!important}}@media(max-width:768px){
+input,select,textarea{font-size:16px!important;-webkit-text-size-adjust:100%}
+.table-mob{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px}
+.grid-stats-8{grid-template-columns:repeat(4,1fr)!important}
+.grid-stats-3{grid-template-columns:repeat(3,1fr)!important}
+.grid-stats-4{grid-template-columns:repeat(2,1fr)!important}
+.modal-pad{padding:16px!important}
+.mob-hide{display:none!important}
+table{border-collapse:collapse;width:100%}
+table td,table th{white-space:normal!important;word-break:break-word}
+.td-name{max-width:100px!important;white-space:normal!important;word-break:break-word!important}
+}
+@media(max-width:400px){.grid-stats-8{grid-template-columns:repeat(4,1fr)!important}.grid-stats-3{grid-template-columns:1fr 1fr!important}}`}</style>
       {isDesktop ? (
         <div style={{ display:"flex",minHeight:"100vh" }}>
           {/* Sidebar */}
