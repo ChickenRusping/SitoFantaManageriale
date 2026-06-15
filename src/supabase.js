@@ -3428,3 +3428,101 @@ export async function rimuoviAllenatore(squadra, nomeAllenatore, rimborso = 0) {
     if (obIds?.length) await supabase.from('progressi_obiettivi').delete().in('obiettivo_id', obIds.map(o=>o.id)).eq('squadra', squadra);
   }
 }
+
+// ─── RIVALITÀ GLOBAL LOCK ─────────────────────────────────────────────────────
+
+export async function getRivalitaLock() {
+  const { data } = await supabase.from('impostazioni').select('valore').eq('chiave', 'rivalita_bloccata').single();
+  return data?.valore === 'true';
+}
+
+export async function setRivalitaLock(bloccata) {
+  if (bloccata) {
+    await supabase.from('impostazioni').upsert({ chiave: 'rivalita_bloccata', valore: 'true' }, { onConflict: 'chiave' });
+  } else {
+    await supabase.from('impostazioni').upsert({ chiave: 'rivalita_bloccata', valore: 'false' }, { onConflict: 'chiave' });
+  }
+}
+
+// ─── IMPORT DATABASE FANTA.XLSX ───────────────────────────────────────────────
+
+// Mappatura colonne del file Database Fanta.xlsx
+function parseRowFanta(r) {
+  return {
+    nome:             (r['Nome'] || '').trim(),
+    quot:             Number(r['QUOT.']  || 0),
+    squadra_serie_a:  r['Sq.']  || null,
+    ruolo:            r['R.MANTRA'] || null,
+    anni:             Number(r['Under'] || 0),
+    fantaSquadra:     r['FantaSquadra'] || null,
+    fuori_lista:      r['Fuori lista'] === '*',
+    partite:          Number(r['Partite a voto']  || 0),
+    media_voto:       Number(r['Media Voto']       || 0),
+    media_fantavoto:  Number(r['Media Fantavoto']  || 0),
+    gol:              Number(r['Gol fatti']         || 0),
+    gol_subiti:       Number(r['Gol subiti']        || 0),
+    rigori_parati:    Number(r['Rigori Parati']     || 0),
+    rigori_segnati:   Number(r['Rigori Segnati']    || 0),
+    rigori_sbagliati: Number(r['Rigori Sbagliati']  || 0),
+    assist:           Number(r['Assist']            || 0),
+    ammonizioni:      Number(r['Ammonizioni']       || 0),
+    espulsioni:       Number(r['Espulsioni']        || 0),
+    autogol:          Number(r['Autogol']           || 0),
+  };
+}
+
+export async function importDatabaseFanta(rows, stagione = '2026-27') {
+  const BATCH = 50;
+
+  // Carica tutte le rose (id + nome)
+  const { data: rosaAll } = await supabase.from('rosa').select('id, nome, quot, stip, clausola').eq('in_vivaio', false);
+  const rosaMap = {};
+  for (const p of (rosaAll || [])) rosaMap[p.nome.trim()] = p;
+
+  // Carica tutti gli svincolati (id + nome)
+  const { data: svinAll } = await supabase.from('svincolati').select('id, nome').eq('stagione', stagione);
+  const svinMap = {};
+  for (const s of (svinAll || [])) svinMap[s.nome.trim()] = s;
+
+  const statsFields = ['partite','media_voto','media_fantavoto','gol','gol_subiti','rigori_parati','rigori_segnati','rigori_sbagliati','assist','ammonizioni','espulsioni','autogol'];
+
+  const parsed = rows.map(parseRowFanta).filter(r => r.nome && r.quot > 0);
+
+  let rosaAggiornati = 0, svinAggiornati = 0, nonTrovati = [];
+
+  // Suddividi in batch
+  for (let i = 0; i < parsed.length; i += BATCH) {
+    const batch = parsed.slice(i, i + BATCH);
+    await Promise.all(batch.map(async r => {
+      const stats = {};
+      statsFields.forEach(f => { stats[f] = r[f]; });
+
+      if (rosaMap[r.nome]) {
+        // In rosa: aggiorna stats + quota reale (non cambia quot/stip/clausola correnti)
+        const { error } = await supabase.from('rosa').update({
+          ...stats,
+          quot_reale: r.quot,
+          squadra_serie_a: r.squadra_serie_a || rosaMap[r.nome].squadra_serie_a,
+        }).eq('id', rosaMap[r.nome].id);
+        if (!error) rosaAggiornati++;
+      } else if (svinMap[r.nome]) {
+        // Svincolato: aggiorna tutto (stats + quot/stip/clausola)
+        const stip = parseFloat((r.quot / 5).toFixed(2));
+        const clausola = parseFloat((r.quot * 1.75).toFixed(2));
+        const { error } = await supabase.from('svincolati').update({
+          ...stats,
+          quot: r.quot,
+          stip,
+          clausola,
+          squadra_serie_a: r.squadra_serie_a || undefined,
+          quot_reale: r.quot,
+        }).eq('id', svinMap[r.nome].id);
+        if (!error) svinAggiornati++;
+      } else {
+        nonTrovati.push(r.nome);
+      }
+    }));
+  }
+
+  return { rosaAggiornati, svinAggiornati, nonTrovati, totale: parsed.length };
+}
