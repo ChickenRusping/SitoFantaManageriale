@@ -4986,18 +4986,20 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.08em" }}>📋 MOVIMENTI</div>
-                  <div style={{ display: "flex", gap: 6, alignItems: "center", overflowX: "auto", flexShrink: 1, paddingBottom: 2 }}>
-                    {/* Sort buttons */}
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     {[
-                      { key: "data_desc", label: "📅 Recenti" },
-                      { key: "data_asc",  label: "📅 Vecchi"  },
-                      { key: "imp_desc",  label: "💰 Importo ↓" },
-                      { key: "imp_asc",   label: "💰 Importo ↑" },
-                    ].map(s => (
-                      <button key={s.key} onClick={() => setMovSort(s.key)} style={{ padding: "4px 10px", borderRadius: 7, border: "none", background: movSort === s.key ? "#6366f133" : "#ffffff0a", color: movSort === s.key ? "#818cf8" : "#666", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
-                        {s.label}
-                      </button>
-                    ))}
+                      { asc: "data_asc", desc: "data_desc", labelAsc: "📅 Vecchi", labelDesc: "📅 Recenti" },
+                      { asc: "imp_asc",  desc: "imp_desc",  labelAsc: "💰 ↑",       labelDesc: "💰 ↓" },
+                    ].map(s => {
+                      const active = movSort === s.asc || movSort === s.desc;
+                      const isDesc = movSort === s.desc;
+                      const label = active ? (isDesc ? s.labelDesc : s.labelAsc) : s.labelDesc;
+                      return (
+                        <button key={s.desc} onClick={() => setMovSort(active && isDesc ? s.asc : s.desc)} style={{ padding: "4px 10px", borderRadius: 7, border: "none", background: active ? "#6366f133" : "#ffffff0a", color: active ? "#818cf8" : "#666", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                          {label}
+                        </button>
+                      );
+                    })}
                     {canEditMovimenti && (
                       <button onClick={() => setShowMovForm(v => !v)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: showMovForm ? "#ffffff12" : "linear-gradient(135deg,#6366f1,#a855f7)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                         {showMovForm ? "✕" : "+ Mov"}
