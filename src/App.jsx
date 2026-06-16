@@ -6615,7 +6615,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
                   {a.note && <div style={{ fontSize: 11, color: "#888", borderTop: "1px solid #ffffff0a", paddingTop: 8 }}>📝 {a.note}</div>}
 
-                  {(a.proprietario === mySquadra || isAdmin) && !a.miglior_offerente && a.stato === 'attiva' && (
+                  {(a.proprietario === mySquadra || isAdmin) && (isAdmin || !a.miglior_offerente) && a.stato === 'attiva' && (
                     <div style={{ borderTop: "1px solid #ffffff0a", paddingTop: 8, marginTop: 8 }}>
                       <button onClick={() => annullaAsta(a)} style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid #ef444440", background: "#ef444410", color: "#ef4444", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                         ✕ Annulla asta
