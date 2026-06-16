@@ -1558,7 +1558,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
 
       {/* ── 4. PREMI ── */}
       <div style={{ background:"#ffffff06",border:"1.5px solid #ffffff12",borderRadius:16,padding:18 }}>
-        <div style={{ fontSize:11,fontWeight:700,color:"#888",letterSpacing:"0.1em",marginBottom:16 }}>🏆 PREMI · {STAGIONE}</div>
+        <div style={{ fontSize:11,fontWeight:700,color:"#888",letterSpacing:"0.1em",marginBottom:16 }}>🏆 PREMI · {STAGIONE_CORRENTE}</div>
         <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
           {/* 19a */}
           <div style={{ background:"#6366f108",border:"1.5px solid #6366f120",borderRadius:12,padding:14 }}>
@@ -3799,7 +3799,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
 
       {/* ── 5. QUOTE & BIENNIO 2025-27 ── */}
       <div style={{ background: "#6366f108", border: "1.5px solid #6366f125", borderRadius: 14, padding: 16 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#818cf8", letterSpacing: "0.08em", marginBottom: 14 }}>💶 QUOTE & BUDGET BIENNIO {BIENNIO}</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#818cf8", letterSpacing: "0.08em", marginBottom: 14 }}>💶 QUOTE & BUDGET BIENNIO {BIENNIO_CORRENTE}</div>
 
         {/* Status pagamenti */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
@@ -3840,7 +3840,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
         {/* Biennio barra */}
         <div style={{ marginBottom: 10 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ fontSize: 12, color: "#888" }}>Euro investiti nel biennio {BIENNIO}</span>
+            <span style={{ fontSize: 12, color: "#888" }}>Euro investiti nel biennio {BIENNIO_CORRENTE}</span>
             <span style={{ fontSize: 13, fontWeight: 800, color: "#818cf8" }}>{team.euroBiennio || 0}€ / 10€</span>
           </div>
           <StatBar value={team.euroBiennio || 0} max={10} color="#6366f1" height={8} />
@@ -4302,7 +4302,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
 
       {/* ══ 2. ALLENATORE ══ */}
       <div>
-        <div style={{ fontSize:11,fontWeight:700,color:"#a855f7",letterSpacing:"0.1em",marginBottom:12 }}>🎩 ALLENATORE · {STAGIONE}</div>
+        <div style={{ fontSize:11,fontWeight:700,color:"#a855f7",letterSpacing:"0.1em",marginBottom:12 }}>🎩 ALLENATORE · {STAGIONE_CORRENTE}</div>
         {loadingAll?<div style={{ fontSize:12,color:"#555" }}>Caricamento...</div>
         :allenatore?(
           <>
@@ -4381,7 +4381,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
           </>
         ):(
           <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-            <div style={{ fontSize:11,color:"#888" }}>Nessun allenatore scelto per {STAGIONE}.{isAdmin&&<span style={{ color:"#6366f1" }}> Scegli una carta (5M).</span>}</div>
+            <div style={{ fontSize:11,color:"#888" }}>Nessun allenatore scelto per {STAGIONE_CORRENTE}.{isAdmin&&<span style={{ color:"#6366f1" }}> Scegli una carta (5M).</span>}</div>
             {/* Coach preview modal */}
             {coachPreview && (() => {
               const info = OBIETTIVI_ALLENATORI[coachPreview];
@@ -8175,7 +8175,7 @@ function PenalitaPage({ isAdmin, teams = [] }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 900, color: "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "1px" }}>PENALITÀ</h1>
-          <p style={{ fontSize: 13, color: "#888", marginTop: 2 }}>Registro sanzioni · stagione {STAGIONE}</p>
+          <p style={{ fontSize: 13, color: "#888", marginTop: 2 }}>Registro sanzioni · stagione {STAGIONE_CORRENTE}</p>
         </div>
         {isAdmin && (
           <button onClick={() => setShowForm(v => !v)}
@@ -8269,7 +8269,7 @@ function PenalitaPage({ isAdmin, teams = [] }) {
                 {team && <TeamAvatar team={team} size={32} />}
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 800, color: "#f0f0f0" }}>{nome}</div>
-                  <div style={{ fontSize: 11, color: "#666" }}>{pens.length} sanzioni · {STAGIONE}</div>
+                  <div style={{ fontSize: 11, color: "#666" }}>{pens.length} sanzioni · {STAGIONE_CORRENTE}</div>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   {multeTot > 0 && <Badge color="#ef4444">−{multeTot.toFixed(1)}M</Badge>}
@@ -8423,7 +8423,7 @@ function PremiPage({ isAdmin, teams = [] }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div>
         <h1 style={{ fontSize: 22, fontWeight: 900, color: "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "1px" }}>PREMI</h1>
-        <p style={{ fontSize: 13, color: "#888", marginTop: 2 }}>Premi invernali e di fine stagione · {STAGIONE}</p>
+        <p style={{ fontSize: 13, color: "#888", marginTop: 2 }}>Premi invernali e di fine stagione · {STAGIONE_CORRENTE}</p>
       </div>
 
       {/* ── 1. PREMI 19ª GIORNATA (art. 12.1) ── */}
