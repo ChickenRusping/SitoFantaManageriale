@@ -2079,7 +2079,7 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
     }
     if (tipo==='straordinario_u21_nc') return {label:"Costo/Guadagno",value:0,color:"#888",dettaglio:"U21 nc — costo e guadagno 0",positivo:true};
     const ind=estero?parseFloat((quot/2).toFixed(2)):parseFloat((quot/4).toFixed(2));
-    const julyYear=oggi.getMonth()>=6?oggi.getFullYear():oggi.getFullYear()-1;
+    const julyYear=oggi.getMonth()>=5?oggi.getFullYear():oggi.getFullYear()-1;
     const mr=Math.max(0,(oggi.getFullYear()*12+oggi.getMonth())-(julyYear*12+6)+1);
     const rimb=parseFloat((mr*stip/12).toFixed(2));
     return {label:"Indennizzo + rimborso",value:parseFloat((ind+rimb).toFixed(2)),color:"#10b981",dettaglio:`Ind. ${ind}M${estero?' (estero ½)':' (¼)'} + ${mr} mens. rimborsate (${rimb}M)`,positivo:true};
@@ -2530,7 +2530,7 @@ function SvincoliTab({ team, isAdmin }) {
     }
     // Straordinario
     const ind = estero ? parseFloat((quot / 2).toFixed(2)) : parseFloat((quot / 4).toFixed(2));
-    const julyYear = oggi.getMonth() >= 6 ? oggi.getFullYear() : oggi.getFullYear() - 1;
+    const julyYear = oggi.getMonth() >= 5 ? oggi.getFullYear() : oggi.getFullYear() - 1;
     const mesiRimb = Math.max(0, (oggi.getFullYear() * 12 + oggi.getMonth()) - (julyYear * 12 + 6) + 1);
     const rimb = parseFloat((mesiRimb * stip / 12).toFixed(2));
     const totale = parseFloat((ind + rimb).toFixed(2));
