@@ -3082,12 +3082,21 @@ function ClausoleTab({ team, isAdmin }) {
   );
 }
 
-function ContrattoRinnovoRow({ p, team, isAdmin, mySquadra, onRefresh }) {
+function ContrattoRinnovoRow({ p, team, isAdmin, mySquadra, onToggle }) {
   const [confermando, setConfermando] = useState(false);
   const isU21 = p.anni > 0 && p.anni <= 21;
-  // Sempre anno 2 → rinnovo biennale: +20% (U21: nessun aumento, art. 4.8.1)
   const percAumento = isU21 ? 0 : 20;
   const nuovoStip = parseFloat((Number(p.stip) * (1 + percAumento / 100)).toFixed(2));
+
+  async function toggle(nuovoValore) {
+    setConfermando(true);
+    try {
+      const { error } = await supabase.from('rosa').update({ rinnovo_confermato: nuovoValore }).eq('id', p.id);
+      if (error) throw error;
+      onToggle(p.id, nuovoValore);
+    } catch(e) { alert(e.message); }
+    finally { setConfermando(false); }
+  }
 
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #ffffff08", flexWrap: "wrap", gap: 8 }}>
@@ -3111,29 +3120,14 @@ function ContrattoRinnovoRow({ p, team, isAdmin, mySquadra, onRefresh }) {
                 <span style={{ fontSize: 10, color: "#10b981", fontWeight: 700 }}>✓ Rinnovato</span>
                 <button
                   disabled={confermando}
-                  onClick={async () => {
-                    if (!window.confirm(`Annullare la conferma di rinnovo per ${p.nome}?`)) return;
-                    setConfermando(true);
-                    try {
-                      await supabase.from('rosa').update({ rinnovo_confermato: false }).eq('id', p.id);
-                      await onRefresh();
-                    } catch(e) { alert(e.message); }
-                    finally { setConfermando(false); }
-                  }}
+                  onClick={() => { if (window.confirm(`Annullare la conferma di rinnovo per ${p.nome}?`)) toggle(false); }}
                   style={{ padding: "3px 8px", borderRadius: 6, border: "1px solid #ef444430", background: "#ef444410", color: "#ef4444", fontSize: 9, fontWeight: 700, cursor: "pointer" }}>
                   {confermando ? "…" : "✕ Annulla"}
                 </button>
               </div>
             : <button
                 disabled={confermando}
-                onClick={async () => {
-                  setConfermando(true);
-                  try {
-                    await supabase.from('rosa').update({ rinnovo_confermato: true }).eq('id', p.id);
-                    await onRefresh();
-                  } catch(e) { alert(e.message); }
-                  finally { setConfermando(false); }
-                }}
+                onClick={() => toggle(true)}
                 style={{ padding: "4px 10px", borderRadius: 7, border: "none", background: "#10b98122", color: "#10b981", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                 {confermando ? "…" : "✓ Rinnova (+20%)"}
               </button>
@@ -3527,7 +3521,16 @@ function FairSpendingSection({ team, isAdmin }) {
 }
 
 
-function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0, salaryCapSforato, scEsenteGiuLug, giorniSCNeg, contrattiScadenza, rosaPlayers, pagandoStipendi, handlePagaStipendi, isAdmin, mySquadra, onRefresh }) {
+function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0, salaryCapSforato, scEsenteGiuLug, giorniSCNeg, contrattiScadenza: contrattiScadenzaProp, rosaPlayers, pagandoStipendi, handlePagaStipendi, isAdmin, mySquadra, onRefresh }) {
+  const [contrattiScadenza, setContrattiScadenza] = useState(contrattiScadenzaProp || []);
+  useEffect(() => { setContrattiScadenza(contrattiScadenzaProp || []); }, [contrattiScadenzaProp]);
+
+  function handleToggleRinnovo(id, valore) {
+    setContrattiScadenza(prev => prev.map(p => p.id === id ? { ...p, rinnovo_confermato: valore } : p));
+    cacheInvalidate('contratti_' + team.name);
+    if (onRefresh) onRefresh();
+  }
+
   const [tasse, setTasse] = useState([]);
   const [fairSpending, setFairSpending] = useState([]);
   const [applicandoTassa, setApplicandoTassa] = useState(false);
@@ -3913,7 +3916,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
             const roleOrder = (r) => { const f=(r||"").split(";")[0].trim(); if(f==="Por")return 0; if(["Dc","Dd","Ds","B"].includes(f))return 1; if(["E","M","C"].includes(f))return 2; if(["T","W"].includes(f))return 3; return 4; };
             return roleOrder(a.ruolo) - roleOrder(b.ruolo) || (a.nome||"").localeCompare(b.nome||"");
           }).map(p => (
-            <ContrattoRinnovoRow key={p.id} p={p} team={team} isAdmin={isAdmin} mySquadra={mySquadra} onRefresh={onRefresh} />
+            <ContrattoRinnovoRow key={p.id} p={p} team={team} isAdmin={isAdmin} mySquadra={mySquadra} onToggle={handleToggleRinnovo} />
           ))}
         </div>
       )}
