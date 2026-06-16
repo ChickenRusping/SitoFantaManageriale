@@ -391,9 +391,8 @@ export async function getContrattiInScadenza(squadra) {
 // ─── CLUB IDENTITY ────────────────────────────────────────────────────────────
 
 export async function getClubIdentity(squadra) {
-  const { data, error } = await supabase.from('club_identity').select('*').eq('squadra', squadra).single();
-  if (error) return null;
-  return data;
+  const { data } = await supabase.from('club_identity').select('*').eq('squadra', squadra).limit(1);
+  return data?.[0] ?? null;
 }
 
 // Fetch tutte le identity in un colpo solo (per arricchire mergedTeams con stemmi)
@@ -998,9 +997,8 @@ export async function insertSvincolo(s) {
 }
 
 export async function getStagioneSvincoli(squadra) {
-  const { data, error } = await supabase.from('stagione_svincoli').select('*').eq('squadra', squadra).single();
-  if (error) return null;
-  return data;
+  const { data } = await supabase.from('stagione_svincoli').select('*').eq('squadra', squadra).limit(1);
+  return data?.[0] ?? null;
 }
 
 export async function updateStagioneSvincoli(squadra, fields) {
@@ -1497,10 +1495,9 @@ export async function getAllenatori(stagione = '2026-27') {
 }
 
 export async function getAllenatoreBySquadra(squadra, stagione = '2026-27') {
-  const { data, error } = await supabase.from('allenatori_carte')
-    .select('*').eq('squadra', squadra).eq('stagione', stagione).single();
-  if (error) return null;
-  return data;
+  const { data } = await supabase.from('allenatori_carte')
+    .select('*').eq('squadra', squadra).eq('stagione', stagione).limit(1);
+  return data?.[0] ?? null;
 }
 
 export async function getObiettiviCarta(allenatore, stagione = '2026-27') {
@@ -1563,10 +1560,9 @@ export async function getFpfTutteSquadre() {
 
 // Salary cap allenatore: aggiunge 5M fissi al SC se la squadra ha una carta allenatore
 export async function getSCAllenatore(squadra) {
-  const { data, error } = await supabase.from('allenatori_carte')
-    .select('stipendio_sc').eq('squadra', squadra).single();
-  if (error || !data) return 0;
-  return Number(data.stipendio_sc || 0);
+  const { data } = await supabase.from('allenatori_carte')
+    .select('stipendio_sc').eq('squadra', squadra).limit(1);
+  return Number(data?.[0]?.stipendio_sc || 0);
 }
 
 // ─── INVESTIMENTI (art. 10) ───────────────────────────────────────────────────
@@ -3255,8 +3251,8 @@ export function subscribeCommenti(notiziaId, callback) { return supabase.channel
 
 // Mercato override (stored in impostazioni table)
 export async function getMercatoOverride() {
-  const { data } = await supabase.from('impostazioni').select('valore').eq('chiave', 'mercato_override').single();
-  return data?.valore ?? null; // null=auto, 'aperto', 'chiuso'
+  const { data } = await supabase.from('impostazioni').select('valore').eq('chiave', 'mercato_override').limit(1);
+  return data?.[0]?.valore ?? null; // null=auto, 'aperto', 'chiuso'
 }
 
 export async function setMercatoOverride(valore) {
@@ -3432,8 +3428,8 @@ export async function rimuoviAllenatore(squadra, nomeAllenatore, rimborso = 0) {
 // ─── RIVALITÀ GLOBAL LOCK ─────────────────────────────────────────────────────
 
 export async function getRivalitaLock() {
-  const { data } = await supabase.from('impostazioni').select('valore').eq('chiave', 'rivalita_bloccata').single();
-  return data?.valore === 'true';
+  const { data } = await supabase.from('impostazioni').select('valore').eq('chiave', 'rivalita_bloccata').limit(1);
+  return data?.[0]?.valore === 'true';
 }
 
 export async function setRivalitaLock(bloccata) {
@@ -3695,8 +3691,8 @@ export async function importa01Agosto(rows, stagione = '2026-27') {
 
 // ─── STAGIONE ─────────────────────────────────────────────────────────────────
 export async function getStagioneLabel() {
-  const { data } = await supabase.from('impostazioni').select('valore').eq('chiave', 'stagione_label').single();
-  return data?.valore || '2026/27';
+  const { data } = await supabase.from('impostazioni').select('valore').eq('chiave', 'stagione_label').limit(1);
+  return data?.[0]?.valore || '2026/27';
 }
 export async function setStagioneLabel(label) {
   await supabase.from('impostazioni').upsert({ chiave: 'stagione_label', valore: label }, { onConflict: 'chiave' });
@@ -3704,9 +3700,9 @@ export async function setStagioneLabel(label) {
 
 // ─── TORNEI (Coppa Italia + Supercoppa) ──────────────────────────────────────
 export async function getTorneo(chiave) {
-  const { data } = await supabase.from('impostazioni').select('valore').eq('chiave', chiave).single();
-  if (!data?.valore) return null;
-  try { return JSON.parse(data.valore); } catch { return null; }
+  const { data } = await supabase.from('impostazioni').select('valore').eq('chiave', chiave).limit(1);
+  if (!data?.[0]?.valore) return null;
+  try { return JSON.parse(data[0].valore); } catch { return null; }
 }
 export async function setTorneo(chiave, obj) {
   await supabase.from('impostazioni').upsert({ chiave, valore: JSON.stringify(obj) }, { onConflict: 'chiave' });
