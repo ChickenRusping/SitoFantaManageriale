@@ -1,10 +1,26 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams, Navigate } from "react-router-dom";
 
-// ─── COSTANTI STAGIONE ────────────────────────────────────────────────────────
-// Aggiornare qui all'inizio di ogni nuova stagione.
-const STAGIONE_CORRENTE = '2026-27';
-const BIENNIO_CORRENTE  = '2025-27';
+// ─── STAGIONE / BIENNIO DINAMICI ─────────────────────────────────────────────
+// Il cambio avviene automaticamente il 02/06 di ogni anno.
+// Bienni: 25/26+26/27 → 2025-27, poi 27/28+28/29 → 2027-29, ecc.
+function calcolaStaginoCorrente() {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth() + 1, d = now.getDate();
+  const dopoGiugno2 = m > 6 || (m === 6 && d >= 2);
+  const startYear = dopoGiugno2 ? y : y - 1;
+  return `${startYear}-${String(startYear + 1).slice(2)}`;
+}
+function calcolaBiennioCorrente() {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth() + 1, d = now.getDate();
+  const dopoGiugno2 = m > 6 || (m === 6 && d >= 2);
+  const startYear = dopoGiugno2 ? y : y - 1;
+  const bStart = startYear % 2 === 1 ? startYear : startYear - 1;
+  return `${bStart}-${String(bStart + 2).slice(2)}`;
+}
+const STAGIONE_CORRENTE = calcolaStaginoCorrente();
+const BIENNIO_CORRENTE  = calcolaBiennioCorrente();
 
 // ─── CACHE IN MEMORIA ────────────────────────────────────────────────────────
 // Evita di ricaricare gli stessi dati ogni volta che si naviga tra le pagine.
