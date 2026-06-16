@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
   'https://ougxeheoaifcuetnmgrw.supabase.co',
-  'sb_publishable_ZI75g_AJGpsblAxVDDFBIQ_-tqGXPym'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91Z3hlaGVvYWlmY3VldG5tZ3J3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzIzMDgyMiwiZXhwIjoyMDg4ODA2ODIyfQ.JVpNt7UyXPqeBYcGyd3liBI8GGl7f6XO4lEe9k2W3HE'
 );
 
 const articoli = [
