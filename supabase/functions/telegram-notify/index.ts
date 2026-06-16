@@ -51,6 +51,7 @@ const DEEP_LINK: Record<string, string> = {
   trattativa_rifiutata:   `${APP}/mercato`,
   chiamata_svincolati:    `${APP}/mercato`,
   asta_svincolati:        `${APP}/mercato`,
+  asta_tra_presidenti:    `${APP}/mercato`,
   asta_vinta:             `${APP}/mercato`,
   asta_persa:             `${APP}/mercato`,
   ds_masterclass_offerte: `${APP}/mercato`,
@@ -72,6 +73,7 @@ const CATEGORY_BADGE: Record<string, string> = {
   trattativa_rifiutata:   "━━━  🤝  MERCATO  🤝  ━━━",
   // ⚽ Aste & Svincolati
   chiamata_svincolati:    "━━━  ⚽  SVINCOLATI  ⚽  ━━━",
+  asta_tra_presidenti:    "━━━  🏛  ASTE TRA PRESIDENTI  🏛  ━━━",
   asta_svincolati:        "━━━  🔔  ASTE  🔔  ━━━",
   asta_vinta:             "━━━  🏆  ASTA VINTA  🏆  ━━━",
   asta_persa:             "━━━  😔  ASTE  😔  ━━━",
@@ -91,6 +93,8 @@ function buildMessage(type: string, p: Record<string, unknown>): string | null {
   switch (type) {
     case "chiamata_svincolati":
       return `${badge}📣 <b>Nuova chiamata!</b>\n\n⚽ <b>${p.giocatore}</b> · Q${p.quotazione}\n🏟 <b>${p.squadra}</b> ha manifestato interesse\n⏰ Asta disponibile tra ${p.ore ?? 24}h se altri si uniscono${link}`;
+    case "asta_tra_presidenti":
+      return `${badge}🏛 <b>Nuova asta tra presidenti!</b>\n\n⚽ <b>${p.giocatore}</b> · Q${p.quotazione}\n🏟 Indetta da: <b>${p.proprietario}</b>\n📉 Tipo: <b>${p.tipo_asta === 'rialzo' ? 'Al rialzo 📈' : 'Al ribasso 📉'}</b>\n💰 Prezzo base: <b>${p.prezzo_base}M</b>${p.note ? `\n📝 ${p.note}` : ""}${link}`;
     case "asta_svincolati":
       return `${badge}🔔 <b>Asta svincolati aperta!</b>\n\n⚽ <b>${p.giocatore}</b> · Q${p.quotazione}\n📣 Chiamato da: <b>${p.squadra}</b>\n⏰ Scade tra <b>${p.ore ?? 24}h</b> — fate le vostre offerte!${link}`;
     case "notizia_pinnata":
@@ -194,7 +198,7 @@ serve(async (req) => {
   const results: Array<{ target: string; ok: boolean }> = [];
 
   const publicTypes = [
-    "chiamata_svincolati", "asta_svincolati", "notizia_pinnata",
+    "chiamata_svincolati", "asta_svincolati", "asta_tra_presidenti", "notizia_pinnata",
     "scadenza_imminente", "mercato_aperto", "mercato_chiuso",
     "tassa_applicata", "stipendi_applicati", "stadio_applicato",
   ];

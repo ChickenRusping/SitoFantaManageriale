@@ -5945,6 +5945,21 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     });
     setShowAstaForm(false);
     setAstaForm(emptyAstaForm);
+    sendTelegramNotification('asta_tra_presidenti', {
+      giocatore: astaForm.giocatore,
+      quotazione: quot,
+      proprietario: mySquadra || TEAMS[0].name,
+      tipo_asta: astaForm.tipo_asta,
+      prezzo_base: prezzoBase,
+      note: astaForm.note || null,
+    });
+    cacheInvalidate('aste');
+    await loadAll();
+  }
+
+  async function annullaAsta(asta) {
+    if (!window.confirm(`Annullare l'asta per ${asta.giocatore}?`)) return;
+    await updateAsta(asta.id, { stato: 'annullata' });
     cacheInvalidate('aste');
     await loadAll();
   }
@@ -6599,6 +6614,14 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                   )}
 
                   {a.note && <div style={{ fontSize: 11, color: "#888", borderTop: "1px solid #ffffff0a", paddingTop: 8 }}>📝 {a.note}</div>}
+
+                  {(a.proprietario === mySquadra || isAdmin) && !a.miglior_offerente && a.stato === 'attiva' && (
+                    <div style={{ borderTop: "1px solid #ffffff0a", paddingTop: 8, marginTop: 8 }}>
+                      <button onClick={() => annullaAsta(a)} style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid #ef444440", background: "#ef444410", color: "#ef4444", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                        ✕ Annulla asta
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })
