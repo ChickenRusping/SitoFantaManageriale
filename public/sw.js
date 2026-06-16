@@ -16,8 +16,9 @@ self.addEventListener('activate', e => {
 // Network-first: sempre dati freschi, fallback alla cache se offline
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-  // Non intercettare richieste Supabase/API
+  // Non intercettare richieste Supabase/API o schemi non cacheable
   if (e.request.url.includes('supabase.co')) return;
+  if (!e.request.url.startsWith('http')) return;
   e.respondWith(
     fetch(e.request)
       .then(res => {
