@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams, Navigate } from "react-router-dom";
 
+// ─── COSTANTI STAGIONE ────────────────────────────────────────────────────────
+// Aggiornare qui all'inizio di ogni nuova stagione.
+const STAGIONE_CORRENTE = '2026-27';
+const BIENNIO_CORRENTE  = '2025-27';
+
 // ─── CACHE IN MEMORIA ────────────────────────────────────────────────────────
 // Evita di ricaricare gli stessi dati ogni volta che si naviga tra le pagine.
 // I dati vengono invalidati dopo TTL ms (default 90 secondi).
@@ -75,12 +80,7 @@ function calcolaStatoMercato() {
   const aperto = inEstivo || inInvernale;
   const periodo = inEstivo ? 'estivo' : inInvernale ? 'invernale' : null;
 
-  // Turno infrasettimanale: mer-gio di solito — per ora usiamo una costante
-  // In futuro si può prendere da DB
-  const giornoSettimana = now.getDay(); // 0=dom, 3=mer, 4=gio
-  const infrasettimanale = false; // TODO: gestire da DB
-
-  return { aperto, periodo, infrasettimanale, now };
+  return { aperto, periodo, now };
 }
 
 // Hook: si aggiorna automaticamente quando scatta una deadline
@@ -729,7 +729,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
         const rosa = (d || []).filter(p => !p.in_vivaio);
         return [t.name, { count: rosa.length, sc: rosa.reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0) }];
       }))),
-      getAllenatori('2026-27'),
+      getAllenatori(STAGIONE_CORRENTE),
     ]).then(([rosaEntries, allCoaches]) => {
       const counts = {}, scs = {};
       rosaEntries.forEach(([name, { count, sc }]) => { counts[name] = count; scs[name] = sc; });
@@ -1044,8 +1044,8 @@ function TorneiSection({ isAdmin, forcedTab }) {
     getTorneo('supercoppa_2627').then(d => setSuperc(d || JSON.parse(JSON.stringify(SUPERCOPPA_INIT))));
   }, []);
 
-  async function saveCoppa(next) { setCoppa(next); setSaving(true); await setTorneo('coppa_italia_2627', next).catch(()=>{}); setSaving(false); }
-  async function saveSuperc(next) { setSuperc(next); setSaving(true); await setTorneo('supercoppa_2627', next).catch(()=>{}); setSaving(false); }
+  async function saveCoppa(next) { setCoppa(next); setSaving(true); try { await setTorneo('coppa_italia_2627', next); } catch(e) { alert(`Errore salvataggio Coppa: ${e.message}`); } finally { setSaving(false); } }
+  async function saveSuperc(next) { setSuperc(next); setSaving(true); try { await setTorneo('supercoppa_2627', next); } catch(e) { alert(`Errore salvataggio Supercoppa: ${e.message}`); } finally { setSaving(false); } }
 
   function editGirone(gruppo, sq, field, val) {
     const next = JSON.parse(JSON.stringify(coppa));
@@ -1321,7 +1321,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
   const sC = { Mercato: "#6366f1", Quote: "#818cf8", Rosa: "#10b981", Stipendi: "#f97316" };
   const sI = { Mercato: "🤝", Quote: "💶", Rosa: "🌿", Stipendi: "💰" };
   // ── Premi ────────────────────────────────────────────────────────────────────
-  const STAGIONE = '2026-27';
+
   const [premi, setPremi] = useState([]);
   const [classPr, setClassPr] = useState([]);
   const [montepremi, setMontepremi] = useState(0);
@@ -1331,7 +1331,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
   const [coppaSelezionata, setCoppaSelezionata] = useState({ 1: '', 2: '', 3: '', 4: '' });
   const [savingCoppa, setSavingCoppa] = useState(false);
   const loadPremi = useCallback(async () => {
-    const [p, cl] = await Promise.all([getPremi(STAGIONE), getClassifica()]);
+    const [p, cl] = await Promise.all([getPremi(STAGIONE_CORRENTE), getClassifica()]);
     setPremi(p || []); setClassPr((cl||[]).sort((a,b) => b.pt - a.pt || b.pt_totali - a.pt_totali));
   }, []);
   useEffect(() => { loadPremi(); }, [loadPremi]);
@@ -1347,7 +1347,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
     setSavingCoppa(true);
     try {
       for (const e of entries) {
-        const rec = await insertPremio({ squadra: e.squadra, tipo: 'premio_coppa', importo: e.mln, posizione: e.pos, stagione: STAGIONE, data_premio: new Date().toISOString().slice(0,10) });
+        const rec = await insertPremio({ squadra: e.squadra, tipo: 'premio_coppa', importo: e.mln, posizione: e.pos, stagione: STAGIONE_CORRENTE, data_premio: new Date().toISOString().slice(0,10) });
         await applicaPremio(e.squadra, e.mln, e.label, rec.id);
       }
       await loadPremi();
@@ -1361,7 +1361,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
     setSavingIndivLega(true);
     try {
       for (const e of entries) {
-        const rec = await insertPremio({ squadra: e.squadra, tipo: e.tipo, importo: e.importo, posizione: null, stagione: STAGIONE, data_premio: new Date().toISOString().slice(0,10) });
+        const rec = await insertPremio({ squadra: e.squadra, tipo: e.tipo, importo: e.importo, posizione: null, stagione: STAGIONE_CORRENTE, data_premio: new Date().toISOString().slice(0,10) });
         await applicaPremio(e.squadra, e.importo, e.label, rec.id);
       }
       await loadPremi();
@@ -1371,13 +1371,15 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
   async function handlePr19() {
     if (!window.confirm("Applicare i premi 19ª giornata?")) return;
     setSavingPr(true);
-    try { for (const p of premi19a) { const r = await insertPremio({squadra:p.squadra,tipo:'premio_19a',importo:p.importo,posizione:p.posizione,stagione:STAGIONE,data_premio:new Date().toISOString().slice(0,10)}); await applicaPremio(p.squadra,p.importo,'19ª giornata',r.id); } await loadPremi(); }
+    if (premiApp.p19) { alert('Premi 19ª già applicati.'); setSavingPr(false); return; }
+    try { for (const p of premi19a) { const r = await insertPremio({squadra:p.squadra,tipo:'premio_19a',importo:p.importo,posizione:p.posizione,stagione:STAGIONE_CORRENTE,data_premio:new Date().toISOString().slice(0,10)}); await applicaPremio(p.squadra,p.importo,'19ª giornata',r.id); } await loadPremi(); }
     catch(e){alert(e.message);} finally{setSavingPr(false);}
   }
   async function handlePrFinali() {
     if (!window.confirm("Applicare i premi finali?")) return;
     setSavingPr(true);
-    try { for (const p of premiFinali) { const r = await insertPremio({squadra:p.squadra,tipo:'premio_finale',importo:p.importo,posizione:p.posizione,stagione:STAGIONE,data_premio:new Date().toISOString().slice(0,10)}); await applicaPremio(p.squadra,p.importo,`Premio finale (${p.posizione}°)`,r.id); } await loadPremi(); }
+    if (premiApp.finale) { alert('Premi finali già applicati.'); setSavingPr(false); return; }
+    try { for (const p of premiFinali) { const r = await insertPremio({squadra:p.squadra,tipo:'premio_finale',importo:p.importo,posizione:p.posizione,stagione:STAGIONE_CORRENTE,data_premio:new Date().toISOString().slice(0,10)}); await applicaPremio(p.squadra,p.importo,`Premio finale (${p.posizione}°)`,r.id); } await loadPremi(); }
     catch(e){alert(e.message);} finally{setSavingPr(false);}
   }
   const inp = { padding: "4px 6px", borderRadius: 5, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 11, width: "100%" };
@@ -3531,7 +3533,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
   const sem = getSemestreCorrente();
 
   // ── Logica Quote ──────────────────────────────────────────────────────────
-  const BIENNIO = '2025-27';
+
   const euroDisponibili = Math.max(0, 10 - (team.euroBiennio || 0));
   const maxEuroInvestibili = euroDisponibili; // quelli rimasti nel biennio
   const mlnOttenuti = team.mlnExtra || 0;
@@ -3547,8 +3549,8 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
   async function handleInvesti() {
     const euro = parseFloat(euroInput);
     if (!euro || euro < 1) return;
-    if (euro > maxEuroInvestibili) { alert(`Puoi investire al massimo ${maxEuroInvestibili}€ nel biennio ${BIENNIO}`); return; }
-    if (!window.confirm(`Investire ${euro}€ extra per +${(euro*2.5).toFixed(1)}M al bilancio?\n\nAttenzione: gli €${euro} saranno conteggiati sul biennio ${BIENNIO} e non recuperabili senza pagare il doppio.`)) return;
+    if (euro > maxEuroInvestibili) { alert(`Puoi investire al massimo ${maxEuroInvestibili}€ nel biennio ${BIENNIO_CORRENTE}`); return; }
+    if (!window.confirm(`Investire ${euro}€ extra per +${(euro*2.5).toFixed(1)}M al bilancio?\n\nAttenzione: gli €${euro} saranno conteggiati sul biennio ${BIENNIO_CORRENTE} e non recuperabili senza pagare il doppio.`)) return;
     setSavingQuote(true);
     try {
       await investiEuroExtra(team.name, euro);
@@ -3956,7 +3958,7 @@ const CATALOGO_INVESTIMENTI = [
 
 /* ─── ALLENATORE TAB ─────────────────────────────────────────────────────────── */
 function AltroTab({ team, isAdmin }) {
-  const STAGIONE = '2026-27';
+
 
   // ── BONUS TRATTATIVE ─────────────────────────────────────────────────────────
   const [bonusData, setBonusData] = useState([]);
@@ -4122,10 +4124,10 @@ function AltroTab({ team, isAdmin }) {
   const [editVal, setEditVal] = useState("");
 
   const loadAll = useCallback(async () => {
-    const [all, tutti] = await Promise.all([getAllenatoreBySquadra(team.name, STAGIONE), getAllenatori(STAGIONE)]);
+    const [all, tutti] = await Promise.all([getAllenatoreBySquadra(team.name, STAGIONE_CORRENTE), getAllenatori(STAGIONE_CORRENTE)]);
     setAllenatore(all); setTuttiAllenatori(tutti);
     if (all) {
-      const [obs, prog] = await Promise.all([getObiettiviCarta(all.nome, STAGIONE), getProgressoObiettivi(team.name, STAGIONE)]);
+      const [obs, prog] = await Promise.all([getObiettiviCarta(all.nome, STAGIONE_CORRENTE), getProgressoObiettivi(team.name, STAGIONE_CORRENTE)]);
       setObiettivi(obs); setProgresso(prog);
     }
     setLoadingAll(false);
@@ -4155,9 +4157,9 @@ Gli obiettivi verranno azzerati.`;
     } catch(e) { alert(e.message); }
     finally { setSavingAll(false); }
   }
-  async function handleToggleC(ob,pg) { setSavingAll(true); try{await upsertProgresso(team.name,ob.id,{completato:!pg?.completato,fallito:false},STAGIONE);await loadAll();}catch(e){alert(e.message);}finally{setSavingAll(false);} }
-  async function handleToggleF(ob,pg) { setSavingAll(true); try{await upsertProgresso(team.name,ob.id,{fallito:!pg?.fallito,completato:false},STAGIONE);await loadAll();}catch(e){alert(e.message);}finally{setSavingAll(false);} }
-  async function salvaProgrObj(obId) { await upsertProgresso(team.name,obId,{valore_attuale:parseFloat(editVal)||0},STAGIONE); setEditId(null); await loadAll(); }
+  async function handleToggleC(ob,pg) { setSavingAll(true); try{await upsertProgresso(team.name,ob.id,{completato:!pg?.completato,fallito:false},STAGIONE_CORRENTE);await loadAll();}catch(e){alert(e.message);}finally{setSavingAll(false);} }
+  async function handleToggleF(ob,pg) { setSavingAll(true); try{await upsertProgresso(team.name,ob.id,{fallito:!pg?.fallito,completato:false},STAGIONE_CORRENTE);await loadAll();}catch(e){alert(e.message);}finally{setSavingAll(false);} }
+  async function salvaProgrObj(obId) { await upsertProgresso(team.name,obId,{valore_attuale:parseFloat(editVal)||0},STAGIONE_CORRENTE); setEditId(null); await loadAll(); }
 
   const tipoInfo = {
     allenatore:{label:"🎯 Obiettivi Allenatore",color:"#6366f1",guadagno:3,desc:"3M a completamento"},
@@ -4572,7 +4574,8 @@ function VivaiTab({ team, isAdmin }) {
   }
 
   async function salvaPresenze(p) {
-    const nuove = parseInt(editPresenze.val) || 0;
+    const nuove = Math.max(0, parseInt(editPresenze.val, 10) || 0);
+    if (isNaN(parseInt(editPresenze.val, 10))) { alert('Inserisci un numero valido.'); return; }
     await aggiornaPresenzeVivaio(p.id, nuove);
     setEditPresenze(null);
     await loadAll();
@@ -4809,7 +4812,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
       loadClubIdentity(),
       loadObiettivi(),
       getSCAllenatore(team.name).then(setScAllenatore),
-      getAllenatoreBySquadra(team.name, '2026-27').then(a => setAllenatoreNome(a?.nome || null)),
+      getAllenatoreBySquadra(team.name, STAGIONE_CORRENTE).then(a => setAllenatoreNome(a?.nome || null)),
     ]);
     const subObj = subscribeObiettivi(team.name, loadObiettivi);
     return () => supabase.removeChannel(subObj);
@@ -5747,7 +5750,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     if (!window.confirm(`Inviare offerta?\n\n${tipoLabel}: ${form.giocatoreNome}\nDa: ${mySquadra} → ${form.squadraTarget}\nPrezzo: ${(form.tipo === 'clausola' ? valoreClausola(Number(form.quot)) : parseFloat(form.prezzo)||0).toFixed(2)}M`)) return;
 
     const trattativa = await insertTrattativa({
-      da_squadra: mySquadra,
+      da_squadra: da,
       a_squadra: form.squadraTarget,
       giocatore: form.giocatoreNome,
       quot_giocatore: quot,
@@ -5800,9 +5803,9 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
         // Trasferimento differito: aggiorna solo lo stato, non muovere il giocatore
         await updateTrattativa(t.id, { stato: 'accettata_differita', updated_at: new Date().toISOString() });
       } else {
-        await eseguiTrasferimento(t);
-        await aggiornaFantaSquadraListone(t.giocatore, t.a_squadra);
-        await aggiornaStipendioDopoTrasferimento(t.giocatore, t.a_squadra);
+        await eseguiTrasferimento(t).catch(e => { throw new Error(`Trasferimento fallito: ${e.message}`); });
+        await aggiornaFantaSquadraListone(t.giocatore, t.a_squadra).catch(e => { throw new Error(`Aggiornamento listoneSquadra fallito (giocatore trasferito ma listone non aggiornato): ${e.message}`); });
+        await aggiornaStipendioDopoTrasferimento(t.giocatore, t.a_squadra).catch(e => { throw new Error(`Aggiornamento stipendio fallito (segnalarlo manualmente): ${e.message}`); });
         await logAzione({ utente: 'admin', squadra: t.da_squadra, azione: 'trasferimento', entita: 'trattative', entitaId: t.id, descrizione: `Trasferimento: ${t.giocatore} da ${t.da_squadra} a ${t.a_squadra} — ${t.prezzo}M (${t.tipo})`, dataPrima: { trattativa: t }, rollbackPossibile: false });
         // Controlla se il giocatore è eleggibile per il vivaio dell'acquirente
         const { data: newPlayer } = await supabase.from('rosa').select('id, anni, quot, partite').eq('squadra', t.a_squadra).ilike('nome', `%${t.giocatore}%`).single();
@@ -6006,9 +6009,6 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
             <div style={{ fontSize: 12, fontWeight: 700, color: statoMercato.aperto ? "#10b981" : "#ef4444" }}>
               Mercato {statoMercato.aperto ? `aperto — sessione ${statoMercato.periodo}` : "chiuso"}
             </div>
-            {statoMercato.infrasettimanale && (
-              <div style={{ fontSize: 10, color: "#f59e0b", marginTop: 2 }}>⚠️ Turno infrasettimanale — aste svincolati sospese</div>
-            )}
           </div>
         </div>
       )}
@@ -8083,13 +8083,13 @@ function PenalitaPage({ isAdmin, teams = [] }) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const STAGIONE = '2026-27';
+
 
   const emptyForm = { squadra: teams[0]?.name || "", tipo: "multa_mln", importo: "", motivo: "", codice_tipo: "", note: "" };
   const [form, setForm] = useState(emptyForm);
 
   const loadAll = useCallback(async () => {
-    const data = await getPenalita(null, STAGIONE);
+    const data = await getPenalita(null, STAGIONE_CORRENTE);
     setPenalita(data);
     setLoading(false);
   }, []);
@@ -8106,7 +8106,7 @@ function PenalitaPage({ isAdmin, teams = [] }) {
     setSaving(true);
     try {
       const nRec = form.codice_tipo ? getRecidive(form.squadra, form.codice_tipo) + 1 : 1;
-      await insertPenalita({ ...form, importo: parseFloat(form.importo), stagione: STAGIONE, n_recidiva: nRec, data_multa: new Date().toISOString().slice(0,10) });
+      await insertPenalita({ ...form, importo: parseFloat(form.importo), stagione: STAGIONE_CORRENTE, n_recidiva: nRec, data_multa: new Date().toISOString().slice(0,10) });
       setShowForm(false);
       setForm(emptyForm);
       await loadAll();
@@ -8316,10 +8316,10 @@ function PremiPage({ isAdmin, teams = [] }) {
   const [montepremi, setMontepremi] = useState(0);
   const [premiIndiv, setPremiIndiv] = useState({});
   const [savingIndiv, setSavingIndiv] = useState(false);
-  const STAGIONE = '2026-27';
+
 
   const loadAll = useCallback(async () => {
-    const [p, c] = await Promise.all([getPremi(STAGIONE), getClassifica()]);
+    const [p, c] = await Promise.all([getPremi(STAGIONE_CORRENTE), getClassifica()]);
     setPremi(p);
     setClassifica(c.sort((a,b) => b.pt - a.pt || b.pt_totali - a.pt_totali));
     setLoading(false);
@@ -8354,10 +8354,11 @@ function PremiPage({ isAdmin, teams = [] }) {
 
   async function handleApplicaPremi19a() {
     if (!window.confirm("Applicare i premi 19ª giornata a tutte le squadre?")) return;
+    if (premiApplicati.p19) { alert('Premi 19ª già applicati.'); return; }
     setSaving(true);
     try {
       for (const p of premi19a) {
-        const rec = await insertPremio({ squadra: p.squadra, tipo: 'premio_19a', importo: p.importo, posizione: p.posizione, stagione: STAGIONE, data_premio: new Date().toISOString().slice(0,10) });
+        const rec = await insertPremio({ squadra: p.squadra, tipo: 'premio_19a', importo: p.importo, posizione: p.posizione, stagione: STAGIONE_CORRENTE, data_premio: new Date().toISOString().slice(0,10) });
         await applicaPremio(p.squadra, p.importo, '19ª giornata', rec.id);
       }
       await loadAll();
@@ -8367,10 +8368,11 @@ function PremiPage({ isAdmin, teams = [] }) {
 
   async function handleApplicaPremiFinali() {
     if (!window.confirm("Applicare i premi finali a tutte le squadre?\n\nQuesti si sommano ai premi coppa se inseriti.")) return;
+    if (premiApplicati.finale) { alert('Premi finali già applicati.'); return; }
     setSaving(true);
     try {
       for (const p of premiFinali) {
-        const rec = await insertPremio({ squadra: p.squadra, tipo: 'premio_finale', importo: p.importo, posizione: p.posizione, stagione: STAGIONE, data_premio: new Date().toISOString().slice(0,10) });
+        const rec = await insertPremio({ squadra: p.squadra, tipo: 'premio_finale', importo: p.importo, posizione: p.posizione, stagione: STAGIONE_CORRENTE, data_premio: new Date().toISOString().slice(0,10) });
         await applicaPremio(p.squadra, p.importo, `Premio finale (${p.posizione}°)`, rec.id);
       }
       await loadAll();
@@ -8385,7 +8387,7 @@ function PremiPage({ isAdmin, teams = [] }) {
     setSavingIndiv(true);
     try {
       for (const e of entries) {
-        const rec = await insertPremio({ squadra: e.squadra, tipo: e.tipo, importo: e.importo, posizione: null, stagione: STAGIONE, data_premio: new Date().toISOString().slice(0,10) });
+        const rec = await insertPremio({ squadra: e.squadra, tipo: e.tipo, importo: e.importo, posizione: null, stagione: STAGIONE_CORRENTE, data_premio: new Date().toISOString().slice(0,10) });
         await applicaPremio(e.squadra, e.importo, e.label, rec.id);
       }
       await loadAll();
@@ -8592,7 +8594,7 @@ function PremiPage({ isAdmin, teams = [] }) {
 }
 
 /* ─── ADMIN CONTROL ROOM ─────────────────────────────────────────────────────── */
-const STAGIONE_CR = '2026-27';
+const STAGIONE_CR = STAGIONE_CORRENTE;
 
 function AdminControlRoomPage({ teams }) {
   const [tab, setTab] = useState('panoramica');
@@ -11330,8 +11332,8 @@ function AppInner() {
   // ── Mercato override ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!session) return;
-    getMercatoOverride().then(v => { _mercatoOverride = v; setMercatoOverride_state(v); }).catch(() => {});
-    getRivalitaLock().then(v => { _rivalitaBloccata = v; }).catch(() => {});
+    getMercatoOverride().then(v => { _mercatoOverride = v; setMercatoOverride_state(v); }).catch(() => { _mercatoOverride = null; });
+    getRivalitaLock().then(v => { _rivalitaBloccata = v; }).catch(() => { _rivalitaBloccata = false; });
     getStagioneLabel().then(v => { setStagioneLabelState(v); }).catch(() => {});
   }, [session]);
 
