@@ -2127,6 +2127,7 @@ ${pe>0?`⚠️ Penale extra +${pe}M
       await eseguiSvincolo({squadra:teamName,player,tipo:tipoSvincolo,estero,bilancioAttuale:(sq?.bilancio||0)-pe});
       await logAzione({utente:'admin/presidente',squadra:teamName,azione:'svincolo',entita:'rosa',entitaId:player.id,descrizione:`Svincolo (${tipoSvincolo}): ${player.nome} Q${player.quot}`,dataPrima:{giocatore:player},rollbackPossibile:false});
       if(pe>0)await supabase.from('movimenti').insert({squadra:teamName,descrizione:'Penale svincoli extra (>14)',uscita:pe,data:new Date().toISOString().slice(0,10)});
+      sendTelegramNotification('svincolo', { giocatore: player.nome, quotazione: player.quot, squadra: teamName, tipo: tipoSvincolo });
       cacheInvalidate('rosa_' + teamName);
       cacheInvalidate('vivaio_' + teamName);
       setPopup(null); setTipoSvincolo('ordinario'); setEstero(false);
@@ -5851,9 +5852,10 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
             }
           }
         }
-        // Notify both teams via Telegram DM
-        sendTelegramNotification('trattativa_accettata', { giocatore: t.giocatore, importo: t.prezzo }, t.da_squadra);
-        sendTelegramNotification('trattativa_accettata', { giocatore: t.giocatore, importo: t.prezzo }, t.a_squadra);
+        // Notify both teams via DM + canale gruppo
+        sendTelegramNotification('trattativa_accettata', { giocatore: t.giocatore, importo: t.prezzo, da_squadra: t.da_squadra, a_squadra: t.a_squadra }, t.da_squadra);
+        sendTelegramNotification('trattativa_accettata', { giocatore: t.giocatore, importo: t.prezzo, da_squadra: t.da_squadra, a_squadra: t.a_squadra }, t.a_squadra);
+        sendTelegramNotification('trattativa_accettata', { giocatore: t.giocatore, importo: t.prezzo, da_squadra: t.da_squadra, a_squadra: t.a_squadra });
       }
     } catch (e) {
       alert(`Errore: ${e.message}`);
@@ -5991,10 +5993,10 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     setLoading(true);
     try {
       await updateAsta(asta.id, { stato: 'aggiudicata', vincitore: mySquadra, prezzo_finale: prezzoAcquisto });
-      // Esegui il trasferimento fisico
       await eseguiTrasferimento({ da_squadra: asta.da_squadra, a_squadra: mySquadra, giocatore: asta.giocatore, prezzo: prezzoAcquisto, tipo: 'cessione', quot_giocatore: asta.quot_giocatore, fuori_mercato: false, id: asta.id });
       await aggiornaFantaSquadraListone(asta.giocatore, mySquadra);
       await aggiornaStipendioDopoTrasferimento(asta.giocatore, mySquadra);
+      sendTelegramNotification('asta_assegnata', { giocatore: asta.giocatore, vincitore: mySquadra, importo: prezzoAcquisto.toFixed(2) });
       await loadAll();
     } catch(e) { alert(`Errore: ${e.message}`); }
     finally { setLoading(false); }
@@ -6005,6 +6007,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     if (!asta.miglior_offerente) {
       if (!window.confirm(`Nessuna offerta per ${asta.giocatore}. Chiudere l'asta senza vincitore?`)) return;
       await updateAsta(asta.id, { stato: 'scaduta' });
+      sendTelegramNotification('asta_assegnata', { giocatore: asta.giocatore, vincitore: null, importo: null });
       await loadAll(); return;
     }
     if (!window.confirm(`Aggiudicare ${asta.giocatore} a ${asta.miglior_offerente} per ${asta.offerta_attuale.toFixed(2)}M?`)) return;
@@ -6014,6 +6017,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       await eseguiTrasferimento({ da_squadra: asta.da_squadra, a_squadra: asta.miglior_offerente, giocatore: asta.giocatore, prezzo: asta.offerta_attuale, tipo: 'cessione', quot_giocatore: asta.quot_giocatore, fuori_mercato: false, id: asta.id });
       await aggiornaFantaSquadraListone(asta.giocatore, asta.miglior_offerente);
       await aggiornaStipendioDopoTrasferimento(asta.giocatore, asta.miglior_offerente);
+      sendTelegramNotification('asta_assegnata', { giocatore: asta.giocatore, vincitore: asta.miglior_offerente, importo: asta.offerta_attuale.toFixed(2) });
       await loadAll();
     } catch(e) { alert(`Errore: ${e.message}`); }
     finally { setLoading(false); }

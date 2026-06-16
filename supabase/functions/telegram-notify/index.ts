@@ -52,16 +52,17 @@ const DEEP_LINK: Record<string, string> = {
   chiamata_svincolati:    `${APP}/mercato`,
   asta_svincolati:        `${APP}/mercato`,
   asta_tra_presidenti:    `${APP}/mercato`,
+  asta_assegnata:         `${APP}/mercato`,
   asta_vinta:             `${APP}/mercato`,
   asta_persa:             `${APP}/mercato`,
   ds_masterclass_offerte: `${APP}/mercato`,
+  svincolo:               `${APP}/mercato`,
   movimento_privato:      `${APP}/squadre`,
   tassa_applicata:        `${APP}/squadre`,
   stipendi_applicati:     `${APP}/squadre`,
   stadio_applicato:       `${APP}/squadre`,
 };
 
-// Category badges shown at top of each message
 const CATEGORY_BADGE: Record<string, string> = {
   // 📰 News
   notizia_pinnata:        "━━━  📰  NEWS  📰  ━━━",
@@ -71,13 +72,17 @@ const CATEGORY_BADGE: Record<string, string> = {
   trattativa_ricevuta:    "━━━  🤝  MERCATO  🤝  ━━━",
   trattativa_accettata:   "━━━  🤝  MERCATO  🤝  ━━━",
   trattativa_rifiutata:   "━━━  🤝  MERCATO  🤝  ━━━",
-  // ⚽ Aste & Svincolati
+  // ⚽ Aste svincolati
   chiamata_svincolati:    "━━━  ⚽  SVINCOLATI  ⚽  ━━━",
-  asta_tra_presidenti:    "━━━  🏛  ASTE TRA PRESIDENTI  🏛  ━━━",
   asta_svincolati:        "━━━  🔔  ASTE  🔔  ━━━",
   asta_vinta:             "━━━  🏆  ASTA VINTA  🏆  ━━━",
   asta_persa:             "━━━  😔  ASTE  😔  ━━━",
   ds_masterclass_offerte: "━━━  🔍  DS MASTERCLASS  🔍  ━━━",
+  // 🏛 Aste tra presidenti
+  asta_tra_presidenti:    "━━━  🏛  ASTE TRA PRESIDENTI  🏛  ━━━",
+  asta_assegnata:         "━━━  🏛  ASTE TRA PRESIDENTI  🏛  ━━━",
+  // 🔓 Svincoli
+  svincolo:               "━━━  🔓  MERCATO  🔓  ━━━",
   // 💰 Finanze
   movimento_privato:      "━━━  💳  MOVIMENTO  💳  ━━━",
   tassa_applicata:        "━━━  📊  BILANCIO  📊  ━━━",
@@ -93,10 +98,20 @@ function buildMessage(type: string, p: Record<string, unknown>): string | null {
   switch (type) {
     case "chiamata_svincolati":
       return `${badge}📣 <b>Nuova chiamata!</b>\n\n⚽ <b>${p.giocatore}</b> · Q${p.quotazione}\n🏟 <b>${p.squadra}</b> ha manifestato interesse\n⏰ Asta disponibile tra ${p.ore ?? 24}h se altri si uniscono${link}`;
-    case "asta_tra_presidenti":
-      return `${badge}🏛 <b>Nuova asta tra presidenti!</b>\n\n⚽ <b>${p.giocatore}</b> · Q${p.quotazione}\n🏟 Indetta da: <b>${p.proprietario}</b>\n📉 Tipo: <b>${p.tipo_asta === 'rialzo' ? 'Al rialzo 📈' : 'Al ribasso 📉'}</b>\n💰 Prezzo base: <b>${p.prezzo_base}M</b>${p.note ? `\n📝 ${p.note}` : ""}${link}`;
     case "asta_svincolati":
       return `${badge}🔔 <b>Asta svincolati aperta!</b>\n\n⚽ <b>${p.giocatore}</b> · Q${p.quotazione}\n📣 Chiamato da: <b>${p.squadra}</b>\n⏰ Scade tra <b>${p.ore ?? 24}h</b> — fate le vostre offerte!${link}`;
+    case "asta_tra_presidenti":
+      return `${badge}🏛 <b>Nuova asta tra presidenti!</b>\n\n⚽ <b>${p.giocatore}</b> · Q${p.quotazione}\n🏟 Indetta da: <b>${p.proprietario}</b>\n📊 Tipo: <b>${p.tipo_asta === "rialzo" ? "Al rialzo 📈" : "Al ribasso 📉"}</b>\n💰 Prezzo base: <b>${p.prezzo_base}M</b>${p.note ? `\n📝 ${p.note}` : ""}${link}`;
+    case "asta_assegnata":
+      return `${badge}🏁 <b>Asta conclusa!</b>\n\n⚽ <b>${p.giocatore}</b>${p.vincitore ? `\n🏆 Acquistato da: <b>${p.vincitore}</b> per <b>${p.importo}M</b>` : "\n❌ Nessuna offerta — asta chiusa senza vincitore"}${link}`;
+    case "svincolo":
+      return `${badge}🔓 <b>Giocatore svincolato</b>\n\n⚽ <b>${p.giocatore}</b> · Q${p.quotazione}\n🏟 Lascia: <b>${p.squadra}</b>` + (p.tipo ? `\n📋 Tipo: ${p.tipo}` : "") + `${link}`;
+    case "trattativa_ricevuta":
+      return `${badge}📨 <b>Nuova offerta ricevuta!</b>\n\n⚽ <b>${p.giocatore}</b>\n💰 Offerta: <b>${p.importo}M</b>\n🏟 Da: <b>${p.da_squadra}</b>${link}`;
+    case "trattativa_accettata":
+      return `${badge}✅ <b>Trasferimento completato!</b>\n\n⚽ <b>${p.giocatore}</b> si trasferisce per <b>${p.importo}M</b>\n📤 Da: <b>${p.da_squadra}</b> → 📥 <b>${p.a_squadra}</b>${link}`;
+    case "trattativa_rifiutata":
+      return `${badge}❌ <b>Offerta rifiutata</b>\n\nL'offerta per <b>${p.giocatore}</b> (${p.importo}M) non è stata accettata.${link}`;
     case "notizia_pinnata":
       return `${badge}📌 <b>${p.squadra ?? "Lega Admin"}</b>\n\n<b>${p.titolo}</b>\n${String(p.testo ?? "").slice(0, 300)}${String(p.testo ?? "").length > 300 ? "…" : ""}${link}`;
     case "scadenza_imminente":
@@ -111,12 +126,6 @@ function buildMessage(type: string, p: Record<string, unknown>): string | null {
       return `${badge}💰 <b>Stipendi mensili addebitati</b>\nMese: <b>${p.mese}</b> — verificate i vostri bilanci.${link}`;
     case "stadio_applicato":
       return `${badge}🏟 <b>Entrate stadio accreditate</b>\nMese: <b>${p.mese}</b>\n4M (base) · 5.5M (con Ristrutturazione Stadio)${link}`;
-    case "trattativa_ricevuta":
-      return `${badge}📨 <b>Nuova offerta ricevuta!</b>\n\n⚽ <b>${p.giocatore}</b>\n💰 Offerta: <b>${p.importo}M</b>\n🏟 Da: <b>${p.da_squadra}</b>${link}`;
-    case "trattativa_accettata":
-      return `${badge}✅ <b>Trattativa accettata!</b>\n\n⚽ <b>${p.giocatore}</b> si trasferisce per <b>${p.importo}M</b>${link}`;
-    case "trattativa_rifiutata":
-      return `${badge}❌ <b>Offerta rifiutata</b>\n\nL'offerta per <b>${p.giocatore}</b> (${p.importo}M) non è stata accettata.${link}`;
     case "asta_vinta":
       return `${badge}🏆 <b>Asta vinta!</b>\n\n⚽ <b>${p.giocatore}</b> è tuo per <b>${p.importo}M</b>!\nBenvenuto in rosa 🎉${link}`;
     case "asta_persa":
@@ -197,8 +206,10 @@ serve(async (req) => {
 
   const results: Array<{ target: string; ok: boolean }> = [];
 
+  // Tipi che vanno sul canale gruppo (visibili a tutti)
   const publicTypes = [
-    "chiamata_svincolati", "asta_svincolati", "asta_tra_presidenti", "notizia_pinnata",
+    "chiamata_svincolati", "asta_svincolati", "asta_tra_presidenti", "asta_assegnata",
+    "svincolo", "trattativa_accettata", "notizia_pinnata",
     "scadenza_imminente", "mercato_aperto", "mercato_chiuso",
     "tassa_applicata", "stipendi_applicati", "stadio_applicato",
   ];
