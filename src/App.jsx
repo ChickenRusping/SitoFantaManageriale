@@ -4854,6 +4854,10 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
     if (data) setMovimenti(data);
   }, [team.name]);
 
+  const loadAll = useCallback(async () => {
+    await Promise.all([loadRosaStipendi(), loadContratti(), loadObiettivi()]);
+  }, [loadRosaStipendi, loadContratti, loadObiettivi]);
+
   useEffect(() => {
     loadMovimenti();
     const sub = subscribeMovimenti(team.name, loadMovimenti);
@@ -4970,7 +4974,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
                 handlePagaStipendi={handlePagaStipendi}
                 isAdmin={isAdmin}
                 mySquadra={mySquadra}
-                onRefresh={() => {}}
+                onRefresh={loadAll}
               />
             )}
 
@@ -4982,7 +4986,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.08em" }}>📋 MOVIMENTI</div>
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center", overflowX: "auto", flexShrink: 1, paddingBottom: 2 }}>
                     {/* Sort buttons */}
                     {[
                       { key: "data_desc", label: "📅 Recenti" },
@@ -4990,7 +4994,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
                       { key: "imp_desc",  label: "💰 Importo ↓" },
                       { key: "imp_asc",   label: "💰 Importo ↑" },
                     ].map(s => (
-                      <button key={s.key} onClick={() => setMovSort(s.key)} style={{ padding: "4px 10px", borderRadius: 7, border: "none", background: movSort === s.key ? "#6366f133" : "#ffffff0a", color: movSort === s.key ? "#818cf8" : "#666", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                      <button key={s.key} onClick={() => setMovSort(s.key)} style={{ padding: "4px 10px", borderRadius: 7, border: "none", background: movSort === s.key ? "#6366f133" : "#ffffff0a", color: movSort === s.key ? "#818cf8" : "#666", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
                         {s.label}
                       </button>
                     ))}
