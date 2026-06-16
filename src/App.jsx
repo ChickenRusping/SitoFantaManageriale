@@ -3521,7 +3521,7 @@ function FairSpendingSection({ team, isAdmin }) {
 }
 
 
-function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0, salaryCapSforato, scEsenteGiuLug, giorniSCNeg, contrattiScadenza: contrattiScadenzaProp, rosaPlayers, pagandoStipendi, handlePagaStipendi, isAdmin, mySquadra, onRefresh }) {
+function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0, salaryCapSforato, scEsenteGiuLug, giorniSCNeg, contrattiScadenza: contrattiScadenzaProp, rosaPlayers, pagandoStipendi, handlePagaStipendi, isAdmin, mySquadra, onRefresh, onBilancioChange }) {
   const [contrattiScadenza, setContrattiScadenza] = useState(contrattiScadenzaProp || []);
   useEffect(() => { setContrattiScadenza(contrattiScadenzaProp || []); }, [contrattiScadenzaProp]);
 
@@ -3612,6 +3612,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
       await applicaTassaSettimana(team.name, bilancio, domenica);
       await logAzione({ utente: 'admin', squadra: team.name, azione: 'tassa_settimanale', entita: 'squadre', descrizione: `Tassa settimanale ${tassa.perc}% −${tassa.importo}M (bilancio era ${bilancio.toFixed(2)}M)`, dataPrima: { bilancio }, dataDopo: { bilancio: bilancio - tassa.importo }, rollbackPossibile: true });
       getTassePagate(team.name).then(setTasse);
+      if (onBilancioChange) onBilancioChange(parseFloat((bilancio - tassa.importo).toFixed(2)));
     } catch(e) { alert(e.message); }
     finally { setApplicandoTassa(false); }
   }
@@ -4772,6 +4773,8 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
 
   const [scAllenatore, setScAllenatore] = useState(0);
   const [allenatoreNome, setAllenatoreNome] = useState(null);
+  const [bilancioLive, setBilancioLive] = useState(team.bilancio);
+  useEffect(() => { setBilancioLive(team.bilancio); }, [team.bilancio]);
 
   const salaryDist = 75 - team.salaryUsed;
   const fpMax = Math.max(team.fairPlay1, team.fairPlay2);
@@ -4848,6 +4851,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
       await updateSquadra(team.name, { bilancio: nuoviBilancio, salary_used: salaryCapUsato });
       await insertMovimento({ squadra: team.name, descrizione: `Stipendi mensili (${new Date().toLocaleString('it-IT',{month:'long'})})`, uscita: rata, data: oggi });
       await logAzione({ utente: 'admin', squadra: team.name, azione: 'stipendi_pagati', entita: 'squadre', descrizione: `Stipendi pagati −${rata}M (SC: ${salaryCapUsato.toFixed(1)}M)`, dataPrima: { bilancio: bilPrima }, dataDopo: { bilancio: nuoviBilancio }, rollbackPossibile: true });
+      setBilancioLive(nuoviBilancio);
     } catch(e) { alert(`Errore: ${e.message}`); }
     finally { setPagandoStipendi(false); }
   }
@@ -4890,6 +4894,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
       uscita: uscita || null,
       bilancio: nuovoBilancio,
     }, team.name);
+    setBilancioLive(nuovoBilancio);
     setShowMovForm(false);
     setMovForm({ descrizione: "", entrata: "", uscita: "", data: new Date().toISOString().slice(0, 10) });
     await loadMovimenti();
@@ -4902,6 +4907,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
     const nuovoBilancio = parseFloat(rimanenti.reduce((s, m) => s + (m.entrata || 0) - (m.uscita || 0), 0).toFixed(2));
     await updateSquadra(team.name, { bilancio: nuovoBilancio });
     await deleteMovimento(id);
+    setBilancioLive(nuovoBilancio);
     await loadMovimenti();
   }
 
@@ -4964,7 +4970,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
 
             {tab === "finanze" && (
               <FinanzeTab
-                team={team}
+                team={{ ...team, bilancio: bilancioLive }}
                 salaryCapUsato={salaryCapUsato}
                 salaryCapRosa={salaryCapRosa}
                 scAllenatore={scAllenatore}
@@ -4978,6 +4984,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
                 isAdmin={isAdmin}
                 mySquadra={mySquadra}
                 onRefresh={loadAll}
+                onBilancioChange={setBilancioLive}
               />
             )}
 
@@ -5938,6 +5945,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     });
     setShowAstaForm(false);
     setAstaForm(emptyAstaForm);
+    cacheInvalidate('aste');
+    await loadAll();
   }
 
   // ── Offerta su asta a rialzo ───────────────────────────────────────────────
@@ -5956,6 +5965,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       ultima_offerta_at: new Date().toISOString(),
       scadenza_asta: nuovaScadenza,
     });
+    cacheInvalidate('aste');
+    await loadAll();
   }
 
   // ── Acquisto asta a discesa ────────────────────────────────────────────────
@@ -9265,6 +9276,7 @@ function AdminControlRoomPage({ teams }) {
                                     });
                                     await updateClassificaSquadra(t.name, { punti: Math.max(0, ((teams.find(x=>x.name===t.name)?.penalita)||0) - penPunti) });
                                     alert(`✓ Penale −${penPunti} pt applicata a ${t.name}`);
+                                    await load();
                                   } catch(e) { alert(e.message); }
                                   finally { setBilancioNegBusy(null); }
                                 }}
@@ -9712,6 +9724,8 @@ function AdminControlRoomPage({ teams }) {
                     const res = await aggiornaContrattiAnnuali();
                     setLastResult({ label: 'Contratti annuali', ok: res.aggiornati?.length || 0, skip: res.svincolati?.length || 0, ts: new Date().toLocaleTimeString('it-IT') });
                     if (res.svincolati?.length) alert(`⚠️ Svincolati automaticamente:\n${res.svincolati.map(s => `• ${s.nome} (${s.squadra})`).join('\n')}`);
+                    cacheInvalidate('rosa_');
+                    await load();
                   } catch(e) { alert(e.message); }
                   finally { setBusy(null); }
                 }}
