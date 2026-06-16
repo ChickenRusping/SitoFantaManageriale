@@ -357,20 +357,20 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
 
   return (
     <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", minWidth: 0, borderCollapse: "collapse", fontSize: 12 }}>
+      <table style={{ width: "100%", minWidth: 560, borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
           <tr style={{ borderBottom: "1px solid #ffffff15" }}>
             <th style={{ padding: "6px 8px", fontSize: 10, fontWeight: 700, color: "#555" }}>#</th>
             <SortTh col="squadra"   label="Squadra"   align="left"   style={{ minWidth: 100 }} />
-            <SortTh col="g"         label="G"         align="center" className="mob-hide" />
+            <SortTh col="g"         label="G"         align="center" />
             <SortTh col="v"         label="V"         align="center" />
             <SortTh col="n"         label="N"         align="center" />
             <SortTh col="p"         label="P"         align="center" />
-            <SortTh col="gf"        label="G+"        align="center" className="mob-hide" />
-            <SortTh col="gs"        label="G−"        align="center" className="mob-hide" />
-            <SortTh col="dr"        label="DR"        align="center" className="mob-hide" />
+            <SortTh col="gf"        label="G+"        align="center" />
+            <SortTh col="gs"        label="G−"        align="center" />
+            <SortTh col="dr"        label="DR"        align="center" />
             <SortTh col="pt"        label="Pt"        align="center" />
-            <SortTh col="pt_totali" label="Pt Tot"    align="center" className="mob-hide" />
+            <SortTh col="pt_totali" label="Pt Tot"    align="center" />
             {editMode && <th style={{ width: 60 }}></th>}
           </tr>
         </thead>
@@ -400,7 +400,7 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
                   <>
                     {["g","v","n","p","gf","gs","pt","pt_totali"].map(f => (
                       <td key={f} style={{ padding: "4px" }}
-                        className={['g','gf','gs','pt_totali'].includes(f)?'mob-hide':undefined}>
+                        >
                         <input style={inp} type="number" value={editRow[f]}
                           onChange={e => setEditRow(r => ({ ...r, [f]: e.target.value,
                             dr: f === 'gf' ? Number(e.target.value) - Number(r.gs)
@@ -408,23 +408,23 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
                               : r.dr }))} />
                       </td>
                     ))}
-                    <td style={{ padding: "4px 8px", textAlign: "center", color: (Number(editRow.gf)-Number(editRow.gs)) >= 0 ? "#10b981" : "#ef4444", fontWeight: 700, fontSize: 12 }} className="mob-hide">
+                    <td style={{ padding: "4px 8px", textAlign: "center", color: (Number(editRow.gf)-Number(editRow.gs)) >= 0 ? "#10b981" : "#ef4444", fontWeight: 700, fontSize: 12 }}>
                       {Number(editRow.gf)-Number(editRow.gs) >= 0 ? "+" : ""}{Number(editRow.gf)-Number(editRow.gs)}
                     </td>
                   </>
                 ) : (
                   <>
-                    <td className="mob-hide" style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.g}</td>
+                    <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.g}</td>
                     <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.v}</td>
                     <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.n}</td>
                     <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.p}</td>
-                    <td className="mob-hide" style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.gf}</td>
-                    <td className="mob-hide" style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.gs}</td>
-                    <td className="mob-hide" style={{ padding: "9px 8px", textAlign: "center", color: row.dr > 0 ? "#10b981" : row.dr < 0 ? "#ef4444" : "#888", fontSize: 12, fontWeight: 600 }}>
+                    <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.gf}</td>
+                    <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.gs}</td>
+                    <td style={{ padding: "9px 8px", textAlign: "center", color: row.dr > 0 ? "#10b981" : row.dr < 0 ? "#ef4444" : "#888", fontSize: 12, fontWeight: 600 }}>
                       {row.dr > 0 ? "+" : ""}{row.dr}
                     </td>
                     <td style={{ padding: "9px 8px", textAlign: "center", fontSize: 14, fontWeight: 900, color: rowColor || "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif" }}>{row.pt}</td>
-                    <td className="mob-hide" style={{ padding: "9px 8px", textAlign: "center", fontSize: 12, color: "#888", fontWeight: 600 }}>{row.pt_totali}</td>
+                    <td style={{ padding: "9px 8px", textAlign: "center", fontSize: 12, color: "#888", fontWeight: 600 }}>{row.pt_totali}</td>
                   </>
                 )}
                 {editMode && (
@@ -2072,17 +2072,17 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
     const quot=Number(player.quot||0), stip=calcolaStipCorretto(player.quot,player.anni_contratto,player.anni), oggi=new Date();
     if (tipo==='ordinario') {
       const penale=quot<=10?0.5:quot<=20?1:quot<=30?1.5:2;
-      const df=new Date(oggi.getFullYear(),5,1); if(df<oggi)df.setFullYear(oggi.getFullYear()+1);
-      const mesi=Math.ceil((df-oggi)/(30.44*86400000));
+      const endYear=oggi.getMonth()<=4?oggi.getFullYear():oggi.getFullYear()+1;
+      const mesi=(endYear*12+4)-(oggi.getFullYear()*12+oggi.getMonth())+1;
       const costoStip=parseFloat((mesi*stip/12).toFixed(2));
-      return {label:"Costo totale",value:parseFloat((penale+costoStip).toFixed(2)),color:"#ef4444",dettaglio:`Penale ${penale}M + ${mesi} mens. (${costoStip}M)`,positivo:false};
+      return {label:"Costo totale",value:parseFloat((penale+costoStip).toFixed(2)),color:"#ef4444",dettaglio:`Penale ${penale}M + ${mesi} mens. fino a mag (${costoStip}M)`,positivo:false};
     }
     if (tipo==='straordinario_u21_nc') return {label:"Costo/Guadagno",value:0,color:"#888",dettaglio:"U21 nc — costo e guadagno 0",positivo:true};
     const ind=estero?parseFloat((quot/2).toFixed(2)):parseFloat((quot/4).toFixed(2));
-    const ag=new Date(oggi.getMonth()>=8?oggi.getFullYear():oggi.getFullYear()-1,7,1);
-    const mr=Math.max(0,Math.floor((oggi-ag)/(30.44*86400000)));
+    const julyYear=oggi.getMonth()>=6?oggi.getFullYear():oggi.getFullYear()-1;
+    const mr=Math.max(0,(oggi.getFullYear()*12+oggi.getMonth())-(julyYear*12+6)+1);
     const rimb=parseFloat((mr*stip/12).toFixed(2));
-    return {label:"Indennizzo + rimborso",value:parseFloat((ind+rimb).toFixed(2)),color:"#10b981",dettaglio:`Ind. ${ind}M${estero?' (estero ½)':' (¼)'} + ${mr} mens. (${rimb}M)`,positivo:true};
+    return {label:"Indennizzo + rimborso",value:parseFloat((ind+rimb).toFixed(2)),color:"#10b981",dettaglio:`Ind. ${ind}M${estero?' (estero ½)':' (¼)'} + ${mr} mens. rimborsate (${rimb}M)`,positivo:true};
   }
 
   function getValidazioni(player, tipo) {
@@ -2091,7 +2091,7 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
     if (player.data_acquisto) { const gg=Math.floor((oggi-new Date(player.data_acquisto))/86400000); if(gg<30)w.push({tipo:'error',testo:`Acquistato ${gg}gg fa — min 30gg`}); }
     if ((tipo==='straordinario'||tipo==='straordinario_u21')&&isEstate&&contatori.count_straord_estivi>=6) w.push({tipo:'error',testo:'Esauriti straord. estivi (6/6)'});
     if ((tipo==='straordinario'||tipo==='straordinario_u21')&&!isEstate&&contatori.count_straord_invernali>=4) w.push({tipo:'error',testo:'Esauriti straord. invernali (4/4)'});
-    if ((tipo==='straordinario'||tipo==='straordinario_u21')&&(oggi.getMonth()===5||oggi.getMonth()===6)) w.push({tipo:'error',testo:'Straord. non consentiti a giu/lug'});
+    if (oggi.getMonth()===5||oggi.getMonth()===6) w.push({tipo:'error',testo:'Svincoli non consentiti a giugno/luglio (art. 6.1)'});
     if (tipo!=='straordinario_u21_nc'&&contatori.count_totale>=14) w.push({tipo:'warning',testo:'⚠️ Oltre 14 svincoli: penale +2M'});
     return w;
   }
@@ -2222,21 +2222,21 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
 
       {/* ── Tabella ── */}
       <div style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-        <table style={{ width:"100%",minWidth:0,borderCollapse:"collapse",fontSize:12 }}>
+        <table style={{ width:"100%",minWidth:680,borderCollapse:"collapse",fontSize:12 }}>
           <thead>
             <tr>
               <SortTh col="_ruoloOrd" label="R"     align="center"/>
-              <SortTh col="_anniNum"  label="Età"   align="center" className="mob-hide"/>
+              <SortTh col="_anniNum"  label="Età"   align="center" />
               <SortTh col="nome"      label="Nome"  align="left"/>
-              <SortTh col="squadra_serie_a" label="SA" align="left" className="mob-hide"/>
+              <SortTh col="squadra_serie_a" label="SA" align="left" />
               <SortTh col="_quotNum"  label="Q"     align="center"/>
               <SortTh col="_stipNum"  label="Stip." align="center"/>
-              <SortTh col="_acNum"    label="A.C."  align="center" className="mob-hide"/>
-              <SortTh col="clausola"  label="Cl."   align="center" className="mob-hide"/>
-              <SortTh col="_mvNum"    label="MV"    align="center" className="mob-hide"/>
-              <SortTh col="_mfvNum"   label="MFV"   align="center" className="mob-hide"/>
-              <SortTh col="_golNum"   label="Gol"   align="center" className="mob-hide"/>
-              <SortTh col="_assNum"   label="Ass"   align="center" className="mob-hide"/>
+              <SortTh col="_acNum"    label="A.C."  align="center" />
+              <SortTh col="clausola"  label="Cl."   align="center" />
+              <SortTh col="_mvNum"    label="MV"    align="center" />
+              <SortTh col="_mfvNum"   label="MFV"   align="center" />
+              <SortTh col="_golNum"   label="Gol"   align="center" />
+              <SortTh col="_assNum"   label="Ass"   align="center" />
             </tr>
           </thead>
           <tbody>
@@ -2251,7 +2251,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                   <td style={{ padding:"7px 6px",textAlign:"center" }}>
                     <span style={{ background:rc.bg,color:rc.text,border:`1px solid ${rc.border}`,borderRadius:5,padding:"2px 4px",fontSize:10,fontWeight:700 }}>{p.ruolo}</span>
                   </td>
-                  <td className="mob-hide" style={{ padding:"7px 8px",textAlign:"center",color:p.anni<=21?"#a78bfa":p.anni>=31?"#f97316":"#888" }}>{p.anni||"—"}</td>
+                  <td style={{ padding:"7px 8px",textAlign:"center",color:p.anni<=21?"#a78bfa":p.anni>=31?"#f97316":"#888" }}>{p.anni||"—"}</td>
                   <td style={{ padding:"7px 6px",color:fuori?"#ef4444":"#e0e0e0",fontWeight:600,wordBreak:"break-word" }}>
                     {p.nome}
                     {fuori&&<span style={{ marginLeft:4,fontSize:9,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444455",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>FUORI</span>}
@@ -2259,7 +2259,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                     {!fuori&&p.anni>=31&&<span style={{ marginLeft:4,fontSize:9,background:"#f9731622",color:"#fb923c",border:"1px solid #f9731644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>31+</span>}
                     {!p.in_vivaio&&p.anni>0&&p.anni<=23&&Number(p.quot||0)<=3&&(p.partite||0)===0&&vivaio.length<maxVivaio&&<span title="Eleggibile vivaio" style={{ marginLeft:4,fontSize:11 }}>🌱</span>}
                   </td>
-                  <td className="mob-hide" style={{ padding:"7px 8px",color:"#666",fontSize:11 }}>{p.squadra_serie_a||"—"}</td>
+                  <td style={{ padding:"7px 8px",color:"#666",fontSize:11 }}>{p.squadra_serie_a||"—"}</td>
                   <td style={{ padding:"7px 6px",textAlign:"center",fontWeight:800,color:p.quot>=20?"#f59e0b":"#ccc",fontFamily:"'Bebas Neue',sans-serif",fontSize:14 }}>
                     {p.quot}
                     {p.quot_reale && Number(p.quot_reale) !== Number(p.quot) && (
@@ -2279,15 +2279,15 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                       return <span style={{ color, fontWeight: fw }} title={ttip}>{p._stipCorretto.toFixed(2)}M</span>;
                     })()}
                   </td>
-                  <td className="mob-hide" style={{ padding:"7px 8px",textAlign:"center" }}>
+                  <td style={{ padding:"7px 8px",textAlign:"center" }}>
                     {(()=>{const ac=p.anni_contratto||0,isU21=p.anni>0&&p.anni<=21,color=ac===0?"#555":ac>=4?"#10b981":ac>=3?"#f59e0b":"#818cf8";
                     return <span style={{ background:color+"22",color,border:`1px solid ${color}44`,borderRadius:5,padding:"1px 6px",fontSize:10,fontWeight:700 }}>{ac||"—"}</span>;})()}
                   </td>
-                  <td className="mob-hide" style={{ padding:"7px 8px",textAlign:"center",color:"#666" }}>{p.clausola}M</td>
-                  <td className="mob-hide" style={{ padding:"7px 8px",textAlign:"center",color:p.media_voto>=6.5?"#10b981":p.media_voto>=6?"#f59e0b":"#888" }}>{p.media_voto>0?Number(p.media_voto).toFixed(2):"—"}</td>
-                  <td className="mob-hide" style={{ padding:"7px 8px",textAlign:"center",color:p.media_fantavoto>=7?"#10b981":p.media_fantavoto>=6?"#f59e0b":"#888" }}>{p.media_fantavoto>0?Number(p.media_fantavoto).toFixed(2):"—"}</td>
-                  <td className="mob-hide" style={{ padding:"7px 8px",textAlign:"center",color:p.gol>0?"#10b981":"#555" }}>{p.gol>0?p.gol:"—"}</td>
-                  <td className="mob-hide" style={{ padding:"7px 8px",textAlign:"center",color:p.assist>0?"#60a5fa":"#555" }}>{p.assist>0?p.assist:"—"}</td>
+                  <td style={{ padding:"7px 8px",textAlign:"center",color:"#666" }}>{p.clausola}M</td>
+                  <td style={{ padding:"7px 8px",textAlign:"center",color:p.media_voto>=6.5?"#10b981":p.media_voto>=6?"#f59e0b":"#888" }}>{p.media_voto>0?Number(p.media_voto).toFixed(2):"—"}</td>
+                  <td style={{ padding:"7px 8px",textAlign:"center",color:p.media_fantavoto>=7?"#10b981":p.media_fantavoto>=6?"#f59e0b":"#888" }}>{p.media_fantavoto>0?Number(p.media_fantavoto).toFixed(2):"—"}</td>
+                  <td style={{ padding:"7px 8px",textAlign:"center",color:p.gol>0?"#10b981":"#555" }}>{p.gol>0?p.gol:"—"}</td>
+                  <td style={{ padding:"7px 8px",textAlign:"center",color:p.assist>0?"#60a5fa":"#555" }}>{p.assist>0?p.assist:"—"}</td>
                 </tr>
               );
             })}
@@ -2514,15 +2514,14 @@ function SvincoliTab({ team, isAdmin }) {
 
     if (tipo === 'ordinario') {
       const penale = quot <= 10 ? 0.5 : quot <= 20 ? 1 : quot <= 30 ? 1.5 : 2;
-      const dataFine = new Date(oggi.getFullYear(), 5, 1);
-      if (dataFine < oggi) dataFine.setFullYear(oggi.getFullYear() + 1);
-      const mesi = Math.ceil((dataFine - oggi) / (30.44 * 86400000));
+      const endYear = oggi.getMonth() <= 4 ? oggi.getFullYear() : oggi.getFullYear() + 1;
+      const mesi = (endYear * 12 + 4) - (oggi.getFullYear() * 12 + oggi.getMonth()) + 1;
       const costoStip = parseFloat((mesi * stip / 12).toFixed(2));
       return {
         label: "Costo totale",
         value: parseFloat((penale + costoStip).toFixed(2)),
         color: "#ef4444",
-        dettaglio: `Penale ${penale}M + ${mesi} mensilità (${costoStip}M)`,
+        dettaglio: `Penale ${penale}M + ${mesi} mensilità fino a mag (${costoStip}M)`,
         positivo: false,
       };
     }
@@ -2531,8 +2530,8 @@ function SvincoliTab({ team, isAdmin }) {
     }
     // Straordinario
     const ind = estero ? parseFloat((quot / 2).toFixed(2)) : parseFloat((quot / 4).toFixed(2));
-    const agostoPagato = new Date(oggi.getMonth() >= 8 ? oggi.getFullYear() : oggi.getFullYear() - 1, 7, 1);
-    const mesiRimb = Math.max(0, Math.floor((oggi - agostoPagato) / (30.44 * 86400000)));
+    const julyYear = oggi.getMonth() >= 6 ? oggi.getFullYear() : oggi.getFullYear() - 1;
+    const mesiRimb = Math.max(0, (oggi.getFullYear() * 12 + oggi.getMonth()) - (julyYear * 12 + 6) + 1);
     const rimb = parseFloat((mesiRimb * stip / 12).toFixed(2));
     const totale = parseFloat((ind + rimb).toFixed(2));
     return {
@@ -2564,10 +2563,10 @@ function SvincoliTab({ team, isAdmin }) {
         warnings.push({ tipo: 'error', testo: `Esauriti svincoli straordinari estivi (6/6)` });
       if (!isEstate && contatori.count_straord_invernali >= 4)
         warnings.push({ tipo: 'error', testo: `Esauriti svincoli straordinari invernali (4/4)` });
-      // Impossibile giu-lug (art. 6.1)
-      if (oggi.getMonth() === 5 || oggi.getMonth() === 6)
-        warnings.push({ tipo: 'error', testo: 'Svincoli straordinari non consentiti a giugno/luglio' });
     }
+    // Impossibile giu-lug per tutti i tipi (art. 6.1)
+    if (oggi.getMonth() === 5 || oggi.getMonth() === 6)
+      warnings.push({ tipo: 'error', testo: 'Svincoli non consentiti a giugno/luglio (art. 6.1)' });
 
     // Max 14 totali (art. 6.4)
     if (tipo !== 'straordinario_u21_nc' && contatori.count_totale >= 14)
@@ -8622,6 +8621,10 @@ function AdminControlRoomPage({ teams }) {
   const [dbImportBusy, setDbImportBusy] = useState(false);
   const [dbImportDone, setDbImportDone] = useState(null);
   const [dbTipo, setDbTipo] = useState('settimanale');
+  const [utenti, setUtenti] = useState([]);
+  const [utentiLoading, setUtentiLoading] = useState(false);
+  const [utentiEdit, setUtentiEdit] = useState(null); // { id, nome, bio, avatar_url, ruolo }
+  const [utentiSaving, setUtentiSaving] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -8665,6 +8668,32 @@ function AdminControlRoomPage({ teams }) {
   async function loadClassifica() {
     const { data } = await supabase.from('classifica').select('squadra, punti, gf, gs').eq('stagione', STAGIONE_CR).order('punti', { ascending: false });
     setClassifica(data || []);
+  }
+
+  async function loadUtenti() {
+    setUtentiLoading(true);
+    try {
+      const { data, error } = await supabase.from('profiles').select('*').order('squadra', { ascending: true });
+      if (error) throw error;
+      setUtenti(data || []);
+    } catch(e) { alert(`Errore caricamento utenti: ${e.message}`); }
+    finally { setUtentiLoading(false); }
+  }
+
+  async function salvaUtente(u) {
+    setUtentiSaving(true);
+    try {
+      const { error } = await supabase.from('profiles').update({
+        nome: u.nome || null,
+        bio: u.bio || null,
+        avatar_url: u.avatar_url || null,
+        ruolo: u.ruolo || null,
+      }).eq('id', u.id);
+      if (error) throw error;
+      setUtenti(prev => prev.map(p => p.id === u.id ? { ...p, ...u } : p));
+      setUtentiEdit(null);
+    } catch(e) { alert(`Errore salvataggio: ${e.message}`); }
+    finally { setUtentiSaving(false); }
   }
 
   useEffect(() => { loadMercatoOvr(); }, []);
@@ -8719,6 +8748,7 @@ function AdminControlRoomPage({ teams }) {
     { key: 'differiti',    icon: '⏳', label: 'Differiti' },
     { key: 'stagione',     icon: '⚙️', label: 'Stagione' },
     { key: 'telegram',     icon: '✈️', label: 'Telegram' },
+    { key: 'utenti',       icon: '👥', label: 'Utenti' },
   ];
 
   const isBusy = !!busy;
@@ -9664,6 +9694,130 @@ function AdminControlRoomPage({ teams }) {
               </button>
             </div>
           )}
+
+          {/* ── UTENTI ── */}
+          {tab === 'utenti' && (() => {
+            const RUOLI = [
+              { val: 'founder', label: '👑 Founder', color: '#f59e0b', bg: '#f59e0b18', border: '#f59e0b40' },
+              { val: 'admin',   label: '⚡ Admin',   color: '#818cf8', bg: '#6366f118', border: '#6366f140' },
+              { val: null,      label: '👤 Utente',  color: '#888',    bg: '#ffffff08', border: '#ffffff15' },
+              { val: 'banned',  label: '🚫 Bannato', color: '#ef4444', bg: '#ef444418', border: '#ef444440' },
+            ];
+            const getRuolo = r => RUOLI.find(x => x.val === r) || RUOLI[2];
+
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>👥 GESTIONE UTENTI</div>
+                  <button onClick={loadUtenti} disabled={utentiLoading} style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid #f59e0b30', background: '#f59e0b10', color: '#f59e0b', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                    {utentiLoading ? '...' : '🔄 Carica'}
+                  </button>
+                </div>
+
+                {utenti.length === 0 && !utentiLoading && (
+                  <div style={{ fontSize: 12, color: '#555', padding: 20, textAlign: 'center' }}>Clicca "Carica" per vedere tutti gli utenti.</div>
+                )}
+
+                {utenti.map(u => {
+                  const ruoloInfo = getRuolo(u.ruolo);
+                  const isEditing = utentiEdit?.id === u.id;
+                  const ed = isEditing ? utentiEdit : null;
+
+                  return (
+                    <div key={u.id} style={{ background: '#ffffff06', border: `1px solid ${ruoloInfo.border}`, borderRadius: 12, padding: '14px 16px' }}>
+                      {!isEditing ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                          {/* Avatar */}
+                          <div style={{ flexShrink: 0 }}>
+                            {u.avatar_url
+                              ? <img src={u.avatar_url} alt="" style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'cover', border: `2px solid ${ruoloInfo.border}` }} />
+                              : <div style={{ width: 44, height: 44, borderRadius: 10, background: ruoloInfo.bg, border: `2px solid ${ruoloInfo.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>👤</div>
+                            }
+                          </div>
+                          {/* Info */}
+                          <div style={{ flex: 1, minWidth: 140 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                              <span style={{ fontWeight: 800, fontSize: 14, color: '#f0f0f0' }}>{u.nome || u.email || u.id.slice(0,8)}</span>
+                              <span style={{ padding: '2px 8px', borderRadius: 6, background: ruoloInfo.bg, border: `1px solid ${ruoloInfo.border}`, color: ruoloInfo.color, fontSize: 10, fontWeight: 700 }}>{ruoloInfo.label}</span>
+                            </div>
+                            <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>
+                              {u.squadra && <span style={{ marginRight: 10 }}>🏟 {u.squadra}</span>}
+                              {u.email && <span style={{ color: '#444' }}>{u.email}</span>}
+                            </div>
+                            {u.bio && <div style={{ fontSize: 11, color: '#777', marginTop: 4, fontStyle: 'italic' }}>"{u.bio}"</div>}
+                          </div>
+                          {/* Edit btn */}
+                          <button onClick={() => setUtentiEdit({ id: u.id, nome: u.nome || '', bio: u.bio || '', avatar_url: u.avatar_url || '', ruolo: u.ruolo || null })}
+                            style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid #ffffff15', background: '#ffffff08', color: '#aaa', fontSize: 11, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
+                            ✏️ Modifica
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          <div style={{ fontSize: 12, fontWeight: 800, color: '#f0f0f0', marginBottom: 2 }}>
+                            Modifica — {u.squadra || u.email || u.id.slice(0,8)}
+                          </div>
+
+                          {/* Ruolo selector */}
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            {RUOLI.map(r => (
+                              <button key={String(r.val)} onClick={() => setUtentiEdit(e => ({ ...e, ruolo: r.val }))}
+                                style={{ padding: '4px 10px', borderRadius: 8, border: `1.5px solid ${ed.ruolo === r.val ? r.border : '#ffffff15'}`, background: ed.ruolo === r.val ? r.bg : 'transparent', color: ed.ruolo === r.val ? r.color : '#555', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                                {r.label}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Nome */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <label style={{ fontSize: 10, color: '#666', fontWeight: 700 }}>NOME VISUALIZZATO</label>
+                            <input value={ed.nome} onChange={e => setUtentiEdit(v => ({ ...v, nome: e.target.value }))}
+                              placeholder="Nome utente..."
+                              style={{ background: '#0d0f14', border: '1px solid #ffffff18', borderRadius: 8, padding: '7px 10px', color: '#f0f0f0', fontSize: 12, outline: 'none' }} />
+                          </div>
+
+                          {/* Bio */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <label style={{ fontSize: 10, color: '#666', fontWeight: 700 }}>BIO</label>
+                            <textarea value={ed.bio} onChange={e => setUtentiEdit(v => ({ ...v, bio: e.target.value }))}
+                              placeholder="Bio utente..."
+                              rows={2}
+                              style={{ background: '#0d0f14', border: '1px solid #ffffff18', borderRadius: 8, padding: '7px 10px', color: '#f0f0f0', fontSize: 12, outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
+                          </div>
+
+                          {/* Avatar URL */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <label style={{ fontSize: 10, color: '#666', fontWeight: 700 }}>URL AVATAR</label>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <input value={ed.avatar_url} onChange={e => setUtentiEdit(v => ({ ...v, avatar_url: e.target.value }))}
+                                placeholder="https://..."
+                                style={{ flex: 1, background: '#0d0f14', border: '1px solid #ffffff18', borderRadius: 8, padding: '7px 10px', color: '#f0f0f0', fontSize: 12, outline: 'none' }} />
+                              {ed.avatar_url && (
+                                <img src={ed.avatar_url} alt="" onError={e => e.target.style.display='none'}
+                                  style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover', border: '1px solid #ffffff18', flexShrink: 0 }} />
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                            <button onClick={() => salvaUtente(ed)} disabled={utentiSaving}
+                              style={{ padding: '7px 18px', borderRadius: 9, border: '1.5px solid #10b98150', background: '#10b98115', color: '#10b981', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                              {utentiSaving ? 'Salvo...' : '✅ Salva'}
+                            </button>
+                            <button onClick={() => setUtentiEdit(null)}
+                              style={{ padding: '7px 14px', borderRadius: 9, border: '1px solid #ffffff15', background: 'transparent', color: '#666', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                              Annulla
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           {/* ── DIFFERITI ── */}
           {tab === 'differiti' && (
@@ -11256,7 +11410,7 @@ function AppInner() {
     return { ...t, ...base, bilancio: db.bilancio, salaryUsed: db.salary_used, giocatori: db.giocatori, u21: db.u21, fairPlay1: db.fair_play1, fairPlay2: db.fair_play2, penalita: db.penalita, guadGiornate: db.guad_giornate, guadObiettivi: db.guad_obiettivi, guadInv: db.guad_inv, clausoleIn: db.clausole_in, clausoleOut: db.clausole_out, euroInvestiti: db.euro_investiti||0, mlnExtra: db.mln_extra||0, euroBiennio: db.euro_biennio||0, scNegativoDal: db.sc_negativo_dal||null, mercatoBloccato: db.mercato_bloccato||false, bilancioNegDal: db.bilancio_neg_dal||null, bilancioNegSettimane: db.bilancio_neg_settimane||0, fallimento: db.fallimento||false, fallimentoDal: db.fallimento_dal||null, fpf: fpfMap[t.name]??null, biennio: db.biennio||'2025-27', quotaPagata: db.quota_pagata||false, iscrizionePagata: db.iscrizione_pagata||false };
   }), [squadreDB, fpfMap, clubIdentities]);
 
-  const isAdmin = profile?.ruolo === "admin";
+  const isAdmin = profile?.ruolo === "admin" || profile?.ruolo === "founder";
   const mySquadra = profile?.squadra;
   const pathname = location.pathname;
   const currentPage = pathname==='/news'?'news':pathname==='/squadre'?'squadre':pathname.startsWith('/presidente')?'squadre':pathname==='/lega'?'lega':pathname==='/mercato'?'mercato':pathname==='/modifica'?'admin-control':pathname==='/adminlog'?'admin-control':pathname==='/admin-control'?'admin-control':pathname==='/profilo'?'profilo':pathname==='/storico'?'storico':'news';
@@ -11303,10 +11457,8 @@ input,select,textarea{font-size:16px!important;-webkit-text-size-adjust:100%}
 .grid-stats-3{grid-template-columns:repeat(3,1fr)!important}
 .grid-stats-4{grid-template-columns:repeat(2,1fr)!important}
 .modal-pad{padding:16px!important}
-.mob-hide{display:none!important}
-table{border-collapse:collapse;width:100%}
-table td,table th{white-space:normal!important;word-break:break-word}
-.td-name{max-width:100px!important;white-space:normal!important;word-break:break-word!important}
+div:has(>table){overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;min-width:max-content}
 }
 @media(max-width:400px){.grid-stats-8{grid-template-columns:repeat(4,1fr)!important}.grid-stats-3{grid-template-columns:1fr 1fr!important}}`}</style>
       {isDesktop ? (
