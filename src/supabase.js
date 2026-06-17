@@ -1180,6 +1180,26 @@ export async function applicaTassaSettimana(squadra, bilancioCorrente, dataContr
   const { week, year } = getWeekNumber(new Date(dataRef));
   const wLabel = settimanaLabel || `${week}/${year}`;
 
+  // Deduplicazione per settimana ISO: controlla tutte le domeniche della stessa settimana
+  // Questo previene doppi pagamenti quando la tassa viene applicata in giorni diversi
+  // della stessa settimana (es. sabato E lunedì successivo) che hanno domeniche diverse.
+  const lunedi = new Date(dataRef);
+  const d = lunedi.getDay(); // 0=dom
+  lunedi.setDate(lunedi.getDate() - (d === 0 ? 6 : d - 1)); // inizio settimana ISO (lunedì)
+  const domenicaSettimana = new Date(lunedi);
+  domenicaSettimana.setDate(lunedi.getDate() + 6); // domenica della stessa settimana ISO
+  const lunediStr = lunedi.toISOString().slice(0, 10);
+  const domenicaStr = domenicaSettimana.toISOString().slice(0, 10);
+
+  const { data: giaSettimana } = await supabase
+    .from('tasse_settimanali')
+    .select('id')
+    .eq('squadra', squadra)
+    .gte('data_controllo', lunediStr)
+    .lte('data_controllo', domenicaStr)
+    .limit(1);
+  if (giaSettimana?.length) return { skip: true, motivo: `Tassa settimana ${wLabel} già applicata` };
+
   // Inserisce record tassa — usa data_controllo = domenica per deduplicazione
   const { error: insErr } = await supabase.from('tasse_settimanali').insert({
     squadra, bilancio_al_controllo: bilancioCorrente,
@@ -1258,14 +1278,23 @@ export async function applicaPagamentiAutomatici() {
   const { week, year } = getWeekNumber(oggi);
   const settimanaLabel = `${week}/${year}`;
 
+  // Calcola inizio e fine settimana ISO corrente per il controllo deduplicazione
+  const _lunediAP = new Date(domenica);
+  const _dAP = _lunediAP.getDay();
+  _lunediAP.setDate(_lunediAP.getDate() - (_dAP === 0 ? 6 : _dAP - 1));
+  const _domAP = new Date(_lunediAP); _domAP.setDate(_lunediAP.getDate() + 6);
+  const _lunediAPStr = _lunediAP.toISOString().slice(0, 10);
+  const _domAPStr = _domAP.toISOString().slice(0, 10);
+
   for (const sq of squadre) {
     try {
-      // Controlla se la tassa è già stata applicata questa settimana (chiave = domenica)
+      // Controlla se la tassa è già stata applicata questa settimana (per settimana ISO, non solo domenica)
       const { data: gia } = await supabase
         .from('tasse_settimanali')
         .select('id')
         .eq('squadra', sq.name)
-        .eq('data_controllo', domenica)
+        .gte('data_controllo', _lunediAPStr)
+        .lte('data_controllo', _domAPStr)
         .limit(1);
       if (gia?.length) continue; // già applicata questa settimana
 
@@ -1892,9 +1921,21 @@ export async function applicaTassaATutti() {
   const { data: squadre } = await supabase.from('squadre').select('name, bilancio');
   if (!squadre?.length) return [];
   const results = [];
+
+  // Calcola inizio e fine settimana ISO per deduplicazione robusta
+  const _lunediATT = new Date(domenica);
+  const _dATT = _lunediATT.getDay();
+  _lunediATT.setDate(_lunediATT.getDate() - (_dATT === 0 ? 6 : _dATT - 1));
+  const _domATT = new Date(_lunediATT); _domATT.setDate(_lunediATT.getDate() + 6);
+  const _lunediATTStr = _lunediATT.toISOString().slice(0, 10);
+  const _domATTStr = _domATT.toISOString().slice(0, 10);
+
   for (const sq of squadre) {
     const { data: gia } = await supabase.from('tasse_settimanali').select('id')
-      .eq('squadra', sq.name).eq('data_controllo', domenica).limit(1);
+      .eq('squadra', sq.name)
+      .gte('data_controllo', _lunediATTStr)
+      .lte('data_controllo', _domATTStr)
+      .limit(1);
     if (gia?.length) { results.push({ squadra: sq.name, skip: true }); continue; }
     const r = await applicaTassaSettimana(sq.name, sq.bilancio, domenica, settimanaLabel);
     results.push({ squadra: sq.name, ...r });
