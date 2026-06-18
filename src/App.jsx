@@ -8844,12 +8844,8 @@ function AdminControlRoomPage({ teams }) {
       const skip = res.filter(r => r.skip).length;
       setLastResult({ label, ok, skip, ts: new Date().toLocaleTimeString('it-IT') });
       await load();
-      // Telegram channel notifications for bulk payments
-      const meseISO = new Date().toISOString().slice(0, 7);
-      const domenica = getDomenicaCorrente();
-      if (fn === applicaTassaATutti)     sendTelegramNotification('tassa_applicata',    { domenica });
-      if (fn === applicaStipendioATutti) sendTelegramNotification('stipendi_applicati',  { mese: meseISO });
-      if (fn === applicaEntrateStadioTutte) sendTelegramNotification('stadio_applicato', { mese: meseISO });
+      // Le funzioni bulk inviano già internamente l'eventuale notifica Telegram.
+      // Non inviarla anche qui, altrimenti il canale riceve messaggi duplicati.
     } catch(e) { alert(e.message); }
     finally { setBusy(null); }
   }
