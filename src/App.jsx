@@ -175,7 +175,7 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   aggiornaContrattiAnnuali, confermRinnovoBiennale,
   // Admin Control Room
   getStadioInvestimenti, setStadioUpgrade, applicaEntrateStadioTutte,
-  applicaTassaATutti, annullaTassaATutti, applicaStipendioATutti, getControlRoomStatus,
+  applicaTassaATutti, applicaStipendioATutti, getControlRoomStatus,
   // Extra Control Room
   updateProfile, uploadAvatar,
   getMercatoOverride, setMercatoOverride, getTrasferimentiDifferiti,
@@ -8786,8 +8786,12 @@ function AdminControlRoomPage({ teams }) {
       const skip = res.filter(r => r.skip).length;
       setLastResult({ label, ok, skip, ts: new Date().toLocaleTimeString('it-IT') });
       await load();
-      // Le notifiche Telegram partono dentro le funzioni bulk in supabase.js,
-      // così funzionano sia da Control Room sia dai pagamenti automatici.
+      // Telegram channel notifications for bulk payments
+      const meseISO = new Date().toISOString().slice(0, 7);
+      const domenica = getDomenicaCorrente();
+      if (fn === applicaTassaATutti)     sendTelegramNotification('tassa_applicata',    { domenica });
+      if (fn === applicaStipendioATutti) sendTelegramNotification('stipendi_applicati',  { mese: meseISO });
+      if (fn === applicaEntrateStadioTutte) sendTelegramNotification('stadio_applicato', { mese: meseISO });
     } catch(e) { alert(e.message); }
     finally { setBusy(null); }
   }
@@ -8891,16 +8895,32 @@ function AdminControlRoomPage({ teams }) {
               {/* Riepilogo rapido */}
               <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
                 {[
-                  { label: 'Tasse pagate', n: status.tassePagate.size, tot: status.squadre.length, color: '#f59e0b' },
+                  { label: 'Tasse pagate', n: status.tassePagate.size, tot: status.squadre.length, color: '#f59e0b', extra: status.tasseDettagli?.totaleRecord > status.squadre.length ? `${status.tasseDettagli.totaleRecord} record totali` : null },
                   { label: 'Stipendi pagati', n: status.stipendiPagati.size, tot: status.squadre.length, color: '#6366f1' },
                   { label: 'Stadio pagato', n: status.stadioPagato.size, tot: status.squadre.length, color: '#10b981' },
                 ].map(s => (
                   <div key={s.label} style={{ flex: '1 1 140px', background: s.color + '10', border: `1px solid ${s.color}25`, borderRadius: 10, padding: '10px 14px' }}>
                     <div style={{ fontSize: 9, color: s.color, fontWeight: 700, letterSpacing: '0.08em', marginBottom: 4 }}>{s.label.toUpperCase()}</div>
                     <div style={{ fontSize: 22, fontWeight: 900, color: s.color, fontFamily: "'Bebas Neue',sans-serif", lineHeight: 1 }}>{s.n}<span style={{ fontSize: 13, color: '#555' }}>/{s.tot}</span></div>
+                    {s.extra && <div style={{ marginTop: 4, fontSize: 10, color: '#f59e0b' }}>⚠ {s.extra}</div>}
                   </div>
                 ))}
               </div>
+
+              {(status.tasseDettagli?.duplicate?.length > 0 || status.tasseDettagli?.mancanti?.length > 0 || status.tasseDettagli?.extra?.length > 0) && (
+                <div style={{ marginTop: 14, background: '#f59e0b0d', border: '1px solid #f59e0b30', borderRadius: 10, padding: '12px 14px' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#f59e0b', letterSpacing: '0.08em', marginBottom: 8 }}>⚠ DETTAGLIO ANOMALIE TASSE</div>
+                  {status.tasseDettagli?.duplicate?.length > 0 && (
+                    <div style={{ fontSize: 11, color: '#ddd', marginBottom: 6 }}><b style={{ color: '#f97316' }}>Pagate più di una volta:</b> {status.tasseDettagli.duplicate.map(x => `${x.squadra} (${x.count}×: ${x.date.join(', ')})`).join(' · ')}</div>
+                  )}
+                  {status.tasseDettagli?.mancanti?.length > 0 && (
+                    <div style={{ fontSize: 11, color: '#ddd', marginBottom: 6 }}><b style={{ color: '#ef4444' }}>Mancanti:</b> {status.tasseDettagli.mancanti.join(' · ')}</div>
+                  )}
+                  {status.tasseDettagli?.extra?.length > 0 && (
+                    <div style={{ fontSize: 11, color: '#ddd' }}><b style={{ color: '#f59e0b' }}>Record extra / squadre non attive:</b> {status.tasseDettagli.extra.map(x => `${x.squadra} (${x.count}×: ${x.date.join(', ')})`).join(' · ')}</div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -8962,37 +8982,51 @@ function AdminControlRoomPage({ teams }) {
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>📅 TASSA SETTIMANALE</div>
                   <div style={{ fontSize: 11, color: '#555', marginTop: 4 }}>Domenica {status.domenica} · Art. 7.1</div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => runBulk(applicaTassaATutti, 'Tassa settimanale a tutti')}
-                    disabled={isBusy}
-                    style={{ padding: '8px 18px', borderRadius: 10, border: '1.5px solid #f59e0b50', background: '#f59e0b18', color: '#f59e0b', fontSize: 12, fontWeight: 700, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.6 : 1 }}>
-                    {busy === 'Tassa settimanale a tutti' ? '⏳ Esecuzione...' : '📊 Applica tassa a tutti'}
-                  </button>
-                  <button
-                    onClick={() => runBulk(annullaTassaATutti, 'Annulla tassa settimanale a tutti')}
-                    disabled={isBusy}
-                    style={{ padding: '8px 18px', borderRadius: 10, border: '1.5px solid #ef444450', background: '#ef444418', color: '#ef4444', fontSize: 12, fontWeight: 700, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.6 : 1 }}>
-                    {busy === 'Annulla tassa settimanale a tutti' ? '⏳ Annullamento...' : '↩️ Annulla tassa a tutti'}
-                  </button>
-                </div>
+                <button
+                  onClick={() => runBulk(applicaTassaATutti, 'Tassa settimanale a tutti')}
+                  disabled={isBusy}
+                  style={{ padding: '8px 18px', borderRadius: 10, border: '1.5px solid #f59e0b50', background: '#f59e0b18', color: '#f59e0b', fontSize: 12, fontWeight: 700, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.6 : 1 }}>
+                  {busy === 'Tassa settimanale a tutti' ? '⏳ Esecuzione...' : '📊 Applica tassa a tutti'}
+                </button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 8 }}>
                 {(status.squadre || []).sort((a,b) => a.name.localeCompare(b.name)).map(sq => {
                   const team = teams?.find(t => t.name === sq.name);
                   const ok = status.tassePagate.has(sq.name);
+                  const tassaCount = status.tasseDettagli?.countBySquadra?.[sq.name] || 0;
+                  const tassaDates = status.tasseDettagli?.dateBySquadra?.[sq.name] || [];
+                  const isDup = tassaCount > 1;
                   const tassa = calcolaTassa(sq.bilancio || 0);
                   return (
-                    <div key={sq.name} style={{ background: ok ? '#10b98108' : '#f59e0b08', border: `1px solid ${ok ? '#10b98130' : '#f59e0b25'}`, borderRadius: 10, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div key={sq.name} style={{ background: isDup ? '#ef444408' : ok ? '#10b98108' : '#f59e0b08', border: `1px solid ${isDup ? '#ef444440' : ok ? '#10b98130' : '#f59e0b25'}`, borderRadius: 10, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
                       {team && <TeamAvatar team={team} size={28} />}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 12, fontWeight: 600, color: '#ddd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sq.name}</div>
                         <div style={{ fontSize: 10, color: '#555' }}>{tassa.perc} → −{tassa.importo}M</div>
+                        <div style={{ fontSize: 10, color: isDup ? '#ef4444' : ok ? '#10b981' : '#f59e0b', marginTop: 2 }}>
+                          {tassaCount === 0 ? '0 pagamenti questa settimana' : `${tassaCount} pagamento${tassaCount > 1 ? 'i' : ''}: ${tassaDates.join(', ')}`}
+                        </div>
                       </div>
-                      <div style={{ fontSize: 18 }}>{ok ? '✅' : '⏳'}</div>
+                      <div style={{ fontSize: 18 }}>{isDup ? '⚠️' : ok ? '✅' : '⏳'}</div>
                     </div>
                   );
                 })}
+              </div>
+
+              <div style={{ marginTop: 14, background: '#ffffff05', border: '1px solid #ffffff12', borderRadius: 10, padding: '12px 14px' }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: '#888', letterSpacing: '0.08em', marginBottom: 8 }}>🔎 CONTROLLO DETTAGLIATO TASSE</div>
+                <div style={{ fontSize: 11, color: '#666', marginBottom: 8 }}>
+                  Squadre OK: <b style={{ color: '#10b981' }}>{status.tassePagate.size}/{status.squadre.length}</b> · Record tassa totali nella settimana: <b style={{ color: status.tasseDettagli?.totaleRecord > status.squadre.length ? '#f59e0b' : '#888' }}>{status.tasseDettagli?.totaleRecord || 0}</b>
+                </div>
+                {status.tasseDettagli?.duplicate?.length > 0 ? (
+                  <div style={{ fontSize: 11, color: '#ddd', marginBottom: 6 }}><b style={{ color: '#ef4444' }}>Pagate in più:</b> {status.tasseDettagli.duplicate.map(x => `${x.squadra} (${x.count}×: ${x.date.join(', ')})`).join(' · ')}</div>
+                ) : <div style={{ fontSize: 11, color: '#10b981', marginBottom: 6 }}>✓ Nessuna squadra attiva ha più di una tassa nella settimana</div>}
+                {status.tasseDettagli?.mancanti?.length > 0 ? (
+                  <div style={{ fontSize: 11, color: '#ddd', marginBottom: 6 }}><b style={{ color: '#f59e0b' }}>Pagate in meno / mancanti:</b> {status.tasseDettagli.mancanti.join(' · ')}</div>
+                ) : <div style={{ fontSize: 11, color: '#10b981', marginBottom: 6 }}>✓ Nessuna squadra attiva manca il pagamento</div>}
+                {status.tasseDettagli?.extra?.length > 0 && (
+                  <div style={{ fontSize: 11, color: '#ddd' }}><b style={{ color: '#f59e0b' }}>Record extra non associati a squadre attive:</b> {status.tasseDettagli.extra.map(x => `${x.squadra} (${x.count}×: ${x.date.join(', ')})`).join(' · ')}</div>
+                )}
               </div>
             </div>
           )}
@@ -11368,29 +11402,22 @@ function AppInner() {
     setAuthLoading(false);
   }
 
-  // ── Pagamenti automatici (tasse solo domenica 23:00 + stipendi 1° mese) ───────────
+  // ── Pagamenti automatici (tasse dom 23:00 + stipendi 1° mese) ───────────
   useEffect(() => {
     if (!session) return;
     const now = new Date();
-    const ora = now.getHours();
-    const isDomenicaDopo23 = now.getDay() === 0 && ora >= 23;
-    const primoDelMese = now.getDate() === 1 && ora >= 9;
-
     // Chiave localStorage: "autopay_YYYY-WW" per tasse, "autopay_stip_YYYY-MM" per stipendi
     const wKey = `autopay_${now.getFullYear()}-W${String(Math.ceil(((now - new Date(now.getFullYear(),0,1))/86400000+1)/7)).padStart(2,'0')}`;
     const mKey = `autopay_stip_${now.toISOString().slice(0,7)}`;
     const alreadyThisWeek  = localStorage.getItem(wKey);
     const alreadyThisMonth = localStorage.getItem(mKey);
-
-    const deveProvareTassa = isDomenicaDopo23 && !alreadyThisWeek;
-    const deveProvareStipendi = primoDelMese && !alreadyThisMonth;
-    if (!deveProvareTassa && !deveProvareStipendi) return;
-
+    if (alreadyThisWeek && alreadyThisMonth) return; // questo browser ha già triggerato
     applicaPagamentiAutomatici().then(r => {
-      if (deveProvareTassa) localStorage.setItem(wKey, '1');
-      if (deveProvareStipendi) localStorage.setItem(mKey, '1');
-      if (r.tasse.length)    console.log(`✅ Tasse auto: ${r.tasse.length} squadre`);
-      if (r.stipendi.length) console.log(`✅ Stipendi auto: ${r.stipendi.length} squadre`);
+      if (r.tasse.length)    { console.log(`✅ Tasse auto: ${r.tasse.length} squadre`); localStorage.setItem(wKey, '1'); }
+      if (r.stipendi.length) { console.log(`✅ Stipendi auto: ${r.stipendi.length} squadre`); localStorage.setItem(mKey, '1'); }
+      // Segna "tentato" anche se zero squadre (vuol dire già applicate da altro client)
+      if (!alreadyThisWeek)  localStorage.setItem(wKey, '1');
+      if (!alreadyThisMonth) localStorage.setItem(mKey, '1');
       if (r.errori.length)   console.warn('⚠️ Errori pagamenti auto:', r.errori);
       if (r.tasse.length || r.stipendi.length) {
         getSquadre().then(data => { if (data) setSquadreDB(data); });
