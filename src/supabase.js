@@ -1259,55 +1259,18 @@ function getWeekNumber(d = new Date()) {
 export async function applicaPagamentiAutomatici() {
   const oggi = new Date();
   const oggiStr = oggi.toISOString().slice(0, 10);
-  const results = { tasse: [], stipendi: [], errori: [] };
+  const ora = oggi.getHours();
+  const results = { tasse: [], stipendi: [], stadio: [], errori: [] };
 
   // Carica tutte le squadre
   const { data: squadre } = await supabase.from('squadre').select('name, bilancio');
   if (!squadre?.length) return results;
 
-  // ── 1. TASSA SETTIMANALE (art. 7.1) ──────────────────────────────────────
-  // Scatta SOLO la domenica dalle 23:00 in poi.
-  // Niente catch-up automatico nei giorni successivi: eventuali recuperi si fanno dalla Control Room.
-  const domenica = getDomenicaCorrente();
-  const giorno = oggi.getDay(); // 0=dom
-  const ora = oggi.getHours();
-  const tassaScattata = giorno === 0 && ora >= 23;
+  // NOTA: le tasse settimanali NON sono più automatiche.
+  // Si applicano solo manualmente dalla Admin Control Room, così resta sempre possibile
+  // decidere quando confermarle e annullarle in caso di errore.
 
-  const { week, year } = getWeekNumber(oggi);
-  const settimanaLabel = `${week}/${year}`;
-
-  if (tassaScattata) {
-    // Calcola inizio e fine settimana ISO corrente per il controllo deduplicazione
-    const _lunediAP = new Date(domenica);
-    const _dAP = _lunediAP.getDay();
-    _lunediAP.setDate(_lunediAP.getDate() - (_dAP === 0 ? 6 : _dAP - 1));
-    const _domAP = new Date(_lunediAP); _domAP.setDate(_lunediAP.getDate() + 6);
-    const _lunediAPStr = _lunediAP.toISOString().slice(0, 10);
-    const _domAPStr = _domAP.toISOString().slice(0, 10);
-
-    for (const sq of squadre) {
-      try {
-        // Controlla se la tassa è già stata applicata questa settimana (per settimana ISO, non solo domenica)
-        const { data: gia } = await supabase
-          .from('tasse_settimanali')
-          .select('id')
-          .eq('squadra', sq.name)
-          .gte('data_controllo', _lunediAPStr)
-          .lte('data_controllo', _domAPStr)
-          .limit(1);
-        if (gia?.length) continue; // già applicata questa settimana
-
-        const r = await applicaTassaSettimana(sq.name, sq.bilancio, domenica, settimanaLabel);
-        if (r.ok) results.tasse.push({ squadra: sq.name, importo: r.importo });
-      } catch(e) { results.errori.push(`Tassa ${sq.name}: ${e.message}`); }
-    }
-
-    if (results.tasse.length > 0) {
-      await sendTelegramNotification('tassa_applicata', { domenica, automatico: true });
-    }
-  }
-
-  // ── 2. STIPENDI MENSILI + STADIO (art. 4.4) ──────────────────────────────
+  // ── STIPENDI MENSILI + STADIO ────────────────────────────────────────────
   // Applica il 1° del mese DALLE 9:00 in poi
   const primoDiMese = getPrimoDiMese();
   const meseISO = oggi.toISOString().slice(0, 7); // YYYY-MM
@@ -1332,7 +1295,7 @@ export async function applicaPagamentiAutomatici() {
           .eq('in_vivaio', false);
 
         const stipRosa = (rosa || []).reduce(
-          (s, p) => s + _calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0
+          (sum, p) => sum + _calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0
         );
 
         // SC allenatore (5M fissi se carta scelta)
@@ -1351,23 +1314,23 @@ export async function applicaPagamentiAutomatici() {
         await supabase.from('movimenti').insert({
           squadra: sq.name,
           descrizione: stipDesc,
-          uscita: rata, data: oggiStr,
+          uscita: rata,
+          data: oggiStr,
         });
         await supabase.from('squadre').update({
           bilancio: nuovoBilancio,
           salary_used: totalStip,
         }).eq('name', sq.name);
 
+        sq.bilancio = nuovoBilancio;
         results.stipendi.push({ squadra: sq.name, rata, nuovoBilancio });
       } catch(e) { results.errori.push(`Stipendi ${sq.name}: ${e.message}`); }
     }
 
-    // ── 3. ENTRATE STADIO MENSILI ───────────────────────────────────────────
-    // 4M base, 5.5M se "Ristrutturazione Stadio" presente in investimenti
+    // Entrate stadio mensili: 4M base, 5.5M se "Ristrutturazione Stadio" presente
     const stadioDesc = `Entrate stadio ${meseISO}`;
     for (const sq of squadre) {
       try {
-        // Controlla se le entrate stadio sono già state accreditate questo mese
         const { data: giaStadio } = await supabase
           .from('movimenti')
           .select('id')
@@ -1376,7 +1339,6 @@ export async function applicaPagamentiAutomatici() {
           .limit(1);
         if (giaStadio?.length) continue;
 
-        // Controlla se la squadra ha l'investimento "Ristrutturazione Stadio"
         const { data: inv } = await supabase
           .from('investimenti')
           .select('id')
@@ -1384,28 +1346,25 @@ export async function applicaPagamentiAutomatici() {
           .eq('nome', 'Ristrutturazione Stadio')
           .limit(1);
         const entrata = inv?.length ? 5.5 : 4;
+        const nuovoBilancio = parseFloat((Number(sq.bilancio || 0) + entrata).toFixed(2));
 
         await supabase.from('movimenti').insert({
           squadra: sq.name,
           descrizione: stadioDesc,
-          entrata, data: oggiStr,
+          entrata,
+          data: oggiStr,
         });
-        await supabase.from('squadre').update({
-          bilancio: parseFloat((sq.bilancio + entrata).toFixed(2)),
-        }).eq('name', sq.name);
-        // Aggiorna bilancio in-memory per i prossimi loop
-        sq.bilancio = parseFloat((sq.bilancio + entrata).toFixed(2));
+        await supabase.from('squadre').update({ bilancio: nuovoBilancio }).eq('name', sq.name);
 
-        results.stipendi.push({ squadra: sq.name, tipo: 'stadio', importo: entrata });
+        sq.bilancio = nuovoBilancio;
+        results.stadio.push({ squadra: sq.name, importo: entrata, nuovoBilancio });
       } catch(e) { results.errori.push(`Stadio ${sq.name}: ${e.message}`); }
     }
 
-    const stipendiApplicati = results.stipendi.filter(r => !r.tipo).length;
-    const stadioApplicato = results.stipendi.filter(r => r.tipo === 'stadio').length;
-    if (stipendiApplicati > 0) {
+    if (results.stipendi.length > 0) {
       await sendTelegramNotification('stipendi_applicati', { mese: meseISO, automatico: true });
     }
-    if (stadioApplicato > 0) {
+    if (results.stadio.length > 0) {
       await sendTelegramNotification('stadio_applicato', { mese: meseISO, automatico: true });
     }
   }
@@ -2114,6 +2073,63 @@ export async function ripulisciAnomalieTasse(dataCorretta = null) {
   };
 }
 
+
+// Pulizia straordinaria: rimuove tutte le tasse precedenti alla data indicata.
+// Serve per ripulire vecchi record storici errati (es. 06/06, 07/06) e lasciare visibili
+// solo le tasse confermate correttamente dalla Control Room dalla data indicata in poi.
+// ATTENZIONE: rimborsa ai bilanci delle squadre attive gli importi rimossi.
+export async function ripulisciStoricoTassePrimaDi(dataLimite = null) {
+  const keepFrom = dataLimite || getDomenicaCorrente();
+
+  const [{ data: squadre }, { data: tasse, error }] = await Promise.all([
+    supabase.from('squadre').select('name, bilancio'),
+    supabase.from('tasse_settimanali')
+      .select('id, squadra, importo_tassa, data_controllo')
+      .lt('data_controllo', keepFrom)
+      .order('data_controllo', { ascending: false }),
+  ]);
+  if (error) throw error;
+  if (!tasse?.length) return { ok: true, rimossi: [], rimborsi: [], dataLimite: keepFrom };
+
+  const squadreList = squadre || [];
+  const squadreAttive = new Set(squadreList.map(s => s.name));
+  const bilanci = new Map(squadreList.map(s => [s.name, Number(s.bilancio || 0)]));
+
+  const rimborsoBySquadra = new Map();
+  for (const t of tasse) {
+    if (squadreAttive.has(t.squadra)) {
+      rimborsoBySquadra.set(
+        t.squadra,
+        parseFloat(((rimborsoBySquadra.get(t.squadra) || 0) + Number(t.importo_tassa || 0)).toFixed(2))
+      );
+    }
+  }
+
+  for (const [squadra, rimborso] of rimborsoBySquadra.entries()) {
+    const nuovoBilancio = parseFloat((Number(bilanci.get(squadra) || 0) + rimborso).toFixed(2));
+    await supabase.from('squadre').update({ bilancio: nuovoBilancio }).eq('name', squadra);
+  }
+
+  const idsDaRimuovere = tasse.map(t => t.id);
+  await supabase.from('tasse_settimanali').delete().in('id', idsDaRimuovere);
+
+  // Cancella i movimenti tassa precedenti alla data tenuta. Usiamo data < keepFrom perché
+  // i vecchi movimenti errati sono stati creati nei giorni errati; i movimenti della tassa
+  // corretta del keepFrom e dei pagamenti futuri restano intatti.
+  await supabase
+    .from('movimenti')
+    .delete()
+    .lt('data', keepFrom)
+    .ilike('descrizione', 'Tassa settimanale%');
+
+  return {
+    ok: true,
+    dataLimite: keepFrom,
+    rimossi: tasse.map(t => ({ squadra: t.squadra, data: t.data_controllo, importo: Number(t.importo_tassa || 0) })),
+    rimborsi: Array.from(rimborsoBySquadra.entries()).map(([squadra, importo]) => ({ squadra, importo })),
+  };
+}
+
 // Applica stipendi mensili a TUTTE le squadre (trigger manuale admin)
 export async function applicaStipendioATutti() {
   const oggi = new Date().toISOString().slice(0, 10);
@@ -2191,11 +2207,12 @@ export async function getControlRoomStatus() {
     .map(([squadra, count]) => ({ squadra, count, date: tasseDateBySquadra[squadra] || [] }));
   const tasseTotRecord = (tasse || []).length;
   const tasseDettagli = { countBySquadra: tasseCountBySquadra, dateBySquadra: tasseDateBySquadra, duplicate: tasseDuplicate, mancanti: tasseMancanti, extra: tasseExtra, totaleRecord: tasseTotRecord };
+  const canApplicareTassa = tasseMancanti.length > 0;
 
   const stipendiPagati = new Set((movMese || []).filter(m => m.descrizione === stipDesc).map(m => m.squadra));
   const stadioPagato = new Set((movMese || []).filter(m => m.descrizione === stadioDesc).map(m => m.squadra));
 
-  return { squadre: squadreList, tassePagate, tasseDettagli, stipendiPagati, stadioPagato, domenica, meseISO };
+  return { squadre: squadreList, tassePagate, tasseDettagli, canApplicareTassa, stipendiPagati, stadioPagato, domenica, meseISO };
 }
 
 // ─── AUDIT LOG ────────────────────────────────────────────────────────────────
