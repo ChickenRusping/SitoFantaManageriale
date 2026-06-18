@@ -164,12 +164,12 @@ async function cachedFetch(key, fetcher, ttl = 90000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, applicaPagamentiAutomatici, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, applicaPagamentiAutomatici, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento,
   getBonusTrattativa, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
-  getNotizie, insertNotizia, deleteNotizia, togglePinnata, toggleReaction, uploadNotiziaImmagine, subscribeNotizie,
-  getCommenti, insertCommento, deleteCommento, subscribeCommenti,
+  getNotizie, insertNotizia, updateNotizia, deleteNotizia, togglePinnata, toggleReaction, uploadNotiziaImmagine, subscribeNotizie,
+  getCommenti, insertCommento, updateCommento, deleteCommento, subscribeCommenti,
   calcolaStatoTrattativaMercato, applicaPenalitaRitardoAuto,
   // Contratti
   aggiornaContrattiAnnuali, confermRinnovoBiennale,
@@ -7129,6 +7129,7 @@ function SvincolatiTable({ filtered, chiamateAttive, mySquadra, isAdmin, setShow
 }
 
 function SvincolatiPage({ profile, isAdmin, teams }) {
+  const vivaioAperto = isVivaioAcquistiAperti();
   const [search, setSearch]           = useState("");
   const [ruoloFilter, setRuoloFilter] = useState("Tutti");
   const [soloVivaio, setSoloVivaio]   = useState(false);
@@ -7198,6 +7199,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
   );
 
   async function chiamaGiocatore(player, perVivaio = false) {
+    if (perVivaio && !isVivaioAcquistiAperti()) { alert('⛔ Le chiamate per il vivaio sono consentite solo dal 01/09 al 31/05.'); return; }
     const finestra = getFinestraChiamate();
     if (!finestra.aperta && !isAdmin) {
       alert(`⛔ Finestra chiusa\n\n${finestra.messaggio}`); return;
@@ -7564,9 +7566,10 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
                     style={{ flex: 1, padding: "9px", borderRadius: 9, border: `1.5px solid ${!callVivaio ? "#f59e0b" : "#ffffff15"}`, background: !callVivaio ? "#f59e0b18" : "#ffffff08", color: !callVivaio ? "#f59e0b" : "#666", fontSize: 12, fontWeight: !callVivaio ? 700 : 400, cursor: "pointer" }}>
                     ⚽ Rosa
                   </button>
-                  <button onClick={() => setCallVivaio(true)}
-                    style={{ flex: 1, padding: "9px", borderRadius: 9, border: `1.5px solid ${callVivaio ? "#10b981" : "#ffffff15"}`, background: callVivaio ? "#10b98118" : "#ffffff08", color: callVivaio ? "#10b981" : "#666", fontSize: 12, fontWeight: callVivaio ? 700 : 400, cursor: "pointer" }}>
-                    🌱 Vivaio
+                  <button onClick={() => vivaioAperto && setCallVivaio(true)} disabled={!vivaioAperto}
+                    title={vivaioAperto ? "Inserisci nel vivaio" : "Vivaio disponibile dal 01/09 al 31/05"}
+                    style={{ flex: 1, padding: "9px", borderRadius: 9, border: `1.5px solid ${callVivaio ? "#10b981" : "#ffffff15"}`, background: callVivaio ? "#10b98118" : "#ffffff08", color: callVivaio ? "#10b981" : "#666", fontSize: 12, fontWeight: callVivaio ? 700 : 400, cursor: vivaioAperto ? "pointer" : "not-allowed", opacity: vivaioAperto ? 1 : 0.45 }}>
+                    🌱 Vivaio{!vivaioAperto ? " (dal 01/09)" : ""}
                   </button>
                 </div>
               </div>
@@ -10825,7 +10828,7 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString("it-IT", { day: "2-digit", month: "short" });
 }
 
-function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onPin, teams, profile }) {
+function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, teams, profile }) {
   const [expanded, setExpanded] = useState(false);
   const [imgOpen, setImgOpen] = useState(null);
   const [showComments, setShowComments] = useState(false);
@@ -10833,12 +10836,14 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onPin, teams, p
   const [loadingComm, setLoadingComm] = useState(false);
   const [nuovoCommento, setNuovoCommento] = useState("");
   const [postingComm, setPostingComm] = useState(false);
-  const inputRef = useState(null);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const inputRef = useRef(null);
 
   const cat = getCatInfo(notizia.categoria);
   const team = teams?.find(t => t.name === notizia.squadra);
   const teamColor = team?.color || "#6366f1";
   const canDelete = isAdmin || notizia.autore === myName;
+  const canEdit = canDelete;
   const EMOJIS = ["🔥","👏","😂","😤","🎯"];
   const testoLungo = notizia.testo.length > 280;
   const testoMostrato = testoLungo && !expanded ? notizia.testo.slice(0, 280) + "…" : notizia.testo;
@@ -10862,13 +10867,39 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onPin, teams, p
     if (!testo) return;
     setPostingComm(true);
     try {
-      await insertCommento({
+      const autore = profile?.nome || profile?.email || myName;
+      const squadra = profile?.squadra || null;
+      const created = await insertCommento({
         notiziaId: notizia.id,
-        autore: profile?.nome || profile?.email || myName,
-        squadra: profile?.squadra || null,
+        autore,
+        squadra,
         testo,
+        parentCommentId: replyingTo?.id || null,
       });
+
+      const postOwner = notizia.squadra || null;
+      const replyOwner = replyingTo?.squadra || null;
+      const notified = new Set();
+      if (replyingTo && replyOwner && replyOwner !== squadra) {
+        sendTelegramNotification('risposta_commento', {
+          autore_squadra: squadra || autore,
+          autore,
+          titolo: notizia.titolo,
+          testo,
+        }, replyOwner);
+        notified.add(replyOwner);
+      }
+      if (postOwner && postOwner !== squadra && !notified.has(postOwner)) {
+        sendTelegramNotification('commento_ricevuto', {
+          autore_squadra: squadra || autore,
+          autore,
+          titolo: notizia.titolo,
+          testo,
+        }, postOwner);
+      }
+
       setNuovoCommento("");
+      setReplyingTo(null);
       await loadCommenti();
     } catch(e) { alert(e.message); }
     finally { setPostingComm(false); }
@@ -10877,6 +10908,20 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onPin, teams, p
   async function handleDeleteComment(id) {
     if (!window.confirm("Eliminare questo commento?")) return;
     try { await deleteCommento(id); await loadCommenti(); }
+    catch(e) { alert(e.message); }
+  }
+
+  function handleReply(comm) {
+    const username = String(comm.autore || '').toLowerCase().replace(/\s/g, '');
+    setReplyingTo(comm);
+    setNuovoCommento(`@${username} `);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }
+
+  async function handleEditComment(comm) {
+    const testo = window.prompt('Modifica commento:', comm.testo);
+    if (testo === null || !testo.trim() || testo.trim() === comm.testo) return;
+    try { await updateCommento(comm.id, testo.trim()); await loadCommenti(); }
     catch(e) { alert(e.message); }
   }
 
@@ -11011,6 +11056,7 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onPin, teams, p
 
         <div style={{ marginLeft:"auto", display:"flex", gap:6 }}>
           {isAdmin && <button onClick={() => onPin(notizia.id, !notizia.pinnata)} style={{ padding:"5px 10px",borderRadius:8,border:"1px solid #ffffff10",background:"transparent",color:notizia.pinnata?"#f59e0b":"#444",fontSize:12,cursor:"pointer" }}>📌</button>}
+          {canEdit && <button onClick={() => onEdit(notizia)} style={{ padding:"5px 10px",borderRadius:8,border:"1px solid #ffffff10",background:"transparent",color:"#444",fontSize:12,cursor:"pointer" }} onMouseEnter={e=>e.currentTarget.style.color="#818cf8"} onMouseLeave={e=>e.currentTarget.style.color="#444"}>✏️</button>}
           {canDelete && <button onClick={() => onDelete(notizia.id)} style={{ padding:"5px 10px",borderRadius:8,border:"1px solid #ffffff10",background:"transparent",color:"#444",fontSize:12,cursor:"pointer" }} onMouseEnter={e=>e.currentTarget.style.color="#ef4444"} onMouseLeave={e=>e.currentTarget.style.color="#444"}>🗑</button>}
         </div>
       </div>
@@ -11031,7 +11077,7 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onPin, teams, p
                 const ctColor = ct?.color || "#6366f1";
                 const canDelComm = isAdmin || comm.autore === (profile?.nome || profile?.email);
                 return (
-                  <div key={comm.id} style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+                  <div key={comm.id} style={{ display:"flex", gap:10, alignItems:"flex-start", marginLeft: comm.parent_comment_id ? 38 : 0, borderLeft: comm.parent_comment_id ? "2px solid #6366f125" : "none", paddingLeft: comm.parent_comment_id ? 10 : 0 }}>
                     {/* Mini avatar */}
                     {ct ? <TeamAvatar team={ct} size={30} /> : (
                       <div style={{ width:30, height:30, borderRadius:"50%", flexShrink:0, background:`linear-gradient(135deg,${ctColor}cc,${ctColor}44)`, border:`1.5px solid ${ctColor}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:900, color:"#fff", fontFamily:"'Bebas Neue',sans-serif" }}>
@@ -11043,6 +11089,10 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onPin, teams, p
                         <span style={{ fontSize:12, fontWeight:700, color:"#ddd" }}>{comm.squadra || comm.autore}</span>
                         {comm.squadra && <span style={{ fontSize:10, color:"#444" }}>@{comm.autore.toLowerCase().replace(/\s/g,"")}</span>}
                         <span style={{ marginLeft:"auto", fontSize:10, color:"#333" }}>{timeAgo(comm.created_at)}</span>
+                        <button onClick={() => handleReply(comm)} title="Rispondi"
+                          style={{ background:"none", border:"none", color:"#444", fontSize:11, cursor:"pointer", padding:"0 2px", lineHeight:1 }}>↩</button>
+                        {canDelComm && <button onClick={() => handleEditComment(comm)} title="Modifica"
+                          style={{ background:"none", border:"none", color:"#444", fontSize:11, cursor:"pointer", padding:"0 2px", lineHeight:1 }}>✏️</button>}
                         {canDelComm && (
                           <button onClick={() => handleDeleteComment(comm.id)}
                             style={{ background:"none", border:"none", color:"#333", fontSize:11, cursor:"pointer", padding:"0 2px", lineHeight:1 }}
@@ -11059,6 +11109,12 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onPin, teams, p
           )}
 
           {/* Input nuovo commento */}
+          {replyingTo && (
+            <div style={{ marginBottom:8, padding:"7px 10px", borderRadius:8, background:"#6366f112", border:"1px solid #6366f130", fontSize:11, color:"#818cf8", display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ flex:1 }}>↩ Risposta a @{String(replyingTo.autore || '').toLowerCase().replace(/\s/g, '')}</span>
+              <button onClick={() => { setReplyingTo(null); setNuovoCommento(''); }} style={{ background:"none", border:"none", color:"#777", cursor:"pointer" }}>✕</button>
+            </div>
+          )}
           {profile && (
             <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
               {/* Avatar utente corrente */}
@@ -11075,6 +11131,7 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onPin, teams, p
               })()}
               <div style={{ flex:1, background:"#ffffff08", borderRadius:"0 12px 12px 12px", border:"1px solid #ffffff10", padding:"8px 12px", display:"flex", gap:8, alignItems:"flex-end" }}>
                 <textarea
+                  ref={inputRef}
                   value={nuovoCommento}
                   onChange={e => setNuovoCommento(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleComment(); } }}
@@ -11307,6 +11364,17 @@ function NewsPage({ profile, isAdmin, teams }) {
     } catch(e) { alert(e.message); }
   }
 
+  async function handleEdit(notizia) {
+    const titolo = window.prompt('Modifica titolo:', notizia.titolo);
+    if (titolo === null || !titolo.trim()) return;
+    const testo = window.prompt('Modifica testo:', notizia.testo);
+    if (testo === null || !testo.trim()) return;
+    try {
+      const updated = await updateNotizia(notizia.id, { titolo: titolo.trim(), testo: testo.trim() });
+      setNotizie(prev => prev.map(n => n.id === notizia.id ? { ...n, ...updated } : n));
+    } catch(e) { alert(e.message); }
+  }
+
   async function handlePin(id, pinnata) {
     try {
       await togglePinnata(id, pinnata);
@@ -11401,6 +11469,7 @@ function NewsPage({ profile, isAdmin, teams }) {
               isAdmin={isAdmin}
               onReact={handleReact}
               onDelete={handleDelete}
+              onEdit={handleEdit}
               onPin={handlePin}
               teams={teams}
               profile={profile}
