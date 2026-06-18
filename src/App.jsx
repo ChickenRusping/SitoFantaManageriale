@@ -10837,6 +10837,9 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, 
   const [nuovoCommento, setNuovoCommento] = useState("");
   const [postingComm, setPostingComm] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editingCommentText, setEditingCommentText] = useState("");
+  const [commentCount, setCommentCount] = useState(Number(notizia.commenti_count || 0));
   const inputRef = useRef(null);
 
   const cat = getCatInfo(notizia.categoria);
@@ -10850,8 +10853,11 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, 
 
   const loadCommenti = useCallback(async () => {
     setLoadingComm(true);
-    try { setCommenti(await getCommenti(notizia.id)); }
-    catch(e) { console.error(e); }
+    try {
+      const rows = await getCommenti(notizia.id);
+      setCommenti(rows);
+      setCommentCount(rows.length);
+    } catch(e) { console.error(e); }
     finally { setLoadingComm(false); }
   }, [notizia.id]);
 
@@ -10918,11 +10924,25 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, 
     setTimeout(() => inputRef.current?.focus(), 0);
   }
 
-  async function handleEditComment(comm) {
-    const testo = window.prompt('Modifica commento:', comm.testo);
-    if (testo === null || !testo.trim() || testo.trim() === comm.testo) return;
-    try { await updateCommento(comm.id, testo.trim()); await loadCommenti(); }
-    catch(e) { alert(e.message); }
+  function handleEditComment(comm) {
+    setEditingCommentId(comm.id);
+    setEditingCommentText(comm.testo || "");
+  }
+
+  async function saveEditedComment(comm) {
+    const testo = editingCommentText.trim();
+    if (!testo) return;
+    if (testo === comm.testo) {
+      setEditingCommentId(null);
+      setEditingCommentText("");
+      return;
+    }
+    try {
+      await updateCommento(comm.id, testo);
+      setEditingCommentId(null);
+      setEditingCommentText("");
+      await loadCommenti();
+    } catch(e) { alert(e.message); }
   }
 
   // count total reactions for display
@@ -10955,7 +10975,12 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, 
             <span style={{ fontSize: 14, fontWeight: 800, color: notizia.autore === 'Admin' ? "#a78bfa" : "#f0f0f0" }}>{notizia.squadra || (notizia.autore === 'Admin' ? '🛡️ Lega Admin' : notizia.autore)}</span>
             {notizia.autore === 'Admin' && <span style={{ fontSize: 10, fontWeight: 700, color: "#7c3aed", background: "#7c3aed18", border: "1px solid #7c3aed30", borderRadius: 6, padding: "2px 7px", letterSpacing: "0.05em" }}>UFFICIALE</span>}
             {notizia.squadra && <span style={{ fontSize: 11, color: "#555" }}>@{notizia.autore.toLowerCase().replace(/\s/g,"")}</span>}
-            <span style={{ marginLeft: "auto", fontSize: 11, color: "#444" }}>{timeAgo(notizia.created_at)}</span>
+            <span style={{ marginLeft: "auto", fontSize: 11, color: "#444" }}>
+              {timeAgo(notizia.created_at)}
+              {notizia.updated_at && new Date(notizia.updated_at).getTime() > new Date(notizia.created_at).getTime() + 1000 && (
+                <span style={{ marginLeft: 6, color: "#555" }}>· modificato</span>
+              )}
+            </span>
           </div>
           <span style={{ display: "inline-block", marginTop: 4, fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", color: cat.color, background: cat.color+"18", border: `1px solid ${cat.color}30`, borderRadius: 6, padding: "2px 8px" }}>{cat.label}</span>
         </div>
@@ -11051,7 +11076,7 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, 
         {/* Bottone commenti */}
         <button onClick={() => setShowComments(v=>!v)}
           style={{ display:"flex",alignItems:"center",gap:6,padding:"5px 12px",borderRadius:20,border:`1px solid ${showComments?"#6366f160":"#ffffff10"}`,background:showComments?"#6366f115":"transparent",color:showComments?"#818cf8":"#555",fontSize:13,cursor:"pointer",transition:"all 0.12s",fontWeight:showComments?700:400 }}>
-          💬{(() => { const n = commenti.length > 0 ? commenti.length : (notizia.commenti_count || 0); return n > 0 ? <span style={{ fontSize:11 }}>{n}</span> : null; })()}
+          💬{commentCount > 0 ? <span style={{ fontSize:11 }}>{commentCount}</span> : null}
         </button>
 
         <div style={{ marginLeft:"auto", display:"flex", gap:6 }}>
@@ -11088,7 +11113,12 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, 
                       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
                         <span style={{ fontSize:12, fontWeight:700, color:"#ddd" }}>{comm.squadra || comm.autore}</span>
                         {comm.squadra && <span style={{ fontSize:10, color:"#444" }}>@{comm.autore.toLowerCase().replace(/\s/g,"")}</span>}
-                        <span style={{ marginLeft:"auto", fontSize:10, color:"#333" }}>{timeAgo(comm.created_at)}</span>
+                        <span style={{ marginLeft:"auto", fontSize:10, color:"#333" }}>
+                          {timeAgo(comm.created_at)}
+                          {comm.updated_at && new Date(comm.updated_at).getTime() > new Date(comm.created_at).getTime() + 1000 && (
+                            <span style={{ marginLeft:5, color:"#444" }}>· modificato</span>
+                          )}
+                        </span>
                         <button onClick={() => handleReply(comm)} title="Rispondi"
                           style={{ background:"none", border:"none", color:"#444", fontSize:11, cursor:"pointer", padding:"0 2px", lineHeight:1 }}>↩</button>
                         {canDelComm && <button onClick={() => handleEditComment(comm)} title="Modifica"
@@ -11100,7 +11130,35 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, 
                             onMouseLeave={e=>e.currentTarget.style.color="#333"}>✕</button>
                         )}
                       </div>
-                      <div style={{ fontSize:13, color:"#bbb", lineHeight:1.55, whiteSpace:"pre-wrap" }}>{comm.testo}</div>
+                      {editingCommentId === comm.id ? (
+                        <div>
+                          <textarea
+                            value={editingCommentText}
+                            onChange={e => setEditingCommentText(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                                e.preventDefault();
+                                saveEditedComment(comm);
+                              }
+                              if (e.key === "Escape") {
+                                setEditingCommentId(null);
+                                setEditingCommentText("");
+                              }
+                            }}
+                            autoFocus
+                            rows={3}
+                            style={{ width:"100%", background:"#0d0f14", border:"1px solid #6366f140", borderRadius:8, padding:"8px 10px", color:"#ddd", resize:"vertical", outline:"none", fontSize:13, lineHeight:1.5, fontFamily:"inherit" }}
+                          />
+                          <div style={{ display:"flex", justifyContent:"flex-end", gap:7, marginTop:7 }}>
+                            <button onClick={() => { setEditingCommentId(null); setEditingCommentText(""); }}
+                              style={{ padding:"5px 10px", borderRadius:7, border:"1px solid #ffffff12", background:"transparent", color:"#777", fontSize:11 }}>Annulla</button>
+                            <button onClick={() => saveEditedComment(comm)} disabled={!editingCommentText.trim()}
+                              style={{ padding:"5px 12px", borderRadius:7, border:"none", background:editingCommentText.trim()?"#6366f1":"#333", color:editingCommentText.trim()?"#fff":"#666", fontSize:11, fontWeight:700 }}>Salva</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize:13, color:"#bbb", lineHeight:1.55, whiteSpace:"pre-wrap" }}>{comm.testo}</div>
+                      )}
                     </div>
                   </div>
                 );
@@ -11161,7 +11219,7 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, 
   );
 }
 
-function NewsComposer({ profile, teams, onPost, isAdmin }) {
+function NewsComposer({ profile, teams, onPost, isAdmin, editingPost = null, onCancelEdit }) {
   const [open, setOpen] = useState(false);
   const [titolo, setTitolo] = useState("");
   const [testo, setTesto] = useState("");
@@ -11171,7 +11229,27 @@ function NewsComposer({ profile, teams, onPost, isAdmin }) {
   const [posting, setPosting] = useState(false);
   const [postAsAdmin, setPostAsAdmin] = useState(false);
   const team = teams?.find(t => t.name === profile?.squadra);
+  const isEditing = Boolean(editingPost);
   const teamColor = postAsAdmin ? "#7c3aed" : (team?.color || "#6366f1");
+
+  useEffect(() => {
+    if (!editingPost) return;
+    setOpen(true);
+    setTitolo(editingPost.titolo || "");
+    setTesto(editingPost.testo || "");
+    setCategoria(editingPost.categoria || "news");
+    setImmagini(Array.isArray(editingPost.immagini) ? editingPost.immagini : []);
+    setPostAsAdmin(editingPost.autore === 'Admin');
+  }, [editingPost]);
+
+  function resetComposer() {
+    setTitolo("");
+    setTesto("");
+    setImmagini([]);
+    setCategoria("news");
+    setPostAsAdmin(false);
+    setOpen(false);
+  }
 
   async function handleImgUpload(e) {
     const files = Array.from(e.target.files);
@@ -11191,20 +11269,26 @@ function NewsComposer({ profile, teams, onPost, isAdmin }) {
     if (!titolo.trim() || !testo.trim()) return;
     setPosting(true);
     try {
-      await insertNotizia({
-        autore: postAsAdmin ? 'Admin' : (profile.nome || profile.email),
-        squadra: postAsAdmin ? null : (profile.squadra || null),
-        categoria,
-        titolo: titolo.trim(),
-        testo: testo.trim(),
-        immagini,
-      });
-      sendTelegramNotification('notizia_pinnata', {
-        squadra: postAsAdmin ? null : (profile.squadra || profile.nome || profile.email),
-        titolo: titolo.trim(),
-        testo: testo.trim(),
-      });
-      setTitolo(""); setTesto(""); setImmagini([]); setCategoria("news"); setPostAsAdmin(false); setOpen(false);
+      if (isEditing) {
+        await updateNotizia(editingPost.id, {
+          categoria,
+          titolo: titolo.trim(),
+          testo: testo.trim(),
+          immagini,
+        });
+      } else {
+        await insertNotizia({
+          autore: postAsAdmin ? 'Admin' : (profile.nome || profile.email),
+          squadra: postAsAdmin ? null : (profile.squadra || null),
+          categoria,
+          titolo: titolo.trim(),
+          testo: testo.trim(),
+          immagini,
+        });
+        // Le nuove notizie normali non generano notifiche: il canale viene avvisato solo quando un post viene messo in evidenza.
+      }
+      resetComposer();
+      if (isEditing) onCancelEdit?.();
       onPost?.();
     } catch(err) { alert(err.message); }
     finally { setPosting(false); }
@@ -11235,7 +11319,7 @@ function NewsComposer({ profile, teams, onPost, isAdmin }) {
   return (
     <div style={{ background: "#0f111a", border: `1.5px solid ${teamColor}40`, borderRadius: 16, padding: 20 }}>
       {/* Admin identity toggle */}
-      {isAdmin && (
+      {isAdmin && !isEditing && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, padding: "8px 12px", borderRadius: 10, background: postAsAdmin ? "#7c3aed18" : "#ffffff06", border: `1px solid ${postAsAdmin ? "#7c3aed40" : "#ffffff10"}` }}>
           {postAsAdmin ? (
             <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🛡️</div>
@@ -11251,6 +11335,12 @@ function NewsComposer({ profile, teams, onPost, isAdmin }) {
             style={{ padding: "4px 10px", borderRadius: 8, border: `1px solid ${postAsAdmin ? "#7c3aed60" : "#ffffff15"}`, background: postAsAdmin ? "#7c3aed22" : "transparent", color: postAsAdmin ? "#a78bfa" : "#555", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
             {postAsAdmin ? "🛡️ Admin" : "Passa ad Admin"}
           </button>
+        </div>
+      )}
+
+      {isEditing && (
+        <div style={{ marginBottom: 14, padding: "10px 12px", borderRadius: 10, background: "#f59e0b12", border: "1px solid #f59e0b35", color: "#f59e0b", fontSize: 12, fontWeight: 700 }}>
+          ✏️ Modifica del post in corso
         </div>
       )}
 
@@ -11305,13 +11395,13 @@ function NewsComposer({ profile, teams, onPost, isAdmin }) {
           <span style={{ fontSize: 11, color: "#444" }}>{testo.length} caratteri</span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => { setOpen(false); setTitolo(""); setTesto(""); setImmagini([]); }}
+          <button onClick={() => { resetComposer(); if (isEditing) onCancelEdit?.(); }}
             style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid #ffffff15", background: "transparent", color: "#666", fontSize: 13, cursor: "pointer" }}>
             Annulla
           </button>
           <button onClick={handlePost} disabled={posting || !titolo.trim() || !testo.trim()}
             style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: titolo.trim() && testo.trim() ? `linear-gradient(135deg, ${cat.color}, ${cat.color}cc)` : "#333", color: "#fff", fontSize: 13, fontWeight: 700, cursor: titolo.trim() && testo.trim() ? "pointer" : "not-allowed" }}>
-            {posting ? "Pubblicazione…" : "Pubblica →"}
+            {posting ? (isEditing ? "Salvataggio…" : "Pubblicazione…") : (isEditing ? "Salva modifiche →" : "Pubblica →")}
           </button>
         </div>
       </div>
@@ -11324,6 +11414,7 @@ function NewsPage({ profile, isAdmin, teams }) {
   const [loading, setLoading] = useState(true);
   const [filtroCategoria, setFiltroCategoria] = useState("tutti");
   const [nuoviDisponibili, setNuoviDisponibili] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
   const myName = profile?.nome || profile?.email || "";
 
   // Caricamento iniziale
@@ -11364,15 +11455,9 @@ function NewsPage({ profile, isAdmin, teams }) {
     } catch(e) { alert(e.message); }
   }
 
-  async function handleEdit(notizia) {
-    const titolo = window.prompt('Modifica titolo:', notizia.titolo);
-    if (titolo === null || !titolo.trim()) return;
-    const testo = window.prompt('Modifica testo:', notizia.testo);
-    if (testo === null || !testo.trim()) return;
-    try {
-      const updated = await updateNotizia(notizia.id, { titolo: titolo.trim(), testo: testo.trim() });
-      setNotizie(prev => prev.map(n => n.id === notizia.id ? { ...n, ...updated } : n));
-    } catch(e) { alert(e.message); }
+  function handleEdit(notizia) {
+    setEditingPost(notizia);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function handlePin(id, pinnata) {
@@ -11417,7 +11502,7 @@ function NewsPage({ profile, isAdmin, teams }) {
 
       {/* Composer — ha il suo stato interno, non viene toccato dal feed */}
       <div style={{ marginBottom: 20 }}>
-        <NewsComposer profile={profile} teams={teams} onPost={handlePostPublicato} isAdmin={isAdmin} />
+        <NewsComposer profile={profile} teams={teams} onPost={handlePostPublicato} isAdmin={isAdmin} editingPost={editingPost} onCancelEdit={() => setEditingPost(null)} />
       </div>
 
       {/* Banner nuovi post — appare solo quando arrivano aggiornamenti */}
