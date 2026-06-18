@@ -175,7 +175,7 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   aggiornaContrattiAnnuali, confermRinnovoBiennale,
   // Admin Control Room
   getStadioInvestimenti, setStadioUpgrade, applicaEntrateStadioTutte,
-  applicaTassaATutti, applicaStipendioATutti, getControlRoomStatus,
+  applicaTassaATutti, annullaTassaATutti, ripulisciAnomalieTasse, applicaStipendioATutti, getControlRoomStatus,
   // Extra Control Room
   updateProfile, uploadAvatar,
   getMercatoOverride, setMercatoOverride, getTrasferimentiDifferiti,
@@ -8777,6 +8777,23 @@ function AdminControlRoomPage({ teams }) {
     finally { setBusy(null); }
   }
 
+  async function cleanupTasse() {
+    const dataCorretta = status?.domenica || getDomenicaCorrente();
+    if (!window.confirm(`Ripulire le anomalie tasse della settimana e conservare solo i record corretti del ${dataCorretta}?\n\nVerranno eliminati duplicati, date sbagliate e squadre non attive. I duplicati delle squadre attive verranno anche rimborsati nel bilancio.`)) return;
+    setBusy('cleanup_tasse');
+    try {
+      const res = await ripulisciAnomalieTasse(dataCorretta);
+      setLastResult({
+        label: `Ripulite anomalie tasse ${dataCorretta}`,
+        ok: res.rimossi?.length || 0,
+        skip: res.tenuti || 0,
+        ts: new Date().toLocaleTimeString('it-IT')
+      });
+      await load();
+    } catch(e) { alert(e.message); }
+    finally { setBusy(null); }
+  }
+
   async function runBulk(fn, label) {
     if (!window.confirm(`Eseguire: ${label}?`)) return;
     setBusy(label);
@@ -8909,7 +8926,15 @@ function AdminControlRoomPage({ teams }) {
 
               {(status.tasseDettagli?.duplicate?.length > 0 || status.tasseDettagli?.mancanti?.length > 0 || status.tasseDettagli?.extra?.length > 0) && (
                 <div style={{ marginTop: 14, background: '#f59e0b0d', border: '1px solid #f59e0b30', borderRadius: 10, padding: '12px 14px' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#f59e0b', letterSpacing: '0.08em', marginBottom: 8 }}>⚠ DETTAGLIO ANOMALIE TASSE</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#f59e0b', letterSpacing: '0.08em' }}>⚠ DETTAGLIO ANOMALIE TASSE</div>
+                    <button
+                      onClick={cleanupTasse}
+                      disabled={isBusy}
+                      style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid #f59e0b55', background: '#f59e0b18', color: '#f59e0b', fontSize: 11, fontWeight: 800, cursor: isBusy ? 'not-allowed' : 'pointer' }}>
+                      {busy === 'cleanup_tasse' ? 'Pulizia...' : `Pulisci anomalie · tieni ${status.domenica}`}
+                    </button>
+                  </div>
                   {status.tasseDettagli?.duplicate?.length > 0 && (
                     <div style={{ fontSize: 11, color: '#ddd', marginBottom: 6 }}><b style={{ color: '#f97316' }}>Pagate più di una volta:</b> {status.tasseDettagli.duplicate.map(x => `${x.squadra} (${x.count}×: ${x.date.join(', ')})`).join(' · ')}</div>
                   )}
