@@ -2014,6 +2014,106 @@ export async function annullaTassaATutti(dataRiferimento = null) {
   return results;
 }
 
+
+// Ripulisce le anomalie della tassa settimanale: conserva una sola tassa per ogni squadra attiva
+// nella data corretta (default: domenica corrente) e rimuove duplicati, date sbagliate e squadre non attive.
+// Per ogni record rimosso rimborsa il bilancio della squadra attiva e cancella il movimento collegato.
+export async function ripulisciAnomalieTasse(dataCorretta = null) {
+  const keepDate = dataCorretta || getDomenicaCorrente();
+  const ref = new Date(keepDate);
+  const { week, year } = getWeekNumber(ref);
+  const settimanaLabel = `${week}/${year}`;
+
+  const lunedi = new Date(ref);
+  const d = lunedi.getDay();
+  lunedi.setDate(lunedi.getDate() - (d === 0 ? 6 : d - 1));
+  const domenica = new Date(lunedi);
+  domenica.setDate(lunedi.getDate() + 6);
+  const lunediStr = lunedi.toISOString().slice(0, 10);
+  const domenicaStr = domenica.toISOString().slice(0, 10);
+
+  const [{ data: squadre }, { data: tasse, error }] = await Promise.all([
+    supabase.from('squadre').select('name, bilancio'),
+    supabase.from('tasse_settimanali')
+      .select('id, squadra, importo_tassa, data_controllo')
+      .gte('data_controllo', lunediStr)
+      .lte('data_controllo', domenicaStr)
+      .order('data_controllo', { ascending: false })
+      .order('id', { ascending: true }),
+  ]);
+  if (error) throw error;
+
+  const squadreList = squadre || [];
+  const squadreAttive = new Set(squadreList.map(s => s.name));
+  const bilanci = new Map(squadreList.map(s => [s.name, Number(s.bilancio || 0)]));
+  const records = tasse || [];
+
+  const bySquadra = new Map();
+  for (const t of records) {
+    if (!bySquadra.has(t.squadra)) bySquadra.set(t.squadra, []);
+    bySquadra.get(t.squadra).push(t);
+  }
+
+  const idsDaTenere = new Set();
+  const rimossi = [];
+
+  for (const [squadra, list] of bySquadra.entries()) {
+    if (!squadreAttive.has(squadra)) {
+      rimossi.push(...list.map(t => ({ ...t, motivo: 'squadra_non_attiva' })));
+      continue;
+    }
+
+    // Preferisce un record esattamente nella domenica corretta; se ce ne sono più di uno,
+    // ne tiene uno solo. Se non esiste un record nella data corretta, non inventa nulla:
+    // tiene il più recente per non cancellare tutto accidentalmente.
+    const corretti = list.filter(t => t.data_controllo === keepDate);
+    const keep = corretti[0] || list[0];
+    idsDaTenere.add(keep.id);
+
+    for (const t of list) {
+      if (t.id !== keep.id) {
+        rimossi.push({ ...t, motivo: t.data_controllo === keepDate ? 'duplicato_stessa_data' : 'data_sbagliata' });
+      }
+    }
+  }
+
+  if (!rimossi.length) return { ok: true, rimossi: [], tenuti: idsDaTenere.size };
+
+  const rimborsoBySquadra = new Map();
+  for (const t of rimossi) {
+    if (squadreAttive.has(t.squadra)) {
+      rimborsoBySquadra.set(t.squadra, parseFloat(((rimborsoBySquadra.get(t.squadra) || 0) + Number(t.importo_tassa || 0)).toFixed(2)));
+    }
+  }
+
+  for (const [squadra, rimborso] of rimborsoBySquadra.entries()) {
+    const nuovoBilancio = parseFloat((Number(bilanci.get(squadra) || 0) + rimborso).toFixed(2));
+    await supabase.from('squadre').update({ bilancio: nuovoBilancio }).eq('name', squadra);
+  }
+
+  const idsDaRimuovere = rimossi.map(t => t.id);
+  await supabase.from('tasse_settimanali').delete().in('id', idsDaRimuovere);
+
+  // Cancella i movimenti collegati ai record rimossi. Il filtro include squadra + data + descrizione
+  // per evitare di toccare movimenti non collegati alla tassa settimanale.
+  for (const t of rimossi) {
+    await supabase.from('movimenti')
+      .delete()
+      .eq('squadra', t.squadra)
+      .eq('data', t.data_controllo)
+      .ilike('descrizione', 'Tassa settimanale%')
+      .ilike('descrizione', `%settimana ${settimanaLabel}%`);
+  }
+
+  return {
+    ok: true,
+    tenuti: idsDaTenere.size,
+    rimossi: rimossi.map(t => ({ squadra: t.squadra, data: t.data_controllo, importo: Number(t.importo_tassa || 0), motivo: t.motivo })),
+    rimborsi: Array.from(rimborsoBySquadra.entries()).map(([squadra, importo]) => ({ squadra, importo })),
+    dataCorretta: keepDate,
+  };
+}
+
 // Applica stipendi mensili a TUTTE le squadre (trigger manuale admin)
 export async function applicaStipendioATutti() {
   const oggi = new Date().toISOString().slice(0, 10);
