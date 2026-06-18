@@ -1266,41 +1266,45 @@ export async function applicaPagamentiAutomatici() {
   if (!squadre?.length) return results;
 
   // ── 1. TASSA SETTIMANALE (art. 7.1) ──────────────────────────────────────
-  // Scatta ogni domenica alle 23:00. Chiave deduplicazione = data domenica.
-  // Se domenica è stata mancata, si recupera nei giorni successivi (catch-up).
+  // Scatta SOLO la domenica dalle 23:00 in poi.
+  // Niente catch-up automatico nei giorni successivi: eventuali recuperi si fanno dalla Control Room.
   const domenica = getDomenicaCorrente();
   const giorno = oggi.getDay(); // 0=dom
   const ora = oggi.getHours();
-  // Condizione: domenica dopo le 23, OPPURE giorni successivi (catch-up domenica mancata)
-  const tassaScattata = (giorno === 0 && ora >= 23) || giorno !== 0;
-  if (!tassaScattata) return results; // domenica prima delle 23: troppo presto
+  const tassaScattata = giorno === 0 && ora >= 23;
 
   const { week, year } = getWeekNumber(oggi);
   const settimanaLabel = `${week}/${year}`;
 
-  // Calcola inizio e fine settimana ISO corrente per il controllo deduplicazione
-  const _lunediAP = new Date(domenica);
-  const _dAP = _lunediAP.getDay();
-  _lunediAP.setDate(_lunediAP.getDate() - (_dAP === 0 ? 6 : _dAP - 1));
-  const _domAP = new Date(_lunediAP); _domAP.setDate(_lunediAP.getDate() + 6);
-  const _lunediAPStr = _lunediAP.toISOString().slice(0, 10);
-  const _domAPStr = _domAP.toISOString().slice(0, 10);
+  if (tassaScattata) {
+    // Calcola inizio e fine settimana ISO corrente per il controllo deduplicazione
+    const _lunediAP = new Date(domenica);
+    const _dAP = _lunediAP.getDay();
+    _lunediAP.setDate(_lunediAP.getDate() - (_dAP === 0 ? 6 : _dAP - 1));
+    const _domAP = new Date(_lunediAP); _domAP.setDate(_lunediAP.getDate() + 6);
+    const _lunediAPStr = _lunediAP.toISOString().slice(0, 10);
+    const _domAPStr = _domAP.toISOString().slice(0, 10);
 
-  for (const sq of squadre) {
-    try {
-      // Controlla se la tassa è già stata applicata questa settimana (per settimana ISO, non solo domenica)
-      const { data: gia } = await supabase
-        .from('tasse_settimanali')
-        .select('id')
-        .eq('squadra', sq.name)
-        .gte('data_controllo', _lunediAPStr)
-        .lte('data_controllo', _domAPStr)
-        .limit(1);
-      if (gia?.length) continue; // già applicata questa settimana
+    for (const sq of squadre) {
+      try {
+        // Controlla se la tassa è già stata applicata questa settimana (per settimana ISO, non solo domenica)
+        const { data: gia } = await supabase
+          .from('tasse_settimanali')
+          .select('id')
+          .eq('squadra', sq.name)
+          .gte('data_controllo', _lunediAPStr)
+          .lte('data_controllo', _domAPStr)
+          .limit(1);
+        if (gia?.length) continue; // già applicata questa settimana
 
-      const r = await applicaTassaSettimana(sq.name, sq.bilancio, domenica, settimanaLabel);
-      if (r.ok) results.tasse.push({ squadra: sq.name, importo: r.importo });
-    } catch(e) { results.errori.push(`Tassa ${sq.name}: ${e.message}`); }
+        const r = await applicaTassaSettimana(sq.name, sq.bilancio, domenica, settimanaLabel);
+        if (r.ok) results.tasse.push({ squadra: sq.name, importo: r.importo });
+      } catch(e) { results.errori.push(`Tassa ${sq.name}: ${e.message}`); }
+    }
+
+    if (results.tasse.length > 0) {
+      await sendTelegramNotification('tassa_applicata', { domenica, automatico: true });
+    }
   }
 
   // ── 2. STIPENDI MENSILI + STADIO (art. 4.4) ──────────────────────────────
@@ -1394,6 +1398,15 @@ export async function applicaPagamentiAutomatici() {
 
         results.stipendi.push({ squadra: sq.name, tipo: 'stadio', importo: entrata });
       } catch(e) { results.errori.push(`Stadio ${sq.name}: ${e.message}`); }
+    }
+
+    const stipendiApplicati = results.stipendi.filter(r => !r.tipo).length;
+    const stadioApplicato = results.stipendi.filter(r => r.tipo === 'stadio').length;
+    if (stipendiApplicati > 0) {
+      await sendTelegramNotification('stipendi_applicati', { mese: meseISO, automatico: true });
+    }
+    if (stadioApplicato > 0) {
+      await sendTelegramNotification('stadio_applicato', { mese: meseISO, automatico: true });
     }
   }
 
@@ -1910,6 +1923,9 @@ export async function applicaEntrateStadioTutte(stagione = '2026-27') {
     await supabase.from('squadre').update({ bilancio: parseFloat((sq.bilancio + entrata).toFixed(2)) }).eq('name', sq.name);
     results.push({ squadra: sq.name, entrata, ok: true });
   }
+  if (results.some(r => r.ok)) {
+    await sendTelegramNotification('stadio_applicato', { mese: meseISO });
+  }
   return results;
 }
 
@@ -1940,6 +1956,61 @@ export async function applicaTassaATutti() {
     const r = await applicaTassaSettimana(sq.name, sq.bilancio, domenica, settimanaLabel);
     results.push({ squadra: sq.name, ...r });
   }
+  if (results.some(r => r.ok)) {
+    await sendTelegramNotification('tassa_applicata', { domenica });
+  }
+  return results;
+}
+
+// Annulla la tassa settimanale corrente per TUTTE le squadre.
+// Rimborsa il bilancio, elimina i record in tasse_settimanali e cancella i movimenti collegati.
+export async function annullaTassaATutti(dataRiferimento = null) {
+  const dataRef = dataRiferimento || getDomenicaCorrente();
+  const ref = new Date(dataRef);
+  const { week, year } = getWeekNumber(ref);
+  const settimanaLabel = `${week}/${year}`;
+
+  const lunedi = new Date(ref);
+  const d = lunedi.getDay();
+  lunedi.setDate(lunedi.getDate() - (d === 0 ? 6 : d - 1));
+  const domenica = new Date(lunedi);
+  domenica.setDate(lunedi.getDate() + 6);
+  const lunediStr = lunedi.toISOString().slice(0, 10);
+  const domenicaStr = domenica.toISOString().slice(0, 10);
+
+  const { data: tasse, error } = await supabase
+    .from('tasse_settimanali')
+    .select('id, squadra, importo_tassa, data_controllo')
+    .gte('data_controllo', lunediStr)
+    .lte('data_controllo', domenicaStr);
+  if (error) throw error;
+  if (!tasse?.length) return [];
+
+  const bySquadra = new Map();
+  for (const t of tasse) {
+    bySquadra.set(t.squadra, parseFloat(((bySquadra.get(t.squadra) || 0) + Number(t.importo_tassa || 0)).toFixed(2)));
+  }
+
+  const results = [];
+  for (const [squadra, rimborso] of bySquadra.entries()) {
+    const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadra).single();
+    const nuovoBilancio = parseFloat((Number(sq?.bilancio || 0) + rimborso).toFixed(2));
+    await supabase.from('squadre').update({ bilancio: nuovoBilancio }).eq('name', squadra);
+    results.push({ squadra, rimborso, ok: true });
+  }
+
+  await supabase
+    .from('tasse_settimanali')
+    .delete()
+    .gte('data_controllo', lunediStr)
+    .lte('data_controllo', domenicaStr);
+
+  await supabase
+    .from('movimenti')
+    .delete()
+    .ilike('descrizione', 'Tassa settimanale%')
+    .ilike('descrizione', `%settimana ${settimanaLabel}%`);
+
   return results;
 }
 
@@ -1966,6 +2037,9 @@ export async function applicaStipendioATutti() {
     await supabase.from('squadre').update({ bilancio: parseFloat((sq.bilancio - rata).toFixed(2)), salary_used: totalStip }).eq('name', sq.name);
     results.push({ squadra: sq.name, rata, ok: true });
   }
+  if (results.some(r => r.ok)) {
+    await sendTelegramNotification('stipendi_applicati', { mese: meseISO });
+  }
   return results;
 }
 
@@ -1977,9 +2051,18 @@ export async function getControlRoomStatus() {
   const stipDesc = `Pagamento stipendi ${meseISO}`;
   const stadioDesc = `Entrate stadio ${meseISO}`;
 
+  const ref = new Date(domenica);
+  const lunedi = new Date(ref);
+  const d = lunedi.getDay();
+  lunedi.setDate(lunedi.getDate() - (d === 0 ? 6 : d - 1));
+  const fineDomenica = new Date(lunedi);
+  fineDomenica.setDate(lunedi.getDate() + 6);
+  const lunediStr = lunedi.toISOString().slice(0, 10);
+  const domenicaStr = fineDomenica.toISOString().slice(0, 10);
+
   const [{ data: squadre }, { data: tasse }, { data: movMese }] = await Promise.all([
     supabase.from('squadre').select('*'),
-    supabase.from('tasse_settimanali').select('squadra, data_controllo').eq('data_controllo', domenica),
+    supabase.from('tasse_settimanali').select('squadra, data_controllo').gte('data_controllo', lunediStr).lte('data_controllo', domenicaStr),
     supabase.from('movimenti').select('squadra, descrizione').gte('data', `${meseISO}-01`),
   ]);
 
