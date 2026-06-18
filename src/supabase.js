@@ -564,14 +564,19 @@ export async function eseguiTrasferimento(trattativa) {
   const descLabel = tipoLabel[tipo] || tipo;
   const isPrestito = tipo.startsWith('prestito');
 
+  // Convenzione trattative: da_squadra = acquirente/mittente; a_squadra = cedente/proprietario.
+  const squadraAcquirente = da_squadra;
+  const squadraCedente = a_squadra;
+
   // ── 1. Trova il giocatore nella rosa della squadra cedente ──────────────────
   const { data: rosaRows } = await supabase
     .from('rosa')
     .select('*')
-    .eq('squadra', da_squadra)
+    .eq('squadra', squadraCedente)
     .ilike('nome', `%${giocatore}%`);
 
   const player = rosaRows?.[0];
+  if (!player) throw new Error(`${giocatore} non risulta nella rosa di ${squadraCedente}`);
 
   if (player) {
     // ── 2. Calcola nuovo stipendio (art. 5.9): basato su quotazione attuale ──
@@ -582,9 +587,9 @@ export async function eseguiTrasferimento(trattativa) {
       // Prestito: aggiorna squadra temporanea, mantieni traccia del proprietario
       // Chi paga lo stipendio dipende da stipendio_a_chi
       await supabase.from('rosa').update({
-        squadra: a_squadra,
+        squadra: squadraAcquirente,
         in_prestito: true,
-        squadra_originale: da_squadra,
+        squadra_originale: squadraCedente,
         scadenza_prestito,
         stip: stipendio_a_chi === 'cedente' ? 0 : nuovoStip, // cedente paga → 0 per ricevente
         stip_prestito_cedente: stipendio_a_chi === 'cedente' ? nuovoStip : 0,
@@ -592,7 +597,7 @@ export async function eseguiTrasferimento(trattativa) {
     } else {
       // Cessione definitiva: aggiorna squadra e stipendio
       await supabase.from('rosa').update({
-        squadra: a_squadra,
+        squadra: squadraAcquirente,
         stip: nuovoStip,
         stip_originale: nuovoStip,
         anni_contratto: 1, // reimposta da anno 1 (art. 5.9)
@@ -606,12 +611,12 @@ export async function eseguiTrasferimento(trattativa) {
   // ── 2b. Per scambio: muovi anche il giocatore di contropartita ─────────────
   if (tipo === 'scambio' && giocatore_scambio) {
     const { data: rows2 } = await supabase.from('rosa').select('*')
-      .eq('squadra', a_squadra).ilike('nome', `%${giocatore_scambio}%`);
+      .eq('squadra', squadraAcquirente).ilike('nome', `%${giocatore_scambio}%`);
     const p2 = rows2?.[0];
     if (p2) {
       const nuovoStip2 = parseFloat((Number(p2.quot || 0) / 5).toFixed(2));
       await supabase.from('rosa').update({
-        squadra: da_squadra, stip: nuovoStip2, stip_originale: nuovoStip2,
+        squadra: squadraCedente, stip: nuovoStip2, stip_originale: nuovoStip2,
         anni_contratto: 1, data_acquisto: oggi,
         in_prestito: false, squadra_originale: null, scadenza_prestito: null,
       }).eq('id', p2.id);
@@ -632,30 +637,30 @@ export async function eseguiTrasferimento(trattativa) {
   const { data: squadreData } = await supabase
     .from('squadre')
     .select('name, bilancio')
-    .in('name', [da_squadra, a_squadra]);
+    .in('name', [squadraCedente, squadraAcquirente]);
 
-  const bilDa = squadreData?.find(s => s.name === da_squadra)?.bilancio || 0;
-  const bilA  = squadreData?.find(s => s.name === a_squadra)?.bilancio || 0;
+  const bilCedente = squadreData?.find(s => s.name === squadraCedente)?.bilancio || 0;
+  const bilAcquirente = squadreData?.find(s => s.name === squadraAcquirente)?.bilancio || 0;
 
-  const nuovoBilDa = parseFloat((bilDa + importoCedente).toFixed(2));
-  const nuovoBilA  = parseFloat((bilA  - importoAcquirente).toFixed(2));
+  const nuovoBilCedente = parseFloat((bilCedente + importoCedente).toFixed(2));
+  const nuovoBilAcquirente = parseFloat((bilAcquirente - importoAcquirente).toFixed(2));
 
-  await supabase.from('squadre').update({ bilancio: nuovoBilDa }).eq('name', da_squadra);
-  await supabase.from('squadre').update({ bilancio: nuovoBilA  }).eq('name', a_squadra);
+  await supabase.from('squadre').update({ bilancio: nuovoBilCedente }).eq('name', squadraCedente);
+  await supabase.from('squadre').update({ bilancio: nuovoBilAcquirente }).eq('name', squadraAcquirente);
 
   // ── 5. Registra movimenti ───────────────────────────────────────────────────
   const notaFuori = fuori_mercato ? " (trasf. differito)" : "";
   await supabase.from('movimenti').insert([
     {
-      squadra: da_squadra,
-      descrizione: `${descLabel}: ${giocatore} → ${a_squadra}${notaFuori}`,
+      squadra: squadraCedente,
+      descrizione: `${descLabel}: ${giocatore} → ${squadraAcquirente}${notaFuori}`,
       entrata: importoCedente,
       uscita: null,
       data: oggi,
     },
     {
-      squadra: a_squadra,
-      descrizione: `${descLabel}: ${giocatore} da ${da_squadra}${notaFuori}`,
+      squadra: squadraAcquirente,
+      descrizione: `${descLabel}: ${giocatore} da ${squadraCedente}${notaFuori}`,
       entrata: null,
       uscita: importoAcquirente,
       data: oggi,
@@ -666,7 +671,7 @@ export async function eseguiTrasferimento(trattativa) {
   if (tipo === 'clausola') {
     const diff = parseFloat((prezzo - importoCedente).toFixed(2));
     if (diff > 0) await supabase.from('movimenti').insert({
-      squadra: da_squadra,
+      squadra: squadraCedente,
       descrizione: `Ritenuta clausola rescissoria (1/4): ${giocatore}`,
       entrata: null, uscita: diff, data: oggi,
     });
@@ -680,7 +685,7 @@ export async function eseguiTrasferimento(trattativa) {
 
   // ── 7. Aggiorna tracciamento passaggi sessione (art. 5.6 — max 3 squadre) ─
   try {
-    await checkEAggiornaPassaggi(giocatore, a_squadra, tipo);
+    await checkEAggiornaPassaggi(giocatore, squadraAcquirente, tipo);
   } catch(passErr) {
     console.warn('Passaggi sessione:', passErr.message);
   }
@@ -699,8 +704,8 @@ export async function eseguiTrasferimento(trattativa) {
         espulsioni: 'Espulsioni', gol_subiti: 'Gol subiti', malus_tot: 'Malus',
       };
       const desc = `${labelTipo[bonus.tipo_bonus] || bonus.tipo_bonus} ≥ ${bonus.soglia}`;
-      const squadraPaga    = bonus.direzione === 'acquirente_paga' ? a_squadra : da_squadra;
-      const squadraRiceve  = bonus.direzione === 'acquirente_paga' ? da_squadra : a_squadra;
+      const squadraPaga = bonus.direzione === 'acquirente_paga' ? squadraAcquirente : squadraCedente;
+      const squadraRiceve = bonus.direzione === 'acquirente_paga' ? squadraCedente : squadraAcquirente;
 
       // Inserisci per entrambe le squadre
       await supabase.from('clausole').insert([
@@ -730,7 +735,7 @@ export async function eseguiTrasferimento(trattativa) {
     console.warn('Bonus clausole insert:', bonusErr.message);
   }
 
-  return { ok: true, player, nuovoBilDa, nuovoBilA };
+  return { ok: true, player, nuovoBilCedente, nuovoBilAcquirente };
 }
 
 // Rientro da prestito: riporta il giocatore alla squadra originale
@@ -786,23 +791,26 @@ export async function eseguiScadenzaPrestito(item) {
   const oggi = new Date().toISOString().slice(0, 10);
 
   if (tipo === 'prestito_obbligo') {
+    const squadraRicevente = player.squadra;
+    const squadraCedente = player.squadra_originale;
+    if (!squadraCedente) throw new Error('Squadra cedente del prestito non disponibile');
     // Obbligo di riscatto: il giocatore passa definitivamente al ricevente
     const nuovoStip = parseFloat((Number(player.quot || 0) / 5).toFixed(2));
     await supabase.from('rosa').update({
-      squadra: player.squadra, // rimane al ricevente
+      squadra: squadraRicevente, // rimane al ricevente
       in_prestito: false, squadra_originale: null, scadenza_prestito: null,
       stip: nuovoStip, stip_originale: nuovoStip, anni_contratto: 1,
     }).eq('id', player.id);
     // Pagamento riscatto
     if (prezzo > 0) {
-      const { data: sqs } = await supabase.from('squadre').select('name,bilancio').in('name', [player.squadra, player.squadra_originale]);
-      const bilRic = sqs?.find(s => s.name === player.squadra)?.bilancio || 0;
-      const bilCed = sqs?.find(s => s.name === player.squadra_originale)?.bilancio || 0;
-      await supabase.from('squadre').update({ bilancio: parseFloat((bilRic - prezzo).toFixed(2)) }).eq('name', player.squadra);
-      await supabase.from('squadre').update({ bilancio: parseFloat((bilCed + prezzo).toFixed(2)) }).eq('name', player.squadra_originale);
+      const { data: sqs } = await supabase.from('squadre').select('name,bilancio').in('name', [squadraRicevente, squadraCedente]);
+      const bilRic = sqs?.find(s => s.name === squadraRicevente)?.bilancio || 0;
+      const bilCed = sqs?.find(s => s.name === squadraCedente)?.bilancio || 0;
+      await supabase.from('squadre').update({ bilancio: parseFloat((bilRic - prezzo).toFixed(2)) }).eq('name', squadraRicevente);
+      await supabase.from('squadre').update({ bilancio: parseFloat((bilCed + prezzo).toFixed(2)) }).eq('name', squadraCedente);
       await supabase.from('movimenti').insert([
-        { squadra: player.squadra, descrizione: `Riscatto obbligo ${player.nome}`, uscita: prezzo, data: oggi },
-        { squadra: player.squadra_originale, descrizione: `Riscatto obbligo ${player.nome} (incasso)`, entrata: prezzo, data: oggi },
+        { squadra: squadraRicevente, descrizione: `Riscatto obbligo ${player.nome}`, uscita: prezzo, data: oggi },
+        { squadra: squadraCedente, descrizione: `Riscatto obbligo ${player.nome} (incasso)`, entrata: prezzo, data: oggi },
       ]);
     }
   } else {
@@ -1012,9 +1020,31 @@ export async function updateStagioneSvincoli(squadra, fields) {
 // 3. Inserisce il record in svincoli
 // 4. Aggiorna i contatori in stagione_svincoli
 // 5. Aggiorna il bilancio della squadra
+function stagioneDaData(data = new Date()) {
+  const y = data.getFullYear();
+  const start = (data.getMonth() > 5 || (data.getMonth() === 5 && data.getDate() >= 1)) ? y : y - 1;
+  return `${start}-${String(start + 1).slice(2)}`;
+}
+
+function giorniTra(a, b) {
+  return Math.floor((b.getTime() - a.getTime()) / 86400000);
+}
+
 export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bilancioAttuale }) {
   const oggi = new Date();
   const oggiStr = oggi.toISOString().slice(0, 10);
+
+  if (player.data_acquisto) {
+    const acquistatoIl = new Date(`${player.data_acquisto}T00:00:00`);
+    const trascorsi = giorniTra(acquistatoIl, oggi);
+    if (trascorsi < 30) {
+      const disponibileDal = new Date(acquistatoIl.getTime() + 30 * 86400000).toISOString().slice(0, 10);
+      throw new Error(`Non puoi svincolare ${player.nome} prima di 30 giorni dall'acquisto. Disponibile dal ${disponibileDal}.`);
+    }
+  }
+
+  const contatoriPre = await getStagioneSvincoli(squadra);
+  const totalePre = Number(contatoriPre?.count_totale || 0);
 
   // ── Calcola costi/indennizzi ──────────────────────────────────────────────
   const quot = Number(player.quot || 0);
@@ -1047,10 +1077,10 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
       ? parseFloat((quot / 2).toFixed(2))
       : parseFloat((quot / 4).toFixed(2));
 
-    // Rimborso mensilità pagate da agosto (01/09) al momento dello svincolo
-    // Conta i mesi interi trascorsi da settembre
-    const agostoPagato = new Date(oggi.getMonth() >= 8 ? oggi.getFullYear() : oggi.getFullYear() - 1, 7, 1);
-    mesiRimborsati = Math.max(0, Math.floor((oggi - agostoPagato) / (30.44 * 86400000)));
+    // Rimborso delle mensilità già pagate dalla mensilità di giugno, versata il 01/07.
+    const luglioInizio = new Date(oggi.getFullYear(), 6, 1);
+    if (oggi < luglioInizio) luglioInizio.setFullYear(oggi.getFullYear() - 1);
+    mesiRimborsati = Math.max(0, (oggi.getFullYear() - luglioInizio.getFullYear()) * 12 + oggi.getMonth() - luglioInizio.getMonth() + 1);
     const rimborsoStipendi = parseFloat((mesiRimborsati * stip / 12).toFixed(2));
 
     // Netto: indennizzo + rimborso stipendi (entrate per la squadra)
@@ -1064,8 +1094,14 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
     movDesc = `Svincolo U21 (nc): ${player.nome}`;
   }
 
-  // Penale extra se oltre 14 svincoli (art. 6.4) — calcolata dal chiamante se serve
-  // (gestita nell'UI con warning)
+  // Penale extra: 2M per ogni svincolo conteggiato oltre il 14° (art. 6.5).
+  const isConteggiatoPerTotale = tipo !== 'straordinario_u21_nc';
+  const numeroProgressivo = totalePre + (isConteggiatoPerTotale ? 1 : 0);
+  const penaleOltre14 = isConteggiatoPerTotale && numeroProgressivo > 14 ? 2 : 0;
+  if (penaleOltre14 > 0) {
+    costoTotale = parseFloat((costoTotale + penaleOltre14).toFixed(2));
+    movDesc += ` + penale oltre 14 svincoli ${penaleOltre14}M`;
+  }
 
   // ── 1. Salva stats nella tabella svincolati prima di rimuovere ───────────────
   await supabase.from('svincolati').upsert({
@@ -1089,7 +1125,7 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
     rigori_segnati: player.rigori_segnati || 0,
     rigori_sbagliati: player.rigori_sbagliati || 0,
     gol_subiti: player.gol_subiti || 0,
-    stagione: '2025-26',
+    stagione: stagioneDaData(oggi),
     updated_at: new Date().toISOString(),
   }, { onConflict: 'nome,stagione' });
 
@@ -1118,7 +1154,7 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
   });
 
   // ── 6. Aggiorna contatori stagione ────────────────────────────────────────
-  const contatori = await getStagioneSvincoli(squadra);
+  const contatori = contatoriPre;
   if (contatori) {
     const history = Array.isArray(contatori.svincolati_history) ? contatori.svincolati_history : [];
     const riacquistabileDal = new Date(oggi.getTime() + 60 * 86400000).toISOString().slice(0, 10);
@@ -1170,7 +1206,7 @@ export async function getTassePagate(squadra) {
   return data;
 }
 
-// Applica la tassa settimanale (chiamato dall'admin ogni lunedì sera)
+// Applica la tassa settimanale (domenica alle 23:00)
 export async function applicaTassaSettimana(squadra, bilancioCorrente, dataControllo = null, settimanaLabel = null) {
   const { perc, importo, flat } = calcolaTassa(bilancioCorrente);
   if (importo <= 0) return { skip: true, motivo: 'Bilancio 0 o negativo' };
@@ -2341,10 +2377,14 @@ export async function getVivaio(squadra) {
 // Validazioni: under-23, quot <= 3, 0 presenze a voto
 export async function acquistaVivaio({ squadra, giocatore, bilancioAttuale }) {
   // Validazioni regolamento
-  if (giocatore.anni > 23) throw new Error(`${giocatore.nome} ha ${giocatore.anni} anni — il vivaio ammette solo under-23`);
-  if (giocatore.quot > 3)  throw new Error(`${giocatore.nome} ha quotazione ${giocatore.quot} — il vivaio ammette solo Q ≤ 3`);
+  if (giocatore.anni > 23) throw new Error(`${giocatore.nome} ha ${giocatore.anni} anni — il vivaio ammette giocatori fino a 23 anni compresi`);
+  if (giocatore.quot > 3) throw new Error(`${giocatore.nome} ha quotazione ${giocatore.quot} — il vivaio ammette solo Q ≤ 3`);
+  const presenze = Number(giocatore.presenze_voto ?? giocatore.partite ?? giocatore.vivaio_presenze ?? 0);
+  if (presenze > 0) throw new Error(`${giocatore.nome} ha già ${presenze} presenze a voto — per entrare nel vivaio deve averne 0`);
 
-  const oggi = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  if (now.getMonth() < 8) throw new Error('Gli acquisti per il vivaio sono consentiti solo dal 01/09.');
+  const oggi = now.toISOString().slice(0, 10);
 
   // Conta vivaio attuale (max 2, o 4 con investimento Settore Giovanile Avanzato)
   const { count } = await supabase.from('rosa').select('id', { count: 'exact', head: true })
@@ -2395,8 +2435,26 @@ export async function promuoviDaVivaio(playerId, squadra) {
   const { data: player } = await supabase.from('rosa').select('*').eq('id', playerId).single();
   if (!player) throw new Error('Giocatore non trovato');
 
-  // Calcola stipendio normale (Q/5)
+  const { data: rosaAttuale } = await supabase.from('rosa').select('id,anni,stip,squadra_serie_a')
+    .eq('squadra', squadra).eq('in_vivaio', false);
+  const futuraRosa = [...(rosaAttuale || []), player];
+  const futuroTotale = futuraRosa.length;
+  const u21 = futuraRosa.filter(p => Number(p.anni || 0) > 0 && Number(p.anni) <= 21).length;
+  const u21Richiesti = futuroTotale >= 30 ? 3 : futuroTotale === 29 ? 2 : futuroTotale === 28 ? 1 : 0;
+  if (u21 < u21Richiesti) throw new Error(`Promozione non consentita: con ${futuroTotale} giocatori servono almeno ${u21Richiesti} Under-21 (attuali ${u21}).`);
+
+  if (player.squadra_serie_a) {
+    const stessaSerieA = futuraRosa.filter(p => p.squadra_serie_a === player.squadra_serie_a).length;
+    if (stessaSerieA > 5) throw new Error(`Promozione non consentita: supereresti il limite di 5 giocatori del ${player.squadra_serie_a}.`);
+  }
+
+  // Calcola stipendio normale (Q/5) e verifica salary cap base/attivo.
   const stipNormale = parseFloat((player.quot / 5).toFixed(2));
+  const scGiocatori = (rosaAttuale || []).reduce((sum, p) => sum + Number(p.stip || 0), 0) + stipNormale;
+  const { data: superClub } = await supabase.from('investimenti')
+    .select('id').eq('squadra', squadra).eq('nome', 'SuperClub').eq('attivo', true).limit(1);
+  const cap = 75 + (superClub?.length ? 3 : 0);
+  if (scGiocatori > cap) throw new Error(`Promozione non consentita: salary cap ${scGiocatori.toFixed(2)}M su ${cap.toFixed(2)}M.`);
 
   await supabase.from('rosa').update({
     in_vivaio: false,
@@ -2568,7 +2626,7 @@ export async function applicaRinnovoRialzo(playerId, nuovoStip, squadra) {
     rinnovo_effettuato: true,
     nuovo_stip: nuovoStip,
     data_aggiornamento: oggi,
-    stagione: '2025-26',
+    stagione: stagioneDaData(oggi),
   }, { onConflict: 'stagione,giocatore_id' });
 
   return nuovoStip;
@@ -2605,7 +2663,7 @@ export async function applicaRinnovoRibasso(playerId, nuovoStip, squadra) {
     rinnovo_effettuato: true,
     nuovo_stip: nuovoStip,
     data_aggiornamento: oggi,
-    stagione: '2025-26',
+    stagione: stagioneDaData(oggi),
     note: deveCedere ? 'Da cedere entro 15/09' : 'Over 31 - nessun obbligo',
   }, { onConflict: 'stagione,giocatore_id' });
 
@@ -2854,6 +2912,18 @@ export async function creaAstaDaChiamate(nomeGiocatore) {
 }
 
 // ── Rivela offerte + trasferimento automatico (unico interess. → Q/2) ─────────
+async function verificaRiacquistoConsentito(squadra, giocatore) {
+  const storico = await getStagioneSvincoli(squadra);
+  const history = Array.isArray(storico?.svincolati_history) ? storico.svincolati_history : [];
+  const record = [...history].reverse().find(h => String(h.nome || '').toLowerCase() === String(giocatore || '').toLowerCase());
+  if (!record?.riacquistabile_dal) return true;
+  const oggi = new Date().toISOString().slice(0, 10);
+  if (oggi < record.riacquistabile_dal) {
+    throw new Error(`${giocatore} non può essere riacquistato da ${squadra} prima del ${record.riacquistabile_dal} (60 giorni dallo svincolo).`);
+  }
+  return true;
+}
+
 export async function rivelaECompletaAsta(astaId) {
   const { data: asta } = await supabase.from('aste_svincolati')
     .select('*').eq('id', astaId).single();
@@ -2894,6 +2964,7 @@ export async function rivelaECompletaAsta(astaId) {
   const prezzoFinale = maxImporto;
 
   if (!vincitore) throw new Error('Nessun offerente');
+  await verificaRiacquistoConsentito(vincitore, asta.giocatore);
 
   // Trasferimento
   const oggi = new Date().toISOString().slice(0, 10);
@@ -2903,7 +2974,7 @@ export async function rivelaECompletaAsta(astaId) {
   if (asta.per_vivaio) {
     await supabase.from('rosa').insert({
       squadra: vincitore, nome: asta.giocatore, ruolo: asta.ruolo,
-      anni: asta.anni, quot: asta.quot, stip, clausola: claus,
+      anni: asta.anni, quot: asta.quot, stip: 0, stip_originale: stip, clausola: claus,
       squadra_serie_a: asta.squadra_serie_a,
       in_vivaio: true, vivaio_presenze: 0, vivaio_pagato: false,
       anni_contratto: 1, data_acquisto: oggi,
@@ -2954,6 +3025,7 @@ export async function completaUnicoInteressato(nomeGiocatore) {
 
   const primaria = chiamate[0];
   const vincitore = primaria.squadra;
+  await verificaRiacquistoConsentito(vincitore, nomeGiocatore);
   // Unico interessato → paga la base d'asta = ¾ della quotazione (art. 6.3)
   const prezzoFinale = parseFloat((Number(primaria.quot) * 0.75).toFixed(2));
   const oggi = new Date().toISOString().slice(0, 10);
@@ -2963,7 +3035,7 @@ export async function completaUnicoInteressato(nomeGiocatore) {
   if (primaria.per_vivaio) {
     await supabase.from('rosa').insert({
       squadra: vincitore, nome: nomeGiocatore, ruolo: primaria.ruolo,
-      anni: primaria.anni || 0, quot: primaria.quot, stip, clausola: claus,
+      anni: primaria.anni || 0, quot: primaria.quot, stip: 0, stip_originale: stip, clausola: claus,
       squadra_serie_a: primaria.squadra_serie_a || '',
       in_vivaio: true, vivaio_presenze: 0, vivaio_pagato: false,
       anni_contratto: 1, data_acquisto: oggi,
@@ -3215,10 +3287,9 @@ export async function checkECompletaBonus() {
     if (valoreAttuale < bonus.soglia) continue; // non ancora raggiunto
 
     // Bonus completato — determina chi paga e chi riceve
-    // direzione 'acquirente_paga': a_squadra paga, da_squadra riceve
-    // direzione 'cedente_paga':   da_squadra paga, a_squadra riceve
-    const squadraPaga    = bonus.direzione === 'acquirente_paga' ? trattativa.a_squadra : trattativa.da_squadra;
-    const squadraRiceve  = bonus.direzione === 'acquirente_paga' ? trattativa.da_squadra : trattativa.a_squadra;
+    // Convenzione: da_squadra = acquirente, a_squadra = cedente.
+    const squadraPaga = bonus.direzione === 'acquirente_paga' ? trattativa.da_squadra : trattativa.a_squadra;
+    const squadraRiceve = bonus.direzione === 'acquirente_paga' ? trattativa.a_squadra : trattativa.da_squadra;
     const importo = Number(bonus.valore_mln);
 
     // Aggiorna bilanci
@@ -3293,10 +3364,9 @@ export function calcolaStatoTrattativaMercato(trattativa) {
 
   let urgenza, penaltaMln, messaggio;
   if      (h < 24) { urgenza = 'ok';       penaltaMln = 0; messaggio = `Risposta entro ${_fmtH(24-h)}`; }
-  else if (h < 36) { urgenza = 'warn1';    penaltaMln = 1; messaggio = `⚠️ +1M scattato · ${_fmtH(36-h)} al prossimo`; }
-  else if (h < 48) { urgenza = 'warn3';    penaltaMln = 3; messaggio = `🔴 +3M scattato · ${_fmtH(48-h)} al prossimo`; }
-  else if (h < 72) { urgenza = 'warn5';    penaltaMln = 5; messaggio = `🚨 +5M scattato`; }
-  else if (h < 96) { urgenza = 'critical'; penaltaMln = 5; messaggio = `💀 Acquisto forzato ½Q disponibile (${_fmtH(96-h)})`; }
+  else if (h < 48) { urgenza = 'warn1';    penaltaMln = 1; messaggio = `⚠️ +1M scattato · ${_fmtH(48-h)} al prossimo`; }
+  else if (h < 72) { urgenza = 'warn3';    penaltaMln = 3; messaggio = `🔴 +3M scattato · ${_fmtH(72-h)} al prossimo`; }
+  else if (h < 96) { urgenza = 'warn5';    penaltaMln = 5; messaggio = `🚨 +5M scattato · ${_fmtH(96-h)} all'acquisto forzato`; }
   else             { urgenza = 'scaduta';  penaltaMln = 5; messaggio = `💀 Scaduta — acquisto forzato ½Q attivo`; }
 
   return { urgenza, penaltaMln, messaggio, clausolaAttivabile, orePassate: h, quot };
@@ -3387,7 +3457,7 @@ export async function aggiornaContrattiAnnuali() {
         nome: p.nome, ruolo: p.ruolo, anni: p.anni, quot: p.quot,
         stip: p.stip, clausola: parseFloat((p.quot * 1.75).toFixed(2)),
         fuori_lista: false, squadra_serie_a: p.squadra_serie_a,
-        stagione: '2025-26', updated_at: new Date().toISOString(),
+        stagione: stagioneDaData(oggi), updated_at: new Date().toISOString(),
       }, { onConflict: 'nome,stagione' });
       svincolati.push({ nome: p.nome, squadra: p.squadra, motivo: 'contratto_scaduto' });
       continue;
