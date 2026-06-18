@@ -175,7 +175,7 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   aggiornaContrattiAnnuali, confermRinnovoBiennale,
   // Admin Control Room
   getStadioInvestimenti, setStadioUpgrade, applicaEntrateStadioTutte,
-  applicaTassaATutti, applicaStipendioATutti, getControlRoomStatus,
+  applicaTassaATutti, annullaTassaATutti, applicaStipendioATutti, getControlRoomStatus,
   // Extra Control Room
   updateProfile, uploadAvatar,
   getMercatoOverride, setMercatoOverride, getTrasferimentiDifferiti,
@@ -8786,12 +8786,8 @@ function AdminControlRoomPage({ teams }) {
       const skip = res.filter(r => r.skip).length;
       setLastResult({ label, ok, skip, ts: new Date().toLocaleTimeString('it-IT') });
       await load();
-      // Telegram channel notifications for bulk payments
-      const meseISO = new Date().toISOString().slice(0, 7);
-      const domenica = getDomenicaCorrente();
-      if (fn === applicaTassaATutti)     sendTelegramNotification('tassa_applicata',    { domenica });
-      if (fn === applicaStipendioATutti) sendTelegramNotification('stipendi_applicati',  { mese: meseISO });
-      if (fn === applicaEntrateStadioTutte) sendTelegramNotification('stadio_applicato', { mese: meseISO });
+      // Le notifiche Telegram partono dentro le funzioni bulk in supabase.js,
+      // così funzionano sia da Control Room sia dai pagamenti automatici.
     } catch(e) { alert(e.message); }
     finally { setBusy(null); }
   }
@@ -8966,12 +8962,20 @@ function AdminControlRoomPage({ teams }) {
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>📅 TASSA SETTIMANALE</div>
                   <div style={{ fontSize: 11, color: '#555', marginTop: 4 }}>Domenica {status.domenica} · Art. 7.1</div>
                 </div>
-                <button
-                  onClick={() => runBulk(applicaTassaATutti, 'Tassa settimanale a tutti')}
-                  disabled={isBusy}
-                  style={{ padding: '8px 18px', borderRadius: 10, border: '1.5px solid #f59e0b50', background: '#f59e0b18', color: '#f59e0b', fontSize: 12, fontWeight: 700, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.6 : 1 }}>
-                  {busy === 'Tassa settimanale a tutti' ? '⏳ Esecuzione...' : '📊 Applica tassa a tutti'}
-                </button>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => runBulk(applicaTassaATutti, 'Tassa settimanale a tutti')}
+                    disabled={isBusy}
+                    style={{ padding: '8px 18px', borderRadius: 10, border: '1.5px solid #f59e0b50', background: '#f59e0b18', color: '#f59e0b', fontSize: 12, fontWeight: 700, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.6 : 1 }}>
+                    {busy === 'Tassa settimanale a tutti' ? '⏳ Esecuzione...' : '📊 Applica tassa a tutti'}
+                  </button>
+                  <button
+                    onClick={() => runBulk(annullaTassaATutti, 'Annulla tassa settimanale a tutti')}
+                    disabled={isBusy}
+                    style={{ padding: '8px 18px', borderRadius: 10, border: '1.5px solid #ef444450', background: '#ef444418', color: '#ef4444', fontSize: 12, fontWeight: 700, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.6 : 1 }}>
+                    {busy === 'Annulla tassa settimanale a tutti' ? '⏳ Annullamento...' : '↩️ Annulla tassa a tutti'}
+                  </button>
+                </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 8 }}>
                 {(status.squadre || []).sort((a,b) => a.name.localeCompare(b.name)).map(sq => {
@@ -11364,22 +11368,29 @@ function AppInner() {
     setAuthLoading(false);
   }
 
-  // ── Pagamenti automatici (tasse dom 23:00 + stipendi 1° mese) ───────────
+  // ── Pagamenti automatici (tasse solo domenica 23:00 + stipendi 1° mese) ───────────
   useEffect(() => {
     if (!session) return;
     const now = new Date();
+    const ora = now.getHours();
+    const isDomenicaDopo23 = now.getDay() === 0 && ora >= 23;
+    const primoDelMese = now.getDate() === 1 && ora >= 9;
+
     // Chiave localStorage: "autopay_YYYY-WW" per tasse, "autopay_stip_YYYY-MM" per stipendi
     const wKey = `autopay_${now.getFullYear()}-W${String(Math.ceil(((now - new Date(now.getFullYear(),0,1))/86400000+1)/7)).padStart(2,'0')}`;
     const mKey = `autopay_stip_${now.toISOString().slice(0,7)}`;
     const alreadyThisWeek  = localStorage.getItem(wKey);
     const alreadyThisMonth = localStorage.getItem(mKey);
-    if (alreadyThisWeek && alreadyThisMonth) return; // questo browser ha già triggerato
+
+    const deveProvareTassa = isDomenicaDopo23 && !alreadyThisWeek;
+    const deveProvareStipendi = primoDelMese && !alreadyThisMonth;
+    if (!deveProvareTassa && !deveProvareStipendi) return;
+
     applicaPagamentiAutomatici().then(r => {
-      if (r.tasse.length)    { console.log(`✅ Tasse auto: ${r.tasse.length} squadre`); localStorage.setItem(wKey, '1'); }
-      if (r.stipendi.length) { console.log(`✅ Stipendi auto: ${r.stipendi.length} squadre`); localStorage.setItem(mKey, '1'); }
-      // Segna "tentato" anche se zero squadre (vuol dire già applicate da altro client)
-      if (!alreadyThisWeek)  localStorage.setItem(wKey, '1');
-      if (!alreadyThisMonth) localStorage.setItem(mKey, '1');
+      if (deveProvareTassa) localStorage.setItem(wKey, '1');
+      if (deveProvareStipendi) localStorage.setItem(mKey, '1');
+      if (r.tasse.length)    console.log(`✅ Tasse auto: ${r.tasse.length} squadre`);
+      if (r.stipendi.length) console.log(`✅ Stipendi auto: ${r.stipendi.length} squadre`);
       if (r.errori.length)   console.warn('⚠️ Errori pagamenti auto:', r.errori);
       if (r.tasse.length || r.stipendi.length) {
         getSquadre().then(data => { if (data) setSquadreDB(data); });
