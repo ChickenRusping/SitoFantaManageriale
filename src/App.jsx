@@ -9230,9 +9230,9 @@ function AdminControlRoomPage({ teams }) {
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', marginBottom: 8 }}>🧪 Invia messaggio di test al canale</div>
                 <button
                   onClick={() => {
-                    sendTelegramNotification('notizia_pinnata', {
+                    sendTelegramNotification('nuova_notizia', {
                       squadra: 'Lega Admin',
-                      titolo: '🧪 Test notifica canale',
+                      titolo: '🧪 Test nuova notizia',
                       testo: 'Questo è un messaggio di test inviato dalla Control Room.',
                     });
                     alert('Messaggio inviato al canale (se configurato).');
@@ -11285,7 +11285,13 @@ function NewsComposer({ profile, teams, onPost, isAdmin, editingPost = null, onC
           testo: testo.trim(),
           immagini,
         });
-        // Le nuove notizie normali non generano notifiche: il canale viene avvisato solo quando un post viene messo in evidenza.
+        // Ogni nuova notizia viene annunciata normalmente nel canale Telegram.
+        sendTelegramNotification('nuova_notizia', {
+          squadra: postAsAdmin ? null : (profile.squadra || null),
+          autore: postAsAdmin ? 'Admin' : (profile.nome || profile.email),
+          titolo: titolo.trim(),
+          testo: testo.trim(),
+        });
       }
       resetComposer();
       if (isEditing) onCancelEdit?.();
@@ -11464,17 +11470,7 @@ function NewsPage({ profile, isAdmin, teams }) {
     try {
       await togglePinnata(id, pinnata);
       setNotizie(prev => prev.map(n => n.id === id ? { ...n, pinnata } : n));
-      // When pinning a news item, send to Telegram channel
-      if (pinnata) {
-        const notizia = notizie.find(n => n.id === id);
-        if (notizia) {
-          sendTelegramNotification('notizia_pinnata', {
-            squadra: notizia.squadra || (notizia.autore === 'Admin' ? null : notizia.autore),
-            titolo: notizia.titolo,
-            testo: notizia.testo,
-          });
-        }
-      }
+      // Il pin modifica solo la visibilità nel sito: la notizia è già stata annunciata alla pubblicazione.
     } catch(e) { alert(e.message); }
   }
 
