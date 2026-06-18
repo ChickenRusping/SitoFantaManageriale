@@ -175,7 +175,7 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   aggiornaContrattiAnnuali, confermRinnovoBiennale,
   // Admin Control Room
   getStadioInvestimenti, setStadioUpgrade, applicaEntrateStadioTutte,
-  applicaTassaATutti, annullaTassaATutti, ripulisciAnomalieTasse, applicaStipendioATutti, getControlRoomStatus,
+  applicaTassaATutti, annullaTassaATutti, ripulisciAnomalieTasse, ripulisciStoricoTassePrimaDi, applicaStipendioATutti, getControlRoomStatus,
   // Extra Control Room
   updateProfile, uploadAvatar,
   getMercatoOverride, setMercatoOverride, getTrasferimentiDifferiti,
@@ -3720,21 +3720,16 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
             </div>
             )}
             <div style={{ background: "#f59e0b10", borderRadius: 10, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <span style={{ fontSize: 12, color: "#888" }}>Tassa prossimo lunedì</span>
+              <span style={{ fontSize: 12, color: "#888" }}>Tassa prossima domenica</span>
               <span style={{ fontSize: 18, fontWeight: 900, color: "#f59e0b", fontFamily: "'Bebas Neue',sans-serif" }}>−{tassa.importo}M <span style={{ fontSize: 12 }}>({tassa.perc}%)</span></span>
             </div>
             {isAdmin && (() => {
               const domenicaKey = getDomenicaCorrente();
               const giaFatta = tasse.some(t => t.data_controllo === domenicaKey);
-              return giaFatta ? (
-                <div style={{ width: "100%", padding: "9px", borderRadius: 9, background: "#10b98110", border: "1px solid #10b98130", color: "#10b981", fontSize: 12, fontWeight: 700, textAlign: "center" }}>
-                  ✓ Tassa settimana ({domenicaKey}) già applicata
+              return (
+                <div style={{ width: "100%", padding: "9px", borderRadius: 9, background: giaFatta ? "#10b98110" : "#f59e0b10", border: `1px solid ${giaFatta ? "#10b98130" : "#f59e0b30"}`, color: giaFatta ? "#10b981" : "#f59e0b", fontSize: 12, fontWeight: 700, textAlign: "center" }}>
+                  {giaFatta ? `✓ Tassa settimana (${domenicaKey}) già applicata` : `⏳ Tassa ${domenicaKey} da applicare dalla Control Room`}
                 </div>
-              ) : (
-                <button onClick={handleApplicaTassa} disabled={applicandoTassa}
-                  style={{ width: "100%", padding: "9px", borderRadius: 9, border: "1px solid #f59e0b33", background: "#f59e0b18", color: "#f59e0b", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                  {applicandoTassa ? "Applicazione..." : `📊 Applica tassa settimana (−${tassa.importo}M)`}
-                </button>
               );
             })()}
           </>
@@ -8794,6 +8789,23 @@ function AdminControlRoomPage({ teams }) {
     finally { setBusy(null); }
   }
 
+  async function cleanupStoricoTasse() {
+    const dataCorretta = status?.domenica || getDomenicaCorrente();
+    if (!window.confirm(`Eliminare TUTTI i record tassa precedenti al ${dataCorretta}?\n\nQuesto serve a ripulire lo storico errato visibile nelle Finanze (es. 2026-06-06/07). Gli importi rimossi verranno rimborsati ai bilanci delle squadre attive. La tassa corretta del ${dataCorretta} resterà intatta.`)) return;
+    setBusy('cleanup_tasse_storico');
+    try {
+      const res = await ripulisciStoricoTassePrimaDi(dataCorretta);
+      setLastResult({
+        label: `Ripulito storico tasse prima del ${dataCorretta}`,
+        ok: res.rimossi?.length || 0,
+        skip: res.rimborsi?.length || 0,
+        ts: new Date().toLocaleTimeString('it-IT')
+      });
+      await load();
+    } catch(e) { alert(e.message); }
+    finally { setBusy(null); }
+  }
+
   async function runBulk(fn, label) {
     if (!window.confirm(`Eseguire: ${label}?`)) return;
     setBusy(label);
@@ -8928,12 +8940,20 @@ function AdminControlRoomPage({ teams }) {
                 <div style={{ marginTop: 14, background: '#f59e0b0d', border: '1px solid #f59e0b30', borderRadius: 10, padding: '12px 14px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
                     <div style={{ fontSize: 10, fontWeight: 800, color: '#f59e0b', letterSpacing: '0.08em' }}>⚠ DETTAGLIO ANOMALIE TASSE</div>
-                    <button
-                      onClick={cleanupTasse}
-                      disabled={isBusy}
-                      style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid #f59e0b55', background: '#f59e0b18', color: '#f59e0b', fontSize: 11, fontWeight: 800, cursor: isBusy ? 'not-allowed' : 'pointer' }}>
-                      {busy === 'cleanup_tasse' ? 'Pulizia...' : `Pulisci anomalie · tieni ${status.domenica}`}
-                    </button>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <button
+                        onClick={cleanupTasse}
+                        disabled={isBusy}
+                        style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid #f59e0b55', background: '#f59e0b18', color: '#f59e0b', fontSize: 11, fontWeight: 800, cursor: isBusy ? 'not-allowed' : 'pointer' }}>
+                        {busy === 'cleanup_tasse' ? 'Pulizia...' : `Pulisci anomalie · tieni ${status.domenica}`}
+                      </button>
+                      <button
+                        onClick={cleanupStoricoTasse}
+                        disabled={isBusy}
+                        style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid #ef444455', background: '#ef444418', color: '#ef4444', fontSize: 11, fontWeight: 800, cursor: isBusy ? 'not-allowed' : 'pointer' }}>
+                        {busy === 'cleanup_tasse_storico' ? 'Pulizia storico...' : `Elimina storico prima del ${status.domenica}`}
+                      </button>
+                    </div>
                   </div>
                   {status.tasseDettagli?.duplicate?.length > 0 && (
                     <div style={{ fontSize: 11, color: '#ddd', marginBottom: 6 }}><b style={{ color: '#f97316' }}>Pagate più di una volta:</b> {status.tasseDettagli.duplicate.map(x => `${x.squadra} (${x.count}×: ${x.date.join(', ')})`).join(' · ')}</div>
@@ -9007,12 +9027,26 @@ function AdminControlRoomPage({ teams }) {
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>📅 TASSA SETTIMANALE</div>
                   <div style={{ fontSize: 11, color: '#555', marginTop: 4 }}>Domenica {status.domenica} · Art. 7.1</div>
                 </div>
-                <button
-                  onClick={() => runBulk(applicaTassaATutti, 'Tassa settimanale a tutti')}
-                  disabled={isBusy}
-                  style={{ padding: '8px 18px', borderRadius: 10, border: '1.5px solid #f59e0b50', background: '#f59e0b18', color: '#f59e0b', fontSize: 12, fontWeight: 700, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.6 : 1 }}>
-                  {busy === 'Tassa settimanale a tutti' ? '⏳ Esecuzione...' : '📊 Applica tassa a tutti'}
-                </button>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => runBulk(applicaTassaATutti, 'Tassa settimanale a tutti')}
+                    disabled={isBusy || !status.canApplicareTassa}
+                    style={{ padding: '8px 18px', borderRadius: 10, border: '1.5px solid #f59e0b50', background: '#f59e0b18', color: '#f59e0b', fontSize: 12, fontWeight: 700, cursor: (isBusy || !status.canApplicareTassa) ? 'not-allowed' : 'pointer', opacity: (isBusy || !status.canApplicareTassa) ? 0.55 : 1 }}>
+                    {busy === 'Tassa settimanale a tutti' ? '⏳ Esecuzione...' : status.canApplicareTassa ? '📊 Applica tassa a tutti' : '✅ Tassa già applicata'}
+                  </button>
+                  <button
+                    onClick={() => runBulk(annullaTassaATutti, `Annulla tassa ${status.domenica}`)}
+                    disabled={isBusy || status.tassePagate.size === 0}
+                    style={{ padding: '8px 14px', borderRadius: 10, border: '1.5px solid #ef444450', background: '#ef444418', color: '#ef4444', fontSize: 12, fontWeight: 700, cursor: (isBusy || status.tassePagate.size === 0) ? 'not-allowed' : 'pointer', opacity: (isBusy || status.tassePagate.size === 0) ? 0.55 : 1 }}>
+                    {busy === `Annulla tassa ${status.domenica}` ? '⏳ Annullamento...' : '↩️ Annulla tassa settimana'}
+                  </button>
+                  <button
+                    onClick={cleanupStoricoTasse}
+                    disabled={isBusy}
+                    style={{ padding: '8px 14px', borderRadius: 10, border: '1.5px solid #ef444450', background: '#ef444410', color: '#ef4444', fontSize: 12, fontWeight: 700, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.55 : 1 }}>
+                    {busy === 'cleanup_tasse_storico' ? '⏳ Pulizia...' : `🧹 Elimina storico prima del ${status.domenica}`}
+                  </button>
+                </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 8 }}>
                 {(status.squadre || []).sort((a,b) => a.name.localeCompare(b.name)).map(sq => {
@@ -11427,24 +11461,20 @@ function AppInner() {
     setAuthLoading(false);
   }
 
-  // ── Pagamenti automatici (tasse dom 23:00 + stipendi 1° mese) ───────────
+  // ── Pagamenti automatici: solo stipendi mensili + stadio ───────────────
+  // Le tasse settimanali sono volutamente escluse: si applicano solo dalla Control Room.
   useEffect(() => {
     if (!session) return;
     const now = new Date();
-    // Chiave localStorage: "autopay_YYYY-WW" per tasse, "autopay_stip_YYYY-MM" per stipendi
-    const wKey = `autopay_${now.getFullYear()}-W${String(Math.ceil(((now - new Date(now.getFullYear(),0,1))/86400000+1)/7)).padStart(2,'0')}`;
-    const mKey = `autopay_stip_${now.toISOString().slice(0,7)}`;
-    const alreadyThisWeek  = localStorage.getItem(wKey);
-    const alreadyThisMonth = localStorage.getItem(mKey);
-    if (alreadyThisWeek && alreadyThisMonth) return; // questo browser ha già triggerato
+    const mKey = `autopay_stip_stadio_${now.toISOString().slice(0,7)}`;
+    if (localStorage.getItem(mKey)) return;
+
     applicaPagamentiAutomatici().then(r => {
-      if (r.tasse.length)    { console.log(`✅ Tasse auto: ${r.tasse.length} squadre`); localStorage.setItem(wKey, '1'); }
-      if (r.stipendi.length) { console.log(`✅ Stipendi auto: ${r.stipendi.length} squadre`); localStorage.setItem(mKey, '1'); }
-      // Segna "tentato" anche se zero squadre (vuol dire già applicate da altro client)
-      if (!alreadyThisWeek)  localStorage.setItem(wKey, '1');
-      if (!alreadyThisMonth) localStorage.setItem(mKey, '1');
-      if (r.errori.length)   console.warn('⚠️ Errori pagamenti auto:', r.errori);
-      if (r.tasse.length || r.stipendi.length) {
+      if (r.stipendi?.length) { console.log(`✅ Stipendi auto: ${r.stipendi.length} squadre`); }
+      if (r.stadio?.length)   { console.log(`✅ Stadio auto: ${r.stadio.length} squadre`); }
+      localStorage.setItem(mKey, '1');
+      if (r.errori?.length) console.warn('⚠️ Errori pagamenti auto:', r.errori);
+      if (r.stipendi?.length || r.stadio?.length) {
         getSquadre().then(data => { if (data) setSquadreDB(data); });
       }
     }).catch(e => console.warn('Pagamenti auto:', e.message));
