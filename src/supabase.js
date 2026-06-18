@@ -165,9 +165,16 @@ export function calcolaScadenzaOfferte(scadenzaInteresse) {
   return ven;
 }
 
+// Acquisti vivaio aperti dal 01/09 al 31/05 della stagione corrente.
+export function isVivaioAcquistiAperti(date = new Date()) {
+  const month = date.getMonth(); // 0=gennaio
+  return month >= 8 || month <= 4;
+}
+
 // ── Inserisce la chiamata principale (tipo='prima') ───────────────────────────
 export async function insertChiamata(chiamata) {
   const now = new Date();
+  if (chiamata?.per_vivaio && !isVivaioAcquistiAperti(now)) throw new Error('Le chiamate per il vivaio sono consentite solo dal 01/09 al 31/05.');
   const scadenzaInteresse = calcolaScadenzaInteresse(now);
   const { data, error } = await supabase
     .from('chiamate')
@@ -184,6 +191,7 @@ export async function insertChiamata(chiamata) {
 
 // ── Aggiunge un interesse (tipo='interesse') ──────────────────────────────────
 export async function aggiungiInteresse(nomeGiocatore, squadra, perVivaio = false) {
+  if (perVivaio && !isVivaioAcquistiAperti()) throw new Error('Gli interessamenti per il vivaio sono consentiti solo dal 01/09 al 31/05.');
   // Recupera la chiamata principale per avere la scadenza_interesse
   const { data: primaria } = await supabase
     .from('chiamate')
@@ -2383,7 +2391,7 @@ export async function acquistaVivaio({ squadra, giocatore, bilancioAttuale }) {
   if (presenze > 0) throw new Error(`${giocatore.nome} ha già ${presenze} presenze a voto — per entrare nel vivaio deve averne 0`);
 
   const now = new Date();
-  if (now.getMonth() < 8) throw new Error('Gli acquisti per il vivaio sono consentiti solo dal 01/09.');
+  if (!isVivaioAcquistiAperti(now)) throw new Error('Gli acquisti per il vivaio sono consentiti solo dal 01/09 al 31/05.');
   const oggi = now.toISOString().slice(0, 10);
 
   // Conta vivaio attuale (max 2, o 4 con investimento Settore Giovanile Avanzato)
@@ -2928,6 +2936,7 @@ export async function rivelaECompletaAsta(astaId) {
   const { data: asta } = await supabase.from('aste_svincolati')
     .select('*').eq('id', astaId).single();
   if (!asta) throw new Error('Asta non trovata');
+  if (asta.per_vivaio && !isVivaioAcquistiAperti()) throw new Error('Le assegnazioni al vivaio sono consentite solo dal 01/09 al 31/05.');
 
   // Ordine interesse dal timestamp chiamate
   const { data: chiamate } = await supabase.from('chiamate')
@@ -3024,6 +3033,7 @@ export async function completaUnicoInteressato(nomeGiocatore) {
   if (!chiamate?.length) throw new Error('Nessuna chiamata trovata');
 
   const primaria = chiamate[0];
+  if (primaria.per_vivaio && !isVivaioAcquistiAperti()) throw new Error('Le assegnazioni al vivaio sono consentite solo dal 01/09 al 31/05.');
   const vincitore = primaria.squadra;
   await verificaRiacquistoConsentito(vincitore, nomeGiocatore);
   // Unico interessato → paga la base d'asta = ¾ della quotazione (art. 6.3)
@@ -3560,6 +3570,11 @@ export async function insertNotizia({ autore, squadra, categoria, titolo, testo,
   if (error) throw error;
   return data;
 }
+export async function updateNotizia(id, fields) {
+  const { data, error } = await supabase.from('notizie').update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+  if (error) throw error;
+  return data;
+}
 export async function deleteNotizia(id) { const { error } = await supabase.from('notizie').delete().eq('id', id); if (error) throw error; }
 export async function togglePinnata(id, pinnata) { const { error } = await supabase.from('notizie').update({ pinnata }).eq('id', id); if (error) throw error; }
 export async function toggleReaction(id, emoji, username, currentReactions) {
@@ -3580,7 +3595,8 @@ export async function uploadNotiziaImmagine(file, path) {
 }
 export function subscribeNotizie(callback) { return supabase.channel('notizie-feed').on('postgres_changes', { event: '*', schema: 'public', table: 'notizie' }, callback).subscribe(); }
 export async function getCommenti(notiziaId) { const { data, error } = await supabase.from('commenti_notizie').select('*').eq('notizia_id', notiziaId).order('created_at', { ascending: true }); if (error) throw error; return data || []; }
-export async function insertCommento({ notiziaId, autore, squadra, testo }) { const { data, error } = await supabase.from('commenti_notizie').insert({ notizia_id: notiziaId, autore, squadra, testo }).select().single(); if (error) throw error; return data; }
+export async function insertCommento({ notiziaId, autore, squadra, testo, parentCommentId = null }) { const { data, error } = await supabase.from('commenti_notizie').insert({ notizia_id: notiziaId, autore, squadra, testo, parent_comment_id: parentCommentId }).select().single(); if (error) throw error; return data; }
+export async function updateCommento(id, testo) { const { data, error } = await supabase.from('commenti_notizie').update({ testo, updated_at: new Date().toISOString() }).eq('id', id).select().single(); if (error) throw error; return data; }
 export async function deleteCommento(id) { const { error } = await supabase.from('commenti_notizie').delete().eq('id', id); if (error) throw error; }
 export function subscribeCommenti(notiziaId, callback) { return supabase.channel(`commenti-${notiziaId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'commenti_notizie', filter: `notizia_id=eq.${notiziaId}` }, callback).subscribe(); }
 // ─── ADMIN CONTROL ROOM — EXTRA BULK OPERATIONS ──────────────────────────────
