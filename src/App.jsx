@@ -2,20 +2,20 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams, Navigate } from "react-router-dom";
 
 // ─── STAGIONE / BIENNIO DINAMICI ─────────────────────────────────────────────
-// Il cambio avviene automaticamente il 02/06 di ogni anno.
+// Il cambio avviene automaticamente il 01/06 di ogni anno.
 // Bienni: 25/26+26/27 → 2025-27, poi 27/28+28/29 → 2027-29, ecc.
 function calcolaStaginoCorrente() {
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth() + 1, d = now.getDate();
-  const dopoGiugno2 = m > 6 || (m === 6 && d >= 2);
-  const startYear = dopoGiugno2 ? y : y - 1;
+  const dopoGiugno1 = m > 6 || (m === 6 && d >= 1);
+  const startYear = dopoGiugno1 ? y : y - 1;
   return `${startYear}-${String(startYear + 1).slice(2)}`;
 }
 function calcolaBiennioCorrente() {
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth() + 1, d = now.getDate();
-  const dopoGiugno2 = m > 6 || (m === 6 && d >= 2);
-  const startYear = dopoGiugno2 ? y : y - 1;
+  const dopoGiugno1 = m > 6 || (m === 6 && d >= 1);
+  const startYear = dopoGiugno1 ? y : y - 1;
   const bStart = startYear % 2 === 1 ? startYear : startYear - 1;
   return `${bStart}-${String(bStart + 2).slice(2)}`;
 }
@@ -51,7 +51,7 @@ const DEADLINE_CALENDARIO = [
   { id: 'mercato_estivo_close',   month: 9,  day: 15, hour: 24, type: 'mercato',  label: 'Chiusura mercato estivo' },
   { id: 'mercato_inv_open',       month: 1,  day: 1,  hour: 9,  type: 'mercato',  label: 'Apertura mercato invernale' },
   { id: 'mercato_inv_close',      month: 2,  day: 15, hour: 24, type: 'mercato',  label: 'Chiusura mercato invernale' },
-  { id: 'tassa_settimanale',      weekday: 1, hour: 23, minute: 59, type: 'tassa', label: 'Tassa settimanale' },
+  { id: 'tassa_settimanale',      weekday: 0, hour: 23, minute: 0, type: 'tassa', label: 'Tassa settimanale' },
   { id: 'stipendi_mensili',       day: 1,    hour: 0,  minute: 1,  type: 'stipendi', label: 'Pagamento stipendi' },
   { id: 'aggiornamento_stipendi_gen', month: 1, day: 1, hour: 8, type: 'stipendi', label: 'Aggiornamento stipendi 01/01' },
   { id: 'aggiornamento_stipendi_giu', month: 6, day: 1, hour: 8, type: 'stipendi', label: 'Aggiornamento stipendi 01/06' },
@@ -64,7 +64,7 @@ function getNextOccurrence(def) {
   const now = new Date();
   const year = now.getFullYear();
 
-  // Deadline settimanale (es. tassa lunedì 23:59)
+  // Deadline settimanale (es. tassa domenica 23:00)
   if (def.weekday !== undefined) {
     const d = new Date(now);
     const diff = (def.weekday - d.getDay() + 7) % 7;
@@ -3969,7 +3969,7 @@ const CATALOGO_INVESTIMENTI = [
   { nome: "Deroga U-21",              categoria: "invernale", costo: 4,   desc: "Fino al 01/06: puoi avere 30 giocatori in rosa con solo 1 Under-21." },
   { nome: "Clausola Segreta",         categoria: "invernale", costo: 4,   desc: "Clausola rescissoria dei tuoi giocatori: da 1.75× a 2.0× la quotazione fino al 31/05." },
   { nome: "Re del Girone di Ritorno", categoria: "invernale", costo: 7,   desc: "Dalla 19ª giornata: se ottieni ≥10 punti in più rispetto alla prima metà → +10M a fine anno." },
-  { nome: "Corso Analisi Video",      categoria: "invernale", costo: 10,  desc: "1 sostituzione extra rispetto alla formazione originaria. Non nelle ultime 3 giornate né in finale/semifinale Coppa. Usabile una volta." },
+  { nome: "Corso Analisi Video",      categoria: "invernale", costo: 10,  desc: "1 sostituzione extra rispetto alla formazione originaria. Non nelle ultime 5 giornate né in finale/semifinale Coppa. Usabile una volta." },
 ];
 
 /* ─── ALLENATORE TAB ─────────────────────────────────────────────────────────── */
@@ -5457,22 +5457,18 @@ function prezzoMinimo(quot) { return parseFloat((quot / 2).toFixed(2)); }
 // Calcola clausola rescissoria (art. 5.5): quot × 1.75
 function valoreClausola(quot) { return parseFloat((quot * 1.75).toFixed(2)); }
 
-// Calcola scadenza prestito: prossima data 01/01 o 01/06 + mesi (art. 5.8)
-function scadenzaPrestito(mesi) {
-  const now = new Date();
-  const y = now.getFullYear();
-  const candidates = [
-    new Date(y, 0, 1), new Date(y, 5, 1),
-    new Date(y+1, 0, 1), new Date(y+1, 5, 1),
-    new Date(y+2, 0, 1),
-  ];
-  const start = candidates.find(d => d > now) || candidates[candidates.length - 1];
-  const end = new Date(start);
-  end.setMonth(end.getMonth() + mesi);
-  // Arrotonda a 01/01 o 01/06 più vicina
-  const jan = new Date(end.getFullYear(), 0, 1);
-  const jun = new Date(end.getFullYear(), 5, 1);
-  const target = Math.abs(end - jan) < Math.abs(end - jun) ? jan : jun;
+// Calcola scadenza prestito: prima scadenza fissa (01/01 o 01/06)
+// non precedente alla durata scelta, calcolata dalla data dell'accordo (art. 5.8).
+function scadenzaPrestito(mesi, dataInizio = new Date()) {
+  const targetMinimo = new Date(dataInizio);
+  targetMinimo.setHours(0, 0, 0, 0);
+  targetMinimo.setMonth(targetMinimo.getMonth() + Number(mesi || 0));
+
+  const candidates = [];
+  for (let y = targetMinimo.getFullYear(); y <= targetMinimo.getFullYear() + 2; y++) {
+    candidates.push(new Date(y, 0, 1), new Date(y, 5, 1));
+  }
+  const target = candidates.sort((a, b) => a - b).find(d => d >= targetMinimo);
   return target.toISOString().slice(0, 10);
 }
 
@@ -5843,21 +5839,9 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
         await updateTrattativa(t.id, { stato: 'accettata_differita', updated_at: new Date().toISOString() });
       } else {
         await eseguiTrasferimento(t).catch(e => { throw new Error(`Trasferimento fallito: ${e.message}`); });
-        await aggiornaFantaSquadraListone(t.giocatore, t.a_squadra).catch(e => { throw new Error(`Aggiornamento listoneSquadra fallito (giocatore trasferito ma listone non aggiornato): ${e.message}`); });
-        await aggiornaStipendioDopoTrasferimento(t.giocatore, t.a_squadra).catch(e => { throw new Error(`Aggiornamento stipendio fallito (segnalarlo manualmente): ${e.message}`); });
-        await logAzione({ utente: 'admin', squadra: t.da_squadra, azione: 'trasferimento', entita: 'trattative', entitaId: t.id, descrizione: `Trasferimento: ${t.giocatore} da ${t.da_squadra} a ${t.a_squadra} — ${t.prezzo}M (${t.tipo})`, dataPrima: { trattativa: t }, rollbackPossibile: false });
-        // Controlla se il giocatore è eleggibile per il vivaio dell'acquirente
-        const { data: newPlayer } = await supabase.from('rosa').select('id, anni, quot, partite').eq('squadra', t.a_squadra).ilike('nome', `%${t.giocatore}%`).single();
-        if (newPlayer && newPlayer.anni > 0 && newPlayer.anni <= 23 && Number(newPlayer.quot || 0) <= 3 && (newPlayer.partite || 0) === 0) {
-          const { count: vivCount } = await supabase.from('rosa').select('id', { count: 'exact', head: true }).eq('squadra', t.a_squadra).eq('in_vivaio', true);
-          const maxViv = 3;
-          if ((vivCount || 0) < maxViv) {
-            const sceltaVivaio = window.confirm(`🌱 ${t.giocatore} è eleggibile per il vivaio di ${t.a_squadra} (U23 · Q≤3 · 0 presenze).\n\nSlot vivaio disponibili: ${maxViv - (vivCount||0)}/${maxViv}\n\nVuoi destinarlo al VIVAIO?\n\n[OK = Vivaio · Annulla = Rosa normale]`);
-            if (sceltaVivaio) {
-              await supabase.from('rosa').update({ in_vivaio: true, vivaio_presenze: 0, data_entrata_vivaio: new Date().toISOString().slice(0, 10) }).eq('id', newPlayer.id);
-            }
-          }
-        }
+        await aggiornaFantaSquadraListone(t.giocatore, t.da_squadra).catch(e => { throw new Error(`Aggiornamento listoneSquadra fallito (giocatore trasferito ma listone non aggiornato): ${e.message}`); });
+        await aggiornaStipendioDopoTrasferimento(t.giocatore, t.da_squadra).catch(e => { throw new Error(`Aggiornamento stipendio fallito (segnalarlo manualmente): ${e.message}`); });
+        await logAzione({ utente: 'admin', squadra: t.da_squadra, azione: 'trasferimento', entita: 'trattative', entitaId: t.id, descrizione: `Trasferimento: ${t.giocatore} da ${t.a_squadra} a ${t.da_squadra} — ${t.prezzo}M (${t.tipo})`, dataPrima: { trattativa: t }, rollbackPossibile: false });
         // Notify both teams via DM + canale gruppo
         sendTelegramNotification('trattativa_accettata', { giocatore: t.giocatore, importo: t.prezzo, da_squadra: t.da_squadra, a_squadra: t.a_squadra }, t.da_squadra);
         sendTelegramNotification('trattativa_accettata', { giocatore: t.giocatore, importo: t.prezzo, da_squadra: t.da_squadra, a_squadra: t.a_squadra }, t.a_squadra);
@@ -5875,14 +5859,14 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   async function eseguiTrasferimentiDifferiti() {
     const differiti = trattative.filter(t => t.stato === 'accettata_differita');
     if (!differiti.length) { alert("Nessun trasferimento differito in attesa."); return; }
-    if (!window.confirm(`Eseguire ${differiti.length} trasferiment${differiti.length > 1 ? 'i' : 'o'} differit${differiti.length > 1 ? 'i' : 'o'}?\n\n${differiti.map(t => `${t.giocatore}: ${t.da_squadra} → ${t.a_squadra} (${t.prezzo}M)`).join('\n')}`)) return;
+    if (!window.confirm(`Eseguire ${differiti.length} trasferiment${differiti.length > 1 ? 'i' : 'o'} differit${differiti.length > 1 ? 'i' : 'o'}?\n\n${differiti.map(t => `${t.giocatore}: ${t.a_squadra} → ${t.da_squadra} (${t.prezzo}M)`).join('\n')}`)) return;
     setLoading(true);
     let ok = 0, err = [];
     for (const t of differiti) {
       try {
         await eseguiTrasferimento(t);
-        await aggiornaFantaSquadraListone(t.giocatore, t.a_squadra);
-        await aggiornaStipendioDopoTrasferimento(t.giocatore, t.a_squadra);
+        await aggiornaFantaSquadraListone(t.giocatore, t.da_squadra);
+        await aggiornaStipendioDopoTrasferimento(t.giocatore, t.da_squadra);
         ok++;
       } catch(e) { err.push(`${t.giocatore}: ${e.message}`); }
     }
@@ -5918,12 +5902,11 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     if (!nuovoPrezzo || nuovoPrezzo <= 0) { alert("Inserisci un prezzo valido"); return; }
     const quot = t.quot_giocatore || 0;
     if (nuovoPrezzo < quot / 2) { alert(`Prezzo minimo: ${(quot/2).toFixed(2)}M (½ della quotazione)`); return; }
-    // Scambia le parti e incrementa n_rifiuti; reset deadline a now+24h
+    // Mantiene stabili acquirente (da_squadra) e cedente (a_squadra).
+    // Lo stato controproposta indica che ora deve rispondere l'acquirente.
     await updateTrattativa(t.id, {
-      stato: 'in attesa',
+      stato: 'controproposta',
       prezzo: nuovoPrezzo,
-      da_squadra: t.a_squadra,
-      a_squadra: t.da_squadra,
       n_rifiuti: (Number(t.n_rifiuti) || 0) + 1,
       note: `[CONTROFFERTA ${nuovoPrezzo}M] ${t.note || ''}`.trim(),
       updated_at: new Date().toISOString(),
@@ -6096,9 +6079,18 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
           {offerteInAttesa.map(o => {
             const stato = calcolaStatoNotificaOfferta(o);
             const colori = { ok: "#888", warning: "#f59e0b", danger: "#f97316", critical: "#ef4444", max: "#ef4444", scaduta: "#ef4444" };
+            const daTeam = teams.find(t => t.name === o.da_squadra);
+            const aTeam = teams.find(t => t.name === o.a_squadra);
             return (
-              <div key={o.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, padding: "4px 0", borderBottom: "1px solid #ffffff08" }}>
-                <span style={{ color: "#e0e0e0", fontWeight: 600 }}>{o.giocatore} <span style={{ color: "#555", fontWeight: 400 }}>da {o.da_squadra}</span></span>
+              <div key={o.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, fontSize: 11, padding: "6px 0", borderBottom: "1px solid #ffffff08", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                  {daTeam && <TeamAvatar team={daTeam} size={18} />}
+                  <span style={{ color: "#555", fontWeight: 700 }}>→</span>
+                  {aTeam && <TeamAvatar team={aTeam} size={18} />}
+                  <span style={{ color: "#e0e0e0", fontWeight: 600, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {o.giocatore}
+                  </span>
+                </div>
                 <span style={{ color: colori[stato.urgenza], fontWeight: 700 }}>{stato.messaggio}</span>
               </div>
             );
@@ -6166,7 +6158,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                 <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", borderTop: "1px solid #ffffff08", flexWrap: "wrap", gap: 6 }}>
                   <span style={{ fontSize: 12, color: "#ddd" }}>{t.giocatore} · {t.da_squadra} → {t.a_squadra} · {t.prezzo}M</span>
                   {isAdmin && getMercatoStatus().aperto && (
-                    <button onClick={async () => { setLoading(true); try { await eseguiTrasferimento(t); await aggiornaFantaSquadraListone(t.giocatore, t.a_squadra); await aggiornaStipendioDopoTrasferimento(t.giocatore, t.a_squadra); await loadAll(); } catch(e){alert(e.message);} finally{setLoading(false);} }}
+                    <button onClick={async () => { setLoading(true); try { await eseguiTrasferimento(t); await aggiornaFantaSquadraListone(t.giocatore, t.da_squadra); await aggiornaStipendioDopoTrasferimento(t.giocatore, t.da_squadra); await loadAll(); } catch(e){alert(e.message);} finally{setLoading(false);} }}
                       style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "#f9731622", color: "#f97316", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                       ▶ Esegui
                     </button>
@@ -6418,10 +6410,10 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                   {tutteTrattative.filter(t => t.stato === 'in attesa' || t.stato === 'controproposta').map(t => {
                     const hLeft = hoursLeft(t.deadline_risposta);
                     const urgente = hLeft <= 6;
-                    const daTeam = TEAMS.find(x => x.name === t.da_squadra);
-                    const aTeam  = TEAMS.find(x => x.name === t.a_squadra);
-                    const isRicevente = t.a_squadra === mySquadra;
-                    const canRispondi = isRicevente || isAdmin;
+                    const daTeam = teams.find(x => x.name === t.da_squadra);
+                    const aTeam  = teams.find(x => x.name === t.a_squadra);
+                    const squadraCheDeveRispondere = t.stato === 'controproposta' ? t.da_squadra : t.a_squadra;
+                    const canRispondi = squadraCheDeveRispondere === mySquadra || isAdmin;
                     return (
                       <div key={t.id} style={{ background: urgente ? "#ef444410" : "#ffffff08", border: `1px solid ${urgente ? "#ef444430" : "#ffffff10"}`, borderRadius: 12, padding: "12px 14px", marginBottom: 8 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
@@ -6670,8 +6662,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
             : tutteTrattative.filter(t => t.stato !== 'in attesa' && t.stato !== 'controproposta').length === 0
             ? <div style={{ fontSize: 12, color: "#555", fontStyle: "italic" }}>Nessuna trattativa conclusa</div>
             : tutteTrattative.filter(t => t.stato !== 'in attesa' && t.stato !== 'controproposta').map(t => {
-              const daTeam = TEAMS.find(x => x.name === t.da_squadra);
-              const aTeam  = TEAMS.find(x => x.name === t.a_squadra);
+              const daTeam = teams.find(x => x.name === t.da_squadra);
+              const aTeam  = teams.find(x => x.name === t.a_squadra);
               return (
                 <div key={t.id} style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                   {daTeam && <TeamAvatar team={daTeam} size={24} />}
@@ -6715,7 +6707,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em", marginTop: 16, marginBottom: 6 }}>📞 ASTE SVINCOLATI CONCLUSE</div>
                 {storSvinc.map(a => {
                   const statoCol = a.stato === 'assegnata' ? "#10b981" : a.stato === 'annullata' ? "#ef4444" : "#555";
-                  const vincTeam = a.vincitore ? TEAMS.find(t => t.name === a.vincitore) : null;
+                  const vincTeam = a.vincitore ? teams.find(t => t.name === a.vincitore) : null;
                   return (
                     <div key={a.id} style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: "10px 14px", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                       {vincTeam && <TeamAvatar team={vincTeam} size={24} />}
@@ -10044,14 +10036,14 @@ function AdminControlRoomPage({ teams }) {
               {differiti.length > 0 && (
                 <button
                   onClick={async () => {
-                    if (!window.confirm(`Eseguire ${differiti.length} trasferiment${differiti.length > 1 ? 'i' : 'o'} differit${differiti.length > 1 ? 'i' : 'o'}?\n\n${differiti.map(t => `${t.giocatore}: ${t.da_squadra} → ${t.a_squadra} (${t.prezzo}M)`).join('\n')}`)) return;
+                    if (!window.confirm(`Eseguire ${differiti.length} trasferiment${differiti.length > 1 ? 'i' : 'o'} differit${differiti.length > 1 ? 'i' : 'o'}?\n\n${differiti.map(t => `${t.giocatore}: ${t.a_squadra} → ${t.da_squadra} (${t.prezzo}M)`).join('\n')}`)) return;
                     setBusy('Trasferimenti differiti');
                     let ok = 0, errs = [];
                     for (const t of differiti) {
                       try {
                         await eseguiTrasferimento(t);
-                        await aggiornaFantaSquadraListone(t.giocatore, t.a_squadra);
-                        await aggiornaStipendioDopoTrasferimento(t.giocatore, t.a_squadra);
+                        await aggiornaFantaSquadraListone(t.giocatore, t.da_squadra);
+                        await aggiornaStipendioDopoTrasferimento(t.giocatore, t.da_squadra);
                         ok++;
                       } catch(e) { errs.push(`${t.giocatore}: ${e.message}`); }
                     }
