@@ -5599,6 +5599,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
   // ── Picker squadra/giocatore (nuovo form trattativa) ──────────────────────
   const emptyForm = {
+    squadraMittente: "",      // solo admin: squadra che invia l'offerta
     squadraTarget: "",        // squadra da cui acquistare
     giocatoreId: "",          // id giocatore selezionato
     giocatoreNome: "",
@@ -5621,7 +5622,15 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const [myRosa, setMyRosa] = useState([]);
 
   const mySquadra = profile?.squadra;
+  const squadraMittente = isAdmin ? (form.squadraMittente || mySquadra) : mySquadra;
   const mercato = getMercatoStatus();
+
+  // Per gli admin la squadra mittente predefinita è sempre quella del proprio profilo.
+  useEffect(() => {
+    if (isAdmin && mySquadra && !form.squadraMittente) {
+      setForm(f => ({ ...f, squadraMittente: mySquadra }));
+    }
+  }, [isAdmin, mySquadra, form.squadraMittente]);
 
   // Tick ogni minuto
   useEffect(() => {
@@ -5772,10 +5781,12 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       }
     }
 
-    const da = isAdmin ? form.squadraTarget : mySquadra;
+    const da = squadraMittente;
+    if (!da) { alert('Squadra mittente non disponibile'); return; }
+    if (da === form.squadraTarget) { alert('La squadra mittente e la squadra cedente devono essere diverse'); return; }
     const scad = form.tipo.startsWith('prestito') ? scadenzaPrestito(parseInt(form.durata_mesi)) : null;
     const tipoLabel = { cessione:'Acquisto diretto', clausola:'Clausola rescissoria', prestito:'Prestito con riscatto', prestito_secco:'Prestito secco' }[form.tipo] || form.tipo;
-    if (!window.confirm(`Inviare offerta?\n\n${tipoLabel}: ${form.giocatoreNome}\nDa: ${mySquadra} → ${form.squadraTarget}\nPrezzo: ${(form.tipo === 'clausola' ? valoreClausola(Number(form.quot)) : parseFloat(form.prezzo)||0).toFixed(2)}M`)) return;
+    if (!window.confirm(`Inviare offerta?\n\n${tipoLabel}: ${form.giocatoreNome}\nDa: ${da} → ${form.squadraTarget}\nPrezzo: ${(form.tipo === 'clausola' ? valoreClausola(Number(form.quot)) : parseFloat(form.prezzo)||0).toFixed(2)}M`)) return;
 
     const trattativa = await insertTrattativa({
       da_squadra: da,
@@ -5806,11 +5817,11 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     sendTelegramNotification('trattativa_ricevuta', {
       giocatore: form.giocatoreNome,
       importo: prezzo,
-      da_squadra: mySquadra,
+      da_squadra: da,
     }, form.squadraTarget);
 
     setShowForm(false);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, squadraMittente: isAdmin ? mySquadra : "" });
     setRosaTarget([]);
   }
 
@@ -6175,17 +6186,40 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
             <div style={{ background: "#ffffff08", border: "1.5px solid #6366f130", borderRadius: 16, padding: 20 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em", marginBottom: 16 }}>📤 NUOVA TRATTATIVA</div>
 
+              {/* STEP 0 — Solo admin: scegli la squadra mittente */}
+              {isAdmin && (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 10, color: "#666", marginBottom: 6 }}>SQUADRA MITTENTE</div>
+                  <select
+                    style={sel}
+                    value={squadraMittente || ""}
+                    onChange={e => {
+                      const nuovaMittente = e.target.value;
+                      setForm(f => ({
+                        ...f,
+                        squadraMittente: nuovaMittente,
+                        ...(f.squadraTarget === nuovaMittente ? { squadraTarget: "", giocatoreId: "", giocatoreNome: "", quot: 0, prezzo: "" } : {}),
+                      }));
+                      if (form.squadraTarget === nuovaMittente) setRosaTarget([]);
+                    }}
+                  >
+                    {teams.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
+                  </select>
+                  <div style={{ fontSize: 10, color: "#555", marginTop: 5 }}>Predefinita: la squadra associata al tuo profilo.</div>
+                </div>
+              )}
+
               {/* STEP 1 — Scegli squadra */}
               <div style={{ marginBottom: 14 }}>
                 <div style={{ fontSize: 10, color: "#666", marginBottom: 6 }}>1. SQUADRA DA CUI ACQUISTARE</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {TEAMS.filter(t => t.name !== mySquadra).map(t => (
+                  {teams.filter(t => t.name !== squadraMittente).map(t => (
                     <button key={t.name} onClick={() => onSquadraTargetChange(t.name)} style={{
                       padding: "6px 12px", borderRadius: 8, border: `1px solid ${form.squadraTarget === t.name ? t.color : "#ffffff15"}`,
                       background: form.squadraTarget === t.name ? t.color + "22" : "transparent",
                       color: form.squadraTarget === t.name ? t.color : "#888",
-                      fontSize: 11, fontWeight: 700, cursor: "pointer",
-                    }}>{t.tag} {t.name}</button>
+                      fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 7,
+                    }}><TeamAvatar team={t} size={22} /><span>{t.name}</span></button>
                   ))}
                 </div>
               </div>
@@ -8066,8 +8100,8 @@ function ModificaRosePage({ teams, onRefresh, isAdmin = true }) {
       {/* Selezione squadra */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {teams.map(t => (
-          <button key={t.id} onClick={() => setSquadraSelezionata(t.name)} style={{ padding: "8px 14px", borderRadius: 10, border: `1.5px solid ${squadraSelezionata === t.name ? t.color : "#ffffff12"}`, background: squadraSelezionata === t.name ? t.color + "22" : "transparent", color: squadraSelezionata === t.name ? t.color : "#666", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
-            {t.tag}
+          <button key={t.id} onClick={() => setSquadraSelezionata(t.name)} title={t.name} style={{ padding: "6px", borderRadius: 10, border: `1.5px solid ${squadraSelezionata === t.name ? t.color : "#ffffff12"}`, background: squadraSelezionata === t.name ? t.color + "22" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <TeamAvatar team={t} size={30} />
           </button>
         ))}
       </div>
@@ -11007,9 +11041,11 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onPin, teams, p
                 return (
                   <div key={comm.id} style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
                     {/* Mini avatar */}
-                    <div style={{ width:30, height:30, borderRadius:"50%", flexShrink:0, background:`linear-gradient(135deg,${ctColor}cc,${ctColor}44)`, border:`1.5px solid ${ctColor}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:900, color:"#fff", fontFamily:"'Bebas Neue',sans-serif" }}>
-                      {ct?.tag || comm.autore.slice(0,2).toUpperCase()}
-                    </div>
+                    {ct ? <TeamAvatar team={ct} size={30} /> : (
+                      <div style={{ width:30, height:30, borderRadius:"50%", flexShrink:0, background:`linear-gradient(135deg,${ctColor}cc,${ctColor}44)`, border:`1.5px solid ${ctColor}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:900, color:"#fff", fontFamily:"'Bebas Neue',sans-serif" }}>
+                        {comm.autore.slice(0,2).toUpperCase()}
+                      </div>
+                    )}
                     <div style={{ flex:1, background:"#ffffff06", borderRadius:"0 12px 12px 12px", padding:"8px 12px", position:"relative" }}>
                       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
                         <span style={{ fontSize:12, fontWeight:700, color:"#ddd" }}>{comm.squadra || comm.autore}</span>
@@ -11038,9 +11074,11 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onPin, teams, p
                 const mt = teams?.find(t => t.name === profile.squadra);
                 const mc = mt?.color || "#6366f1";
                 return (
-                  <div style={{ width:30, height:30, borderRadius:"50%", flexShrink:0, background:`linear-gradient(135deg,${mc}cc,${mc}44)`, border:`1.5px solid ${mc}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:900, color:"#fff", fontFamily:"'Bebas Neue',sans-serif" }}>
-                    {mt?.tag || (profile.nome||profile.email||"?").slice(0,2).toUpperCase()}
-                  </div>
+                  mt ? <TeamAvatar team={mt} size={30} /> : (
+                    <div style={{ width:30, height:30, borderRadius:"50%", flexShrink:0, background:`linear-gradient(135deg,${mc}cc,${mc}44)`, border:`1.5px solid ${mc}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:900, color:"#fff", fontFamily:"'Bebas Neue',sans-serif" }}>
+                      {(profile.nome||profile.email||"?").slice(0,2).toUpperCase()}
+                    </div>
+                  )
                 );
               })()}
               <div style={{ flex:1, background:"#ffffff08", borderRadius:"0 12px 12px 12px", border:"1px solid #ffffff10", padding:"8px 12px", display:"flex", gap:8, alignItems:"flex-end" }}>
