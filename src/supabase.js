@@ -2066,11 +2066,36 @@ export async function getControlRoomStatus() {
     supabase.from('movimenti').select('squadra, descrizione').gte('data', `${meseISO}-01`),
   ]);
 
-  const tassePagate = new Set((tasse || []).map(t => t.squadra));
+  const squadreList = squadre || [];
+  const squadreAttive = new Set(squadreList.map(s => s.name));
+
+  // Dettaglio tasse della settimana corrente: serve a vedere subito duplicati,
+  // squadre mancanti e record rimasti da squadre non più presenti.
+  const tasseCountBySquadra = {};
+  const tasseDateBySquadra = {};
+  for (const t of (tasse || [])) {
+    tasseCountBySquadra[t.squadra] = (tasseCountBySquadra[t.squadra] || 0) + 1;
+    if (!tasseDateBySquadra[t.squadra]) tasseDateBySquadra[t.squadra] = [];
+    tasseDateBySquadra[t.squadra].push(t.data_controllo);
+  }
+
+  const tassePagate = new Set(Object.keys(tasseCountBySquadra).filter(squadra => squadreAttive.has(squadra) && tasseCountBySquadra[squadra] >= 1));
+  const tasseDuplicate = Object.entries(tasseCountBySquadra)
+    .filter(([squadra, count]) => squadreAttive.has(squadra) && count > 1)
+    .map(([squadra, count]) => ({ squadra, count, date: tasseDateBySquadra[squadra] || [] }));
+  const tasseMancanti = squadreList
+    .filter(sq => !tasseCountBySquadra[sq.name])
+    .map(sq => sq.name);
+  const tasseExtra = Object.entries(tasseCountBySquadra)
+    .filter(([squadra]) => !squadreAttive.has(squadra))
+    .map(([squadra, count]) => ({ squadra, count, date: tasseDateBySquadra[squadra] || [] }));
+  const tasseTotRecord = (tasse || []).length;
+  const tasseDettagli = { countBySquadra: tasseCountBySquadra, dateBySquadra: tasseDateBySquadra, duplicate: tasseDuplicate, mancanti: tasseMancanti, extra: tasseExtra, totaleRecord: tasseTotRecord };
+
   const stipendiPagati = new Set((movMese || []).filter(m => m.descrizione === stipDesc).map(m => m.squadra));
   const stadioPagato = new Set((movMese || []).filter(m => m.descrizione === stadioDesc).map(m => m.squadra));
 
-  return { squadre: squadre || [], tassePagate, stipendiPagati, stadioPagato, domenica, meseISO };
+  return { squadre: squadreList, tassePagate, tasseDettagli, stipendiPagati, stadioPagato, domenica, meseISO };
 }
 
 // ─── AUDIT LOG ────────────────────────────────────────────────────────────────
