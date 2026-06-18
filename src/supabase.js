@@ -2024,8 +2024,6 @@ export async function annullaTassaATutti(dataRiferimento = null) {
 export async function ripulisciAnomalieTasse(dataCorretta = null) {
   const keepDate = dataCorretta || getDomenicaCorrente();
   const ref = new Date(keepDate);
-  const { week, year } = getWeekNumber(ref);
-  const settimanaLabel = `${week}/${year}`;
 
   const lunedi = new Date(ref);
   const d = lunedi.getDay();
@@ -2097,15 +2095,19 @@ export async function ripulisciAnomalieTasse(dataCorretta = null) {
   const idsDaRimuovere = rimossi.map(t => t.id);
   await supabase.from('tasse_settimanali').delete().in('id', idsDaRimuovere);
 
-  // Cancella i movimenti collegati ai record rimossi. Il filtro include squadra + data + descrizione
-  // per evitare di toccare movimenti non collegati alla tassa settimanale.
+  // Cancella esclusivamente il movimento collegato a ciascun record rimosso.
+  // La settimana viene calcolata dalla data del singolo record, non dalla data da conservare:
+  // in questo modo vengono rimossi correttamente anche record anomali appartenenti a settimane diverse.
   for (const t of rimossi) {
+    const dataMovimento = new Date(t.data_controllo);
+    const { week: recordWeek, year: recordYear } = getWeekNumber(dataMovimento);
+    const recordSettimanaLabel = `${recordWeek}/${recordYear}`;
+
     await supabase.from('movimenti')
       .delete()
       .eq('squadra', t.squadra)
       .eq('data', t.data_controllo)
-      .ilike('descrizione', 'Tassa settimanale%')
-      .ilike('descrizione', `%settimana ${settimanaLabel}%`);
+      .ilike('descrizione', `Tassa settimanale%settimana ${recordSettimanaLabel}%`);
   }
 
   return {
