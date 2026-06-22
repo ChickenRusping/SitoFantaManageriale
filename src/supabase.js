@@ -5,6 +5,112 @@ const SUPABASE_KEY = 'sb_publishable_ZI75g_AJGpsblAxVDDFBIQ_-tqGXPym';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+
+// ─── OTTIMIZZAZIONE IMMAGINI CLIENT-SIDE ─────────────────────────────────────
+// Comprimiamo e convertiamo gli upload in WebP prima di mandarli a Supabase.
+// Questo riduce drasticamente Cached Egress e tempi di caricamento.
+const IMAGE_UPLOAD_LIMIT_MB = 12;
+const WEBP_MIME = 'image/webp';
+
+function safeFileBaseName(name = 'immagine') {
+  return String(name)
+    .replace(/\.[^.]+$/, '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80) || 'immagine';
+}
+
+async function canvasToBlob(canvas, type, quality) {
+  return await new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+}
+
+export async function compressImageFile(file, {
+  maxWidth = 1400,
+  maxHeight = 1400,
+  quality = 0.78,
+  outputType = WEBP_MIME,
+  suffix = '',
+} = {}) {
+  if (!file || !file.type?.startsWith('image/')) return file;
+  if (file.size > IMAGE_UPLOAD_LIMIT_MB * 1024 * 1024) {
+    throw new Error(`Immagine troppo grande: max ${IMAGE_UPLOAD_LIMIT_MB}MB prima della compressione`);
+  }
+
+  // SVG/GIF animati non vengono ricodificati bene via canvas: li blocchiamo per evitare file pesanti o rotti.
+  if (file.type === 'image/svg+xml' || file.type === 'image/gif') {
+    throw new Error('Formato non supportato per upload ottimizzato. Usa PNG, JPG/JPEG o WebP.');
+  }
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    const ratio = Math.min(maxWidth / bitmap.width, maxHeight / bitmap.height, 1);
+    const targetWidth = Math.max(1, Math.round(bitmap.width * ratio));
+    const targetHeight = Math.max(1, Math.round(bitmap.height * ratio));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext('2d', { alpha: true });
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(bitmap, 0, 0, targetWidth, targetHeight);
+
+    const blob = await canvasToBlob(canvas, outputType, quality);
+    if (!blob) throw new Error('Compressione immagine non riuscita');
+
+    const originalBase = safeFileBaseName(file.name);
+    const outName = `${originalBase}${suffix}.webp`;
+    return new File([blob], outName, { type: outputType, lastModified: Date.now() });
+  } catch (err) {
+    throw new Error(`Compressione immagine non riuscita: ${err.message}`);
+  }
+}
+
+async function compressForUpload(file, preset = 'news') {
+  const presets = {
+    avatar: { maxWidth: 500, maxHeight: 500, quality: 0.74 },
+    stemma: { maxWidth: 500, maxHeight: 500, quality: 0.74 },
+    maglia: { maxWidth: 1200, maxHeight: 1200, quality: 0.76 },
+    squadra: { maxWidth: 1400, maxHeight: 1400, quality: 0.78 },
+    news: { maxWidth: 1600, maxHeight: 1600, quality: 0.78 },
+  };
+  return await compressImageFile(file, presets[preset] || presets.news);
+}
+
+function ensureWebpPath(path) {
+  const raw = String(path || `immagini/${Date.now()}.webp`);
+  if (/\.[^/.?#]+($|[?#])/.test(raw)) return raw.replace(/\.[^/.?#]+($|[?#])/, '.webp$1');
+  return raw.replace(/\/$/, '') + '.webp';
+}
+
+function uniqueStoragePath(prefix, baseName = 'immagine') {
+  const cleanPrefix = String(prefix || 'immagini').replace(/^\/+|\/+$/g, '');
+  const safeBase = safeFileBaseName(baseName);
+  const rand = Math.random().toString(36).slice(2, 8);
+  return `${cleanPrefix}/${Date.now()}_${rand}_${safeBase}.webp`;
+}
+
+function storagePathFromPublicUrl(url, bucket) {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    const marker = `/storage/v1/object/public/${bucket}/`;
+    const idx = u.pathname.indexOf(marker);
+    if (idx < 0) return null;
+    return decodeURIComponent(u.pathname.slice(idx + marker.length));
+  } catch {
+    return null;
+  }
+}
+
+async function removeOldStorageObject(bucket, publicUrl) {
+  const oldPath = storagePathFromPublicUrl(publicUrl, bucket);
+  if (!oldPath) return;
+  try { await supabase.storage.from(bucket).remove([oldPath]); } catch {}
+}
+
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
 
 export async function signIn(email, password) {
@@ -29,12 +135,22 @@ export async function updateProfile(userId, fields) {
 }
 
 export async function uploadAvatar(userId, file) {
-  const ext = file.name.split('.').pop();
-  const path = `avatars/${userId}.${ext}`;
-  const { error } = await supabase.storage.from('team-images').upload(path, file, { upsert: true, contentType: file.type });
+  if (!file) throw new Error('Nessun file selezionato');
+  const optimized = await compressForUpload(file, 'avatar');
+  const path = uniqueStoragePath(`avatars/${userId}`, optimized.name);
+
+  const { data: oldProfile } = await supabase.from('profiles').select('avatar_url').eq('id', userId).maybeSingle();
+
+  const { error } = await supabase.storage.from('team-images').upload(path, optimized, {
+    upsert: false,
+    contentType: optimized.type || WEBP_MIME,
+    cacheControl: '31536000',
+  });
   if (error) throw error;
   const { data } = supabase.storage.from('team-images').getPublicUrl(path);
-  return data.publicUrl + '?t=' + Date.now();
+  const publicUrl = data.publicUrl;
+  await removeOldStorageObject('team-images', oldProfile?.avatar_url);
+  return publicUrl;
 }
 
 // ─── SQUADRE ──────────────────────────────────────────────────────────────────
@@ -59,17 +175,81 @@ export function subscribeSquadre(callback) {
 // ─── ROSA ─────────────────────────────────────────────────────────────────────
 
 export async function getRosa(squadra) {
+  // Applica eventuali scadenze vivaio prima di restituire la rosa.
+  // Se il SQL di migrazione non è ancora stato eseguito, non blocchiamo il caricamento.
+  try { await processaDecisioniVivaio(squadra); } catch {}
   const { data, error } = await supabase.from('rosa').select('*').eq('squadra', squadra).order('ruolo');
   if (error) throw error;
   return data;
 }
 
+// ─── REGOLAMENTO ROSA (art. 3) ───────────────────────────────────────────────
+export function calcolaRosaCompliance(players = []) {
+  const rosaAttiva = (players || []).filter(p => !p.in_vivaio);
+  const vivaio = (players || []).filter(p => p.in_vivaio);
+  const totale = rosaAttiva.length;
+  const portieri = rosaAttiva.filter(p => p.ruolo === 'Por').length;
+  const movimento = totale - portieri;
+  const u21 = rosaAttiva.filter(p => Number(p.anni || 0) > 0 && Number(p.anni || 0) <= 21).length;
+  const issues = [];
+
+  if (portieri < 2) issues.push(`Servono almeno 2 portieri: presenti ${portieri}.`);
+  if (movimento < 23) issues.push(`Servono almeno 23 giocatori di movimento: presenti ${movimento}.`);
+  if (totale > 30) issues.push(`Rosa oltre il massimo: ${totale}/30 giocatori.`);
+  const u21Richiesti = totale >= 30 ? 3 : totale === 29 ? 2 : totale === 28 ? 1 : 0;
+  if (u21 < u21Richiesti) issues.push(`Con ${totale} giocatori servono almeno ${u21Richiesti} Under-21: presenti ${u21}.`);
+
+  const contaSerieA = {};
+  for (const g of rosaAttiva) {
+    const club = (g.squadra_serie_a || '').trim();
+    if (!club) continue;
+    contaSerieA[club] = (contaSerieA[club] || 0) + 1;
+  }
+  for (const [club, n] of Object.entries(contaSerieA)) {
+    if (n > 5) issues.push(`Troppi giocatori del ${club}: ${n}/5.`);
+  }
+  if (vivaio.length > 2) issues.push(`Vivaio oltre il massimo: ${vivaio.length}/2 giocatori.`);
+
+  return { regolare: issues.length === 0, issues, totale, portieri, movimento, u21, vivaio: vivaio.length, contaSerieA };
+}
+
+async function assertRosaDopoAggiunta(squadra, nuovoGiocatore, { ignoreMinimi = true } = {}) {
+  if (nuovoGiocatore?.in_vivaio) return;
+  const { data: rosa } = await supabase.from('rosa').select('*').eq('squadra', squadra).eq('in_vivaio', false);
+  const futura = [...(rosa || []), { ...nuovoGiocatore, in_vivaio: false }];
+  const check = calcolaRosaCompliance(futura);
+  const blocchi = check.issues.filter(msg => {
+    if (!ignoreMinimi) return true;
+    return !msg.startsWith('Servono almeno');
+  });
+  if (blocchi.length) throw new Error(`Operazione non consentita dal regolamento rosa: ${blocchi.join(' ')}`);
+}
+
+async function assertVivaioDopoAggiunta(squadra, giocatore) {
+  const anni = Number(giocatore.anni || 0);
+  const quot = Number(giocatore.quot || 0);
+  const presenze = Number(giocatore.presenze_voto ?? giocatore.partite ?? giocatore.vivaio_presenze ?? 0);
+  if (!(anni > 0 && anni <= 23)) throw new Error(`${giocatore.nome} non è idoneo al vivaio: servono Under-23.`);
+  if (quot > 3) throw new Error(`${giocatore.nome} non è idoneo al vivaio: Q${quot}, massimo Q3.`);
+  if (presenze > 0) throw new Error(`${giocatore.nome} non è idoneo al vivaio: ha già ${presenze} presenze a voto.`);
+  const { count } = await supabase.from('rosa').select('id', { count: 'exact', head: true }).eq('squadra', squadra).eq('in_vivaio', true);
+  if ((count || 0) >= 2) throw new Error('Vivaio pieno: massimo 2 giocatori.');
+}
+
 export async function updateGiocatore(id, fields) {
   const { error } = await supabase.from('rosa').update(fields).eq('id', id);
   if (error) throw error;
+  if ('quot' in (fields || {}) || 'vivaio_presenze' in (fields || {}) || 'presenze_voto' in (fields || {}) || 'partite' in (fields || {})) {
+    try {
+      const { data: player } = await supabase.from('rosa').select('*').eq('id', id).single();
+      if (player?.in_vivaio) await processaDecisioniVivaio(player.squadra);
+    } catch {}
+  }
 }
 
 export async function insertGiocatore(giocatore) {
+  if (giocatore?.in_vivaio) await assertVivaioDopoAggiunta(giocatore.squadra, giocatore);
+  else await assertRosaDopoAggiunta(giocatore.squadra, giocatore);
   const { data, error } = await supabase.from('rosa').insert(giocatore).select().single();
   if (error) throw error;
   return data;
@@ -175,6 +355,10 @@ export function isVivaioAcquistiAperti(date = new Date()) {
 export async function insertChiamata(chiamata) {
   const now = new Date();
   if (chiamata?.per_vivaio && !isVivaioAcquistiAperti(now)) throw new Error('Le chiamate per il vivaio sono consentite solo dal 01/09 al 31/05.');
+  if (chiamata?.per_vivaio) {
+    if (!(Number(chiamata.anni || 0) > 0 && Number(chiamata.anni || 0) <= 23)) throw new Error('Giocatore non idoneo al vivaio: deve essere Under-23.');
+    if (Number(chiamata.quot || 0) > 3) throw new Error('Giocatore non idoneo al vivaio: quotazione massima Q3.');
+  }
   const scadenzaInteresse = calcolaScadenzaInteresse(now);
   const { data, error } = await supabase
     .from('chiamate')
@@ -200,6 +384,10 @@ export async function aggiungiInteresse(nomeGiocatore, squadra, perVivaio = fals
     .eq('tipo', 'prima')
     .single();
   if (!primaria) throw new Error('Chiamata principale non trovata');
+  if (perVivaio) {
+    if (!(Number(primaria.anni || 0) > 0 && Number(primaria.anni || 0) <= 23)) throw new Error('Giocatore non idoneo al vivaio: deve essere Under-23.');
+    if (Number(primaria.quot || 0) > 3) throw new Error('Giocatore non idoneo al vivaio: quotazione massima Q3.');
+  }
   if (new Date() > new Date(primaria.scadenza_interesse))
     throw new Error('Scadenza interesse superata');
 
@@ -421,24 +609,7 @@ export async function updateClubIdentity(squadra, fields) {
 // kind: 'stemma' | 'maglia_casa' | 'maglia_trasferta' | 'maglia_terza'
 export async function uploadImmagineSquadra(squadra, file, kind) {
   if (!file) throw new Error('Nessun file selezionato');
-  if (file.size > 10 * 1024 * 1024) throw new Error('Immagine troppo grande (max 10MB)');
 
-  // Sanitizza nome squadra per path
-  const slug = squadra.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  const ext = (file.name.split('.').pop() || 'png').toLowerCase();
-  // Aggiungi timestamp per bypassare cache
-  const path = `${slug}/${kind}-${Date.now()}.${ext}`;
-
-  const { error: uploadErr } = await supabase.storage
-    .from('team-images')
-    .upload(path, file, { cacheControl: '3600', upsert: true });
-  if (uploadErr) throw uploadErr;
-
-  const { data: urlData } = supabase.storage.from('team-images').getPublicUrl(path);
-  const publicUrl = urlData?.publicUrl;
-  if (!publicUrl) throw new Error('Impossibile ottenere URL pubblico');
-
-  // Aggiorna il campo corrispondente su club_identity
   const fieldMap = {
     stemma: 'stemma_url',
     maglia_casa: 'maglia_casa_url',
@@ -448,7 +619,30 @@ export async function uploadImmagineSquadra(squadra, file, kind) {
   const col = fieldMap[kind];
   if (!col) throw new Error('Tipo immagine non valido');
 
+  const preset = kind === 'stemma' ? 'stemma' : 'maglia';
+  const optimized = await compressForUpload(file, preset);
+
+  // Filename univoco + cache lunga: quando si cambia immagine cambia URL, senza ?v=Date.now().
+  const slug = squadra.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const path = uniqueStoragePath(`${slug}/${kind}`, optimized.name);
+  const { data: oldIdentity } = await supabase.from('club_identity').select(col).eq('squadra', squadra).maybeSingle();
+  const oldUrl = oldIdentity?.[col];
+
+  const { error: uploadErr } = await supabase.storage
+    .from('team-images')
+    .upload(path, optimized, {
+      cacheControl: '31536000',
+      upsert: false,
+      contentType: optimized.type || WEBP_MIME,
+    });
+  if (uploadErr) throw uploadErr;
+
+  const { data: urlData } = supabase.storage.from('team-images').getPublicUrl(path);
+  const publicUrl = urlData?.publicUrl || null;
+  if (!publicUrl) throw new Error('Impossibile ottenere URL pubblico');
+
   await updateClubIdentity(squadra, { [col]: publicUrl });
+  await removeOldStorageObject('team-images', oldUrl);
   return publicUrl;
 }
 
@@ -585,6 +779,9 @@ export async function eseguiTrasferimento(trattativa) {
 
   const player = rosaRows?.[0];
   if (!player) throw new Error(`${giocatore} non risulta nella rosa di ${squadraCedente}`);
+
+  // Art. 3: il trasferimento non può portare la rosa acquirente oltre i limiti regolamentari.
+  await assertRosaDopoAggiunta(squadraAcquirente, { ...player, squadra: squadraAcquirente, in_vivaio: false });
 
   if (player) {
     // ── 2. Calcola nuovo stipendio (art. 5.9): basato su quotazione attuale ──
@@ -1078,24 +1275,17 @@ function _getPeriodoStraordinariSvincoli(date = new Date()) {
   return null;
 }
 
-function _dateMensilitaStagione(date = new Date()) {
-  // Mensilità pagate il giorno 1: 01/07 = giugno, ..., 01/06 = maggio.
-  // La stagione stipendiale corrente parte dal 01/07 precedente e termina al 01/06 successivo.
-  const y = date.getFullYear();
-  const seasonStartYear = date.getMonth() >= 6 ? y : y - 1;
-  const res = [];
-  for (let i = 0; i < 12; i++) res.push(new Date(seasonStartYear, 6 + i, 1));
-  return res;
-}
-
 function _contaMensilitaGiaPagate(date = new Date()) {
-  const oggi = _inizioGiorno(date);
-  return _dateMensilitaStagione(date).filter(payDate => payDate <= oggi).length;
+  // Stagione stipendiale nuova: reset immediato il 01/06 dopo il pagamento finale della stagione precedente.
+  // Conteggio mensile: giugno=0, luglio=1, agosto=2, ..., maggio=11.
+  const m = date.getMonth(); // 0=gennaio, ..., 5=giugno, 11=dicembre
+  if (m >= 5) return m - 5;      // giu 0, lug 1, ..., dic 6
+  return m + 7;                  // gen 7, feb 8, ..., mag 11
 }
 
 function _contaMensilitaResidueDaPagare(date = new Date()) {
-  const oggi = _inizioGiorno(date);
-  return _dateMensilitaStagione(date).filter(payDate => payDate > oggi).length;
+  // Le mensilità residue sono quelle ancora da pagare fino al prossimo 01/06 incluso.
+  return 12 - _contaMensilitaGiaPagate(date);
 }
 
 export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bilancioAttuale }) {
@@ -1371,7 +1561,11 @@ export async function applicaPagamentiAutomatici() {
   const oggi = new Date();
   const oggiStr = oggi.toISOString().slice(0, 10);
   const ora = oggi.getHours();
-  const results = { tasse: [], stipendi: [], stadio: [], errori: [] };
+  const results = { tasse: [], stipendi: [], stadio: [], vivaio: [], vivaioDecisioni: [], errori: [] };
+  try {
+    const vivaioCheck = await processaDecisioniVivaio();
+    if (vivaioCheck?.richieste?.length || vivaioCheck?.svincolati?.length) results.vivaioDecisioni.push(vivaioCheck);
+  } catch(e) { results.errori.push(`Decisioni vivaio: ${e.message}`); }
 
   // Carica tutte le squadre
   const { data: squadre } = await supabase.from('squadre').select('name, bilancio');
@@ -1477,6 +1671,25 @@ export async function applicaPagamentiAutomatici() {
     }
     if (results.stadio.length > 0) {
       await sendTelegramNotification('stadio_applicato', { mese: meseISO, automatico: true });
+    }
+  }
+
+  // ── COSTO VIVAIO ANNUALE ────────────────────────────────────────────────
+  // Art. 3.4.4: 4M obbligatori per tutti entro il 15/08 alle 23:59.
+  if (oggi.getMonth() + 1 === 8 && (oggi.getDate() > 15 || (oggi.getDate() === 15 && (oggi.getHours() > 23 || (oggi.getHours() === 23 && oggi.getMinutes() >= 59))))) {
+    const stagione = getStagioneQuota(oggi);
+    const desc = `Costo mantenimento vivaio ${stagione}`;
+    for (const sq of squadre) {
+      try {
+        const { data: gia } = await supabase.from('movimenti')
+          .select('id').eq('squadra', sq.name).eq('descrizione', desc).limit(1);
+        if (gia?.length) continue;
+        const nuovoBilancio = parseFloat((Number(sq.bilancio || 0) - 4).toFixed(2));
+        await supabase.from('movimenti').insert({ squadra: sq.name, descrizione: desc, uscita: 4, data: oggiStr });
+        await supabase.from('squadre').update({ bilancio: nuovoBilancio, vivaio_pagato: true, vivaio_stagione_pagata: stagione, vivaio_pagato_il: oggiStr }).eq('name', sq.name);
+        sq.bilancio = nuovoBilancio;
+        results.vivaio.push({ squadra: sq.name, importo: 4, nuovoBilancio });
+      } catch(e) { results.errori.push(`Vivaio ${sq.name}: ${e.message}`); }
     }
   }
 
@@ -1854,46 +2067,160 @@ export function calcolaPremiCoppa(posizione) {
 
 // ─── QUOTE (art. 1) ───────────────────────────────────────────────────────────
 
-// Applica la quota iscrizione campionato (30M) — art. 1.3
-export async function applicaIscrizioneCampionato(squadra) {
-  const oggi = new Date().toISOString().slice(0, 10);
-  const { data: sq } = await supabase.from('squadre').select('bilancio, iscrizione_pagata').eq('name', squadra).single();
-  if (!sq || sq.iscrizione_pagata) return { skip: true };
-  const nuovoBilancio = parseFloat((sq.bilancio - 30).toFixed(2));
-  await supabase.from('squadre').update({ bilancio: nuovoBilancio, iscrizione_pagata: true }).eq('name', squadra);
-  await supabase.from('movimenti').insert({ squadra, descrizione: 'Iscrizione campionato (automatica 31/07)', uscita: 30, data: oggi });
-  return { ok: true, nuovoBilancio };
+export const IMPORTO_QUOTA_EURO = 30;
+export const IMPORTO_ISCRIZIONE_CAMPIONATO_MLN = 30;
+export const MAX_EURO_EXTRA_BIENNIO = 10;
+export const CAMBIO_EURO_MLN = 2.5;
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+function isoDateLocal(date = new Date()) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+function stagioneStartYear(date = new Date()) {
+  const y = date.getFullYear();
+  const m = date.getMonth() + 1;
+  const d = date.getDate();
+  return (m > 6 || (m === 6 && d >= 1)) ? y : y - 1;
+}
+export function getStagioneQuota(date = new Date()) {
+  const start = stagioneStartYear(date);
+  return `${start}-${String(start + 1).slice(2)}`;
+}
+export function getBiennioQuota(date = new Date()) {
+  const start = stagioneStartYear(date);
+  const bStart = start % 2 === 1 ? start : start - 1;
+  return `${bStart}-${String(bStart + 2).slice(2)}`;
+}
+export function getDeadlineExtraBudget(date = new Date()) {
+  const start = stagioneStartYear(date);
+  return new Date(start, 7, 14, 23, 59, 59, 999); // 14/08 23:59:59
+}
+export function isFinestraExtraBudget(date = new Date()) {
+  const start = stagioneStartYear(date);
+  const apertura = new Date(start, 5, 1, 0, 0, 0, 0); // 01/06
+  return date >= apertura && date <= getDeadlineExtraBudget(date);
+}
+export function getScadenzaQuotaEuro(date = new Date()) {
+  const start = stagioneStartYear(date);
+  return new Date(start, 7, 31, 23, 59, 59, 999); // 31/08 23:59:59
+}
+export function getScadenzaIscrizioneCampionato(date = new Date()) {
+  const start = stagioneStartYear(date);
+  return new Date(start, 6, 31, 23, 59, 0, 0); // 31/07 23:59
 }
 
-// Investi euro extra budget (art. 1.2) — aggiunge mln al bilancio
-// euroAggiuntivi: 1-10, ma limitato da (10 - euro_biennio)
-export async function investiEuroExtra(squadra, euroAggiuntivi) {
-  const { data: sq } = await supabase.from('squadre').select('bilancio, euro_investiti, euro_biennio, mln_extra').eq('name', squadra).single();
-  if (!sq) throw new Error('Squadra non trovata');
+async function safeUpdateSquadraQuote(squadra, fullFields, fallbackFields = {}) {
+  const { error } = await supabase.from('squadre').update(fullFields).eq('name', squadra);
+  if (!error) return;
+  const msg = (error.message || '').toLowerCase();
+  const schemaError = msg.includes('column') || msg.includes('schema cache') || msg.includes('could not find');
+  if (!schemaError || !Object.keys(fallbackFields).length) throw error;
+  const retry = await supabase.from('squadre').update(fallbackFields).eq('name', squadra);
+  if (retry.error) throw retry.error;
+}
 
-  const maxDisponibili = 10 - (sq.euro_biennio || 0);
-  if (euroAggiuntivi > maxDisponibili) throw new Error(`Puoi investire al massimo ${maxDisponibili}€ (biennio 2025-27)`);
-  if (euroAggiuntivi < 1 || euroAggiuntivi > 10) throw new Error('Importo non valido (1-10€)');
+// Applica la quota iscrizione campionato (30M) — art. 1.3
+// È stagionale: se esistono le colonne nuove usa iscrizione_stagione_pagata, altrimenti fallback su iscrizione_pagata.
+export async function applicaIscrizioneCampionato(squadra, opts = {}) {
+  const now = opts.data ? new Date(opts.data) : new Date();
+  const stagione = opts.stagione || getStagioneQuota(now);
+  const scadenza = getScadenzaIscrizioneCampionato(now);
+  if (!opts.force && now < scadenza) {
+    throw new Error(`L'iscrizione campionato si applica automaticamente dal 31/07 alle 23:59 (${stagione}).`);
+  }
 
-  const mlnGuadagnati = parseFloat((euroAggiuntivi * 2.5).toFixed(2));
-  const oggi = new Date().toISOString().slice(0, 10);
+  const oggi = isoDateLocal(now);
+  const { data: sq, error } = await supabase
+    .from('squadre')
+    .select('*')
+    .eq('name', squadra)
+    .single();
+  if (error || !sq) throw error || new Error('Squadra non trovata');
 
-  await supabase.from('squadre').update({
-    bilancio:       parseFloat((sq.bilancio + mlnGuadagnati).toFixed(2)),
-    euro_investiti: (sq.euro_investiti || 0) + euroAggiuntivi,
-    euro_biennio:   (sq.euro_biennio  || 0) + euroAggiuntivi,
-    mln_extra:      (sq.mln_extra     || 0) + mlnGuadagnati,
-  }).eq('name', squadra);
+  const giaPagata = sq.iscrizione_stagione_pagata === stagione || (!sq.iscrizione_stagione_pagata && sq.iscrizione_pagata === true);
+  if (giaPagata) return { skip: true, stagione };
+
+  const nuovoBilancio = parseFloat((Number(sq.bilancio || 0) - IMPORTO_ISCRIZIONE_CAMPIONATO_MLN).toFixed(2));
+  await safeUpdateSquadraQuote(
+    squadra,
+    {
+      bilancio: nuovoBilancio,
+      iscrizione_pagata: true,
+      iscrizione_stagione_pagata: stagione,
+      iscrizione_pagata_il: oggi,
+      updated_at: new Date().toISOString(),
+    },
+    { bilancio: nuovoBilancio, iscrizione_pagata: true }
+  );
 
   await supabase.from('movimenti').insert({
-    squadra, descrizione: `Investimento extra budget: ${euroAggiuntivi}€ → +${mlnGuadagnati}M`,
-    entrata: mlnGuadagnati, data: oggi,
+    squadra,
+    descrizione: `Iscrizione campionato ${stagione} (automatica 31/07)` ,
+    uscita: IMPORTO_ISCRIZIONE_CAMPIONATO_MLN,
+    data: oggi,
+  });
+  return { ok: true, nuovoBilancio, stagione };
+}
+
+// Investi euro extra budget (art. 1.2) — 1€ = 2,5M, entro il 14/08 23:59
+export async function investiEuroExtra(squadra, euroAggiuntivi, opts = {}) {
+  const now = opts.data ? new Date(opts.data) : new Date();
+  if (!opts.force && !isFinestraExtraBudget(now)) {
+    throw new Error('La decisione sugli € extra può essere effettuata solo dal 01/06 al 14/08 alle 23:59.');
+  }
+
+  const stagione = opts.stagione || getStagioneQuota(now);
+  const biennio = opts.biennio || getBiennioQuota(now);
+  const euro = Number(euroAggiuntivi);
+  if (!Number.isFinite(euro) || euro <= 0 || euro > MAX_EURO_EXTRA_BIENNIO) throw new Error('Importo non valido (1-10€)');
+
+  const { data: sq, error } = await supabase
+    .from('squadre')
+    .select('*')
+    .eq('name', squadra)
+    .single();
+  if (error || !sq) throw error || new Error('Squadra non trovata');
+
+  // Se il DB è ancora al biennio vecchio, il conteggio biennale riparte da 0.
+  const euroBiennioAttuale = sq.biennio && sq.biennio !== biennio ? 0 : Number(sq.euro_biennio || 0);
+  const euroStagioneAttuale = sq.extra_stagione && sq.extra_stagione !== stagione ? 0 : Number(sq.euro_investiti || 0);
+  const maxDisponibili = Math.max(0, MAX_EURO_EXTRA_BIENNIO - euroBiennioAttuale);
+  if (euro > maxDisponibili) throw new Error(`Puoi investire al massimo ${maxDisponibili}€ nel biennio ${biennio}`);
+
+  const mlnGuadagnati = parseFloat((euro * CAMBIO_EURO_MLN).toFixed(2));
+  const oggi = isoDateLocal(now);
+
+  await safeUpdateSquadraQuote(
+    squadra,
+    {
+      bilancio: parseFloat((Number(sq.bilancio || 0) + mlnGuadagnati).toFixed(2)),
+      euro_investiti: euroStagioneAttuale + euro,
+      euro_biennio: euroBiennioAttuale + euro,
+      mln_extra: Number(sq.mln_extra || 0) + mlnGuadagnati,
+      biennio,
+      extra_stagione: stagione,
+      extra_investito_il: oggi,
+      updated_at: new Date().toISOString(),
+    },
+    {
+      bilancio: parseFloat((Number(sq.bilancio || 0) + mlnGuadagnati).toFixed(2)),
+      euro_investiti: euroStagioneAttuale + euro,
+      euro_biennio: euroBiennioAttuale + euro,
+      mln_extra: Number(sq.mln_extra || 0) + mlnGuadagnati,
+      biennio,
+    }
+  );
+
+  await supabase.from('movimenti').insert({
+    squadra,
+    descrizione: `Investimento extra budget ${stagione}: ${euro}€ → +${mlnGuadagnati}M`,
+    entrata: mlnGuadagnati,
+    data: oggi,
   });
   return mlnGuadagnati;
 }
 
-// Ritira budget extra (art. 1.2.2): spende 2× i mln ricevuti per riaverli
-// Solo tra 05/01 e il martedì dopo la 19ª giornata
+// Ritira budget extra: resta disponibile perché già presente nel sito, ma non è nella sezione quota 1.1-1.3.
 export async function ritiraBudgetExtra(squadra) {
   const { data: sq } = await supabase.from('squadre').select('bilancio, mln_extra, euro_investiti').eq('name', squadra).single();
   if (!sq || !sq.mln_extra || sq.mln_extra <= 0) throw new Error('Nessun budget extra da ritirare');
@@ -1901,17 +2228,10 @@ export async function ritiraBudgetExtra(squadra) {
   const costoRitiro = parseFloat((sq.mln_extra * 2).toFixed(2));
   if (sq.bilancio < costoRitiro) throw new Error(`Bilancio insufficiente: servono ${costoRitiro}M per ritirare ${sq.mln_extra}M`);
 
-  const oggi = new Date().toISOString().slice(0, 10);
-  // Restituisce i mln extra ma scala il costo (2×)
-  // Netto: ricevi mln_extra, spendi mln_extra*2 → saldo netto = -mln_extra
+  const oggi = isoDateLocal(new Date());
   const nuovoBilancio = parseFloat((sq.bilancio - costoRitiro + sq.mln_extra).toFixed(2));
 
-  await supabase.from('squadre').update({
-    bilancio:   nuovoBilancio,
-    mln_extra:  0,
-    // euro_biennio e euro_investiti rimangono invariati (art. 1.2.2: "risulteranno comunque spesi")
-  }).eq('name', squadra);
-
+  await supabase.from('squadre').update({ bilancio: nuovoBilancio, mln_extra: 0 }).eq('name', squadra);
   await supabase.from('movimenti').insert([
     { squadra, descrizione: `Ritiro budget extra (rimborso ${sq.mln_extra}M)`, entrata: sq.mln_extra, data: oggi },
     { squadra, descrizione: `Costo ritiro budget extra (2× = ${costoRitiro}M)`, uscita: costoRitiro, data: oggi },
@@ -1919,25 +2239,110 @@ export async function ritiraBudgetExtra(squadra) {
   return { nuovoBilancio, costoRitiro, rimborso: sq.mln_extra };
 }
 
-// Reset biennio (ogni 2 anni, lato admin)
-export async function resetBiennio(squadra, nuovoBiennio) {
-  await supabase.from('squadre').update({ euro_biennio: 0, euro_investiti: 0, mln_extra: 0, biennio: nuovoBiennio }).eq('name', squadra);
+// Reset biennio (ogni 2 anni). Viene anche applicato automaticamente da sincronizzaQuoteStagione.
+export async function resetBiennio(squadra, nuovoBiennio = getBiennioQuota(new Date())) {
+  await safeUpdateSquadraQuote(
+    squadra,
+    { euro_biennio: 0, euro_investiti: 0, mln_extra: 0, biennio: nuovoBiennio, extra_stagione: getStagioneQuota(new Date()), updated_at: new Date().toISOString() },
+    { euro_biennio: 0, euro_investiti: 0, mln_extra: 0, biennio: nuovoBiennio }
+  );
 }
 
-// Segna quota 30€ pagata al tesoriere
-export async function segnaQuotaPagata(squadra) {
-  await supabase.from('squadre').update({ quota_pagata: true }).eq('name', squadra);
+// Segna quota 30€ pagata al tesoriere (art. 1.1)
+export async function segnaQuotaPagata(squadra, opts = {}) {
+  const now = opts.data ? new Date(opts.data) : new Date();
+  const stagione = opts.stagione || getStagioneQuota(now);
+  const tesoriere = opts.tesoriere || opts.tesoriereLega || null;
+  await safeUpdateSquadraQuote(
+    squadra,
+    {
+      quota_pagata: true,
+      quota_stagione_pagata: stagione,
+      quota_pagata_il: isoDateLocal(now),
+      quota_importo_euro: IMPORTO_QUOTA_EURO,
+      quota_tesoriere: tesoriere,
+      updated_at: new Date().toISOString(),
+    },
+    { quota_pagata: true }
+  );
 }
 
-// Auto-applica iscrizione 30M a TUTTE le squadre (chiamato dal timer 31/07)
-export async function applicaIscrizioneATutti() {
-  const { data: squadre } = await supabase.from('squadre').select('name, bilancio, iscrizione_pagata');
+// Allinea campi stagionali/biennali quando cambia stagione o biennio.
+// - Se inizia una nuova stagione, resetta i flag stagionali quota/iscrizione.
+// - Se inizia un nuovo biennio, resetta euro_biennio.
+export async function sincronizzaQuoteStagione(opts = {}) {
+  const now = opts.data ? new Date(opts.data) : new Date();
+  const stagione = opts.stagione || getStagioneQuota(now);
+  const biennio = opts.biennio || getBiennioQuota(now);
+  const { data: squadre, error } = await supabase
+    .from('squadre')
+    .select('*');
+  if (error || !squadre) return [];
+
+  const results = [];
+  for (const sq of squadre) {
+    const patch = {};
+    const fallback = {};
+    if (sq.quota_stagione_pagata && sq.quota_stagione_pagata !== stagione) {
+      patch.quota_pagata = false;
+      patch.quota_stagione_pagata = null;
+      patch.quota_pagata_il = null;
+      patch.quota_importo_euro = null;
+      patch.quota_tesoriere = null;
+      fallback.quota_pagata = false;
+    }
+    if (sq.iscrizione_stagione_pagata && sq.iscrizione_stagione_pagata !== stagione) {
+      patch.iscrizione_pagata = false;
+      patch.iscrizione_stagione_pagata = null;
+      patch.iscrizione_pagata_il = null;
+      fallback.iscrizione_pagata = false;
+    }
+    if (sq.extra_stagione && sq.extra_stagione !== stagione) {
+      patch.euro_investiti = 0;
+      patch.extra_stagione = stagione;
+      fallback.euro_investiti = 0;
+    }
+    if (!sq.biennio || sq.biennio !== biennio) {
+      patch.biennio = biennio;
+      patch.euro_biennio = 0;
+      fallback.biennio = biennio;
+      fallback.euro_biennio = 0;
+    }
+    if (Object.keys(patch).length) {
+      patch.updated_at = new Date().toISOString();
+      await safeUpdateSquadraQuote(sq.name, patch, fallback);
+      results.push({ squadra: sq.name, ok: true, patch });
+    }
+  }
+  return results;
+}
+
+// Auto-applica iscrizione 30M a TUTTE le squadre dal 31/07 alle 23:59
+export async function applicaIscrizioneATutti(opts = {}) {
+  const now = opts.data ? new Date(opts.data) : new Date();
+  const stagione = opts.stagione || getStagioneQuota(now);
+  if (!opts.force && now < getScadenzaIscrizioneCampionato(now)) {
+    throw new Error(`L'iscrizione campionato ${stagione} si applica automaticamente dal 31/07 alle 23:59.`);
+  }
+  await sincronizzaQuoteStagione({ data: now, stagione, biennio: opts.biennio });
+  const { data: squadre } = await supabase.from('squadre').select('name');
   if (!squadre) return [];
   const results = [];
   for (const sq of squadre) {
-    if (sq.iscrizione_pagata) { results.push({ squadra: sq.name, skip: true }); continue; }
-    const r = await applicaIscrizioneCampionato(sq.name);
+    const r = await applicaIscrizioneCampionato(sq.name, { data: now, stagione, force: true });
     results.push({ squadra: sq.name, ...r });
+  }
+  return results;
+}
+
+export async function applicaQuoteAutomatiche(opts = {}) {
+  const now = opts.data ? new Date(opts.data) : new Date();
+  const results = { sync: [], iscrizioni: [], errori: [] };
+  try { results.sync = await sincronizzaQuoteStagione({ data: now }); }
+  catch(e) { results.errori.push(e.message); }
+  if (now >= getScadenzaIscrizioneCampionato(now)) {
+    try { results.iscrizioni = await applicaIscrizioneATutti({ data: now, force: true }); }
+    catch(e) { results.errori.push(e.message); }
   }
   return results;
 }
@@ -2441,9 +2846,95 @@ export async function effettuaRollback(logId, utente) {
   return true;
 }
 
+
+// ─── DECISIONE VIVAIO 3 GIORNI (art. 3.4.1) ─────────────────────────────────
+const VIVAIO_DECISIONE_GIORNI = 3;
+
+function getMotiviDecisioneVivaio(player = {}) {
+  const motivi = [];
+  const presenze = Number(player.vivaio_presenze ?? player.presenze_voto ?? player.partite ?? 0);
+  const quot = Number(player.quot || 0);
+  const quotIniziale = Number(player.quot_iniziale_vivaio ?? player.quot || 0);
+  const aumento = quot - quotIniziale;
+  if (presenze >= 2) motivi.push(`${presenze} presenze a voto`);
+  if (quotIniziale > 0 && aumento >= 2) motivi.push(`quotazione +${parseFloat(aumento.toFixed(2))}`);
+  return motivi;
+}
+
+function addDays(date, days) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+async function richiediDecisioneVivaio(player, now = new Date()) {
+  const motivi = getMotiviDecisioneVivaio(player);
+  if (!motivi.length) return { richiesta: false };
+
+  const update = {
+    vivaio_decisione_richiesta: true,
+    vivaio_motivo_decisione: motivi.join(' e '),
+  };
+  if (!player.vivaio_decisione_da) update.vivaio_decisione_da = now.toISOString();
+  if (!player.vivaio_decisione_scadenza) update.vivaio_decisione_scadenza = addDays(now, VIVAIO_DECISIONE_GIORNI).toISOString();
+
+  const { error } = await supabase.from('rosa').update(update).eq('id', player.id);
+  if (error) throw error;
+  return { richiesta: true, motivi };
+}
+
+async function svincolaVivaioAutomatico(player, motivo = 'Scadenza scelta vivaio superata') {
+  const squadra = player.squadra;
+  await supabase.from('rosa').delete().eq('id', player.id);
+  await logAuditVivaio(
+    squadra,
+    'rosa_rimuovi',
+    `Vivaio: svincolato automaticamente ${player.nome} (costo 0) — ${motivo}`,
+    { giocatore: player, automatico: true }
+  );
+}
+
+export async function processaDecisioniVivaio(squadra = null) {
+  let query = supabase.from('rosa').select('*').eq('in_vivaio', true);
+  if (squadra) query = query.eq('squadra', squadra);
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const now = new Date();
+  const results = { richieste: [], svincolati: [], errori: [] };
+
+  for (const player of data || []) {
+    try {
+      const scadenza = player.vivaio_decisione_scadenza ? new Date(player.vivaio_decisione_scadenza) : null;
+
+      if (player.vivaio_decisione_richiesta && scadenza && scadenza <= now) {
+        await svincolaVivaioAutomatico(player, 'mancata decisione entro 3 giorni');
+        results.svincolati.push(player.nome);
+        continue;
+      }
+
+      const motivi = getMotiviDecisioneVivaio(player);
+      if (motivi.length && !player.vivaio_decisione_richiesta) {
+        await richiediDecisioneVivaio(player, now);
+        results.richieste.push(player.nome);
+      } else if (motivi.length && player.vivaio_decisione_richiesta) {
+        // Aggiorna solo il motivo se nel frattempo si è aggiunta una seconda causa.
+        const motivo = motivi.join(' e ');
+        if (motivo !== player.vivaio_motivo_decisione) {
+          await supabase.from('rosa').update({ vivaio_motivo_decisione: motivo }).eq('id', player.id);
+        }
+      }
+    } catch (e) {
+      results.errori.push(`${player?.nome || 'Giocatore'}: ${e.message}`);
+    }
+  }
+  return results;
+}
+
 // ─── VIVAIO (art. 3.6) ────────────────────────────────────────────────────────
 
 export async function getVivaio(squadra) {
+  try { await processaDecisioniVivaio(squadra); } catch {}
   const { data, error } = await supabase.from('rosa')
     .select('*').eq('squadra', squadra).eq('in_vivaio', true).order('quot', { ascending: false });
   if (error) return [];
@@ -2463,14 +2954,8 @@ export async function acquistaVivaio({ squadra, giocatore, bilancioAttuale }) {
   if (!isVivaioAcquistiAperti(now)) throw new Error('Gli acquisti per il vivaio sono consentiti solo dal 01/09 al 31/05.');
   const oggi = now.toISOString().slice(0, 10);
 
-  // Conta vivaio attuale (max 2, o 4 con investimento Settore Giovanile Avanzato)
-  const { count } = await supabase.from('rosa').select('id', { count: 'exact', head: true })
-    .eq('squadra', squadra).eq('in_vivaio', true);
-  // Controlla se hanno il Settore Giovanile Avanzato
-  const { data: invSGA } = await supabase.from('investimenti')
-    .select('id').eq('squadra', squadra).eq('nome', 'Settore Giovanile Avanzato').eq('attivo', true);
-  const maxVivaio = invSGA?.length > 0 ? 4 : 2;
-  if ((count || 0) >= maxVivaio) throw new Error(`Vivaio pieno (max ${maxVivaio}). Promuovi o svincola un giocatore prima.`);
+  // Conta vivaio attuale: art. 3.4 consente massimo 2 giocatori nel vivaio.
+  await assertVivaioDopoAggiunta(squadra, giocatore);
 
   // Costo: normale asta svincolati (gestita esternamente)
   // Qui inseriamo il giocatore direttamente
@@ -2483,8 +2968,13 @@ export async function acquistaVivaio({ squadra, giocatore, bilancioAttuale }) {
     stip: 0, // Non gravano sul SC (art. 3.6.2)
     in_vivaio: true,
     vivaio_presenze: 0,
+    quot_iniziale_vivaio: giocatore.quot,
     data_entrata_vivaio: oggi,
     data_acquisto: oggi,
+    vivaio_decisione_richiesta: false,
+    vivaio_decisione_da: null,
+    vivaio_decisione_scadenza: null,
+    vivaio_motivo_decisione: null,
   }).select().single();
   if (error) throw error;
 
@@ -2540,6 +3030,10 @@ export async function promuoviDaVivaio(playerId, squadra) {
     stip_originale: stipNormale,
     anni_contratto: 1,
     data_acquisto: oggi,
+    vivaio_decisione_richiesta: false,
+    vivaio_decisione_da: null,
+    vivaio_decisione_scadenza: null,
+    vivaio_motivo_decisione: null,
   }).eq('id', playerId);
 
   await logAuditVivaio(squadra, 'rosa_modifica', `Vivaio → Rosa: promosso ${player.nome} (stipendio ora ${stipNormale}M)`, { giocatore: player });
@@ -2555,7 +3049,10 @@ export async function svincolaVivaio(playerId, squadra) {
 
 // Aggiorna presenze vivaio (chiamato dall'admin dopo ogni giornata)
 export async function aggiornaPresenzeVivaio(playerId, nuovePresenze) {
-  await supabase.from('rosa').update({ vivaio_presenze: nuovePresenze }).eq('id', playerId);
+  const { error } = await supabase.from('rosa').update({ vivaio_presenze: nuovePresenze }).eq('id', playerId);
+  if (error) throw error;
+  const { data: player } = await supabase.from('rosa').select('*').eq('id', playerId).single();
+  if (player?.in_vivaio) await processaDecisioniVivaio(player.squadra);
 }
 
 // Paga costo vivaio 4M annuali (art. 3.6.3)
@@ -2564,7 +3061,7 @@ export async function pagaCostoVivaio(squadra, bilancioAttuale) {
   const oggi = new Date().toISOString().slice(0, 10);
   if (bilancioAttuale < COSTO) throw new Error(`Bilancio insufficiente: servono ${COSTO}M`);
   const nuovoBilancio = parseFloat((bilancioAttuale - COSTO).toFixed(2));
-  await supabase.from('squadre').update({ bilancio: nuovoBilancio, vivaio_pagato: true }).eq('name', squadra);
+  await supabase.from('squadre').update({ bilancio: nuovoBilancio, vivaio_pagato: true, vivaio_stagione_pagata: getStagioneQuota(new Date()), vivaio_pagato_il: oggi }).eq('name', squadra);
   await supabase.from('movimenti').insert({ squadra, descrizione: 'Costo mantenimento vivaio (annuale)', uscita: COSTO, data: oggi });
   return nuovoBilancio;
 }
@@ -3050,14 +3547,16 @@ export async function rivelaECompletaAsta(astaId) {
   const claus = parseFloat((Number(asta.quot) * 1.75).toFixed(2));
 
   if (asta.per_vivaio) {
+    await assertVivaioDopoAggiunta(vincitore, { nome: asta.giocatore, anni: asta.anni, quot: asta.quot, presenze_voto: asta.presenze_voto || 0 });
     await supabase.from('rosa').insert({
       squadra: vincitore, nome: asta.giocatore, ruolo: asta.ruolo,
       anni: asta.anni, quot: asta.quot, stip: 0, stip_originale: stip, clausola: claus,
       squadra_serie_a: asta.squadra_serie_a,
-      in_vivaio: true, vivaio_presenze: 0, vivaio_pagato: false,
+      in_vivaio: true, vivaio_presenze: 0, quot_iniziale_vivaio: asta.quot, vivaio_pagato: false,
       anni_contratto: 1, data_acquisto: oggi,
     });
   } else {
+    await assertRosaDopoAggiunta(vincitore, { nome: asta.giocatore, ruolo: asta.ruolo, anni: asta.anni, quot: asta.quot, squadra_serie_a: asta.squadra_serie_a, in_vivaio: false });
     await supabase.from('rosa').insert({
       squadra: vincitore, nome: asta.giocatore, ruolo: asta.ruolo,
       anni: asta.anni, quot: asta.quot, stip, clausola: claus,
@@ -3112,14 +3611,16 @@ export async function completaUnicoInteressato(nomeGiocatore) {
   const claus = parseFloat((Number(primaria.quot) * 1.75).toFixed(2));
 
   if (primaria.per_vivaio) {
+    await assertVivaioDopoAggiunta(vincitore, { nome: nomeGiocatore, anni: primaria.anni || 0, quot: primaria.quot, presenze_voto: primaria.presenze_voto || 0 });
     await supabase.from('rosa').insert({
       squadra: vincitore, nome: nomeGiocatore, ruolo: primaria.ruolo,
       anni: primaria.anni || 0, quot: primaria.quot, stip: 0, stip_originale: stip, clausola: claus,
       squadra_serie_a: primaria.squadra_serie_a || '',
-      in_vivaio: true, vivaio_presenze: 0, vivaio_pagato: false,
+      in_vivaio: true, vivaio_presenze: 0, quot_iniziale_vivaio: primaria.quot, vivaio_pagato: false,
       anni_contratto: 1, data_acquisto: oggi,
     });
   } else {
+    await assertRosaDopoAggiunta(vincitore, { nome: nomeGiocatore, ruolo: primaria.ruolo, anni: primaria.anni || 0, quot: primaria.quot, squadra_serie_a: primaria.squadra_serie_a || '', in_vivaio: false });
     await supabase.from('rosa').insert({
       squadra: vincitore, nome: nomeGiocatore, ruolo: primaria.ruolo,
       anni: primaria.anni || 0, quot: primaria.quot, stip, clausola: claus,
@@ -3656,10 +4157,18 @@ export async function toggleReaction(id, emoji, username, currentReactions) {
   return reactions;
 }
 export async function uploadNotiziaImmagine(file, path) {
-  if (file.size > 10 * 1024 * 1024) throw new Error('Immagine troppo grande (max 10MB)');
-  const { data, error } = await supabase.storage.from('notizie-immagini').upload(path, file, { upsert: true, contentType: file.type });
+  if (!file) throw new Error('Nessun file selezionato');
+  const optimized = await compressForUpload(file, 'news');
+  const requested = ensureWebpPath(path || `notizie/${optimized.name}`);
+  const prefix = requested.split('/').slice(0, -1).join('/') || 'notizie';
+  const finalPath = uniqueStoragePath(prefix, optimized.name);
+  const { error } = await supabase.storage.from('notizie-immagini').upload(finalPath, optimized, {
+    upsert: false,
+    contentType: optimized.type || WEBP_MIME,
+    cacheControl: '31536000',
+  });
   if (error) throw error;
-  const { data: { publicUrl } } = supabase.storage.from('notizie-immagini').getPublicUrl(path);
+  const { data: { publicUrl } } = supabase.storage.from('notizie-immagini').getPublicUrl(finalPath);
   return publicUrl;
 }
 export function subscribeNotizie(callback) { return supabase.channel('notizie-feed').on('postgres_changes', { event: '*', schema: 'public', table: 'notizie' }, callback).subscribe(); }
@@ -3806,12 +4315,18 @@ export async function deleteStagione(anno) {
   if (error) throw error;
 }
 export async function uploadMaglia(stagione, squadra, file) {
-  const ext = file.name.split('.').pop();
-  const path = `maglie/${stagione.replace(/\//g,'-')}/${squadra}.${ext}`;
-  const { error } = await supabase.storage.from('team-images').upload(path, file, { upsert: true, contentType: file.type });
+  if (!file) throw new Error('Nessun file selezionato');
+  const optimized = await compressForUpload(file, 'maglia');
+  const safeSquadra = safeFileBaseName(squadra);
+  const path = uniqueStoragePath(`maglie/${stagione.replace(/\//g,'-')}/${safeSquadra}`, optimized.name);
+  const { error } = await supabase.storage.from('team-images').upload(path, optimized, {
+    upsert: false,
+    contentType: optimized.type || WEBP_MIME,
+    cacheControl: '31536000',
+  });
   if (error) throw error;
   const { data } = supabase.storage.from('team-images').getPublicUrl(path);
-  return data.publicUrl + '?t=' + Date.now();
+  return data.publicUrl;
 }
 
 export async function getRegolamentoArticoli() {
