@@ -2310,6 +2310,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                     {fuori&&<span style={{ marginLeft:4,fontSize:9,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444455",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>FUORI</span>}
                     {!fuori&&p.anni>0&&p.anni<=21&&<span style={{ marginLeft:4,fontSize:9,background:"#8b5cf622",color:"#a78bfa",border:"1px solid #8b5cf644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>U21</span>}
                     {!fuori&&p.anni>=31&&<span style={{ marginLeft:4,fontSize:9,background:"#f9731622",color:"#fb923c",border:"1px solid #f9731644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>31+</span>}
+                    {p.in_prestito&&<span title={`Prestito${p.squadra_originale ? ` da ${p.squadra_originale}` : ""}${p.scadenza_prestito ? ` · scad. ${p.scadenza_prestito}` : ""}`} style={{ marginLeft:4,fontSize:9,background:"#6366f122",color:"#a5b4fc",border:"1px solid #6366f144",borderRadius:4,padding:"1px 4px",fontWeight:800 }}>{p.tag_rosa || (p.prestito_tipo === 'prestito_obbligo' ? 'PREST. OBBL.' : p.prestito_tipo === 'prestito_secco' ? 'PREST. SECCO' : 'PREST. DIR.')}</span>}
                     {!p.in_vivaio&&p.anni>0&&p.anni<=23&&Number(p.quot||0)<=3&&(p.partite||0)===0&&vivaio.length<maxVivaio&&<span title="Eleggibile vivaio" style={{ marginLeft:4,fontSize:11 }}>🌱</span>}
                   </td>
                   <td style={{ padding:"7px 8px",color:"#666",fontSize:11 }}>{p.squadra_serie_a||"—"}</td>
