@@ -260,6 +260,41 @@ function calcolaStipCorretto(quot, anniContratto, anni) {
   return parseFloat((base * 0.9).toFixed(2)); // anno 4+: Bonus Fedeltà
 }
 
+function inizioGiorno(date = new Date()) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function isPeriodoSvincoliConsentito(date = new Date()) {
+  const m = date.getMonth();
+  return !(m === 5 || m === 6); // giugno, luglio
+}
+
+function getPeriodoStraordinariSvincoli(date = new Date()) {
+  const m = date.getMonth();
+  const d = date.getDate();
+  if ((m === 5) || (m === 6) || (m === 7) || (m === 8 && d <= 15)) return 'estivo';
+  if (m === 0 || (m === 1 && d <= 15)) return 'invernale';
+  return null;
+}
+
+function dateMensilitaStagione(date = new Date()) {
+  const y = date.getFullYear();
+  const seasonStartYear = date.getMonth() >= 6 ? y : y - 1;
+  const res = [];
+  for (let i = 0; i < 12; i++) res.push(new Date(seasonStartYear, 6 + i, 1));
+  return res;
+}
+
+function contaMensilitaGiaPagate(date = new Date()) {
+  const oggi = inizioGiorno(date);
+  return dateMensilitaStagione(date).filter(payDate => payDate <= oggi).length;
+}
+
+function contaMensilitaResidueDaPagare(date = new Date()) {
+  const oggi = inizioGiorno(date);
+  return dateMensilitaStagione(date).filter(payDate => payDate > oggi).length;
+}
+
 function Badge({ children, color }) {
   return (
     <span style={{ background: color + "22", color, border: `1px solid ${color}44`, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>
@@ -2090,26 +2125,28 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
     const quot=Number(player.quot||0), stip=calcolaStipCorretto(player.quot,player.anni_contratto,player.anni), oggi=new Date();
     if (tipo==='ordinario') {
       const penale=quot<=10?0.5:quot<=20?1:quot<=30?1.5:2;
-      const endYear=oggi.getMonth()<=4?oggi.getFullYear():oggi.getFullYear()+1;
-      const mesi=(endYear*12+4)-(oggi.getFullYear()*12+oggi.getMonth())+1;
+      const mesi=contaMensilitaResidueDaPagare(oggi);
       const costoStip=parseFloat((mesi*stip/12).toFixed(2));
-      return {label:"Costo totale",value:parseFloat((penale+costoStip).toFixed(2)),color:"#ef4444",dettaglio:`Penale ${penale}M + ${mesi} mens. fino a mag (${costoStip}M)`,positivo:false};
+      return {label:"Costo totale",value:parseFloat((penale+costoStip).toFixed(2)),color:"#ef4444",dettaglio:`Penale ${penale}M + ${mesi} mens. residue fino al 01/06 (${costoStip}M)`,positivo:false};
     }
     if (tipo==='straordinario_u21_nc') return {label:"Costo/Guadagno",value:0,color:"#888",dettaglio:"U21 nc — costo e guadagno 0",positivo:true};
     const ind=estero?parseFloat((quot/2).toFixed(2)):parseFloat((quot/4).toFixed(2));
-    const julyYear=oggi.getMonth()>=5?oggi.getFullYear():oggi.getFullYear()-1;
-    const mr=Math.max(0,(oggi.getFullYear()*12+oggi.getMonth())-(julyYear*12+6)+1);
+    const mr=contaMensilitaGiaPagate(oggi);
     const rimb=parseFloat((mr*stip/12).toFixed(2));
     return {label:"Indennizzo + rimborso",value:parseFloat((ind+rimb).toFixed(2)),color:"#10b981",dettaglio:`Ind. ${ind}M${estero?' (estero ½)':' (¼)'} + ${mr} mens. rimborsate (${rimb}M)`,positivo:true};
   }
 
   function getValidazioni(player, tipo) {
     if (!player||!contatori) return [];
-    const w=[], oggi=new Date(), isEstate=oggi.getMonth()>=5&&oggi.getMonth()<=8;
+    const w=[], oggi=new Date();
+    const periodoStraord = getPeriodoStraordinariSvincoli(oggi);
     if (player.data_acquisto) { const gg=Math.floor((oggi-new Date(player.data_acquisto))/86400000); if(gg<30)w.push({tipo:'error',testo:`Acquistato ${gg}gg fa — min 30gg`}); }
-    if ((tipo==='straordinario'||tipo==='straordinario_u21')&&isEstate&&contatori.count_straord_estivi>=6) w.push({tipo:'error',testo:'Esauriti straord. estivi (6/6)'});
-    if ((tipo==='straordinario'||tipo==='straordinario_u21')&&!isEstate&&contatori.count_straord_invernali>=4) w.push({tipo:'error',testo:'Esauriti straord. invernali (4/4)'});
-    if (oggi.getMonth()===5||oggi.getMonth()===6) w.push({tipo:'error',testo:'Svincoli non consentiti a giugno/luglio (art. 6.1)'});
+    if (!isPeriodoSvincoliConsentito(oggi)) w.push({tipo:'error',testo:'Svincoli non consentiti a giugno/luglio: ammessi solo dal 01/08 al 31/05'});
+    if (tipo==='straordinario'||tipo==='straordinario_u21') {
+      if (!periodoStraord) w.push({tipo:'error',testo:'Straordinari consentiti solo nel mercato estivo (01/06-15/09) o invernale (01/01-15/02)'});
+      if (periodoStraord==='estivo'&&contatori.count_straord_estivi>=6) w.push({tipo:'error',testo:'Esauriti straord. estivi (6/6)'});
+      if (periodoStraord==='invernale'&&contatori.count_straord_invernali>=4) w.push({tipo:'error',testo:'Esauriti straord. invernali (4/4)'});
+    }
     if (tipo!=='straordinario_u21_nc'&&contatori.count_totale>=14) w.push({tipo:'warning',testo:'⚠️ Oltre 14 svincoli: penale +2M'});
     return w;
   }
@@ -2124,9 +2161,8 @@ ${pe>0?`⚠️ Penale extra +${pe}M
     setSaving(true);
     try {
       const {data:sq}=await supabase.from('squadre').select('bilancio').eq('name',teamName).single();
-      await eseguiSvincolo({squadra:teamName,player,tipo:tipoSvincolo,estero,bilancioAttuale:(sq?.bilancio||0)-pe});
+      await eseguiSvincolo({squadra:teamName,player,tipo:tipoSvincolo,estero,bilancioAttuale:(sq?.bilancio||0)});
       await logAzione({utente:'admin/presidente',squadra:teamName,azione:'svincolo',entita:'rosa',entitaId:player.id,descrizione:`Svincolo (${tipoSvincolo}): ${player.nome} Q${player.quot}`,dataPrima:{giocatore:player},rollbackPossibile:false});
-      if(pe>0)await supabase.from('movimenti').insert({squadra:teamName,descrizione:'Penale svincoli extra (>14)',uscita:pe,data:new Date().toISOString().slice(0,10)});
       sendTelegramNotification('svincolo', { giocatore: player.nome, quotazione: player.quot, squadra: teamName, tipo: tipoSvincolo });
       cacheInvalidate('rosa_' + teamName);
       cacheInvalidate('vivaio_' + teamName);
@@ -2173,7 +2209,8 @@ Passa all'anno 3.`))return;
   }
 
   const oggi = new Date();
-  const isEstate = oggi.getMonth()>=5&&oggi.getMonth()<=8;
+  const periodoStraordCorrente = getPeriodoStraordinariSvincoli(oggi);
+  const isEstate = periodoStraordCorrente === 'estivo';
   const usatiStraord = isEstate?(contatori?.count_straord_estivi||0):(contatori?.count_straord_invernali||0);
   const maxStraord = isEstate?6:4;
   const isU21P = popup?.player?.anni>0&&popup?.player?.anni<=21;
@@ -2364,7 +2401,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                   </button>
                 ))}
               </div>
-              {tipoSvincolo==='straordinario'&&(
+              {(tipoSvincolo==='straordinario'||tipoSvincolo==='straordinario_u21')&&(
                 <label style={{ display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:11,color:"#ccc" }}>
                   <input type="checkbox" checked={estero} onChange={e=>setEstero(e.target.checked)}/> Trasferito all'estero (rimb. ½)
                 </label>
@@ -2533,14 +2570,13 @@ function SvincoliTab({ team, isAdmin }) {
 
     if (tipo === 'ordinario') {
       const penale = quot <= 10 ? 0.5 : quot <= 20 ? 1 : quot <= 30 ? 1.5 : 2;
-      const endYear = oggi.getMonth() <= 4 ? oggi.getFullYear() : oggi.getFullYear() + 1;
-      const mesi = (endYear * 12 + 4) - (oggi.getFullYear() * 12 + oggi.getMonth()) + 1;
+      const mesi = contaMensilitaResidueDaPagare(oggi);
       const costoStip = parseFloat((mesi * stip / 12).toFixed(2));
       return {
         label: "Costo totale",
         value: parseFloat((penale + costoStip).toFixed(2)),
         color: "#ef4444",
-        dettaglio: `Penale ${penale}M + ${mesi} mensilità fino a mag (${costoStip}M)`,
+        dettaglio: `Penale ${penale}M + ${mesi} mensilità residue fino al 01/06 (${costoStip}M)`,
         positivo: false,
       };
     }
@@ -2549,8 +2585,7 @@ function SvincoliTab({ team, isAdmin }) {
     }
     // Straordinario
     const ind = estero ? parseFloat((quot / 2).toFixed(2)) : parseFloat((quot / 4).toFixed(2));
-    const julyYear = oggi.getMonth() >= 5 ? oggi.getFullYear() : oggi.getFullYear() - 1;
-    const mesiRimb = Math.max(0, (oggi.getFullYear() * 12 + oggi.getMonth()) - (julyYear * 12 + 6) + 1);
+    const mesiRimb = contaMensilitaGiaPagate(oggi);
     const rimb = parseFloat((mesiRimb * stip / 12).toFixed(2));
     const totale = parseFloat((ind + rimb).toFixed(2));
     return {
@@ -2567,8 +2602,7 @@ function SvincoliTab({ team, isAdmin }) {
     if (!player || !contatori) return [];
     const warnings = [];
     const oggi = new Date();
-    const isU21 = player.anni > 0 && player.anni <= 21;
-    const isEstate = oggi.getMonth() >= 5 && oggi.getMonth() <= 8;
+    const periodoStraord = getPeriodoStraordinariSvincoli(oggi);
 
     // Vincolo 30 giorni dall'acquisto (art. 6.2)
     if (player.data_acquisto) {
@@ -2576,16 +2610,19 @@ function SvincoliTab({ team, isAdmin }) {
       if (gg < 30) warnings.push({ tipo: 'error', testo: `Non svincolabile: acquistato ${gg} giorni fa (min. 30gg)` });
     }
 
-    // Max straordinari (art. 6.1)
+    // Impossibile giu-lug per tutti i tipi (art. 6.1)
+    if (!isPeriodoSvincoliConsentito(oggi))
+      warnings.push({ tipo: 'error', testo: 'Svincoli non consentiti a giugno/luglio: ammessi solo dal 01/08 al 31/05' });
+
+    // Max straordinari e finestre valide (art. 6.1)
     if (tipo === 'straordinario' || tipo === 'straordinario_u21') {
-      if (isEstate && contatori.count_straord_estivi >= 6)
+      if (!periodoStraord)
+        warnings.push({ tipo: 'error', testo: 'Straordinari consentiti solo nel mercato estivo (01/06-15/09) o invernale (01/01-15/02)' });
+      if (periodoStraord === 'estivo' && contatori.count_straord_estivi >= 6)
         warnings.push({ tipo: 'error', testo: `Esauriti svincoli straordinari estivi (6/6)` });
-      if (!isEstate && contatori.count_straord_invernali >= 4)
+      if (periodoStraord === 'invernale' && contatori.count_straord_invernali >= 4)
         warnings.push({ tipo: 'error', testo: `Esauriti svincoli straordinari invernali (4/4)` });
     }
-    // Impossibile giu-lug per tutti i tipi (art. 6.1)
-    if (oggi.getMonth() === 5 || oggi.getMonth() === 6)
-      warnings.push({ tipo: 'error', testo: 'Svincoli non consentiti a giugno/luglio (art. 6.1)' });
 
     // Max 14 totali (art. 6.4)
     if (tipo !== 'straordinario_u21_nc' && contatori.count_totale >= 14)
@@ -2619,15 +2656,11 @@ function SvincoliTab({ team, isAdmin }) {
         player: showForm,
         tipo: tipoSvincolo,
         estero,
-        bilancioAttuale: bil - penaleExtra,
+        bilancioAttuale: bil,
       });
 
       await logAzione({ utente: 'admin/presidente', squadra: team.name, azione: 'svincolo', entita: 'rosa', entitaId: showForm.id, descrizione: `Svincolo (${tipoSvincolo}): ${showForm.nome} Q${showForm.quot}${estero ? ' [estero]' : ''}`, dataPrima: { bilancio: bil, giocatore: showForm }, rollbackPossibile: false });
 
-      // Penale extra separata se >14
-      if (penaleExtra > 0) {
-        await supabase.from('movimenti').insert({ squadra: team.name, descrizione: 'Penale svincoli extra (>14)', uscita: penaleExtra, data: new Date().toISOString().slice(0,10) });
-      }
 
       setShowForm(null);
       setEstero(false);
@@ -2654,7 +2687,8 @@ function SvincoliTab({ team, isAdmin }) {
 
   // Conteggio straordinari stagione
   const oggi = new Date();
-  const isEstate = oggi.getMonth() >= 5 && oggi.getMonth() <= 8;
+  const periodoStraordCorrente = getPeriodoStraordinariSvincoli(oggi);
+  const isEstate = periodoStraordCorrente === 'estivo';
   const maxStraord = isEstate ? 6 : 4;
   const usatiStraord = isEstate ? (contatori?.count_straord_estivi || 0) : (contatori?.count_straord_invernali || 0);
 
@@ -2689,7 +2723,7 @@ function SvincoliTab({ team, isAdmin }) {
       {/* ── Warning giu/lug ── */}
       {(oggi.getMonth() === 5 || oggi.getMonth() === 6) && (
         <div style={{ background: "#f59e0b0a", border: "1px solid #f59e0b30", borderRadius: 10, padding: "10px 14px", fontSize: 11, color: "#f59e0b" }}>
-          ⚠️ Svincoli straordinari sospesi a giugno/luglio (art. 6.1)
+          ⚠️ Svincoli sospesi a giugno/luglio (art. 6.1)
         </div>
       )}
 
@@ -2736,7 +2770,7 @@ function SvincoliTab({ team, isAdmin }) {
               </div>
 
               {/* Opzione estero per straordinario */}
-              {tipoSvincolo === 'straordinario' && (
+              {(tipoSvincolo === 'straordinario' || tipoSvincolo === 'straordinario_u21') && (
                 <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12, color: "#ccc" }}>
                   <input type="checkbox" checked={estero} onChange={e => setEstero(e.target.checked)} />
                   Giocatore trasferito all'estero (indennizzo ½ anziché ¼)
