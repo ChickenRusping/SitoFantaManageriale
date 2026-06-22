@@ -178,6 +178,7 @@ export async function getRosa(squadra) {
   // Applica eventuali scadenze vivaio prima di restituire la rosa.
   // Se il SQL di migrazione non è ancora stato eseguito, non blocchiamo il caricamento.
   try { await processaDecisioniVivaio(squadra); } catch {}
+  try { await processaRientriPrestitoProgrammato(); } catch {}
   const { data, error } = await supabase.from('rosa').select('*').eq('squadra', squadra).order('ruolo');
   if (error) throw error;
   return data;
@@ -547,9 +548,11 @@ export async function updateQuote(squadra, fields) {
 // ─── STIPENDI ─────────────────────────────────────────────────────────────────
 
 export async function calcolaSalaryCap(squadra) {
-  const { data, error } = await supabase.from('rosa').select('stip').eq('squadra', squadra);
+  const { data, error } = await supabase.from('rosa').select('stip, in_vivaio').eq('squadra', squadra);
   if (error) throw error;
-  return data.reduce((s, p) => s + Number(p.stip), 0);
+  return (data || [])
+    .filter(p => !p.in_vivaio)
+    .reduce((s, p) => s + Number(p.stip || 0), 0);
 }
 
 export async function pagaStipendi(squadra, totalStip, bilancioAttuale) {
@@ -564,7 +567,14 @@ export async function pagaStipendi(squadra, totalStip, bilancioAttuale) {
 }
 
 export async function aggiornaSCNegativo(squadra, scUsato, oggi) {
-  if (scUsato > 75) {
+  // Art. 4.3.2: nei mesi di giugno e luglio il salary cap può essere negativo senza penalità/blocco.
+  const dataRef = oggi ? new Date(`${oggi}T12:00:00`) : new Date();
+  if (isMeseEsenteSalaryCap(dataRef)) {
+    await supabase.from('squadre').update({ sc_negativo_dal: null, mercato_bloccato: false }).eq('name', squadra);
+    return { esente: true };
+  }
+
+  if (scUsato > SALARY_CAP) {
     const { data } = await supabase.from('squadre').select('sc_negativo_dal').eq('name', squadra).single();
     if (!data?.sc_negativo_dal) {
       await supabase.from('squadre').update({ sc_negativo_dal: oggi, mercato_bloccato: true }).eq('name', squadra);
@@ -572,6 +582,7 @@ export async function aggiornaSCNegativo(squadra, scUsato, oggi) {
   } else {
     await supabase.from('squadre').update({ sc_negativo_dal: null, mercato_bloccato: false }).eq('name', squadra);
   }
+  return { esente: false };
 }
 
 export async function getContrattiInScadenza(squadra) {
@@ -699,7 +710,22 @@ export async function getTrattative() {
 }
 
 export async function insertTrattativa(t) {
-  const { data, error } = await supabase.from('trattative').insert(t).select().single();
+  _validazioneEconomicaTrattativa(t);
+
+  const payload = { ...t };
+  if (String(payload.tipo || '').startsWith('prestito') && !payload.scadenza_prestito) {
+    payload.scadenza_prestito = _scadenzaPrestitoRegolamento(payload.durata_mesi || 6);
+  }
+
+  if (payload.tipo === 'clausola') {
+    const quot = _numero(payload.quot_giocatore ?? payload.quota_giocatore ?? payload.quot, 0);
+    const clausola = _calcolaClausolaRegolamento(quot);
+    if (quot > 0 && Math.abs(_numero(payload.prezzo) - clausola) > 0.01) {
+      throw new Error(`Clausola non valida: deve essere pari a 1,75× quotazione (${clausola.toFixed(2)}M).`);
+    }
+  }
+
+  const { data, error } = await supabase.from('trattative').insert(payload).select().single();
   if (error) throw error;
   return data;
 }
@@ -728,12 +754,26 @@ export async function getAste() {
 }
 
 export async function insertAsta(a) {
+  const quot = _numero(a.quot ?? a.quot_giocatore ?? a.quota_giocatore, 0);
+  const tipo = a.tipo || a.modalita || 'rialzo';
+  const prezzoBase = _numero(a.prezzo_base ?? a.prezzo_corrente ?? a.prezzo, 0);
+  if (quot > 0 && tipo === 'rialzo' && prezzoBase < quot / 2) {
+    throw new Error(`Asta a rialzo non valida: prezzo base minimo ½ quotazione (${(quot/2).toFixed(2)}M).`);
+  }
+  if (quot > 0 && tipo === 'discesa' && prezzoBase < quot / 2) {
+    throw new Error(`Asta a discesa non valida: il prezzo non può partire sotto ½ quotazione (${(quot/2).toFixed(2)}M).`);
+  }
   const { data, error } = await supabase.from('aste').insert(a).select().single();
   if (error) throw error;
   return data;
 }
 
 export async function updateAsta(id, fields) {
+  // Validazioni minime backend per aste proprietario: no rilanci nulli/negativi e no prezzo sotto ½Q se noto.
+  if (fields && ('offerta_corrente' in fields || 'prezzo_corrente' in fields || 'prezzo' in fields)) {
+    const val = _numero(fields.offerta_corrente ?? fields.prezzo_corrente ?? fields.prezzo, 0);
+    if (val <= 0) throw new Error('Offerta/prezzo asta non valido.');
+  }
   const { error } = await supabase.from('aste').update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id);
   if (error) throw error;
 }
@@ -753,7 +793,7 @@ export function subscribeAste(callback) {
 // 5. Marca la trattativa come "completata"
 // Per prestiti: tiene traccia della scadenza, non sposta definitivamente
 export async function eseguiTrasferimento(trattativa) {
-  const { da_squadra, a_squadra, giocatore, prezzo, tipo, quota_giocatore,
+  const { da_squadra, a_squadra, giocatore, prezzo, tipo, quota_giocatore, quot_giocatore,
           scadenza_prestito, stipendio_a_chi, fuori_mercato, id,
           giocatore_scambio } = trattativa;
 
@@ -770,6 +810,33 @@ export async function eseguiTrasferimento(trattativa) {
   const squadraAcquirente = da_squadra;
   const squadraCedente = a_squadra;
 
+  // Art. 5.1/5.1.1: fuori mercato l'accordo resta differito; giocatore e soldi si muovono alla riapertura.
+  const mercato = getStatoMercatoRegolamento(new Date());
+  if (!mercato.aperto && trattativa.stato !== 'accettata_differita' && !trattativa.esegui_ora) {
+    if (id) {
+      await supabase.from('trattative').update({
+        stato: 'accettata_differita',
+        trasferimento_previsto_il: getProssimaAperturaMercato(new Date()).toISOString().slice(0, 10),
+        updated_at: new Date().toISOString(),
+      }).eq('id', id);
+    }
+    return { differito: true, previstoIl: getProssimaAperturaMercato(new Date()).toISOString().slice(0, 10) };
+  }
+
+  _validazioneEconomicaTrattativa(trattativa);
+
+  // Art. 5.5: clausola = 1,75×Q e solo dopo due rifiuti/controfferte o 48h.
+  if (tipo === 'clausola') {
+    const quotClausola = _numero(quot_giocatore ?? quota_giocatore, 0);
+    const valoreClausola = _calcolaClausolaRegolamento(quotClausola);
+    if (quotClausola > 0 && Math.abs(_numero(prezzo) - valoreClausola) > 0.01) {
+      throw new Error(`Clausola non valida: valore richiesto ${valoreClausola.toFixed(2)}M.`);
+    }
+    if (!_isClausolaAttivabile(trattativa)) {
+      throw new Error('Clausola non ancora attivabile: servono due rifiuti/controfferte o 48 ore dalla prima offerta.');
+    }
+  }
+
   // ── 1. Trova il giocatore nella rosa della squadra cedente ──────────────────
   const { data: rosaRows } = await supabase
     .from('rosa')
@@ -783,6 +850,9 @@ export async function eseguiTrasferimento(trattativa) {
   // Art. 3: il trasferimento non può portare la rosa acquirente oltre i limiti regolamentari.
   await assertRosaDopoAggiunta(squadraAcquirente, { ...player, squadra: squadraAcquirente, in_vivaio: false });
 
+  // Art. 5.6: blocco passaggi prima di muovere giocatore/soldi.
+  await checkEAggiornaPassaggi(giocatore, squadraAcquirente, tipo, { soloControllo: true });
+
   if (player) {
     // ── 2. Calcola nuovo stipendio (art. 5.9): basato su quotazione attuale ──
     const nuovaQuot = trattativa.quot_giocatore || player.quot;
@@ -794,8 +864,10 @@ export async function eseguiTrasferimento(trattativa) {
       await supabase.from('rosa').update({
         squadra: squadraAcquirente,
         in_prestito: true,
+        prestito_tipo: tipo,
+        tag_rosa: tipo === 'prestito_secco' ? 'PRESTITO SECCO' : tipo === 'prestito_obbligo' ? 'PRESTITO OBBLIGO' : 'PRESTITO DIRITTO',
         squadra_originale: squadraCedente,
-        scadenza_prestito,
+        scadenza_prestito: scadenza_prestito || _scadenzaPrestitoRegolamento(trattativa.durata_mesi || 6),
         stip: stipendio_a_chi === 'cedente' ? 0 : nuovoStip, // cedente paga → 0 per ricevente
         stip_prestito_cedente: stipendio_a_chi === 'cedente' ? nuovoStip : 0,
       }).eq('id', player.id);
@@ -808,6 +880,8 @@ export async function eseguiTrasferimento(trattativa) {
         anni_contratto: 1, // reimposta da anno 1 (art. 5.9)
         data_acquisto: oggi,
         in_prestito: false,
+        prestito_tipo: null,
+        tag_rosa: null,
         squadra_originale: null,
         scadenza_prestito: null,
       }).eq('id', player.id);
@@ -823,7 +897,7 @@ export async function eseguiTrasferimento(trattativa) {
       await supabase.from('rosa').update({
         squadra: squadraCedente, stip: nuovoStip2, stip_originale: nuovoStip2,
         anni_contratto: 1, data_acquisto: oggi,
-        in_prestito: false, squadra_originale: null, scadenza_prestito: null,
+        in_prestito: false, prestito_tipo: null, tag_rosa: null, squadra_originale: null, scadenza_prestito: null,
       }).eq('id', p2.id);
     }
   }
@@ -889,11 +963,7 @@ export async function eseguiTrasferimento(trattativa) {
   }).eq('id', id);
 
   // ── 7. Aggiorna tracciamento passaggi sessione (art. 5.6 — max 3 squadre) ─
-  try {
-    await checkEAggiornaPassaggi(giocatore, squadraAcquirente, tipo);
-  } catch(passErr) {
-    console.warn('Passaggi sessione:', passErr.message);
-  }
+  await checkEAggiornaPassaggi(giocatore, squadraAcquirente, tipo);
 
   // ── 8. Inserisce bonus trattativa nella tab Clausole di entrambe le squadre ─
   try {
@@ -943,6 +1013,24 @@ export async function eseguiTrasferimento(trattativa) {
   return { ok: true, player, nuovoBilCedente, nuovoBilAcquirente };
 }
 
+// Processa i rientri programmati dopo rescissione anticipata (art. 5.8.2)
+export async function processaRientriPrestitoProgrammato() {
+  const oggi = new Date().toISOString().slice(0, 10);
+  const { data } = await supabase.from('rosa')
+    .select('id,nome,squadra_originale,rescissione_prestito_scadenza')
+    .eq('in_prestito', true)
+    .eq('rescissione_prestito_attiva', true)
+    .lte('rescissione_prestito_scadenza', oggi);
+
+  const rientrati = [];
+  for (const p of data || []) {
+    if (!p.squadra_originale) continue;
+    await eseguiRientroPrestito(p.id, p.squadra_originale);
+    rientrati.push(p.nome);
+  }
+  return rientrati;
+}
+
 // Rientro da prestito: riporta il giocatore alla squadra originale
 export async function eseguiRientroPrestito(playerId, squadraOriginale) {
   const oggi = new Date().toISOString().slice(0, 10);
@@ -954,8 +1042,13 @@ export async function eseguiRientroPrestito(playerId, squadraOriginale) {
   await supabase.from('rosa').update({
     squadra: squadraOriginale,
     in_prestito: false,
+    prestito_tipo: null,
+    tag_rosa: null,
     squadra_originale: null,
     scadenza_prestito: null,
+    rescissione_prestito_attiva: false,
+    rescissione_prestito_scadenza: null,
+    rescissione_prestito_da: null,
     stip: nuovoStip,
     stip_prestito_cedente: 0,
   }).eq('id', playerId);
@@ -1003,7 +1096,8 @@ export async function eseguiScadenzaPrestito(item) {
     const nuovoStip = parseFloat((Number(player.quot || 0) / 5).toFixed(2));
     await supabase.from('rosa').update({
       squadra: squadraRicevente, // rimane al ricevente
-      in_prestito: false, squadra_originale: null, scadenza_prestito: null,
+      in_prestito: false, prestito_tipo: null, tag_rosa: null, squadra_originale: null, scadenza_prestito: null,
+      rescissione_prestito_attiva: false, rescissione_prestito_scadenza: null, rescissione_prestito_da: null,
       stip: nuovoStip, stip_originale: nuovoStip, anni_contratto: 1,
     }).eq('id', player.id);
     // Pagamento riscatto
@@ -1027,23 +1121,23 @@ export async function eseguiScadenzaPrestito(item) {
 // ── Rescissione anticipata prestito (art. 5.8.1) ─────────────────────────────
 // chiPaga: 'ricevente' (25% Q) | 'cedente' (50% Q)
 export async function eseguiRescissioneAnticipataPrestito(playerId, chiPaga) {
-  const oggi = new Date().toISOString().slice(0, 10);
+  const oggi = new Date();
+  const oggiStr = oggi.toISOString().slice(0, 10);
   const { data: player } = await supabase.from('rosa').select('*').eq('id', playerId).single();
   if (!player || !player.in_prestito) throw new Error('Giocatore non in prestito');
+  if (player.rescissione_prestito_attiva) throw new Error('Rescissione già attivata per questo prestito.');
 
   const squadraRicevente = player.squadra;
   const squadraCedente   = player.squadra_originale;
-  const quot = Number(player.quot);
+  const quotReale = _numero(player.quot_reale ?? player.quot, 0);
 
-  // Costo indennizzo: 25% Q per chi riceve, 50% Q per chi ha ceduto
+  // Art. 5.8.1: 25% quotazione reale per chi ha ricevuto, 50% per chi ha dato in prestito.
   const pct = chiPaga === 'ricevente' ? 0.25 : 0.50;
-  const indennizzo = parseFloat((quot * pct).toFixed(2));
+  const indennizzo = parseFloat((quotReale * pct).toFixed(2));
 
-  // Squadra che paga e squadra che riceve l'indennizzo
   const squadraPaga    = chiPaga === 'ricevente' ? squadraRicevente : squadraCedente;
   const squadraIncassa = chiPaga === 'ricevente' ? squadraCedente   : squadraRicevente;
 
-  // Aggiorna bilanci
   const { data: sqs } = await supabase.from('squadre').select('name,bilancio')
     .in('name', [squadraPaga, squadraIncassa]);
   const bilPaga    = sqs?.find(s => s.name === squadraPaga)?.bilancio    || 0;
@@ -1051,43 +1145,55 @@ export async function eseguiRescissioneAnticipataPrestito(playerId, chiPaga) {
   await supabase.from('squadre').update({ bilancio: parseFloat((bilPaga    - indennizzo).toFixed(2)) }).eq('name', squadraPaga);
   await supabase.from('squadre').update({ bilancio: parseFloat((bilIncassa + indennizzo).toFixed(2)) }).eq('name', squadraIncassa);
 
-  // Riporta il giocatore alla squadra cedente (proprietario)
-  const nuovoStip = parseFloat((quot / 5).toFixed(2));
+  // Art. 5.8.2: se mercato aperto rientra dopo 7 giorni esatti; fuori mercato al primo giorno utile.
+  const mercato = getStatoMercatoRegolamento(oggi);
+  const scadenza = mercato.aperto
+    ? new Date(oggi.getTime() + 7 * 86400000)
+    : getProssimaAperturaMercato(oggi);
+  const scadenzaStr = scadenza.toISOString().slice(0, 10);
+
   await supabase.from('rosa').update({
-    squadra: squadraCedente,
-    in_prestito: false,
-    squadra_originale: null,
-    scadenza_prestito: null,
-    stip: nuovoStip,
+    rescissione_prestito_attiva: true,
+    rescissione_prestito_da: chiPaga,
+    rescissione_prestito_scadenza: scadenzaStr,
+    tag_rosa: 'PRESTITO - RIENTRO PROGRAMMATO',
   }).eq('id', playerId);
 
-  // Movimenti
   await supabase.from('movimenti').insert([
-    { squadra: squadraPaga,    descrizione: `Indennizzo rescissione prestito ${player.nome}`,         uscita: indennizzo, data: oggi },
-    { squadra: squadraIncassa, descrizione: `Indennizzo rescissione prestito ${player.nome} (incasso)`, entrata: indennizzo, data: oggi },
+    { squadra: squadraPaga,    descrizione: `Indennizzo rescissione prestito ${player.nome} (${Math.round(pct*100)}% Q reale)`, uscita: indennizzo, data: oggiStr },
+    { squadra: squadraIncassa, descrizione: `Indennizzo rescissione prestito ${player.nome} (incasso)`, entrata: indennizzo, data: oggiStr },
   ]);
 
-  return { indennizzo, squadraCedente, squadraRicevente };
+  return { indennizzo, squadraCedente, squadraRicevente, rientroProgrammatoIl: scadenzaStr };
 }
 
 // ── Tracciamento passaggi giocatore in sessione (art. 5.6) ────────────────────
-// Aggiorna il contatore passaggi su rosa; blocca se già a 2 (terzo deve essere prestito)
-export async function checkEAggiornaPassaggi(giocatoreNome, squadraDestinazione, tipo) {
-  // Cerca giocatore in qualunque rosa
-  const { data: rows } = await supabase.from('rosa').select('id,nome,squadra,passaggi_sessione')
-    .ilike('nome', giocatoreNome).limit(1);
+// Max 3 squadre nella sessione: squadra iniziale conta come 1, quindi max 2 cambi.
+// Il vivaio non conta mai come squadra: promozioni/acquisti vivaio non incrementano.
+export async function checkEAggiornaPassaggi(giocatoreNome, squadraDestinazione, tipo, options = {}) {
+  if (tipo === 'vivaio' || tipo === 'promozione_vivaio') return { ok: true, passaggi: 0, vivaio: true };
+
+  const stagioneSessione = stagioneDaData(new Date());
+  const { data: rows } = await supabase.from('rosa')
+    .select('id,nome,squadra,passaggi_sessione,ultima_sessione_mercato,in_vivaio')
+    .ilike('nome', giocatoreNome)
+    .limit(1);
   const player = rows?.[0];
-  if (!player) return { ok: true, passaggi: 0 };
+  if (!player || player.in_vivaio) return { ok: true, passaggi: 0 };
 
-  const passaggi = Number(player.passaggi_sessione || 0);
+  const stessaSessione = player.ultima_sessione_mercato === stagioneSessione;
+  const passaggi = stessaSessione ? Number(player.passaggi_sessione || 0) : 0;
 
-  // Art. 5.6 (aggiornato): la squadra iniziale conta come squadra 1, max 3 squadre totali
-  // → massimo 2 trasferimenti per sessione, qualsiasi tipo (anche cessione permanente)
   if (passaggi >= 2) {
-    throw new Error(`${giocatoreNome} ha già raggiunto il limite di 3 squadre in questa sessione (squadra iniziale = squadra 1).`);
+    throw new Error(`${giocatoreNome} ha già raggiunto il limite di 3 squadre in questa sessione (art. 5.6).`);
   }
 
-  await supabase.from('rosa').update({ passaggi_sessione: passaggi + 1 }).eq('id', player.id);
+  if (options.soloControllo) return { ok: true, passaggi };
+
+  await supabase.from('rosa').update({
+    passaggi_sessione: passaggi + 1,
+    ultima_sessione_mercato: stagioneSessione,
+  }).eq('id', player.id);
   return { ok: true, passaggi: passaggi + 1 };
 }
 
@@ -1252,6 +1358,113 @@ function stagioneDaData(data = new Date()) {
 
 function giorniTra(a, b) {
   return Math.floor((b.getTime() - a.getTime()) / 86400000);
+}
+
+// ─── COSTANTI / DATE REGOLAMENTO ─────────────────────────────────────────────
+export const SALARY_CAP = 75;
+
+export function isMeseEsenteSalaryCap(date = new Date()) {
+  const m = date.getMonth(); // 5=giugno, 6=luglio
+  return m === 5 || m === 6;
+}
+
+export function getStatoMercatoRegolamento(date = new Date()) {
+  const m = date.getMonth() + 1;
+  const d = date.getDate();
+  const h = date.getHours();
+  const min = date.getMinutes();
+  const minutes = h * 60 + min;
+  const inEstivo = (m === 6 && minutes >= 9 * 60) || (m > 6 && m < 9) || (m === 9 && d <= 15);
+  const inInvernale = (m === 1 && minutes >= 9 * 60) || (m === 2 && d <= 15);
+  return { aperto: inEstivo || inInvernale, periodo: inEstivo ? 'estivo' : inInvernale ? 'invernale' : null };
+}
+
+export function getProssimaAperturaMercato(date = new Date()) {
+  const y = date.getFullYear();
+  const candidates = [
+    new Date(y, 0, 1, 9, 0, 0, 0),
+    new Date(y, 5, 1, 9, 0, 0, 0),
+    new Date(y + 1, 0, 1, 9, 0, 0, 0),
+    new Date(y + 1, 5, 1, 9, 0, 0, 0),
+  ].filter(d => d > date).sort((a,b) => a - b);
+  return candidates[0];
+}
+
+function _numero(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function _calcolaStipBaseDaQuotazione(quot) {
+  return parseFloat((_numero(quot) / 5).toFixed(2));
+}
+
+function _calcolaClausolaRegolamento(quot) {
+  return parseFloat((_numero(quot) * 1.75).toFixed(2));
+}
+
+function _scadenzaPrestitoRegolamento(mesi, dataInizio = new Date()) {
+  const allowed = [6, 12, 18, 24];
+  const durata = Number(mesi);
+  if (!allowed.includes(durata)) throw new Error('Durata prestito non valida: sono ammessi solo 6, 12, 18 o 24 mesi.');
+  const d = new Date(dataInizio);
+  d.setMonth(d.getMonth() + durata);
+  const year = d.getFullYear();
+  const jan = new Date(year, 0, 1, 0, 0, 0, 0);
+  const jun = new Date(year, 5, 1, 0, 0, 0, 0);
+  const nextJan = new Date(year + 1, 0, 1, 0, 0, 0, 0);
+  const candidates = [jan, jun, nextJan].filter(x => x >= d).sort((a,b) => a - b);
+  return candidates[0].toISOString().slice(0, 10);
+}
+
+function _isScadenzaPrestitoValida(scadenza) {
+  if (!scadenza) return false;
+  const m = String(scadenza).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return false;
+  return (m[2] === '01' && m[3] === '01') || (m[2] === '06' && m[3] === '01');
+}
+
+function _validazioneEconomicaTrattativa(t = {}) {
+  const tipo = t.tipo || 'cessione';
+  const prezzo = _numero(t.prezzo, 0);
+  const quot = _numero(t.quot_giocatore ?? t.quota_giocatore ?? t.quot ?? t.quotazione, 0);
+  const isPrestito = String(tipo).startsWith('prestito');
+
+  if (['cessione', 'scambio'].includes(tipo) && quot > 0 && prezzo > 0 && prezzo < quot / 2) {
+    throw new Error(`Offerta non valida: il minimo è ½ quotazione (${(quot / 2).toFixed(2)}M).`);
+  }
+
+  if (tipo === 'prestito_secco') {
+    const min = quot * 0.10;
+    if (quot > 0 && prezzo < min) throw new Error(`Prestito secco non valido: minimo 10% della quotazione (${min.toFixed(2)}M).`);
+    if (prezzo <= 0) throw new Error('Non sono ammessi prestiti gratuiti.');
+  }
+
+  if (tipo === 'prestito_diritto' || tipo === 'prestito_obbligo') {
+    const min = quot * 0.50;
+    const max = quot * 1.50;
+    if (quot > 0 && (prezzo < min || prezzo > max)) {
+      throw new Error(`Prestito con riscatto non valido: costo tra ${min.toFixed(2)}M e ${max.toFixed(2)}M.`);
+    }
+    if (prezzo <= 0) throw new Error('Non sono ammessi prestiti gratuiti.');
+  }
+
+  if (isPrestito) {
+    if (t.durata_mesi && ![6,12,18,24].includes(Number(t.durata_mesi))) {
+      throw new Error('Durata prestito non valida: sono ammessi solo 6, 12, 18 o 24 mesi.');
+    }
+    if (t.scadenza_prestito && !_isScadenzaPrestitoValida(t.scadenza_prestito)) {
+      throw new Error('Scadenza prestito non valida: deve essere 01/01 o 01/06.');
+    }
+  }
+}
+
+function _isClausolaAttivabile(t = {}) {
+  const rifiuti = Number(t.n_rifiuti || t.rifiuti || t.controffertate || 0);
+  if (rifiuti >= 2) return true;
+  const start = t.prima_offerta_at || t.created_at || t.data_offerta;
+  if (!start) return false;
+  return (new Date() - new Date(start)) >= 48 * 3600000;
 }
 
 function _inizioGiorno(date = new Date()) {
@@ -1566,6 +1779,10 @@ export async function applicaPagamentiAutomatici() {
     const vivaioCheck = await processaDecisioniVivaio();
     if (vivaioCheck?.richieste?.length || vivaioCheck?.svincolati?.length) results.vivaioDecisioni.push(vivaioCheck);
   } catch(e) { results.errori.push(`Decisioni vivaio: ${e.message}`); }
+  try {
+    const rientri = await processaRientriPrestitoProgrammato();
+    if (rientri?.length) results.prestitiProgrammato = rientri;
+  } catch(e) { results.errori.push(`Rientri prestito programmati: ${e.message}`); }
 
   // Carica tutte le squadre
   const { data: squadre } = await supabase.from('squadre').select('name, bilancio');
@@ -4000,7 +4217,8 @@ export async function applicaPenalitaRitardoAuto(trattativa) {
 //   - Anno 4+: bonus fedeltà -10% (una sola volta)
 //   - Prestiti: non vengono aggiornati (anni_contratto non avanza sul prestito)
 export async function aggiornaContrattiAnnuali() {
-  const oggi = new Date().toISOString().slice(0, 10);
+  const oggi = new Date();
+  const oggiStr = oggi.toISOString().slice(0, 10);
 
   const { data: tutti } = await supabase
     .from('rosa')
@@ -4013,62 +4231,59 @@ export async function aggiornaContrattiAnnuali() {
   const svincolati = [];
 
   for (const p of tutti) {
-    const isU21 = Number(p.anni || 0) <= 21;
+    const isU21 = Number(p.anni || 0) > 0 && Number(p.anni || 0) <= 21;
     const ac = Number(p.anni_contratto || 1);
     const stipAttuale = Number(p.stip || 0);
 
-    // Under-21: anni_contratto non avanza (art. 4.8.1 — nessun aumento contrattuale)
-    if (isU21) {
-      // Nessuna modifica: stip e anni_contratto rimangono invariati finché U21
-      continue;
-    }
-
-    // Giocatori in prestito: avanza anni_contratto ma stipendio invariato
+    // Prestiti: il contratto del cartellino continua, ma non cambiamo lo stipendio temporaneo del ricevente.
     if (p.in_prestito) {
       await supabase.from('rosa').update({ anni_contratto: ac + 1 }).eq('id', p.id);
+      aggiornati.push({ nome: p.nome, squadra: p.squadra, acPrima: ac, acDopo: ac + 1, prestito: true, percAumento: 0 });
       continue;
     }
 
-    // Anno 2: rinnovo biennale — richiede conferma esplicita del presidente
-    // Se non confermato → svincolo automatico 01/06 (art. 4.8)
+    // Fine secondo anno: se non confermato entro il 31/05, svincolo automatico il 01/06.
     if (ac === 2 && !p.rinnovo_confermato) {
       await supabase.from('rosa').delete().eq('id', p.id);
       await supabase.from('svincolati').upsert({
         nome: p.nome, ruolo: p.ruolo, anni: p.anni, quot: p.quot,
-        stip: p.stip, clausola: parseFloat((p.quot * 1.75).toFixed(2)),
+        stip: p.stip, clausola: _calcolaClausolaRegolamento(p.quot),
         fuori_lista: false, squadra_serie_a: p.squadra_serie_a,
         stagione: stagioneDaData(oggi), updated_at: new Date().toISOString(),
       }, { onConflict: 'nome,stagione' });
-      svincolati.push({ nome: p.nome, squadra: p.squadra, motivo: 'contratto_scaduto' });
+      svincolati.push({ nome: p.nome, squadra: p.squadra, motivo: 'contratto_biennale_non_rinnovato' });
       continue;
     }
 
-    // Tutti gli altri anni: aumento automatico
-    // Anno 1→2: +10% | Anno 2→3 (confermato): +20% | Anno 3→4: +10% | Anno 4+: -10% fedeltà
+    // Gli anni di contratto avanzano sempre, anche per U21 (art. 4.8.1).
+    // Gli U21 non subiscono aumenti/riduzioni percentuali finché restano U21.
     let percAumento = 0;
     if (!isU21) {
       if (ac === 1) percAumento = 10;
-      else if (ac === 2) percAumento = 20;  // rinnovo biennale confermato
-      else if (ac === 3) percAumento = 10;
-      else if (ac >= 4) percAumento = -10;  // bonus fedeltà (una sola volta al 4°)
+      else if (ac === 2) percAumento = 20;
+      else if (ac === 3 && !p.bonus_fedelta_applicato) percAumento = -10;
+      else percAumento = 0;
     }
 
     const nuovoStip = percAumento !== 0
       ? parseFloat((stipAttuale * (1 + percAumento / 100)).toFixed(2))
       : stipAttuale;
 
-    await supabase.from('rosa').update({
+    const update = {
       anni_contratto: ac + 1,
       stip: nuovoStip,
       stip_originale: nuovoStip,
-      rinnovo_confermato: false, // reset per il prossimo ciclo
-    }).eq('id', p.id);
+      rinnovo_confermato: false,
+    };
+    if (ac === 3 && !isU21) update.bonus_fedelta_applicato = true;
+
+    await supabase.from('rosa').update(update).eq('id', p.id);
 
     aggiornati.push({
       nome: p.nome, squadra: p.squadra,
       acPrima: ac, acDopo: ac + 1,
       stipPrima: stipAttuale, stipDopo: nuovoStip,
-      percAumento,
+      percAumento, isU21,
     });
   }
 
@@ -4077,7 +4292,14 @@ export async function aggiornaContrattiAnnuali() {
 
 // Conferma rinnovo biennale per un giocatore (da fare entro 31/05)
 export async function confermRinnovoBiennale(playerId) {
-  await supabase.from('rosa').update({ rinnovo_confermato: true }).eq('id', playerId);
+  const now = new Date();
+  const deadline = new Date(now.getFullYear(), 4, 31, 23, 59, 59, 999); // 31/05 23:59
+  const seasonStarted = new Date(now.getFullYear(), 5, 1, 0, 0, 0, 0);
+  if (now >= seasonStarted || now > deadline) {
+    throw new Error('Rinnovo non consentito: la scadenza è il 31/05 alle 23:59.');
+  }
+  const { error } = await supabase.from('rosa').update({ rinnovo_confermato: true }).eq('id', playerId);
+  if (error) throw error;
 }
 
 // ─── PREMI INDIVIDUALI (art. 12.4-12.5) ──────────────────────────────────────
@@ -4596,8 +4818,10 @@ export async function importa01Agosto(rows, stagione = '2026-27') {
         const isU21 = (anni || p.anni || 0) > 0 && (anni || p.anni || 0) <= 21;
         await supabase.from('rosa').update({
           quot_reale: quot, quot, squadra_serie_a, anni, ruolo,
-          stip: isU21 ? Number(p.stip) : stip,
-          stip_originale: isU21 ? Number(p.stip) : stip,
+          // Art. 4.2/4.8.1: gli U21 non hanno aumenti contrattuali percentuali,
+          // ma lo stipendio base segue sempre la quotazione aggiornata (Q/5).
+          stip,
+          stip_originale: stip,
           clausola, quot_precedente: p.quot || quot,
           ...statsRosa,
         }).eq('id', p.id);
