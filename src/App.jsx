@@ -24,7 +24,7 @@ const BIENNIO_CORRENTE  = calcolaBiennioCorrente();
 
 // ─── CACHE IN MEMORIA ────────────────────────────────────────────────────────
 // Evita di ricaricare gli stessi dati ogni volta che si naviga tra le pagine.
-// I dati vengono invalidati dopo TTL ms (default 90 secondi).
+// I dati vengono invalidati da realtime/azioni locali; TTL lungo come rete di sicurezza (default 10 minuti).
 const _cache = new Map();
 function cacheGet(key) {
   const entry = _cache.get(key);
@@ -32,7 +32,7 @@ function cacheGet(key) {
   if (Date.now() > entry.exp) { _cache.delete(key); return null; }
   return entry.data;
 }
-function cacheSet(key, data, ttl = 90000) {
+function cacheSet(key, data, ttl = 600000) {
   _cache.set(key, { data, exp: Date.now() + ttl });
 }
 function cacheInvalidate(pattern) {
@@ -154,7 +154,7 @@ function useDeadlineWatcher(onDeadlineScattata) {
   return statoMercato;
 }
 
-async function cachedFetch(key, fetcher, ttl = 90000) {
+async function cachedFetch(key, fetcher, ttl = 600000) {
   const cached = cacheGet(key);
   if (cached !== null) return cached;
   const data = await fetcher();
@@ -164,7 +164,7 @@ async function cachedFetch(key, fetcher, ttl = 90000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, applicaPagamentiAutomatici, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, applicaPagamentiAutomatici, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento,
   getBonusTrattativa, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -277,22 +277,17 @@ function getPeriodoStraordinariSvincoli(date = new Date()) {
   return null;
 }
 
-function dateMensilitaStagione(date = new Date()) {
-  const y = date.getFullYear();
-  const seasonStartYear = date.getMonth() >= 6 ? y : y - 1;
-  const res = [];
-  for (let i = 0; i < 12; i++) res.push(new Date(seasonStartYear, 6 + i, 1));
-  return res;
-}
-
 function contaMensilitaGiaPagate(date = new Date()) {
-  const oggi = inizioGiorno(date);
-  return dateMensilitaStagione(date).filter(payDate => payDate <= oggi).length;
+  // Stagione stipendiale nuova: reset immediato il 01/06 dopo il pagamento finale della stagione precedente.
+  // Conteggio mensile: giugno=0, luglio=1, agosto=2, ..., maggio=11.
+  const m = date.getMonth(); // 0=gennaio, ..., 5=giugno, 11=dicembre
+  if (m >= 5) return m - 5;      // giu 0, lug 1, ..., dic 6
+  return m + 7;                  // gen 7, feb 8, ..., mag 11
 }
 
 function contaMensilitaResidueDaPagare(date = new Date()) {
-  const oggi = inizioGiorno(date);
-  return dateMensilitaStagione(date).filter(payDate => payDate > oggi).length;
+  // Le mensilità residue sono quelle ancora da pagare fino al prossimo 01/06 incluso.
+  return 12 - contaMensilitaGiaPagate(date);
 }
 
 function Badge({ children, color }) {
@@ -317,7 +312,7 @@ function TeamAvatar({ team, size = 38 }) {
   if (team?.stemma_url) {
     return (
       <div style={{ width: size, height: size, borderRadius: size * 0.28, overflow: "hidden", border: `2px solid ${team.color}66`, flexShrink: 0, boxShadow: `0 4px 14px ${team.color}33`, background: "#0d0f14" }}>
-        <img src={team.stemma_url} alt={team.name}
+        <img loading="lazy" decoding="async" src={team.stemma_url} alt={team.name}
           style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
       </div>
     );
@@ -763,7 +758,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
 
   useEffect(() => {
     if (!mySquadra) return;
-    cachedFetch('rosa_' + mySquadra, () => getRosa(mySquadra), 120000).then(d => setMyRosa(d || []));
+    cachedFetch('rosa_' + mySquadra, () => getRosa(mySquadra), 600000).then(d => setMyRosa(d || []));
   }, [mySquadra]);
   // Allenatore: aggiornato quando allenatoriMap è popolato
   useEffect(() => {
@@ -776,7 +771,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
     if (!teams.length) return;
     // One fetch per team (rose) — popola cache; single batch per allenatori
     Promise.all([
-      Promise.all(teams.map(t => cachedFetch('rosa_' + t.name, () => getRosa(t.name), 120000).then(d => {
+      Promise.all(teams.map(t => cachedFetch('rosa_' + t.name, () => getRosa(t.name), 600000).then(d => {
         const rosa = (d || []).filter(p => !p.in_vivaio);
         return [t.name, { count: rosa.length, sc: rosa.reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0) }];
       }))),
@@ -1260,7 +1255,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
   const [saving, setSaving] = useState(false);
   const [compTab, setCompTab] = useState('serie_a');
   useEffect(() => {
-    cachedFetch('classifica', () => getClassifica(), 60000).then(d => setClassifica(d || []));
+    cachedFetch('classifica', () => getClassifica(), 600000).then(d => setClassifica(d || []));
     const sub = subscribeClassifica(() => {
       cacheInvalidate('classifica');
       getClassifica().then(d => setClassifica(d || []));
@@ -1312,10 +1307,10 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
       if (cached) { setRoseMap(cached); return; }
       const result = {};
       await Promise.all(names.map(async name => {
-        const d = await cachedFetch('rosa_' + name, () => getRosa(name), 120000);
+        const d = await cachedFetch('rosa_' + name, () => getRosa(name), 600000);
         if (d) result[name] = d;
       }));
-      cacheSet('rose_all_' + teamNames, result, 120000);
+      cacheSet('rose_all_' + teamNames, result, 600000);
       setRoseMap(result);
     }
     loadAll();
@@ -1325,7 +1320,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
   const roseIrregolari = Object.entries(complianceMap).filter(([, c]) => !c.regolare);
   // ── Deadline ─────────────────────────────────────────────────────────────────
   const [nowD, setNowD] = useState(new Date());
-  useEffect(() => { const t = setInterval(() => setNowD(new Date()), 60000); return () => clearInterval(t); }, []);
+  useEffect(() => { const t = setInterval(() => setNowD(new Date()), 600000); return () => clearInterval(t); }, []);
   const DEADLINE_DEFS = [
     { label: "Apertura mercato estivo",             month: 6,  day: 1,  section: "Mercato", type: "annual",  note: "Ore 09:00" },
     { label: "Chiusura mercato estivo",             month: 9,  day: 15, section: "Mercato", type: "annual",  note: "Ore 24:00" },
@@ -1701,7 +1696,7 @@ function DeadlinePage({ isAdmin }) {
   const [iscrizioneApplicata, setIscrizioneApplicata] = useState(false);
 
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 60000);
+    const t = setInterval(() => setNow(new Date()), 600000);
     return () => clearInterval(t);
   }, []);
 
@@ -2085,8 +2080,8 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
 
   const loadAll = useCallback(async () => {
     const [r, v, s, ct] = await Promise.all([
-      cachedFetch('rosa_' + teamName, () => getRosa(teamName), 60000),
-      cachedFetch('vivaio_' + teamName, () => getVivaio(teamName), 60000),
+      cachedFetch('rosa_' + teamName, () => getRosa(teamName), 600000),
+      cachedFetch('vivaio_' + teamName, () => getVivaio(teamName), 600000),
       getSvincoli(teamName),
       getStagioneSvincoli(teamName),
     ]);
@@ -2202,7 +2197,7 @@ Passa all'anno 3.`))return;
     if (!window.confirm(`Spostare ${player.nome} al Vivaio?\n\nRequisiti: Under-23, Q≤3, 0 presenze.`)) return;
     setSaving(true);
     try {
-      await supabase.from('rosa').update({ in_vivaio: true, vivaio_presenze: 0, data_entrata_vivaio: new Date().toISOString().slice(0,10) }).eq('id', player.id);
+      await supabase.from('rosa').update({ in_vivaio: true, vivaio_presenze: 0, quot_iniziale_vivaio: player.quot, data_entrata_vivaio: new Date().toISOString().slice(0,10) }).eq('id', player.id);
       await loadAll(); setPopup(null);
     } catch(e) { alert(e.message); }
     finally { setSaving(false); }
@@ -2240,7 +2235,9 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
   }
 
   const maxVivaio=2;
-  const alertProm=vivaio.filter(p=>(p.vivaio_presenze||0)>=2);
+  const needsDecisioneVivaio = (p) => Boolean(p.vivaio_decisione_richiesta) || (p.vivaio_presenze||0)>=2 || (Number(p.quot_iniziale_vivaio || p.quot || 0) > 0 && Number(p.quot || 0) - Number(p.quot_iniziale_vivaio || p.quot || 0) >= 2);
+  const decisioneScadenzaLabel = (p) => p.vivaio_decisione_scadenza ? new Date(p.vivaio_decisione_scadenza).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : 'entro 3 giorni';
+  const alertProm=vivaio.filter(needsDecisioneVivaio);
   const now=new Date(); const isVivaioPeriod=now.getMonth()>=8; // from Sept 1
 
   if(loading)return <div style={{fontSize:12,color:"#555",padding:12}}>Caricamento rosa...</div>;
@@ -2490,19 +2487,20 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
           </div>
           {alertProm.length>0&&(
             <div style={{ background:"#ef444412",border:"1.5px solid #ef444433",borderRadius:10,padding:"10px 14px",marginBottom:10 }}>
-              <div style={{ fontSize:11,fontWeight:700,color:"#ef4444",marginBottom:4 }}>⚠️ AZIONE RICHIESTA (art. 3.6.1)</div>
-              {alertProm.map(p=><div key={p.id} style={{ fontSize:11,color:"#fca5a5" }}><b>{p.nome}</b> — {p.vivaio_presenze} presenze · promuovi o svincola entro 2gg</div>)}
+              <div style={{ fontSize:11,fontWeight:700,color:"#ef4444",marginBottom:4 }}>⚠️ AZIONE RICHIESTA (art. 3.4.1)</div>
+              {alertProm.map(p=>{ const qi=Number(p.quot_iniziale_vivaio||p.quot||0), aq=Number(p.quot||0)-qi; const motivo=p.vivaio_motivo_decisione || `${(p.vivaio_presenze||0)>=2 ? `${p.vivaio_presenze} presenze` : ""}${(p.vivaio_presenze||0)>=2 && aq>=2 ? " · " : ""}${aq>=2 ? `quotazione +${aq}` : ""}`; return <div key={p.id} style={{ fontSize:11,color:"#fca5a5" }}><b>{p.nome}</b> — {motivo || "requisiti superati"} · scegli entro {decisioneScadenzaLabel(p)} o verrà svincolato automaticamente</div>; })}
             </div>
           )}
           {vivaio.length===0?<div style={{ fontSize:11,color:"#555",fontStyle:"italic" }}>Nessun giocatore in vivaio</div>
           :vivaio.map(p=>{
-            const rc=getRoleColor(p.ruolo), na=(p.vivaio_presenze||0)>=2;
+            const rc=getRoleColor(p.ruolo), na=needsDecisioneVivaio(p);
             return (
               <div key={p.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:10,background:na?"#ef444410":"#ffffff08",border:`1px solid ${na?"#ef444430":"#ffffff10"}`,marginBottom:6,flexWrap:"wrap" }}>
                 <span style={{ background:rc.bg,color:rc.text,border:`1px solid ${rc.border}`,borderRadius:5,padding:"2px 5px",fontSize:9,fontWeight:700 }}>{p.ruolo}</span>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:12,fontWeight:700,color:na?"#fca5a5":"#e0e0e0" }}>{p.nome}</div>
-                  <div style={{ fontSize:10,color:"#666" }}>{p.anni}aa · Q{p.quot} · {p.vivaio_presenze||0} presenze</div>
+                  <div style={{ fontSize:10,color:"#666" }}>{p.anni}aa · Q{p.quot}{p.quot_iniziale_vivaio ? ` (ingresso Q${p.quot_iniziale_vivaio})` : ""} · {p.vivaio_presenze||0} presenze</div>
+                  {na && <div style={{ fontSize:9,color:"#ef4444",fontWeight:700 }}>Scelta entro {decisioneScadenzaLabel(p)} · poi svincolo automatico</div>}
                 </div>
                 {canEdit&&(
                   <div style={{ display:"flex",gap:5 }}>
@@ -3597,8 +3595,8 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
   const meseOggi = oggi.getMonth() + 1;
   const giornoOggi = oggi.getDate();
   const finestraRitiroAperta = (meseOggi === 1 && giornoOggi >= 5) || meseOggi === 2;
-  // Finestra investimento: entro 14/08
-  const finestraInvestimentoAperta = (meseOggi < 8) || (meseOggi === 8 && giornoOggi <= 14);
+  // Finestra investimento: dal 01/06 al 14/08 alle 23:59 (controllata anche nel backend)
+  const finestraInvestimentoAperta = isFinestraExtraBudget(oggi);
 
   async function handleInvesti() {
     const euro = parseFloat(euroInput);
@@ -3627,7 +3625,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
 
   async function handleIscrizione() {
     if (team.iscrizionePagata) { alert("Iscrizione già applicata."); return; }
-    if (!window.confirm("Applicare la quota iscrizione campionato (−30M)?")) return;
+    if (!window.confirm("Applicare la quota iscrizione campionato (−30M)?\n\nDa regolamento questa operazione è automatica dal 31/07 alle 23:59.")) return;
     setSavingQuote(true);
     try {
       await applicaIscrizioneCampionato(team.name);
@@ -3838,14 +3836,15 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
         {/* Status pagamenti */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
           {[
-            { label: "Quota 30€ al tesoriere", ok: team.quotaPagata, deadline: "entro 31/08" },
-            { label: "Iscrizione campionato (30M)", ok: team.iscrizionePagata, deadline: "automatica 31/07" },
+            { label: "Quota 30€ al tesoriere", ok: team.quotaPagata, deadline: "entro 31/08", detail: team.quotaPagataIl ? `${team.quotaPagataIl}${team.quotaTesoriere ? ` · ${team.quotaTesoriere}` : ""}` : null },
+            { label: "Iscrizione campionato (30M)", ok: team.iscrizionePagata, deadline: "automatica 31/07", detail: team.iscrizionePagataIl ? team.iscrizionePagataIl : null },
           ].map(s => (
             <div key={s.label} style={{ background: s.ok ? "#10b98110" : "#f59e0b10", border: `1px solid ${s.ok ? "#10b98130" : "#f59e0b30"}`, borderRadius: 10, padding: "10px 12px" }}>
               <div style={{ fontSize: 9, color: "#555", marginBottom: 4 }}>{s.label}</div>
               <div style={{ fontSize: 13, fontWeight: 800, color: s.ok ? "#10b981" : "#f59e0b", fontFamily: "'Bebas Neue',sans-serif" }}>
                 {s.ok ? "✓ PAGATA" : "⏳ IN ATTESA"}
               </div>
+              {s.ok && s.detail && <div style={{ fontSize: 9, color: "#555", marginTop: 2 }}>{s.detail}</div>}
               {!s.ok && <div style={{ fontSize: 9, color: "#555", marginTop: 2 }}>{s.deadline}</div>}
             </div>
           ))}
@@ -3861,7 +3860,13 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
               </button>
             )}
             {!team.quotaPagata && (
-              <button onClick={() => { if(window.confirm("Segnare la quota 30€ come pagata?")) segnaQuotaPagata(team.name).then(() => onRefresh && onRefresh()); }}
+              <button onClick={() => {
+                  const tesoriere = window.prompt("Tesoriere che ha ricevuto la quota 30€?", "");
+                  if (tesoriere === null) return;
+                  if(window.confirm(`Segnare la quota 30€ come pagata a ${tesoriere || "tesoriere"}?`)) {
+                    segnaQuotaPagata(team.name, { tesoriere }).then(() => onRefresh && onRefresh()).catch(e => alert(e.message));
+                  }
+                }}
                 style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "#10b98118", color: "#10b981", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                 ✓ Segna quota pagata
               </button>
@@ -3882,7 +3887,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
             <span style={{ fontSize: 10, color: "#555" }}>Questa stagione: {team.euroInvestiti || 0}€ → +{((team.euroInvestiti||0)*2.5).toFixed(1)}M</span>
             <span style={{ fontSize: 10, color: euroDisponibili > 0 ? "#818cf8" : "#555" }}>Residuo: {euroDisponibili}€</span>
           </div>
-          <div style={{ fontSize: 9, color: "#444", marginTop: 4 }}>Reset biennio all'inizio della stagione 2027-28</div>
+          <div style={{ fontSize: 9, color: "#444", marginTop: 4 }}>Reset automatico al cambio biennio</div>
         </div>
 
         {/* Milioni extra attivi (solo visualizzazione, ritiro rimosso dal regolamento) */}
@@ -4228,7 +4233,7 @@ Gli obiettivi verranno azzerati.`;
   const [showCatalogo, setShowCatalogo] = useState(false);
 
   const loadInv = useCallback(async () => {
-    const inv = await cachedFetch('investimenti_' + team.name, () => getInvestimenti(team.name), 60000);
+    const inv = await cachedFetch('investimenti_' + team.name, () => getInvestimenti(team.name), 600000);
     setInvestimenti(inv||[]); setLoadingInv(false);
   }, [team.name]);
   useEffect(() => { loadInv(); }, [loadInv]);
@@ -4590,13 +4595,29 @@ function VivaiTab({ team, isAdmin }) {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // Verifica se un giocatore deve essere promosso/svincolato (art. 3.6.1)
+  // Verifica se un giocatore deve essere promosso/svincolato (art. 3.4.1)
   function needsAction(p) {
-    const presenze = p.vivaio_presenze || 0;
-    const quotOrig = p.quot || 0;
-    // 2+ presenze a voto OR salito di 2+ quotazione rispetto all'ingresso
-    // (non abbiamo traccia della quot d'ingresso, usiamo la quot attuale come proxy)
-    return presenze >= 2;
+    const presenze = Number(p.vivaio_presenze || 0);
+    const quotIniziale = Number(p.quot_iniziale_vivaio || p.quot || 0);
+    const aumentoQuot = Number(p.quot || 0) - quotIniziale;
+    return Boolean(p.vivaio_decisione_richiesta) || presenze >= 2 || aumentoQuot >= 2;
+  }
+
+  function scadenzaDecisioneLabel(p) {
+    return p.vivaio_decisione_scadenza
+      ? new Date(p.vivaio_decisione_scadenza).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
+      : 'entro 3 giorni';
+  }
+
+  function motivoAzioneVivaio(p) {
+    if (p.vivaio_motivo_decisione) return p.vivaio_motivo_decisione;
+    const motivi = [];
+    const presenze = Number(p.vivaio_presenze || 0);
+    const quotIniziale = Number(p.quot_iniziale_vivaio || p.quot || 0);
+    const aumentoQuot = Number(p.quot || 0) - quotIniziale;
+    if (presenze >= 2) motivi.push(`${presenze} presenze a voto`);
+    if (aumentoQuot >= 2) motivi.push(`quotazione +${aumentoQuot} da ingresso`);
+    return motivi.join(' e ') || 'requisiti superati';
   }
 
   async function handlePromuovi(p) {
@@ -4632,7 +4653,7 @@ function VivaiTab({ team, isAdmin }) {
   }
 
   async function handlePagaVivaio() {
-    if (team.vivaio_pagato) { alert("Costo vivaio già pagato per questa stagione."); return; }
+    if (vivaioPagatoStagione) { alert("Costo vivaio già pagato per questa stagione."); return; }
     if (!window.confirm("Pagare il costo vivaio annuale di 4M?")) return;
     setSaving(true);
     try {
@@ -4644,9 +4665,10 @@ function VivaiTab({ team, isAdmin }) {
   }
 
   // Conta slot disponibili
-  const maxVivaio = 2; // diventa 4 con Settore Giovanile Avanzato
+  const maxVivaio = 2;
   const slotsLiberi = maxVivaio - vivaio.length;
   const alertPromozione = vivaio.filter(needsAction);
+  const vivaioPagatoStagione = team.vivaio_stagione_pagata === STAGIONE_CORRENTE || (team.vivaio_pagato && !team.vivaio_stagione_pagata);
 
   if (loading) return <div style={{ fontSize: 12, color: "#555", padding: 20 }}>Caricamento...</div>;
 
@@ -4673,14 +4695,14 @@ function VivaiTab({ team, isAdmin }) {
         </div>
 
         {/* Stato pagamento 4M */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: 10, background: team.vivaio_pagato ? "#10b98110" : "#f59e0b10", border: `1px solid ${team.vivaio_pagato ? "#10b98130" : "#f59e0b30"}` }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: 10, background: vivaioPagatoStagione ? "#10b98110" : "#f59e0b10", border: `1px solid ${vivaioPagatoStagione ? "#10b98130" : "#f59e0b30"}` }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: team.vivaio_pagato ? "#10b981" : "#f59e0b" }}>
-              {team.vivaio_pagato ? "✓ Costo vivaio pagato" : "⏳ Costo vivaio da pagare"}
+            <div style={{ fontSize: 11, fontWeight: 700, color: vivaioPagatoStagione ? "#10b981" : "#f59e0b" }}>
+              {vivaioPagatoStagione ? "✓ Costo vivaio pagato" : "⏳ Costo vivaio da pagare"}
             </div>
             <div style={{ fontSize: 9, color: "#555" }}>4M annuali · obbligatorio per tutti entro 15/08 (anche senza vivaio attivo)</div>
           </div>
-          {isAdmin && !team.vivaio_pagato && (
+          {isAdmin && !vivaioPagatoStagione && (
             <button onClick={handlePagaVivaio} disabled={saving}
               style={{ padding: "5px 12px", borderRadius: 7, border: "none", background: "#f59e0b18", color: "#f59e0b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
               Paga −4M
@@ -4692,10 +4714,10 @@ function VivaiTab({ team, isAdmin }) {
       {/* ── Alert promozione obbligatoria ── */}
       {alertPromozione.length > 0 && (
         <div style={{ background: "#ef444412", border: "1.5px solid #ef444433", borderRadius: 12, padding: "12px 14px" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", marginBottom: 8 }}>⚠️ AZIONE RICHIESTA (art. 3.6.1)</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", marginBottom: 8 }}>⚠️ AZIONE RICHIESTA (art. 3.4.1)</div>
           {alertPromozione.map(p => (
             <div key={p.id} style={{ fontSize: 12, color: "#fca5a5", marginBottom: 4 }}>
-              <b>{p.nome}</b> ha {p.vivaio_presenze} presenze a voto — promuovi in rosa o svincola entro 2 giorni (pena 2M)
+              <b>{p.nome}</b> ha {motivoAzioneVivaio(p)} — scegli entro {scadenzaDecisioneLabel(p)} o verrà svincolato automaticamente
             </div>
           ))}
         </div>
@@ -4723,8 +4745,9 @@ function VivaiTab({ team, isAdmin }) {
                       {needAct && <span style={{ fontSize: 9, color: "#ef4444", marginLeft: 6, background: "#ef444420", borderRadius: 4, padding: "1px 5px" }}>AZIONE RICHIESTA</span>}
                     </div>
                     <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>
-                      {p.anni}aa · Q{p.quot} · Entrato: {p.data_entrata_vivaio || "—"}
+                      {p.anni}aa · Q{p.quot}{p.quot_iniziale_vivaio ? ` (ingresso Q${p.quot_iniziale_vivaio})` : ""} · Entrato: {p.data_entrata_vivaio || "—"}
                     </div>
+                    {needAct && <div style={{ fontSize: 9, color: "#ef4444", fontWeight: 700, marginTop: 2 }}>Scelta entro {scadenzaDecisioneLabel(p)} · poi svincolo automatico</div>}
                   </div>
 
                   {/* Presenze */}
@@ -4767,12 +4790,13 @@ function VivaiTab({ team, isAdmin }) {
 
       {/* ── Regole vivaio ── */}
       <div style={{ background: "#ffffff05", border: "1px solid #ffffff08", borderRadius: 10, padding: "10px 14px" }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: "#444", letterSpacing: "0.06em", marginBottom: 6 }}>📋 REGOLE VIVAIO (art. 3.6)</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: "#444", letterSpacing: "0.06em", marginBottom: 6 }}>📋 REGOLE VIVAIO (art. 3.4)</div>
         {[
           "Giocatori: under-23, Q ≤ 3, 0 presenze a voto in campionato",
           "Acquisto: solo dopo aggiornamento listone post-mercato estivo (01/09)",
           "Compravendita: possibile tutto l'anno (no scadenze mercato normale)",
-          "A 2 presenze a voto o +2 di quotazione → promuovi o svincola entro 2gg (pena 2M)",
+          "A 2 presenze a voto o +2 di quotazione → promuovi o svincola entro 3 giorni",
+          "Se non scegli entro 3 giorni → svincolo automatico a costo 0",
           "Promozione: lo stipendio diventa Q/5 e gravita sul salary cap",
           "Svincolo: sempre gratuito (costo 0, guadagno 0)",
           "Costo mantenimento: 4M annuali obbligatori entro 15/08 per tutti",
@@ -4832,7 +4856,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
 
   const loadRosaStipendi = useCallback(async () => {
     // Invalida cache quando carichiamo di proposito (es. dopo svincolo)
-    const data = await cachedFetch('rosa_' + team.name, () => getRosa(team.name), 60000);
+    const data = await cachedFetch('rosa_' + team.name, () => getRosa(team.name), 600000);
     if (data) {
       const rosaAttiva = data.filter(p => !p.in_vivaio);
       setRosaPlayers(rosaAttiva);
@@ -4842,12 +4866,12 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
   }, [team.name]);
 
   const loadContratti = useCallback(async () => {
-    const data = await cachedFetch('contratti_' + team.name, () => getContrattiInScadenza(team.name), 120000);
+    const data = await cachedFetch('contratti_' + team.name, () => getContrattiInScadenza(team.name), 600000);
     if (data) setContrattiScadenza(data);
   }, [team.name]);
 
   const loadClubIdentity = useCallback(async () => {
-    const data = await cachedFetch('identity_' + team.name, () => getClubIdentity(team.name), 300000);
+    const data = await cachedFetch('identity_' + team.name, () => getClubIdentity(team.name), 1800000);
     if (data) setClubIdentity(data);
   }, [team.name]);
 
@@ -4887,7 +4911,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
   }
 
   const loadMovimenti = useCallback(async () => {
-    const data = await cachedFetch('movimenti_' + team.name, () => getMovimenti(team.name), 45000);
+    const data = await cachedFetch('movimenti_' + team.name, () => getMovimenti(team.name), 300000);
     if (data) setMovimenti(data);
   }, [team.name]);
 
@@ -5139,7 +5163,7 @@ function ImageSlot({ kind, url, label, slotStyle, canEdit, uploading, teamName, 
       onClick={() => canEdit && document.getElementById(inputId).click()}
       style={{ position: "relative", cursor: canEdit ? "pointer" : "default", borderRadius: 10, overflow: "hidden", background: "#0d0f14", border: "1px solid #ffffff10", ...slotStyle }}>
       {url
-        ? <img src={url} alt={label} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
+        ? <img loading="lazy" decoding="async" src={url} alt={label} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
         : <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, minHeight: 40 }}>
             <span style={{ fontSize: canEdit ? 20 : 14, opacity: 0.25 }}>{canEdit ? "+" : "—"}</span>
             {canEdit && <span style={{ fontSize: 8, color: "#444", textAlign: "center", padding: "0 4px" }}>{label}</span>}
@@ -5664,15 +5688,15 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
   // Tick ogni minuto
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 60000);
+    const t = setInterval(() => setNow(new Date()), 600000);
     return () => clearInterval(t);
   }, []);
 
   const loadAll = useCallback(async () => {
     const [t, a, as] = await Promise.all([
-      cachedFetch('trattative', () => getTrattative(), 30000),
-      cachedFetch('aste', () => getAste(), 30000),
-      cachedFetch('aste_svincolati_all', () => getAsteSvincolati(), 30000),
+      cachedFetch('trattative', () => getTrattative(), 180000),
+      cachedFetch('aste', () => getAste(), 180000),
+      cachedFetch('aste_svincolati_all', () => getAsteSvincolati(), 180000),
     ]);
     setTrattative(t);
     setAste(a);
@@ -7183,7 +7207,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
 
   // Tick ogni 30s per aggiornare countdown
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 60000);
+    const t = setInterval(() => setNow(new Date()), 600000);
     return () => clearInterval(t);
   }, []);
 
@@ -9954,7 +9978,7 @@ function AdminControlRoomPage({ teams }) {
                           {/* Avatar */}
                           <div style={{ flexShrink: 0 }}>
                             {u.avatar_url
-                              ? <img src={u.avatar_url} alt="" style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'cover', border: `2px solid ${ruoloInfo.border}` }} />
+                              ? <img loading="lazy" decoding="async" src={u.avatar_url} alt="" style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'cover', border: `2px solid ${ruoloInfo.border}` }} />
                               : <div style={{ width: 44, height: 44, borderRadius: 10, background: ruoloInfo.bg, border: `2px solid ${ruoloInfo.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>👤</div>
                             }
                           </div>
@@ -10017,7 +10041,7 @@ function AdminControlRoomPage({ teams }) {
                                 placeholder="https://..."
                                 style={{ flex: 1, background: '#0d0f14', border: '1px solid #ffffff18', borderRadius: 8, padding: '7px 10px', color: '#f0f0f0', fontSize: 12, outline: 'none' }} />
                               {ed.avatar_url && (
-                                <img src={ed.avatar_url} alt="" onError={e => e.target.style.display='none'}
+                                <img loading="lazy" decoding="async" src={ed.avatar_url} alt="" onError={e => e.target.style.display='none'}
                                   style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover', border: '1px solid #ffffff18', flexShrink: 0 }} />
                               )}
                             </div>
@@ -10231,7 +10255,7 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
                   <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
                     {TROPHIES.map(t => s[t.key] ? (
                       <div key={t.key} style={{ display:'flex', alignItems:'center', gap:10, background:'#ffffff06', borderRadius:10, padding:'8px 12px', flex:'1 1 200px', minWidth:0 }}>
-                        {getLogo(s[t.key]) && <img src={getLogo(s[t.key])} style={{ width:24, height:24, objectFit:'contain', borderRadius:4, flexShrink:0 }} alt="" />}
+                        {getLogo(s[t.key]) && <img loading="lazy" decoding="async" src={getLogo(s[t.key])} style={{ width:24, height:24, objectFit:'contain', borderRadius:4, flexShrink:0 }} alt="" />}
                         <div style={{ minWidth:0 }}>
                           <div style={{ color:'#555', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>{t.label}</div>
                           <div style={{ color:'#fff', fontSize:13, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s[t.key]}</div>
@@ -10277,7 +10301,7 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
                                 <td style={{ padding:'5px 8px', textAlign:'center', fontWeight:900, color: rowColor||'#555', fontSize:13 }}>{i+1}</td>
                                 <td style={{ padding:'5px 8px', minWidth:100 }}>
                                   <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-                                    {getLogo(r.squadra) && <img src={getLogo(r.squadra)} style={{ width:16, height:16, objectFit:'contain', borderRadius:2, flexShrink:0 }} alt="" />}
+                                    {getLogo(r.squadra) && <img loading="lazy" decoding="async" src={getLogo(r.squadra)} style={{ width:16, height:16, objectFit:'contain', borderRadius:2, flexShrink:0 }} alt="" />}
                                     <span style={{ color: i===0?'#fff':'#bbb', fontWeight: i===0?700:400, whiteSpace:'nowrap' }}>{r.squadra}</span>
                                   </div>
                                 </td>
@@ -10303,7 +10327,7 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
                     <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                       {s.maglie.map((m, i) => (
                         <div key={i} style={{ textAlign:'center' }}>
-                          <img src={m.url} style={{ width:56, height:56, objectFit:'contain', borderRadius:8, background:'#ffffff08', border:'1px solid #ffffff10' }} alt={m.squadra} />
+                          <img loading="lazy" decoding="async" src={m.url} style={{ width:56, height:56, objectFit:'contain', borderRadius:8, background:'#ffffff08', border:'1px solid #ffffff10' }} alt={m.squadra} />
                           <div style={{ color:'#666', fontSize:9, marginTop:3, maxWidth:56, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.squadra}</div>
                         </div>
                       ))}
@@ -10432,7 +10456,7 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
               </div>
               {(editStagione.maglie||[]).map((m, i) => (
                 <div key={i} style={{ display:'flex', gap:8, marginBottom:8, alignItems:'center', background:'#ffffff06', borderRadius:8, padding:'8px 10px' }}>
-                  {m.url && <img src={m.url} style={{ width:40, height:40, objectFit:'contain', borderRadius:6, background:'#ffffff10', flexShrink:0 }} alt="" />}
+                  {m.url && <img loading="lazy" decoding="async" src={m.url} style={{ width:40, height:40, objectFit:'contain', borderRadius:6, background:'#ffffff10', flexShrink:0 }} alt="" />}
                   <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4 }}>
                     <input placeholder="Nome squadra" value={m.squadra||''} onChange={e => setEditStagione(p => { const mg=[...p.maglie]; mg[i]={...mg[i],squadra:e.target.value}; return {...p,maglie:mg}; })} style={{ ...inp, fontSize:12 }} />
                     <label style={{ background:'#6366f120', color:'#818cf8', border:'1px solid #6366f140', borderRadius:6, padding:'4px 10px', cursor:'pointer', fontSize:11, fontWeight:700, textAlign:'center', display:'block' }}>
@@ -10532,7 +10556,7 @@ function ProfileSettingsPage({ session, profile, onProfileUpdated }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => fileRef.current?.click()}>
           {avatarUrl
-            ? <img src={avatarUrl} alt="avatar" style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: '2px solid #6366f140' }} />
+            ? <img loading="lazy" decoding="async" src={avatarUrl} alt="avatar" style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: '2px solid #6366f140' }} />
             : <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg,#6366f1,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 900, color: '#fff', fontFamily: "'Bebas Neue',sans-serif" }}>{initials}</div>
           }
           <div style={{ position: 'absolute', bottom: 0, right: 0, width: 22, height: 22, borderRadius: '50%', background: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>
@@ -11030,7 +11054,7 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, 
         <div style={{ display:"grid", gridTemplateColumns:notizia.immagini.length===1?"1fr":"1fr 1fr", gap:4, borderRadius:12, overflow:"hidden", marginBottom:14 }}>
           {notizia.immagini.slice(0,4).map((url,i) => (
             <div key={i} style={{ position:"relative", paddingBottom:notizia.immagini.length===1?"52%":"60%", cursor:"pointer" }} onClick={() => setImgOpen(url)}>
-              <img src={url} alt="" style={{ position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover" }}/>
+              <img loading="lazy" decoding="async" src={url} alt="" style={{ position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover" }}/>
               {notizia.immagini.length>4&&i===3&&<div style={{ position:"absolute",inset:0,background:"#000000aa",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff" }}>+{notizia.immagini.length-4}</div>}
             </div>
           ))}
@@ -11242,7 +11266,7 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, 
       {/* Lightbox */}
       {imgOpen && (
         <div onClick={() => setImgOpen(null)} style={{ position:"fixed",inset:0,background:"#000000ee",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",cursor:"zoom-out" }}>
-          <img src={imgOpen} alt="" style={{ maxWidth:"90vw",maxHeight:"90vh",borderRadius:12,objectFit:"contain" }} onClick={e=>e.stopPropagation()}/>
+          <img loading="lazy" decoding="async" src={imgOpen} alt="" style={{ maxWidth:"90vw",maxHeight:"90vh",borderRadius:12,objectFit:"contain" }} onClick={e=>e.stopPropagation()}/>
         </div>
       )}
     </article>
@@ -11410,7 +11434,7 @@ function NewsComposer({ profile, teams, onPost, isAdmin, editingPost = null, onC
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
           {immagini.map((url, i) => (
             <div key={i} style={{ position: "relative", width: 80, height: 80 }}>
-              <img src={url} alt="" style={{ width: 80, height: 80, borderRadius: 8, objectFit: "cover" }} />
+              <img loading="lazy" decoding="async" src={url} alt="" style={{ width: 80, height: 80, borderRadius: 8, objectFit: "cover" }} />
               <button onClick={() => setImmagini(v => v.filter((_, j) => j !== i))}
                 style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: "#ef4444", border: "none", color: "#fff", fontSize: 11, fontWeight: 900, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
             </div>
@@ -11677,17 +11701,24 @@ function AppInner() {
     if (!session) return;
     const now = new Date();
     const mKey = `autopay_stip_stadio_${now.toISOString().slice(0,7)}`;
-    if (localStorage.getItem(mKey)) return;
+    const pagamentiGiaEseguiti = localStorage.getItem(mKey);
+    const pagamentiPromise = pagamentiGiaEseguiti
+      ? Promise.resolve({ stipendi: [], stadio: [], errori: [] })
+      : applicaPagamentiAutomatici();
 
-    applicaPagamentiAutomatici().then(r => {
+    // Le quote devono essere controllate a ogni login: sono idempotenti e non devono dipendere
+    // dal flag mensile degli stipendi, altrimenti il 31/07 verrebbe saltato se il flag è già stato creato il 01/07.
+    Promise.all([pagamentiPromise, applicaQuoteAutomatiche()]).then(([r, q]) => {
       if (r.stipendi?.length) { console.log(`✅ Stipendi auto: ${r.stipendi.length} squadre`); }
       if (r.stadio?.length)   { console.log(`✅ Stadio auto: ${r.stadio.length} squadre`); }
-      localStorage.setItem(mKey, '1');
+      if (q.iscrizioni?.filter(x => x.ok).length) { console.log(`✅ Iscrizioni campionato auto: ${q.iscrizioni.filter(x => x.ok).length} squadre`); }
+      if (!pagamentiGiaEseguiti) localStorage.setItem(mKey, '1');
       if (r.errori?.length) console.warn('⚠️ Errori pagamenti auto:', r.errori);
-      if (r.stipendi?.length || r.stadio?.length) {
+      if (q.errori?.length) console.warn('⚠️ Errori quote auto:', q.errori);
+      if (r.stipendi?.length || r.stadio?.length || q.sync?.length || q.iscrizioni?.filter(x => x.ok).length) {
         getSquadre().then(data => { if (data) setSquadreDB(data); });
       }
-    }).catch(e => console.warn('Pagamenti auto:', e.message));
+    }).catch(e => console.warn('Pagamenti/quote auto:', e.message));
   }, [session]);
 
   // ── Squadre realtime ──────────────────────────────────────────────────────
@@ -11745,8 +11776,15 @@ function AppInner() {
   // ── Deadline watcher: aggiorna stato mercato e invalida cache ─────────────
   const statoMercato = useDeadlineWatcher(useCallback((def) => {
     console.info(`⏰ Deadline scattata: ${def.label}`);
+    if (def.id === 'iscrizione_campionato') {
+      applicaIscrizioneATutti({ force: true }).then(() => {
+        cacheInvalidate('classifica');
+        getSquadre().then(data => { if (data) setSquadreDB(data); });
+      }).catch(e => console.warn('Iscrizione campionato auto:', e.message));
+      return;
+    }
     // Ricarica squadre (bilanci/stipendi potrebbero essere cambiati)
-    if (['stipendi','tassa','mercato'].includes(def.type)) {
+    if (['stipendi','tassa','mercato','quote'].includes(def.type)) {
       getSquadre().then(data => { if (data) setSquadreDB(data); });
     }
   }, []));
@@ -11778,7 +11816,7 @@ function AppInner() {
     const ci = clubIdentities[t.name] || {};
     const base = { stemma_url: ci.stemma_url||null, maglia_casa_url: ci.maglia_casa_url||null, maglia_trasferta_url: ci.maglia_trasferta_url||null, maglia_terza_url: ci.maglia_terza_url||null };
     if (!db) return { ...t, ...base, fpf: fpfMap[t.name]??null };
-    return { ...t, ...base, bilancio: db.bilancio, salaryUsed: db.salary_used, giocatori: db.giocatori, u21: db.u21, fairPlay1: db.fair_play1, fairPlay2: db.fair_play2, penalita: db.penalita, guadGiornate: db.guad_giornate, guadObiettivi: db.guad_obiettivi, guadInv: db.guad_inv, clausoleIn: db.clausole_in, clausoleOut: db.clausole_out, euroInvestiti: db.euro_investiti||0, mlnExtra: db.mln_extra||0, euroBiennio: db.euro_biennio||0, scNegativoDal: db.sc_negativo_dal||null, mercatoBloccato: db.mercato_bloccato||false, bilancioNegDal: db.bilancio_neg_dal||null, bilancioNegSettimane: db.bilancio_neg_settimane||0, fallimento: db.fallimento||false, fallimentoDal: db.fallimento_dal||null, fpf: fpfMap[t.name]??null, biennio: db.biennio||'2025-27', quotaPagata: db.quota_pagata||false, iscrizionePagata: db.iscrizione_pagata||false };
+    return { ...t, ...base, bilancio: db.bilancio, salaryUsed: db.salary_used, giocatori: db.giocatori, u21: db.u21, fairPlay1: db.fair_play1, fairPlay2: db.fair_play2, penalita: db.penalita, guadGiornate: db.guad_giornate, guadObiettivi: db.guad_obiettivi, guadInv: db.guad_inv, clausoleIn: db.clausole_in, clausoleOut: db.clausole_out, euroInvestiti: db.euro_investiti||0, mlnExtra: db.mln_extra||0, euroBiennio: db.euro_biennio||0, scNegativoDal: db.sc_negativo_dal||null, mercatoBloccato: db.mercato_bloccato||false, bilancioNegDal: db.bilancio_neg_dal||null, bilancioNegSettimane: db.bilancio_neg_settimane||0, fallimento: db.fallimento||false, fallimentoDal: db.fallimento_dal||null, fpf: fpfMap[t.name]??null, biennio: db.biennio||'2025-27', quotaPagata: db.quota_pagata||false, quotaStagionePagata: db.quota_stagione_pagata||null, quotaPagataIl: db.quota_pagata_il||null, quotaTesoriere: db.quota_tesoriere||null, iscrizionePagata: db.iscrizione_pagata||false, iscrizioneStagionePagata: db.iscrizione_stagione_pagata||null, iscrizionePagataIl: db.iscrizione_pagata_il||null };
   }), [squadreDB, fpfMap, clubIdentities]);
 
   const isAdmin = profile?.ruolo === "admin" || profile?.ruolo === "founder";
@@ -11838,7 +11876,7 @@ table{border-collapse:collapse;min-width:max-content}
           <div style={{ width:SIDEBAR_W,flexShrink:0,background:"#0a0c11",borderRight:"1px solid #ffffff0e",display:"flex",flexDirection:"column",position:"fixed",top:0,left:0,height:"100vh",zIndex:100 }}>
             <div style={{ padding:"20px 18px 16px",borderBottom:"1px solid #ffffff0a" }}>
               <div style={{ display:"flex",alignItems:"center",gap:10 }}>
-                <img src="/icon-192.png" alt="logo" style={{ width:34,height:34,borderRadius:10,objectFit:"cover",flexShrink:0 }} />
+                <img loading="lazy" decoding="async" src="/icon-192.png" alt="logo" style={{ width:34,height:34,borderRadius:10,objectFit:"cover",flexShrink:0 }} />
                 <div style={{ minWidth:0 }}>
                   <div style={{ fontSize:15,fontWeight:900,color:"#f0f0f0",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:"1.5px",lineHeight:1 }}>FantaManager</div>
                   {editingStagione && isAdmin ? (
@@ -11903,7 +11941,7 @@ table{border-collapse:collapse;min-width:max-content}
               )}
             </nav>
             <div style={{ padding:"12px 16px",borderTop:"1px solid #ffffff0a" }}>
-              {profile && <div onClick={()=>navigate('/profilo')} style={{ display:"flex",alignItems:"center",gap:8,marginBottom:8,cursor:"pointer",padding:"5px 6px",borderRadius:9,transition:"background 0.15s",background:currentPage==='profilo'?"#f59e0b22":"transparent" }} onMouseEnter={e=>{ if(currentPage!=='profilo') e.currentTarget.style.background="#ffffff0a"; }} onMouseLeave={e=>{ e.currentTarget.style.background=currentPage==='profilo'?"#f59e0b22":"transparent"; }}>{profile.avatar_url?<img src={profile.avatar_url} alt="" style={{ width:26,height:26,borderRadius:7,objectFit:"cover",outline:currentPage==='profilo'?"2px solid #f59e0b":"none" }}/>:<div style={{ width:26,height:26,borderRadius:7,background:currentPage==='profilo'?"#f59e0b22":"#ffffff12",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12 }}>👤</div>}<div style={{ flex:1,minWidth:0 }}><div style={{ fontSize:11,fontWeight:700,color:currentPage==='profilo'?"#f59e0b":"#ccc",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{profile.nome||profile.email}</div><div style={{ fontSize:9,color:currentPage==='profilo'?"#f59e0b88":"#444" }}>{isAdmin?"⚡ Admin":profile.squadra}</div></div>{currentPage==='profilo'&&<div style={{ width:6,height:6,borderRadius:"50%",background:"#f59e0b",flexShrink:0 }}/>}</div>}
+              {profile && <div onClick={()=>navigate('/profilo')} style={{ display:"flex",alignItems:"center",gap:8,marginBottom:8,cursor:"pointer",padding:"5px 6px",borderRadius:9,transition:"background 0.15s",background:currentPage==='profilo'?"#f59e0b22":"transparent" }} onMouseEnter={e=>{ if(currentPage!=='profilo') e.currentTarget.style.background="#ffffff0a"; }} onMouseLeave={e=>{ e.currentTarget.style.background=currentPage==='profilo'?"#f59e0b22":"transparent"; }}>{profile.avatar_url?<img loading="lazy" decoding="async" src={profile.avatar_url} alt="" style={{ width:26,height:26,borderRadius:7,objectFit:"cover",outline:currentPage==='profilo'?"2px solid #f59e0b":"none" }}/>:<div style={{ width:26,height:26,borderRadius:7,background:currentPage==='profilo'?"#f59e0b22":"#ffffff12",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12 }}>👤</div>}<div style={{ flex:1,minWidth:0 }}><div style={{ fontSize:11,fontWeight:700,color:currentPage==='profilo'?"#f59e0b":"#ccc",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{profile.nome||profile.email}</div><div style={{ fontSize:9,color:currentPage==='profilo'?"#f59e0b88":"#444" }}>{isAdmin?"⚡ Admin":profile.squadra}</div></div>{currentPage==='profilo'&&<div style={{ width:6,height:6,borderRadius:"50%",background:"#f59e0b",flexShrink:0 }}/>}</div>}
               <button onClick={()=>signOut()} style={{ width:"100%",padding:"7px",borderRadius:8,border:"1px solid #ffffff10",background:"transparent",color:"#555",fontSize:11,fontWeight:600,cursor:"pointer" }}>Esci</button>
             </div>
           </div>
@@ -11923,7 +11961,7 @@ table{border-collapse:collapse;min-width:max-content}
             <div style={{ borderBottom:"1px solid #ffffff0e",background:"#0d0f14f0",backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:100,padding:"0 16px" }}>
               <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",height:50 }}>
                 <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                  <img src="/icon-192.png" alt="logo" style={{ width:28,height:28,borderRadius:8,objectFit:"cover",flexShrink:0 }} />
+                  <img loading="lazy" decoding="async" src="/icon-192.png" alt="logo" style={{ width:28,height:28,borderRadius:8,objectFit:"cover",flexShrink:0 }} />
                   <div style={{ minWidth:0 }}>
                     <div style={{ fontSize:14,fontWeight:900,color:"#f0f0f0",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:"1.5px",lineHeight:1 }}>FantaManager</div>
                     <div style={{ fontSize:9,color:"#555",lineHeight:1.2 }}>{stagioneLabel}</div>
@@ -11934,7 +11972,7 @@ table{border-collapse:collapse;min-width:max-content}
                   {profile && (
                     <div onClick={()=>navigate('/profilo')} style={{ cursor:"pointer",display:"flex",alignItems:"center" }}>
                       {profile.avatar_url
-                        ? <img src={profile.avatar_url} alt="" style={{ width:28,height:28,borderRadius:7,objectFit:"cover",outline:currentPage==='profilo'?"2px solid #f59e0b":"1px solid #ffffff18" }} />
+                        ? <img loading="lazy" decoding="async" src={profile.avatar_url} alt="" style={{ width:28,height:28,borderRadius:7,objectFit:"cover",outline:currentPage==='profilo'?"2px solid #f59e0b":"1px solid #ffffff18" }} />
                         : <div style={{ width:28,height:28,borderRadius:7,background:currentPage==='profilo'?"#f59e0b22":"#ffffff10",border:currentPage==='profilo'?"1px solid #f59e0b44":"1px solid #ffffff18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13 }}>👤</div>
                       }
                     </div>
