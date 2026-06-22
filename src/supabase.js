@@ -1013,8 +1013,27 @@ export async function insertSvincolo(s) {
 }
 
 export async function getStagioneSvincoli(squadra) {
-  const { data } = await supabase.from('stagione_svincoli').select('*').eq('squadra', squadra).limit(1);
-  return data?.[0] ?? null;
+  const { data, error } = await supabase.from('stagione_svincoli').select('*').eq('squadra', squadra).limit(1);
+  if (error) throw error;
+  if (data?.[0]) return data[0];
+
+  // Se il record stagionale non esiste ancora, lo creo subito: senza questa riga
+  // gli svincoli venivano eseguiti ma i contatori restavano fermi.
+  const iniziale = {
+    squadra,
+    count_ordinari: 0,
+    count_straord_estivi: 0,
+    count_straord_invernali: 0,
+    count_totale: 0,
+    svincolati_history: [],
+  };
+  const { data: creato, error: insErr } = await supabase
+    .from('stagione_svincoli')
+    .insert(iniziale)
+    .select()
+    .single();
+  if (insErr) throw insErr;
+  return creato;
 }
 
 export async function updateStagioneSvincoli(squadra, fields) {
@@ -1038,9 +1057,59 @@ function giorniTra(a, b) {
   return Math.floor((b.getTime() - a.getTime()) / 86400000);
 }
 
+function _inizioGiorno(date = new Date()) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function _isPeriodoSvincoliConsentito(date = new Date()) {
+  const m = date.getMonth();
+  // Art. 6.1: svincoli ammessi dal 01/08 al 31/05.
+  return !(m === 5 || m === 6); // giugno, luglio
+}
+
+function _getPeriodoStraordinariSvincoli(date = new Date()) {
+  const m = date.getMonth();
+  const d = date.getDate();
+  // Estivo = mercato estivo 01/06-15/09; giugno/luglio restano bloccati sopra,
+  // quindi gli straordinari estivi effettivamente utilizzabili sono 01/08-15/09.
+  if ((m === 5) || (m === 6) || (m === 7) || (m === 8 && d <= 15)) return 'estivo';
+  // Invernale = mercato invernale 01/01-15/02.
+  if (m === 0 || (m === 1 && d <= 15)) return 'invernale';
+  return null;
+}
+
+function _dateMensilitaStagione(date = new Date()) {
+  // Mensilità pagate il giorno 1: 01/07 = giugno, ..., 01/06 = maggio.
+  // La stagione stipendiale corrente parte dal 01/07 precedente e termina al 01/06 successivo.
+  const y = date.getFullYear();
+  const seasonStartYear = date.getMonth() >= 6 ? y : y - 1;
+  const res = [];
+  for (let i = 0; i < 12; i++) res.push(new Date(seasonStartYear, 6 + i, 1));
+  return res;
+}
+
+function _contaMensilitaGiaPagate(date = new Date()) {
+  const oggi = _inizioGiorno(date);
+  return _dateMensilitaStagione(date).filter(payDate => payDate <= oggi).length;
+}
+
+function _contaMensilitaResidueDaPagare(date = new Date()) {
+  const oggi = _inizioGiorno(date);
+  return _dateMensilitaStagione(date).filter(payDate => payDate > oggi).length;
+}
+
 export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bilancioAttuale }) {
   const oggi = new Date();
   const oggiStr = oggi.toISOString().slice(0, 10);
+
+  if (!_isPeriodoSvincoliConsentito(oggi)) {
+    throw new Error('Svincoli non consentiti a giugno/luglio: sono ammessi solo dal 01/08 al 31/05.');
+  }
+
+  const periodoStraordinari = _getPeriodoStraordinariSvincoli(oggi);
+  if ((tipo === 'straordinario' || tipo === 'straordinario_u21') && !periodoStraordinari) {
+    throw new Error('Gli svincoli straordinari sono consentiti solo durante il mercato estivo (01/06-15/09, con giugno/luglio bloccati per gli svincoli) o invernale (01/01-15/02).');
+  }
 
   if (player.data_acquisto) {
     const acquistatoIl = new Date(`${player.data_acquisto}T00:00:00`);
@@ -1056,7 +1125,8 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
 
   // ── Calcola costi/indennizzi ──────────────────────────────────────────────
   const quot = Number(player.quot || 0);
-  const stip = Number(player.stip || 0);
+  // Usa lo stesso stipendio corretto della UI, così preview e registrazione reale coincidono.
+  const stip = _calcolaStipCorretto(player.quot, player.anni_contratto, player.anni);
   const isU21 = player.anni > 0 && player.anni <= 21;
 
   let costoTotale = 0;
@@ -1069,15 +1139,13 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
     // Penale per quotazione (art. 6.1)
     costoPenale = quot <= 10 ? 0.5 : quot <= 20 ? 1 : quot <= 30 ? 1.5 : 2;
 
-    // Mensilità da pagare fino al 01/06
-    const dataFineContratto = new Date(oggi.getFullYear(), 5, 1); // 01/06
-    if (dataFineContratto < oggi) dataFineContratto.setFullYear(oggi.getFullYear() + 1);
-    const mesiRimasti = Math.ceil((dataFineContratto - oggi) / (30.44 * 86400000));
+    // Mensilità residue da pagare: prossime scadenze mensili dopo lo svincolo fino al 01/06 incluso.
+    const mesiRimasti = _contaMensilitaResidueDaPagare(oggi);
     const costoMensile = parseFloat((stip / 12).toFixed(2));
     const costoStipendi = parseFloat((mesiRimasti * costoMensile).toFixed(2));
 
     costoTotale = parseFloat((costoPenale + costoStipendi).toFixed(2));
-    movDesc = `Svincolo ordinario: ${player.nome} (penale ${costoPenale}M + ${mesiRimasti} mens. ${costoStipendi}M)`;
+    movDesc = `Svincolo ordinario: ${player.nome} (penale ${costoPenale}M + ${mesiRimasti} mens. residue ${costoStipendi}M)`;
 
   } else if (tipo === 'straordinario' || tipo === 'straordinario_u21') {
     // Indennizzo: ¼ quot (o ½ se estero) — art. 6.1
@@ -1085,10 +1153,8 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
       ? parseFloat((quot / 2).toFixed(2))
       : parseFloat((quot / 4).toFixed(2));
 
-    // Rimborso delle mensilità già pagate dalla mensilità di giugno, versata il 01/07.
-    const luglioInizio = new Date(oggi.getFullYear(), 6, 1);
-    if (oggi < luglioInizio) luglioInizio.setFullYear(oggi.getFullYear() - 1);
-    mesiRimborsati = Math.max(0, (oggi.getFullYear() - luglioInizio.getFullYear()) * 12 + oggi.getMonth() - luglioInizio.getMonth() + 1);
+    // Rimborso delle mensilità già pagate nella stagione: 01/07, 01/08, ..., fino alla data di svincolo.
+    mesiRimborsati = _contaMensilitaGiaPagate(oggi);
     const rimborsoStipendi = parseFloat((mesiRimborsati * stip / 12).toFixed(2));
 
     // Netto: indennizzo + rimborso stipendi (entrate per la squadra)
@@ -1169,14 +1235,15 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
     history.push({ nome: player.nome, data_svincolo: oggiStr, riacquistabile_dal: riacquistabileDal });
 
     const isConteggiato = tipo !== 'straordinario_u21_nc';
-    const isStraord = tipo.startsWith('straordinario');
-    const meseCorrente = oggi.getMonth(); // 0-11
-    const isEstivo = meseCorrente >= 5 && meseCorrente <= 8; // giu-set
+    const isStraord = tipo === 'straordinario' || tipo === 'straordinario_u21';
+    const periodo = _getPeriodoStraordinariSvincoli(oggi);
+    const isEstivo = periodo === 'estivo';
+    const isInvernale = periodo === 'invernale';
 
     await updateStagioneSvincoli(squadra, {
       count_ordinari:            contatori.count_ordinari + (tipo === 'ordinario' ? 1 : 0),
       count_straord_estivi:      contatori.count_straord_estivi + (isStraord && isEstivo && isConteggiato ? 1 : 0),
-      count_straord_invernali:   contatori.count_straord_invernali + (isStraord && !isEstivo && isConteggiato ? 1 : 0),
+      count_straord_invernali:   contatori.count_straord_invernali + (isStraord && isInvernale && isConteggiato ? 1 : 0),
       count_totale:              contatori.count_totale + (isConteggiato ? 1 : 0),
       svincolati_history:        history,
     });
