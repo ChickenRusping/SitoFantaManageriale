@@ -219,11 +219,17 @@ async function assertRosaDopoAggiunta(squadra, nuovoGiocatore, { ignoreMinimi = 
   const { data: rosa } = await supabase.from('rosa').select('*').eq('squadra', squadra).eq('in_vivaio', false);
   const futura = [...(rosa || []), { ...nuovoGiocatore, in_vivaio: false }];
   const check = calcolaRosaCompliance(futura);
+  // Deroga U-21: fino al 01/06 bastano 1 U21 anche a 30 giocatori.
+  const totale = futura.length;
+  const u21 = futura.filter(p => Number(p.anni || 0) > 0 && Number(p.anni || 0) <= 21).length;
+  const u21Richiesti = await _getU21RichiestiConDeroga(squadra, totale, new Date());
   const blocchi = check.issues.filter(msg => {
+    if (msg.startsWith('Con ') && msg.includes('Under-21')) return u21 < u21Richiesti;
     if (!ignoreMinimi) return true;
     return !msg.startsWith('Servono almeno');
   });
-  if (blocchi.length) throw new Error(`Operazione non consentita dal regolamento rosa: ${blocchi.join(' ')}`);
+  if (u21 < u21Richiesti) blocchi.push(`Con ${totale} giocatori servono almeno ${u21Richiesti} Under-21: presenti ${u21}.`);
+  if (blocchi.length) throw new Error(`Operazione non consentita dal regolamento rosa: ${[...new Set(blocchi)].join(' ')}`);
 }
 
 async function assertVivaioDopoAggiunta(squadra, giocatore) {
@@ -234,7 +240,8 @@ async function assertVivaioDopoAggiunta(squadra, giocatore) {
   if (quot > 3) throw new Error(`${giocatore.nome} non è idoneo al vivaio: Q${quot}, massimo Q3.`);
   if (presenze > 0) throw new Error(`${giocatore.nome} non è idoneo al vivaio: ha già ${presenze} presenze a voto.`);
   const { count } = await supabase.from('rosa').select('id', { count: 'exact', head: true }).eq('squadra', squadra).eq('in_vivaio', true);
-  if ((count || 0) >= 2) throw new Error('Vivaio pieno: massimo 2 giocatori.');
+  const limiteVivaio = await _getVivaioLimit(squadra, new Date());
+  if ((count || 0) >= limiteVivaio) throw new Error(`Vivaio pieno: massimo ${limiteVivaio} giocatori.`);
 }
 
 export async function updateGiocatore(id, fields) {
@@ -318,22 +325,25 @@ export async function getChiamateByGiocatore(nomeGiocatore) {
   return data || [];
 }
 
-// ── Calcola scadenza interesse lato JS (specchio del trigger DB) ──────────────
+// ── Calcola scadenza interesse lato JS (art. 6.4) ─────────────────────────
+// La scadenza per manifestare interesse è giovedì alle 20:00, in orario locale
+// dell'app/browser. Non usiamo più 20:00 UTC, perché spostava la scadenza reale
+// alle 21/22 in Italia a seconda dell'ora legale.
 export function calcolaScadenzaInteresse(dataChiamata = new Date()) {
   const d = new Date(dataChiamata);
-  // Sempre: prossimo giovedì alle 20:00 UTC (= 21:00 ora italiana)
-  const dow = d.getUTCDay(); // 0=dom, 1=lun, ..., 4=gio
+  const dow = d.getDay(); // 0=dom, 1=lun, ..., 4=gio
   const giorniDaLun = (dow === 0) ? 6 : dow - 1;
+
   const lun = new Date(d);
-  lun.setUTCDate(d.getUTCDate() - giorniDaLun);
-  lun.setUTCHours(0, 0, 0, 0);
+  lun.setDate(d.getDate() - giorniDaLun);
+  lun.setHours(0, 0, 0, 0);
 
   const gio = new Date(lun);
-  gio.setUTCDate(lun.getUTCDate() + 3);
-  gio.setUTCHours(20, 0, 0, 0);
+  gio.setDate(lun.getDate() + 3);
+  gio.setHours(20, 0, 0, 0);
 
-  // Se siamo già oltre giovedì 20:00 UTC, vai alla settimana successiva
-  if (d >= gio) gio.setUTCDate(gio.getUTCDate() + 7);
+  // Se siamo già oltre giovedì 20:00 locali, vai alla settimana successiva
+  if (d >= gio) gio.setDate(gio.getDate() + 7);
   return gio;
 }
 
@@ -359,6 +369,11 @@ export async function insertChiamata(chiamata) {
   if (chiamata?.per_vivaio) {
     if (!(Number(chiamata.anni || 0) > 0 && Number(chiamata.anni || 0) <= 23)) throw new Error('Giocatore non idoneo al vivaio: deve essere Under-23.');
     if (Number(chiamata.quot || 0) > 3) throw new Error('Giocatore non idoneo al vivaio: quotazione massima Q3.');
+  }
+  // Art. 6.3: non si può riacquistare un giocatore svincolato dalla propria squadra
+  // prima di 60 giorni, nemmeno se nel frattempo è passato da altri presidenti.
+  if (chiamata?.squadra && chiamata?.giocatore) {
+    await verificaRiacquistoConsentito(chiamata.squadra, chiamata.giocatore);
   }
   const scadenzaInteresse = calcolaScadenzaInteresse(now);
   const { data, error } = await supabase
@@ -389,6 +404,7 @@ export async function aggiungiInteresse(nomeGiocatore, squadra, perVivaio = fals
     if (!(Number(primaria.anni || 0) > 0 && Number(primaria.anni || 0) <= 23)) throw new Error('Giocatore non idoneo al vivaio: deve essere Under-23.');
     if (Number(primaria.quot || 0) > 3) throw new Error('Giocatore non idoneo al vivaio: quotazione massima Q3.');
   }
+  await verificaRiacquistoConsentito(squadra, nomeGiocatore);
   if (new Date() > new Date(primaria.scadenza_interesse))
     throw new Error('Scadenza interesse superata');
 
@@ -413,9 +429,34 @@ export async function aggiungiInteresse(nomeGiocatore, squadra, perVivaio = fals
   return data;
 }
 
-export async function deleteChiamata(id) {
+export async function deleteChiamata(id, { forceAdmin = false, motivoAdmin = '' } = {}) {
+  const { data: chiamata } = await supabase
+    .from('chiamate')
+    .select('id, giocatore, squadra, stato, tipo')
+    .eq('id', id)
+    .single();
+
+  // Art. 6.4: in generale non è possibile ritirarsi dall'interesse.
+  // L'eliminazione manuale resta consentita solo come azione admin esplicita
+  // per infortuni/motivazioni speciali. Le pulizie automatiche post-asta usano
+  // query dirette e non passano da questa funzione.
+  if (chiamata && ['aperta', 'in_asta'].includes(chiamata.stato) && !forceAdmin) {
+    throw new Error('Non è possibile ritirare un interesse già dichiarato. Serve approvazione admin per infortunio o motivazioni speciali.');
+  }
+
   const { error } = await supabase.from('chiamate').delete().eq('id', id);
   if (error) throw error;
+
+  if (forceAdmin && chiamata) {
+    await supabase.from('audit_log').insert({
+      azione: 'ritiro_interesse_admin',
+      entita: 'chiamate',
+      entita_id: String(id),
+      squadra: chiamata.squadra,
+      descrizione: `Ritiro interesse admin: ${chiamata.giocatore}${motivoAdmin ? ' — ' + motivoAdmin : ''}`,
+      created_at: new Date().toISOString(),
+    }).then(() => null);
+  }
 }
 
 export function subscribeChiamate(callback) {
@@ -719,9 +760,9 @@ export async function insertTrattativa(t) {
 
   if (payload.tipo === 'clausola') {
     const quot = _numero(payload.quot_giocatore ?? payload.quota_giocatore ?? payload.quot, 0);
-    const clausola = _calcolaClausolaRegolamento(quot);
+    const clausola = await _calcolaClausolaPerSquadra(payload.a_squadra || payload.squadra || '', quot, new Date());
     if (quot > 0 && Math.abs(_numero(payload.prezzo) - clausola) > 0.01) {
-      throw new Error(`Clausola non valida: deve essere pari a 1,75× quotazione (${clausola.toFixed(2)}M).`);
+      throw new Error(`Clausola non valida: deve essere pari alla clausola regolamentare (${clausola.toFixed(2)}M).`);
     }
   }
 
@@ -828,7 +869,7 @@ export async function eseguiTrasferimento(trattativa) {
   // Art. 5.5: clausola = 1,75×Q e solo dopo due rifiuti/controfferte o 48h.
   if (tipo === 'clausola') {
     const quotClausola = _numero(quot_giocatore ?? quota_giocatore, 0);
-    const valoreClausola = _calcolaClausolaRegolamento(quotClausola);
+    const valoreClausola = await _calcolaClausolaPerSquadra(squadraCedente, quotClausola, new Date());
     if (quotClausola > 0 && Math.abs(_numero(prezzo) - valoreClausola) > 0.01) {
       throw new Error(`Clausola non valida: valore richiesto ${valoreClausola.toFixed(2)}M.`);
     }
@@ -2056,11 +2097,198 @@ export async function getProgressoObiettivi(squadra, stagione = '2026-27') {
   return data;
 }
 
-export async function upsertProgresso(squadra, obiettivoId, fields, stagione = '2026-27') {
-  const { error } = await supabase.from('progresso_obiettivi').upsert({
-    squadra, obiettivo_id: obiettivoId, stagione, ...fields
-  }, { onConflict: 'squadra,obiettivo_id,stagione' });
+function _fineCampionatoObiettivi(stagione = '2026-27') {
+  const startYear = Number(String(stagione).slice(0, 4)) || new Date().getFullYear();
+  return `${startYear + 1}-05-31`;
+}
+
+function _oggiISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function _isObiettivoFinale(tipo) {
+  return ['ds', 'dg'].includes(String(tipo || '').toLowerCase());
+}
+
+async function _getObiettivoCartaById(obiettivoId) {
+  const { data, error } = await supabase.from('obiettivi_carte').select('*').eq('id', obiettivoId).single();
   if (error) throw error;
+  return data;
+}
+
+async function _getBilancioSquadra(squadra) {
+  const { data, error } = await supabase.from('squadre').select('bilancio, guad_obiettivi, sc_bonus_obiettivi').eq('name', squadra).single();
+  if (error) throw error;
+  return data || { bilancio: 0, guad_obiettivi: 0, sc_bonus_obiettivi: 0 };
+}
+
+async function _applicaMovimentoObiettivo({ squadra, obiettivo, importo, descrizione, data = _oggiISO() }) {
+  const sq = await _getBilancioSquadra(squadra);
+  const nuovoBilancio = parseFloat((Number(sq.bilancio || 0) + Number(importo || 0)).toFixed(2));
+  const nuovoGuadObiettivi = parseFloat((Number(sq.guad_obiettivi || 0) + Number(importo || 0)).toFixed(2));
+  const updateFields = { bilancio: nuovoBilancio, guad_obiettivi: nuovoGuadObiettivi };
+  // Art. 9.4: ogni obiettivo allenatore completato dà anche +1M al limite salary cap.
+  if (importo > 0 && String(obiettivo.tipo || '').toLowerCase() === 'allenatore') {
+    updateFields.sc_bonus_obiettivi = parseFloat((Number(sq.sc_bonus_obiettivi || 0) + 1).toFixed(2));
+  }
+  await supabase.from('squadre').update(updateFields).eq('name', squadra);
+  await supabase.from('movimenti').insert({
+    squadra,
+    descrizione,
+    entrata: importo > 0 ? Number(importo) : null,
+    uscita: importo < 0 ? Math.abs(Number(importo)) : null,
+    data,
+  });
+  return nuovoBilancio;
+}
+
+export async function upsertProgresso(squadra, obiettivoId, fields, stagione = '2026-27') {
+  const obiettivo = await _getObiettivoCartaById(obiettivoId);
+  const tipo = String(obiettivo.tipo || '').toLowerCase();
+  const completato = Boolean(fields.completato);
+  const fallito = Boolean(fields.fallito);
+  const finale = _isObiettivoFinale(tipo);
+  const fineCampionato = _fineCampionatoObiettivi(stagione);
+
+  const payload = {
+    squadra,
+    obiettivo_id: obiettivoId,
+    stagione,
+    ...fields,
+  };
+
+  if (completato) {
+    payload.fallito = false;
+    payload.completato_il = payload.completato_il || _oggiISO();
+    payload.incassabile_il = finale ? fineCampionato : _oggiISO();
+  }
+  if (fallito) {
+    payload.completato = false;
+    payload.fallito_il = payload.fallito_il || _oggiISO();
+  }
+  if (fields.completato === false) {
+    payload.incassato = false;
+    payload.incassato_il = null;
+    payload.incassabile_il = null;
+  }
+  if (fields.fallito === false) {
+    payload.malus_applicato = false;
+    payload.malus_applicato_il = null;
+  }
+
+  const { error } = await supabase.from('progresso_obiettivi').upsert(payload, { onConflict: 'squadra,obiettivo_id,stagione' });
+  if (error) throw error;
+
+  // Obiettivi allenatore: il premio è incassabile subito al completamento.
+  // DS/DG: restano completati ma incassabili solo dal 31/05.
+  if (completato && !finale) {
+    await incassaObiettivo(squadra, obiettivoId, stagione);
+  }
+
+  // DS/DG falliti: applica subito il malus economico una sola volta.
+  if (fallito && finale && Number(obiettivo.penalita || 0) > 0) {
+    await applicaMalusObiettivo(squadra, obiettivoId, stagione);
+  }
+}
+
+export async function incassaObiettivo(squadra, obiettivoId, stagione = '2026-27') {
+  const obiettivo = await _getObiettivoCartaById(obiettivoId);
+  const { data: prog, error: progErr } = await supabase.from('progresso_obiettivi')
+    .select('*').eq('squadra', squadra).eq('obiettivo_id', obiettivoId).eq('stagione', stagione).single();
+  if (progErr) throw progErr;
+  if (!prog?.completato) throw new Error('Obiettivo non completato.');
+  if (prog.incassato) return { giaIncassato: true };
+
+  const tipo = String(obiettivo.tipo || '').toLowerCase();
+  const finale = _isObiettivoFinale(tipo);
+  const incassabileIl = prog.incassabile_il || (finale ? _fineCampionatoObiettivi(stagione) : _oggiISO());
+  if (finale && _oggiISO() < incassabileIl) {
+    throw new Error(`Gli obiettivi DS/DG sono incassabili dal ${incassabileIl}.`);
+  }
+
+  const importo = Number(obiettivo.guadagno || (finale ? 5 : 2));
+  if (importo <= 0) throw new Error('Questo obiettivo non ha un premio economico configurato.');
+  await _applicaMovimentoObiettivo({
+    squadra,
+    obiettivo,
+    importo,
+    descrizione: `Premio obiettivo ${tipo.toUpperCase()}: ${obiettivo.testo || obiettivo.nome || 'obiettivo'}`,
+    data: _oggiISO(),
+  });
+  const { error } = await supabase.from('progresso_obiettivi').update({ incassato: true, incassato_il: _oggiISO() })
+    .eq('squadra', squadra).eq('obiettivo_id', obiettivoId).eq('stagione', stagione);
+  if (error) throw error;
+  return { incassato: true, importo };
+}
+
+export async function applicaMalusObiettivo(squadra, obiettivoId, stagione = '2026-27') {
+  const obiettivo = await _getObiettivoCartaById(obiettivoId);
+  const { data: prog, error: progErr } = await supabase.from('progresso_obiettivi')
+    .select('*').eq('squadra', squadra).eq('obiettivo_id', obiettivoId).eq('stagione', stagione).single();
+  if (progErr) throw progErr;
+  if (!prog?.fallito) throw new Error('Obiettivo non segnato come fallito.');
+  if (prog.malus_applicato) return { giaApplicato: true };
+  const importo = Number(obiettivo.penalita || 0);
+  if (importo <= 0) return { nessunMalus: true };
+  await _applicaMovimentoObiettivo({
+    squadra,
+    obiettivo,
+    importo: -importo,
+    descrizione: `Malus obiettivo ${String(obiettivo.tipo || '').toUpperCase()}: ${obiettivo.testo || obiettivo.nome || 'obiettivo'}`,
+    data: _oggiISO(),
+  });
+  const { error } = await supabase.from('progresso_obiettivi').update({ malus_applicato: true, malus_applicato_il: _oggiISO() })
+    .eq('squadra', squadra).eq('obiettivo_id', obiettivoId).eq('stagione', stagione);
+  if (error) throw error;
+  return { applicato: true, importo };
+}
+
+export async function incassaObiettiviFinali(squadra, stagione = '2026-27') {
+  const fine = _fineCampionatoObiettivi(stagione);
+  if (_oggiISO() < fine) throw new Error(`Gli obiettivi DS/DG sono incassabili dal ${fine}.`);
+  const { data, error } = await supabase.from('progresso_obiettivi')
+    .select('*, obiettivi_carte(*)')
+    .eq('squadra', squadra).eq('stagione', stagione).eq('completato', true).eq('incassato', false);
+  if (error) throw error;
+  let tot = 0;
+  for (const p of data || []) {
+    const tipo = String(p.obiettivi_carte?.tipo || '').toLowerCase();
+    if (!_isObiettivoFinale(tipo)) continue;
+    const res = await incassaObiettivo(squadra, p.obiettivo_id, stagione);
+    tot += Number(res.importo || 0);
+  }
+  return { totale: parseFloat(tot.toFixed(2)) };
+}
+
+export async function getModuloTracker(squadra, stagione = '2026-27') {
+  const { data, error } = await supabase.from('moduli_allenatore_tracker')
+    .select('*').eq('squadra', squadra).eq('stagione', stagione).order('giornata');
+  if (error) return [];
+  return data || [];
+}
+
+export async function upsertModuloTracker(squadra, giornata, modulo, stagione = '2026-27') {
+  const { error } = await supabase.from('moduli_allenatore_tracker').upsert({
+    squadra,
+    stagione,
+    giornata: Number(giornata),
+    modulo: String(modulo || '').trim(),
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'squadra,stagione,giornata' });
+  if (error) throw error;
+}
+
+export async function deleteModuloTracker(squadra, giornata, stagione = '2026-27') {
+  const { error } = await supabase.from('moduli_allenatore_tracker')
+    .delete().eq('squadra', squadra).eq('stagione', stagione).eq('giornata', Number(giornata));
+  if (error) throw error;
+}
+
+export function conteggioModuliAllenatore(rows = [], allenatore = null) {
+  const m1 = allenatore?.modulo1;
+  const m2 = allenatore?.modulo2;
+  const validi = rows.filter(r => r.modulo && (r.modulo === m1 || r.modulo === m2));
+  return { validi: validi.length, totale: rows.filter(r => r.modulo).length, richiesti: 27, ok: validi.length >= 27 };
 }
 
 export async function scegliAllenatore(squadra, nomeAllenatore, bilancioAttuale) {
@@ -2109,7 +2337,80 @@ export async function getSCAllenatore(squadra) {
 
 // ─── INVESTIMENTI (art. 10) ───────────────────────────────────────────────────
 
-export async function getInvestimenti(squadra, stagione = '2025-26') {
+const MAX_INVESTIMENTI_STAGIONE = 30;
+const MAX_INVESTIMENTI_INVERNALI = 10;
+
+function _stagioneStartFromLabel(stagione = getStagioneQuota(new Date())) {
+  const m = String(stagione || '').match(/^(\d{4})/);
+  return m ? Number(m[1]) : stagioneStartYear(new Date());
+}
+function _inRangeDateTime(date, start, end) {
+  return date >= start && date <= end;
+}
+export function isFinestraInvestimentiEstiva(date = new Date()) {
+  const start = stagioneStartYear(date);
+  return _inRangeDateTime(date, new Date(start, 7, 1, 9, 0, 0, 0), new Date(start, 8, 20, 23, 59, 59, 999));
+}
+export function isFinestraInvestimentiInvernale(date = new Date()) {
+  const y = date.getFullYear();
+  return _inRangeDateTime(date, new Date(y, 11, 24, 0, 0, 0, 0), new Date(y, 11, 31, 23, 59, 59, 999));
+}
+async function _getInvestimentiStagione(squadra, stagione) {
+  const { data } = await supabase.from('investimenti').select('*').eq('squadra', squadra).eq('stagione', stagione);
+  return data || [];
+}
+async function _hasInvestimentoAttivo(squadra, nome, { stagione = getStagioneQuota(new Date()), date = new Date(), includePrecedenti = false } = {}) {
+  let q = supabase.from('investimenti').select('*').eq('squadra', squadra).eq('nome', nome).eq('attivo', true);
+  if (!includePrecedenti) q = q.eq('stagione', stagione);
+  const { data } = await q;
+  if (!data?.length) return false;
+  if (nome === 'Clausola Segreta' || nome === 'Deroga U-21') {
+    const start = stagioneStartYear(date);
+    const fine = new Date(start + 1, 5, 1, 0, 0, 0, 0); // 01/06 successivo
+    return date < fine;
+  }
+  return true;
+}
+async function _getVivaioLimit(squadra, date = new Date()) {
+  const stagione = getStagioneQuota(date);
+  const currentStart = _stagioneStartFromLabel(stagione);
+  const { data } = await supabase.from('investimenti')
+    .select('stagione')
+    .eq('squadra', squadra)
+    .eq('nome', 'Settore Giovanile Avanzato')
+    .eq('attivo', true);
+  const active = (data || []).some(inv => {
+    const invStart = _stagioneStartFromLabel(inv.stagione);
+    return currentStart >= invStart + 1 && currentStart <= invStart + 2;
+  });
+  return active ? 4 : 2;
+}
+async function _getU21RichiestiConDeroga(squadra, totale, date = new Date()) {
+  const deroga = await _hasInvestimentoAttivo(squadra, 'Deroga U-21', { stagione: getStagioneQuota(date), date });
+  if (deroga && totale >= 28) return 1;
+  return totale >= 30 ? 3 : totale === 29 ? 2 : totale === 28 ? 1 : 0;
+}
+async function _getSalaryCapInvestimenti(squadra, stagione = getStagioneQuota(new Date())) {
+  const hasSuperClub = await _hasInvestimentoAttivo(squadra, 'SuperClub', { stagione });
+  return hasSuperClub ? 3 : 0;
+}
+async function _calcolaClausolaPerSquadra(squadra, quot, date = new Date()) {
+  const segreta = await _hasInvestimentoAttivo(squadra, 'Clausola Segreta', { stagione: getStagioneQuota(date), date });
+  const moltiplicatore = segreta ? 2.0 : 1.75;
+  return parseFloat((Number(quot || 0) * moltiplicatore).toFixed(2));
+}
+export async function getEffettiInvestimenti(squadra, stagione = getStagioneQuota(new Date())) {
+  const date = new Date();
+  const [vivaioLimit, scBonusInvestimenti, derogaU21, clausolaSegreta] = await Promise.all([
+    _getVivaioLimit(squadra, date),
+    _getSalaryCapInvestimenti(squadra, stagione),
+    _hasInvestimentoAttivo(squadra, 'Deroga U-21', { stagione, date }),
+    _hasInvestimentoAttivo(squadra, 'Clausola Segreta', { stagione, date }),
+  ]);
+  return { vivaioLimit, scBonusInvestimenti, derogaU21, clausolaSegreta, clausolaMoltiplicatore: clausolaSegreta ? 2.0 : 1.75 };
+}
+
+export async function getInvestimenti(squadra, stagione = getStagioneQuota(new Date())) {
   const { data, error } = await supabase.from('investimenti')
     .select('*').eq('squadra', squadra).eq('stagione', stagione)
     .order('data_acquisto', { ascending: false });
@@ -2133,20 +2434,85 @@ export async function deleteInvestimento(id) {
   if (error) throw error;
 }
 
-// Acquista un investimento: scala il costo dal bilancio, inserisce movimento e record
-export async function acquistaInvestimento({ squadra, nome, categoria, costo, stagione = '2025-26', dati = {}, note = '' }) {
-  const oggi = new Date().toISOString().slice(0, 10);
-  // Scala bilancio
+// Acquista un investimento: valida finestre/budget, scala il costo dal bilancio, inserisce movimento e record
+export async function acquistaInvestimento({ squadra, nome, categoria, costo, stagione = getStagioneQuota(new Date()), dati = {}, note = '', forceAdmin = false }) {
+  const now = new Date();
+  const oggi = isoDateLocal(now);
+  const costoNum = Number(costo || 0);
+  const isInvernale = categoria === 'invernale';
+
+  if (!forceAdmin) {
+    if (isInvernale && !isFinestraInvestimentiInvernale(now)) {
+      throw new Error('Investimenti invernali consentiti solo dal 24/12 al 31/12.');
+    }
+    if (!isInvernale && !isFinestraInvestimentiEstiva(now)) {
+      throw new Error('Investimenti estivi consentiti solo dal 01/08 alle 09:00 al 20/09 alle 23:59.');
+    }
+  }
+
+  const invStagione = await _getInvestimentiStagione(squadra, stagione);
+  const totaleStagione = invStagione.reduce((s, i) => s + Number(i.costo || 0), 0);
+  const totaleInvernale = invStagione.filter(i => i.categoria === 'invernale').reduce((s, i) => s + Number(i.costo || 0), 0);
+  if (!forceAdmin && totaleStagione + costoNum > MAX_INVESTIMENTI_STAGIONE) {
+    throw new Error(`Budget investimenti superato: ${totaleStagione.toFixed(1)}M/${MAX_INVESTIMENTI_STAGIONE}M già usati.`);
+  }
+  if (!forceAdmin && isInvernale && totaleInvernale + costoNum > MAX_INVESTIMENTI_INVERNALI) {
+    throw new Error(`Budget investimenti invernali superato: ${totaleInvernale.toFixed(1)}M/${MAX_INVESTIMENTI_INVERNALI}M già usati.`);
+  }
+
+  // Investimenti non ripetibili nella stessa stagione.
+  if (invStagione.some(i => i.nome === nome && i.attivo !== false)) {
+    throw new Error(`Investimento già attivo in questa stagione: ${nome}.`);
+  }
+
+  // Ristrutturazione Stadio: devono passare 3 anni prima di ripeterla.
+  if (nome === 'Ristrutturazione Stadio') {
+    const currentStart = _stagioneStartFromLabel(stagione);
+    const { data: precedenti } = await supabase.from('investimenti')
+      .select('stagione')
+      .eq('squadra', squadra)
+      .eq('nome', 'Ristrutturazione Stadio');
+    const troppoRecente = (precedenti || []).some(i => currentStart - _stagioneStartFromLabel(i.stagione) < 3);
+    if (!forceAdmin && troppoRecente) throw new Error('Ristrutturazione Stadio ripetibile solo dopo 3 anni.');
+  }
+
+  // Ricapitalizzazione: limite specifico 05/09.
+  if (!forceAdmin && nome === 'Ricapitalizzazione') {
+    const start = stagioneStartYear(now);
+    if (now > new Date(start, 8, 5, 23, 59, 59, 999)) throw new Error('Ricapitalizzazione attivabile solo entro il 05/09.');
+  }
+
   const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadra).single();
-  const nuovoBilancio = parseFloat(((sq?.bilancio || 0) - costo).toFixed(2));
+  if (Number(sq?.bilancio || 0) < costoNum) throw new Error('Bilancio insufficiente per acquistare questo investimento.');
+  const nuovoBilancio = parseFloat((Number(sq?.bilancio || 0) - costoNum).toFixed(2));
   await supabase.from('squadre').update({ bilancio: nuovoBilancio }).eq('name', squadra);
-  // Movimento
+
   await supabase.from('movimenti').insert({
     squadra, descrizione: `Investimento: ${nome}`,
-    uscita: costo, data: oggi,
+    uscita: costoNum, data: oggi,
   });
-  // Record investimento
-  const inv = await insertInvestimento({ squadra, nome, categoria, costo, stagione, dati, note, data_acquisto: oggi });
+
+  const datiFinali = { ...(dati || {}) };
+  if (nome === 'Settore Giovanile Avanzato') datiFinali.effetto = 'vivaio_limit_4_prossime_2_stagioni';
+  if (nome === 'SuperClub') datiFinali.effetto = '+3M salary cap stagione';
+  if (nome === 'Deroga U-21') datiFinali.effetto = 'rosa_30_con_1_u21_fino_01_06';
+  if (nome === 'Clausola Segreta') datiFinali.effetto = 'clausola_2x_fino_31_05';
+
+  const inv = await insertInvestimento({ squadra, nome, categoria, costo: costoNum, stagione, dati: datiFinali, note, data_acquisto: oggi, attivo: true });
+
+  // Effetti immediati o agganciati a regole già presenti.
+  if (nome === 'Clausola Segreta') {
+    const { data: rosa } = await supabase.from('rosa').select('id, quot').eq('squadra', squadra).eq('in_vivaio', false);
+    for (const p of rosa || []) {
+      await supabase.from('rosa').update({ clausola: parseFloat((Number(p.quot || 0) * 2).toFixed(2)) }).eq('id', p.id);
+    }
+  }
+
+  // Ricapitalizzazione: effetto immediato tracciato nei movimenti FPF come entrata specifica.
+  if (nome === 'Ricapitalizzazione') {
+    await supabase.from('movimenti').insert({ squadra, descrizione: 'Ricapitalizzazione investimento — riduzione FPF', entrata: 3, data: oggi });
+  }
+
   return { inv, nuovoBilancio };
 }
 
@@ -2167,6 +2533,18 @@ export async function registraGuadagnoInvestimento(id, importo, squadra) {
     entrata: importo, data: oggi,
   });
   return nuovoBilancio;
+}
+
+
+export async function aggiornaTrackerInvestimento(id, voce) {
+  const { data: inv, error } = await supabase.from('investimenti').select('dati').eq('id', id).single();
+  if (error) throw error;
+  const dati = inv?.dati || {};
+  const tracker = Array.isArray(dati.tracker) ? dati.tracker : [];
+  tracker.push({ ...voce, data: new Date().toISOString() });
+  const { error: updErr } = await supabase.from('investimenti').update({ dati: { ...dati, tracker } }).eq('id', id);
+  if (updErr) throw updErr;
+  return tracker;
 }
 
 // ─── SPONSOR ─────────────────────────────────────────────────────────────────
@@ -2567,26 +2945,40 @@ export async function applicaQuoteAutomatiche(opts = {}) {
 
 // ─── ADMIN CONTROL ROOM ───────────────────────────────────────────────────────
 
-// Restituisce tutti gli investimenti "Ristrutturazione Stadio" attivi per la stagione
+// Restituisce gli upgrade stadio che danno bonus nella stagione indicata.
+// Regola: l'investimento acquistato in una stagione produce +1,5M dalla stagione successiva.
 export async function getStadioInvestimenti(stagione = '2026-27') {
+  const currentStart = _stagioneStartFromLabel(stagione);
   const { data } = await supabase.from('investimenti')
-    .select('*').eq('nome', 'Ristrutturazione Stadio').eq('stagione', stagione);
-  return data || [];
+    .select('*')
+    .eq('nome', 'Ristrutturazione Stadio')
+    .eq('attivo', true);
+  return (data || []).filter(i => _stagioneStartFromLabel(i.stagione) < currentStart);
 }
 
-// Aggiunge o rimuove il potenziamento stadio per un team (admin override, senza costo)
+// Toggle admin del BONUS ATTIVO nella stagione indicata.
+// Per ottenere effetto nella stagione corrente, crea/rimuove un record nella stagione precedente.
 export async function setStadioUpgrade(squadra, attivo, stagione = '2026-27') {
+  const currentStart = _stagioneStartFromLabel(stagione);
+  const stagioneOrigine = `${currentStart - 1}-${String(currentStart).slice(2)}`;
   if (attivo) {
+    const { data: gia } = await supabase.from('investimenti')
+      .select('id')
+      .eq('squadra', squadra)
+      .eq('nome', 'Ristrutturazione Stadio')
+      .eq('stagione', stagioneOrigine)
+      .limit(1);
+    if (gia?.length) return;
     const { error } = await supabase.from('investimenti').insert({
       squadra, nome: 'Ristrutturazione Stadio', categoria: 'grande',
-      costo: 0, stagione,
-      data_acquisto: new Date().toISOString().slice(0, 10),
-      dati: { admin_override: true },
+      costo: 0, stagione: stagioneOrigine, attivo: true,
+      data_acquisto: `${currentStart - 1}-08-01`,
+      dati: { admin_override_bonus_attivo: true, effetto_dalla_stagione: stagione },
     });
     if (error) throw error;
   } else {
     const { error } = await supabase.from('investimenti').delete()
-      .eq('squadra', squadra).eq('nome', 'Ristrutturazione Stadio').eq('stagione', stagione);
+      .eq('squadra', squadra).eq('nome', 'Ristrutturazione Stadio').eq('stagione', stagioneOrigine);
     if (error) throw error;
   }
 }
@@ -2600,9 +2992,12 @@ export async function applicaEntrateStadioTutte(stagione = '2026-27') {
   const { data: squadre } = await supabase.from('squadre').select('name, bilancio');
   if (!squadre?.length) return [];
 
+  const currentStart = _stagioneStartFromLabel(stagione);
   const { data: invAll } = await supabase.from('investimenti')
-    .select('squadra').eq('nome', 'Ristrutturazione Stadio').eq('stagione', stagione);
-  const potenziate = new Set((invAll || []).map(i => i.squadra));
+    .select('squadra, stagione').eq('nome', 'Ristrutturazione Stadio').eq('attivo', true);
+  const potenziate = new Set((invAll || [])
+    .filter(i => _stagioneStartFromLabel(i.stagione) < currentStart)
+    .map(i => i.squadra));
 
   const results = [];
   for (const sq of squadre) {
@@ -3224,7 +3619,7 @@ export async function promuoviDaVivaio(playerId, squadra) {
   const futuraRosa = [...(rosaAttuale || []), player];
   const futuroTotale = futuraRosa.length;
   const u21 = futuraRosa.filter(p => Number(p.anni || 0) > 0 && Number(p.anni) <= 21).length;
-  const u21Richiesti = futuroTotale >= 30 ? 3 : futuroTotale === 29 ? 2 : futuroTotale === 28 ? 1 : 0;
+  const u21Richiesti = await _getU21RichiestiConDeroga(squadra, futuroTotale, new Date());
   if (u21 < u21Richiesti) throw new Error(`Promozione non consentita: con ${futuroTotale} giocatori servono almeno ${u21Richiesti} Under-21 (attuali ${u21}).`);
 
   if (player.squadra_serie_a) {
@@ -3235,9 +3630,8 @@ export async function promuoviDaVivaio(playerId, squadra) {
   // Calcola stipendio normale (Q/5) e verifica salary cap base/attivo.
   const stipNormale = parseFloat((player.quot / 5).toFixed(2));
   const scGiocatori = (rosaAttuale || []).reduce((sum, p) => sum + Number(p.stip || 0), 0) + stipNormale;
-  const { data: superClub } = await supabase.from('investimenti')
-    .select('id').eq('squadra', squadra).eq('nome', 'SuperClub').eq('attivo', true).limit(1);
-  const cap = 75 + (superClub?.length ? 3 : 0);
+  const { data: sqCap } = await supabase.from('squadre').select('sc_bonus_obiettivi').eq('name', squadra).single();
+  const cap = 75 + await _getSalaryCapInvestimenti(squadra, getStagioneQuota(new Date())) + Number(sqCap?.sc_bonus_obiettivi || 0);
   if (scGiocatori > cap) throw new Error(`Promozione non consentita: salary cap ${scGiocatori.toFixed(2)}M su ${cap.toFixed(2)}M.`);
 
   await supabase.from('rosa').update({
@@ -3566,11 +3960,11 @@ export function getFinestraChiamate() {
   // Infrasettimanale: nessuna asta (gestito manualmente, qui solo info)
   const finestraInteresse =
     (giorno === 2 && oreMin >= 9 * 60) ||   // martedì dalle 9:00
-    (giorno === 3 && oreMin < 21 * 60);      // mercoledì prima delle 21:00
+    (giorno === 3 && oreMin < 20 * 60);      // mercoledì prima delle 20:00
 
   const finestraAltriInteressi =
-    (giorno === 3 && oreMin >= 21 * 60) ||   // mercoledì dalle 21:00
-    (giorno === 4 && oreMin < 21 * 60);      // giovedì prima delle 21:00
+    (giorno === 3 && oreMin >= 20 * 60) ||   // mercoledì dalle 20:00
+    (giorno === 4 && oreMin < 20 * 60);      // giovedì prima delle 20:00
 
   const giornoAste = giorno === 5; // venerdì
 
@@ -3580,9 +3974,9 @@ export function getFinestraChiamate() {
     finestraAltriInteressi,
     giornoAste,
     messaggio: finestraInteresse
-      ? "✅ Finestra aperta — puoi manifestare interesse (fino a mer 21:00)"
+      ? "✅ Finestra aperta — puoi manifestare interesse (fino a mer 20:00)"
       : finestraAltriInteressi
-        ? "⏳ Finestra interesse altri presidenti (fino a gio 21:00)"
+        ? "⏳ Finestra interesse altri presidenti (fino a gio 20:00)"
         : giornoAste
           ? "🏷️ Giorno aste"
           : `Finestra chiusa — riapre martedì alle 9:00`,
@@ -3623,10 +4017,18 @@ export async function upsertOffertaAsta(astaId, squadra, importo, perVivaio = fa
   if (asta.stato !== 'raccolta_offerte') throw new Error('Asta chiusa');
   if (new Date() > new Date(asta.scadenza)) throw new Error('Scadenza offerte superata');
   const minOfferta = parseFloat((Number(asta.quot) * 0.75).toFixed(2));
-  if (importo < minOfferta) throw new Error(`Offerta minima: ${minOfferta}M (¾ quotazione)`);
+  const offerta = parseFloat(Number(importo || 0).toFixed(2));
+  if (offerta < minOfferta) throw new Error(`Offerta minima: ${minOfferta}M (¾ quotazione)`);
+
+  // Art. 6.4: non è mai possibile offrire più della liquidità disponibile.
+  const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadra).single();
+  const bilancio = Number(sq?.bilancio || 0);
+  if (offerta > bilancio + 0.0001) {
+    throw new Error(`Offerta non valida: ${squadra} ha ${bilancio.toFixed(2)}M disponibili, quindi non può offrire ${offerta.toFixed(2)}M.`);
+  }
 
   const { data, error } = await supabase.from('offerte_asta')
-    .upsert({ asta_id: astaId, squadra, importo, per_vivaio: perVivaio, assente: false },
+    .upsert({ asta_id: astaId, squadra, importo: offerta, per_vivaio: perVivaio, assente: false },
              { onConflict: 'asta_id,squadra' })
     .select().single();
   if (error) throw error;
@@ -3732,20 +4134,38 @@ export async function rivelaECompletaAsta(astaId) {
     .select('*').eq('asta_id', astaId);
   const squadreConOfferta = new Set((offerteEsistenti || []).map(o => o.squadra));
 
-  // Offerta automatica = quotazione per chi non ha offerto
+  // Offerta automatica per assenti: di norma pari alla quotazione;
+  // resta però valido il limite massimo della liquidità disponibile (art. 6.4).
+  const minOffertaAsta = parseFloat((Number(asta.quot || 0) * 0.75).toFixed(2));
   for (const sq of ordineInteresse) {
     if (!squadreConOfferta.has(sq)) {
-      await supabase.from('offerte_asta').upsert({
-        asta_id: astaId, squadra: sq,
-        importo: Number(asta.quot),
-        per_vivaio: asta.per_vivaio, assente: true,
-      }, { onConflict: 'asta_id,squadra' });
+      const { data: squadraOfferente } = await supabase.from('squadre')
+        .select('bilancio').eq('name', sq).single();
+      const bilancioDisp = Number(squadraOfferente?.bilancio || 0);
+      const offertaAutomatica = parseFloat(Math.min(Number(asta.quot || 0), bilancioDisp).toFixed(2));
+
+      // Se non ha liquidità nemmeno per la base d'asta, resta registrato come assente
+      // ma non può essere considerato valido per l'aggiudicazione.
+      if (offertaAutomatica >= minOffertaAsta) {
+        await supabase.from('offerte_asta').upsert({
+          asta_id: astaId, squadra: sq,
+          importo: offertaAutomatica,
+          per_vivaio: asta.per_vivaio, assente: true,
+        }, { onConflict: 'asta_id,squadra' });
+      }
     }
   }
 
-  // Tutte le offerte ordinate
-  const { data: tutteOfferte } = await supabase.from('offerte_asta')
+  // Tutte le offerte ordinate. Ricontrolliamo la liquidità al momento della rivelazione:
+  // un'offerta rimasta superiore al bilancio disponibile non può vincere.
+  const { data: offerteRaw } = await supabase.from('offerte_asta')
     .select('*').eq('asta_id', astaId).order('importo', { ascending: false });
+  const tutteOfferte = [];
+  for (const off of (offerteRaw || [])) {
+    const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', off.squadra).single();
+    if (Number(off.importo || 0) <= Number(sq?.bilancio || 0) + 0.0001) tutteOfferte.push(off);
+  }
+  if (!tutteOfferte.length) throw new Error('Nessuna offerta valida: nessun interessato ha liquidità sufficiente.');
 
   // Vincitore: max importo; parità → prima chiamata
   const maxImporto = Number(tutteOfferte?.[0]?.importo || 0);
@@ -3761,7 +4181,7 @@ export async function rivelaECompletaAsta(astaId) {
   // Trasferimento
   const oggi = new Date().toISOString().slice(0, 10);
   const stip  = parseFloat((Number(asta.quot) / 5).toFixed(2));
-  const claus = parseFloat((Number(asta.quot) * 1.75).toFixed(2));
+  const claus = await _calcolaClausolaPerSquadra(vincitore, Number(asta.quot), new Date());
 
   if (asta.per_vivaio) {
     await assertVivaioDopoAggiunta(vincitore, { nome: asta.giocatore, anni: asta.anni, quot: asta.quot, presenze_voto: asta.presenze_voto || 0 });
@@ -3825,7 +4245,7 @@ export async function completaUnicoInteressato(nomeGiocatore) {
   const prezzoFinale = parseFloat((Number(primaria.quot) * 0.75).toFixed(2));
   const oggi = new Date().toISOString().slice(0, 10);
   const stip  = parseFloat((Number(primaria.quot) / 5).toFixed(2));
-  const claus = parseFloat((Number(primaria.quot) * 1.75).toFixed(2));
+  const claus = await _calcolaClausolaPerSquadra(vincitore, Number(primaria.quot), new Date());
 
   if (primaria.per_vivaio) {
     await assertVivaioDopoAggiunta(vincitore, { nome: nomeGiocatore, anni: primaria.anni || 0, quot: primaria.quot, presenze_voto: primaria.presenze_voto || 0 });
@@ -4423,32 +4843,49 @@ export async function getTrasferimentiDifferiti() {
 }
 
 // FPF: applica multe a tutte le squadre che hanno sforato
+// Art. 7.3/7.3.1: il controllo avviene due volte per stagione sportiva.
+// Correzione v11: la penalità viene considerata già applicata solo per lo stesso
+// periodo FPF, non per tutta la stagione. Così il controllo 16/02→15/09 e quello
+// 16/09→15/02 possono entrambi generare una multa nella stessa stagione.
 export async function applicaMulteFPFTutte(stagione = '2026-27') {
+  const sem = getSemestreCorrente();
   const fpfMap = await getFpfTutteSquadre();
   const oggi = new Date().toISOString().slice(0, 10);
   const results = [];
+  const periodoKey = `${sem.inizioStr}_${sem.fineStr}`;
+  const descrizionePenalita = `FPF ${stagione} — ${sem.label} (${sem.inizioStr} → ${sem.fineStr})`;
 
   for (const [squadra, netto] of Object.entries(fpfMap)) {
     const { multa, pt, euro } = calcolaFairSpending(netto);
-    if (multa === 0) { results.push({ squadra, skip: true, motivo: 'in_regola' }); continue; }
+    if (multa === 0) { results.push({ squadra, skip: true, motivo: 'in_regola', periodo: periodoKey }); continue; }
 
-    // Check già applicata questa stagione
+    // Check già applicata per questa squadra, stagione e specifico periodo FPF.
+    // Non usiamo solo codice_tipo='fpf' + stagione perché il regolamento prevede due controlli annuali.
     const { data: penGia } = await supabase.from('penalita')
-      .select('id').eq('squadra', squadra).eq('codice_tipo', 'fpf').eq('stagione', stagione).eq('applicata', true).single();
-    if (penGia) { results.push({ squadra, skip: true, motivo: 'gia_applicata' }); continue; }
+      .select('id')
+      .eq('squadra', squadra)
+      .eq('codice_tipo', 'fpf')
+      .eq('stagione', stagione)
+      .eq('applicata', true)
+      .ilike('descrizione', `%${periodoKey}%`)
+      .limit(1);
+    if (penGia?.length) { results.push({ squadra, skip: true, motivo: 'gia_applicata_periodo', periodo: periodoKey }); continue; }
 
-    const { data: sq } = await supabase.from('squadre').select('bilancio, punti').eq('name', squadra).single();
-    if (!sq) { results.push({ squadra, skip: true, motivo: 'squadra_not_found' }); continue; }
+    const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadra).single();
+    if (!sq) { results.push({ squadra, skip: true, motivo: 'squadra_not_found', periodo: periodoKey }); continue; }
 
     const nuovoBilancio = parseFloat((sq.bilancio - multa).toFixed(2));
-    const nuoviPunti = (sq.punti || 0) - pt;
 
-    await supabase.from('squadre').update({ bilancio: nuovoBilancio, ...(pt > 0 ? { punti: nuoviPunti } : {}) }).eq('name', squadra);
-    await supabase.from('movimenti').insert({ squadra, descrizione: `Multa FPF ${stagione} (netto: ${netto.toFixed(1)}M)`, uscita: multa, data: oggi });
-    // Insert penalita record
-    await supabase.from('penalita').insert({ squadra, stagione, codice_tipo: 'fpf', descrizione: `FPF ${stagione}`, importo: multa, pt_penalita: pt, euro_penalita: euro, applicata: true, data: oggi });
+    await supabase.from('squadre').update({ bilancio: nuovoBilancio }).eq('name', squadra);
+    if (pt > 0) {
+      const { data: cls } = await supabase.from('classifica').select('pt').eq('squadra', squadra).eq('stagione', stagione).single();
+      if (cls) await supabase.from('classifica').update({ pt: Math.max(0, Number(cls.pt || 0) - pt), updated_at: new Date().toISOString() }).eq('squadra', squadra).eq('stagione', stagione);
+    }
+    await supabase.from('movimenti').insert({ squadra, descrizione: `Multa FPF ${stagione} ${periodoKey} (netto: ${netto.toFixed(1)}M)`, uscita: multa, data: oggi });
+    // Insert penalita record: descrizione contiene periodoKey per evitare che il primo controllo annuale blocchi il secondo.
+    await supabase.from('penalita').insert({ squadra, stagione, codice_tipo: 'fpf', descrizione: `${descrizionePenalita} [${periodoKey}]`, importo: multa, pt_penalita: pt, euro_penalita: euro, applicata: true, data: oggi });
 
-    results.push({ squadra, ok: true, netto, multa, pt, euro });
+    results.push({ squadra, ok: true, netto, multa, pt, euro, periodo: periodoKey });
   }
   return results;
 }
@@ -4456,7 +4893,7 @@ export async function applicaMulteFPFTutte(stagione = '2026-27') {
 // Premi: distribuisci premi campionato in base alla classifica attuale
 export async function applicaPremiCampionato(stagione = '2026-27') {
   const oggi = new Date().toISOString().slice(0, 10);
-  const { data: classifica } = await supabase.from('classifica').select('squadra, punti').eq('stagione', stagione).order('punti', { ascending: false });
+  const { data: classifica } = await supabase.from('classifica').select('squadra, pt, pt_totali').eq('stagione', stagione).order('pt', { ascending: false });
   if (!classifica?.length) throw new Error('Nessuna classifica trovata');
 
   const results = [];
@@ -4579,7 +5016,7 @@ export async function rimuoviAllenatore(squadra, nomeAllenatore, rimborso = 0) {
   const { data: carta } = await supabase.from('allenatori_carte').select('id').eq('nome', nomeAllenatore).single();
   if (carta) {
     const { data: obIds } = await supabase.from('obiettivi_carte').select('id').eq('carta_id', carta.id);
-    if (obIds?.length) await supabase.from('progressi_obiettivi').delete().in('obiettivo_id', obIds.map(o=>o.id)).eq('squadra', squadra);
+    if (obIds?.length) await supabase.from('progresso_obiettivi').delete().in('obiettivo_id', obIds.map(o=>o.id)).eq('squadra', squadra);
   }
 }
 
