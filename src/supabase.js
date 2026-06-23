@@ -1356,28 +1356,98 @@ export async function insertSvincolo(s) {
   return data;
 }
 
+function _rangeStagioneSvincoli(date = new Date()) {
+  const y = date.getFullYear();
+  const startYear = (date.getMonth() > 5 || (date.getMonth() === 5 && date.getDate() >= 1)) ? y : y - 1;
+  return {
+    start: `${startYear}-06-01`,
+    end: `${startYear + 1}-05-31`,
+  };
+}
+
+function _conteggiaSvincoliDaStorico(svincoli = []) {
+  const ordinari = svincoli.filter(s => s.tipo === 'ordinario').length;
+  const straord = svincoli.filter(s => ['straordinario', 'straordinario_u21'].includes(s.tipo));
+  const estivi = straord.filter(s => {
+    const m = new Date(s.data_svincolo).getMonth() + 1;
+    return [6, 7, 8, 9].includes(m);
+  }).length;
+  const invernali = straord.filter(s => {
+    const m = new Date(s.data_svincolo).getMonth() + 1;
+    return [1, 2].includes(m);
+  }).length;
+  const countTotale = svincoli.filter(s => s.tipo !== 'straordinario_u21_nc').length;
+  const history = svincoli
+    .filter(s => s.tipo !== 'straordinario_u21_nc')
+    .map(s => {
+      const d = new Date(s.data_svincolo);
+      const riacq = new Date(d);
+      riacq.setDate(riacq.getDate() + 60);
+      return {
+        nome: s.giocatore || s.nome || s.player || '',
+        tipo: s.tipo,
+        data_svincolo: s.data_svincolo,
+        riacquistabile_dal: riacq.toISOString().slice(0, 10),
+      };
+    });
+  return {
+    count_ordinari: ordinari,
+    count_straord_estivi: estivi,
+    count_straord_invernali: invernali,
+    count_totale: countTotale,
+    svincolati_history: history,
+  };
+}
+
+export async function ricostruisciStagioneSvincoli(squadra) {
+  const { start, end } = _rangeStagioneSvincoli();
+  const { data, error } = await supabase
+    .from('svincoli')
+    .select('*')
+    .eq('squadra', squadra)
+    .gte('data_svincolo', start)
+    .lte('data_svincolo', end)
+    .order('data_svincolo', { ascending: true });
+  if (error) throw error;
+  return _conteggiaSvincoliDaStorico(data || []);
+}
+
 export async function getStagioneSvincoli(squadra) {
+  const ricostruito = await ricostruisciStagioneSvincoli(squadra);
+
   const { data, error } = await supabase.from('stagione_svincoli').select('*').eq('squadra', squadra).limit(1);
   if (error) throw error;
-  if (data?.[0]) return data[0];
 
-  // Se il record stagionale non esiste ancora, lo creo subito: senza questa riga
-  // gli svincoli venivano eseguiti ma i contatori restavano fermi.
-  const iniziale = {
-    squadra,
-    count_ordinari: 0,
-    count_straord_estivi: 0,
-    count_straord_invernali: 0,
-    count_totale: 0,
-    svincolati_history: [],
-  };
-  const { data: creato, error: insErr } = await supabase
-    .from('stagione_svincoli')
-    .insert(iniziale)
-    .select()
-    .single();
-  if (insErr) throw insErr;
-  return creato;
+  let record = data?.[0];
+  if (!record) {
+    const iniziale = { squadra, ...ricostruito };
+    const { data: creato, error: insErr } = await supabase
+      .from('stagione_svincoli')
+      .insert(iniziale)
+      .select()
+      .single();
+    if (insErr) throw insErr;
+    return { ...creato, _ricostruito_da_storico: true };
+  }
+
+  const mismatch =
+    Number(record.count_ordinari || 0) !== ricostruito.count_ordinari ||
+    Number(record.count_straord_estivi || 0) !== ricostruito.count_straord_estivi ||
+    Number(record.count_straord_invernali || 0) !== ricostruito.count_straord_invernali ||
+    Number(record.count_totale || 0) !== ricostruito.count_totale;
+
+  if (mismatch) {
+    const { data: aggiornato, error: updErr } = await supabase
+      .from('stagione_svincoli')
+      .update({ ...ricostruito, updated_at: new Date().toISOString() })
+      .eq('squadra', squadra)
+      .select()
+      .single();
+    if (!updErr && aggiornato) return { ...aggiornato, _ricostruito_da_storico: true };
+    return { ...record, ...ricostruito, _ricostruito_da_storico: true };
+  }
+
+  return record;
 }
 
 export async function updateStagioneSvincoli(squadra, fields) {
