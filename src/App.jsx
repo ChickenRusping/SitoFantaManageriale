@@ -164,7 +164,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, applicaPagamentiAutomatici, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, applicaPagamentiAutomatici, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento,
   getBonusTrattativa, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -3555,7 +3555,7 @@ function FairSpendingSection({ team, isAdmin }) {
 }
 
 
-function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0, salaryCapSforato, scEsenteGiuLug, giorniSCNeg, contrattiScadenza: contrattiScadenzaProp, rosaPlayers, pagandoStipendi, handlePagaStipendi, isAdmin, mySquadra, onRefresh, onBilancioChange }) {
+function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0, salaryCapLimite = 75, salaryCapSforato, scEsenteGiuLug, giorniSCNeg, contrattiScadenza: contrattiScadenzaProp, rosaPlayers, pagandoStipendi, handlePagaStipendi, isAdmin, mySquadra, onRefresh, onBilancioChange }) {
   const [contrattiScadenza, setContrattiScadenza] = useState(contrattiScadenzaProp || []);
   useEffect(() => { setContrattiScadenza(contrattiScadenzaProp || []); }, [contrattiScadenzaProp]);
 
@@ -3787,12 +3787,12 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
             <span style={{ fontSize: 12, color: "#888" }}>Salary Cap usato (live)</span>
-            <span style={{ fontSize: 13, fontWeight: 800, color: salaryCapSforato ? "#ef4444" : "#10b981" }}>{salaryCapUsato.toFixed(1)}M / 75M</span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: salaryCapSforato ? "#ef4444" : "#10b981" }}>{salaryCapUsato.toFixed(1)}M / {salaryCapLimite.toFixed(1)}M</span>
           </div>
-          <StatBar value={Math.min(salaryCapUsato, 75)} max={75} color={salaryCapSforato ? "#ef4444" : "#10b981"} height={10} />
+          <StatBar value={Math.min(salaryCapUsato, salaryCapLimite)} max={salaryCapLimite} color={salaryCapSforato ? "#ef4444" : "#10b981"} height={10} />
           {salaryCapSforato
-            ? <div style={{ marginTop: 4, fontSize: 11, color: "#ef4444", fontWeight: 700 }}>⛔ Sforato di {(salaryCapUsato - 75).toFixed(1)}M{scEsenteGiuLug ? " (esenzione giu/lug)" : ""}</div>
-            : <div style={{ marginTop: 4, fontSize: 11, color: "#10b981" }}>✅ +{(75 - salaryCapUsato).toFixed(1)}M disponibile</div>}
+            ? <div style={{ marginTop: 4, fontSize: 11, color: "#ef4444", fontWeight: 700 }}>⛔ Sforato di {(salaryCapUsato - salaryCapLimite).toFixed(1)}M{scEsenteGiuLug ? " (esenzione giu/lug)" : ""}</div>
+            : <div style={{ marginTop: 4, fontSize: 11, color: "#10b981" }}>✅ +{(salaryCapLimite - salaryCapUsato).toFixed(1)}M disponibile</div>}
         </div>
         {/* Breakdown: rosa + staff allenatore */}
         {scAllenatore > 0 && (
@@ -4008,12 +4008,12 @@ const CATALOGO_INVESTIMENTI = [
   { nome: "Rientro in Grande",        categoria: "invernale", costo: 3,   desc: "1 infortunato: se nelle 5 giornate dal rientro prende voto ≥6 → +1.2M extra.", richiedeNote: true, notePlaceholder: "Nome del giocatore infortunato selezionato:" },
   { nome: "Deroga U-21",              categoria: "invernale", costo: 4,   desc: "Fino al 01/06: puoi avere 30 giocatori in rosa con solo 1 Under-21." },
   { nome: "Clausola Segreta",         categoria: "invernale", costo: 4,   desc: "Clausola rescissoria dei tuoi giocatori: da 1.75× a 2.0× la quotazione fino al 31/05." },
-  { nome: "Re del Girone di Ritorno", categoria: "invernale", costo: 7,   desc: "Dalla 19ª giornata: se ottieni ≥10 punti in più rispetto alla prima metà → +10M a fine anno." },
+  { nome: "Re del Girone di Ritorno", categoria: "invernale", costo: 7,   desc: "Dalla 19ª giornata: se ottieni ≥8 punti in più rispetto alla prima metà → +10M a fine anno." },
   { nome: "Corso Analisi Video",      categoria: "invernale", costo: 10,  desc: "1 sostituzione extra rispetto alla formazione originaria. Non nelle ultime 5 giornate né in finale/semifinale Coppa. Usabile una volta." },
 ];
 
 /* ─── ALLENATORE TAB ─────────────────────────────────────────────────────────── */
-function AltroTab({ team, isAdmin }) {
+function AltroTab({ team, isAdmin, mySquadra }) {
 
 
   // ── BONUS TRATTATIVE ─────────────────────────────────────────────────────────
@@ -4178,13 +4178,21 @@ function AltroTab({ team, isAdmin }) {
   const [savingAll, setSavingAll] = useState(false);
   const [editId, setEditId] = useState(null);
   const [editVal, setEditVal] = useState("");
+  const [moduliTracker, setModuliTracker] = useState([]);
+  const [giornataModulo, setGiornataModulo] = useState(1);
+  const [moduloScelto, setModuloScelto] = useState("");
+  const canManageObiettivi = isAdmin || mySquadra === team.name;
 
   const loadAll = useCallback(async () => {
     const [all, tutti] = await Promise.all([getAllenatoreBySquadra(team.name, STAGIONE_CORRENTE), getAllenatori(STAGIONE_CORRENTE)]);
     setAllenatore(all); setTuttiAllenatori(tutti);
     if (all) {
-      const [obs, prog] = await Promise.all([getObiettiviCarta(all.nome, STAGIONE_CORRENTE), getProgressoObiettivi(team.name, STAGIONE_CORRENTE)]);
-      setObiettivi(obs); setProgresso(prog);
+      const [obs, prog, moduli] = await Promise.all([
+        getObiettiviCarta(all.nome, STAGIONE_CORRENTE),
+        getProgressoObiettivi(team.name, STAGIONE_CORRENTE),
+        getModuloTracker(team.name, STAGIONE_CORRENTE),
+      ]);
+      setObiettivi(obs); setProgresso(prog); setModuliTracker(moduli);
     }
     setLoadingAll(false);
   }, [team.name]);
@@ -4213,17 +4221,67 @@ Gli obiettivi verranno azzerati.`;
     } catch(e) { alert(e.message); }
     finally { setSavingAll(false); }
   }
-  async function handleToggleC(ob,pg) { setSavingAll(true); try{await upsertProgresso(team.name,ob.id,{completato:!pg?.completato,fallito:false},STAGIONE_CORRENTE);await loadAll();}catch(e){alert(e.message);}finally{setSavingAll(false);} }
-  async function handleToggleF(ob,pg) { setSavingAll(true); try{await upsertProgresso(team.name,ob.id,{fallito:!pg?.fallito,completato:false},STAGIONE_CORRENTE);await loadAll();}catch(e){alert(e.message);}finally{setSavingAll(false);} }
-  async function salvaProgrObj(obId) { await upsertProgresso(team.name,obId,{valore_attuale:parseFloat(editVal)||0},STAGIONE_CORRENTE); setEditId(null); await loadAll(); }
+  async function handleToggleC(ob,pg) {
+    if (!canManageObiettivi) return;
+    const finale = ['ds','dg'].includes(String(ob.tipo || '').toLowerCase());
+    const msg = !pg?.completato
+      ? finale
+        ? `Segnare l'obiettivo come completato?\n\nIl premio sarà incassabile dal 31/05.`
+        : `Segnare l'obiettivo come completato e incassare subito il premio?`
+      : `Rimuovere lo stato completato da questo obiettivo?`;
+    if (!window.confirm(msg)) return;
+    setSavingAll(true);
+    try{await upsertProgresso(team.name,ob.id,{completato:!pg?.completato,fallito:false},STAGIONE_CORRENTE);await loadAll();}catch(e){alert(e.message);}finally{setSavingAll(false);}
+  }
+  async function handleToggleF(ob,pg) {
+    if (!canManageObiettivi) return;
+    const msg = !pg?.fallito
+      ? `Segnare l'obiettivo come fallito?${ob.penalita>0 ? `\n\nVerrà applicato il malus di ${ob.penalita}M se previsto.` : ''}`
+      : `Rimuovere lo stato fallito da questo obiettivo?`;
+    if (!window.confirm(msg)) return;
+    setSavingAll(true);
+    try{await upsertProgresso(team.name,ob.id,{fallito:!pg?.fallito,completato:false},STAGIONE_CORRENTE);await loadAll();}catch(e){alert(e.message);}finally{setSavingAll(false);}
+  }
+  async function handleIncassaObiettivo(ob) {
+    if (!canManageObiettivi) return;
+    setSavingAll(true);
+    try { await incassaObiettivo(team.name, ob.id, STAGIONE_CORRENTE); await loadAll(); }
+    catch(e){ alert(e.message); }
+    finally { setSavingAll(false); }
+  }
+  async function handleIncassaFinali() {
+    if (!canManageObiettivi) return;
+    if (!window.confirm('Incassare tutti gli obiettivi DS/DG completati e non ancora incassati?')) return;
+    setSavingAll(true);
+    try { const r = await incassaObiettiviFinali(team.name, STAGIONE_CORRENTE); alert(`Incassati ${r.totale || 0}M`); await loadAll(); }
+    catch(e){ alert(e.message); }
+    finally { setSavingAll(false); }
+  }
+  async function salvaProgrObj(obId) { if (!canManageObiettivi) return; await upsertProgresso(team.name,obId,{valore_attuale:parseFloat(editVal)||0},STAGIONE_CORRENTE); setEditId(null); await loadAll(); }
+  async function salvaModuloTracker() {
+    if (!canManageObiettivi) return;
+    if (!giornataModulo || !moduloScelto) return;
+    setSavingAll(true);
+    try { await upsertModuloTracker(team.name, giornataModulo, moduloScelto, STAGIONE_CORRENTE); setModuloScelto(''); await loadAll(); }
+    catch(e){ alert(e.message); }
+    finally { setSavingAll(false); }
+  }
+  async function rimuoviModuloTracker(giornata) {
+    if (!canManageObiettivi) return;
+    setSavingAll(true);
+    try { await deleteModuloTracker(team.name, giornata, STAGIONE_CORRENTE); await loadAll(); }
+    catch(e){ alert(e.message); }
+    finally { setSavingAll(false); }
+  }
 
   const tipoInfo = {
-    allenatore:{label:"🎯 Obiettivi Allenatore",color:"#6366f1",guadagno:3,desc:"3M a completamento"},
+    allenatore:{label:"🎯 Obiettivi Allenatore",color:"#6366f1",guadagno:2,desc:"2M + 1M SC a completamento"},
     ds:{label:"🏃 Direttore Sportivo",color:"#10b981",guadagno:5,desc:"5M · −2M se fallito"},
     dg:{label:"💼 Direttore Generale",color:"#f59e0b",guadagno:5,desc:"5M al 31/05 · −2M se fallito"},
   };
   const guadTot = obiettivi.reduce((s,o)=>s+(o.guadagno||0),0);
-  const guadReal = obiettivi.reduce((s,o)=>{const p=progresso.find(pr=>pr.obiettivo_id===o.id);return s+(p?.completato?(o.guadagno||0):p?.fallito?-(o.penalita||0):0);},0);
+  const guadReal = obiettivi.reduce((s,o)=>{const p=progresso.find(pr=>pr.obiettivo_id===o.id);return s+(p?.incassato?(o.guadagno||0):p?.malus_applicato?-(o.penalita||0):0);},0);
+  const moduliStats = conteggioModuliAllenatore(moduliTracker, allenatore);
 
   // ── INVESTIMENTI ─────────────────────────────────────────────────────────────
   const [investimenti, setInvestimenti] = useState([]);
@@ -4232,6 +4290,7 @@ Gli obiettivi verranno azzerati.`;
   const [editGuad, setEditGuad] = useState(null);
   const [catFilter, setCatFilter] = useState("tutti");
   const [showCatalogo, setShowCatalogo] = useState(false);
+  const canManageInv = isAdmin || mySquadra === team.name;
 
   const loadInv = useCallback(async () => {
     const inv = await cachedFetch('investimenti_' + team.name, () => getInvestimenti(team.name), 600000);
@@ -4256,6 +4315,19 @@ Gli obiettivi verranno azzerati.`;
     setSavingInv(true);
     try{await registraGuadagnoInvestimento(invId,importo,team.name);setEditGuad(null);await loadInv();}
     catch(e){alert(e.message);}finally{setSavingInv(false);}
+  }
+
+  async function handleTrackerInv(inv) {
+    const testo = window.prompt(`Aggiorna tracker per ${inv.nome}:
+
+Inserisci evento, conteggio o nota utile al controllo manuale:`);
+    if (testo === null) return;
+    const nota = testo.trim();
+    if (!nota) return;
+    setSavingInv(true);
+    try { await aggiornaTrackerInvestimento(inv.id, { nota, squadra: team.name, autore: mySquadra || 'admin' }); cacheInvalidate('investimenti_'+team.name); await loadInv(); }
+    catch(e){ alert(e.message); }
+    finally { setSavingInv(false); }
   }
 
   async function handleEliminaInv(inv) {
@@ -4289,6 +4361,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
   }
 
   const totInv = investimenti.reduce((s,i)=>s+Number(i.costo),0);
+  const totInvInv = investimenti.filter(i=>i.categoria==='invernale').reduce((s,i)=>s+Number(i.costo),0);
   const totGuad = investimenti.reduce((s,i)=>s+Number(i.valore_accumulato||0),0);
   const invAttivi = investimenti.filter(i=>i.attivo);
   const nomiAttivi = new Set(invAttivi.map(i=>i.nome));
@@ -4372,6 +4445,48 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
               </div>
             )}
             </div>
+
+            <div style={{ background:"#ffffff06",border:"1.5px solid #ffffff12",borderRadius:12,padding:14,marginBottom:8 }}>
+              <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:10 }}>
+                <div>
+                  <div style={{ fontSize:10,fontWeight:700,color:"#a855f7",letterSpacing:"0.08em" }}>📋 TRACKER MODULI ALLENATORE</div>
+                  <div style={{ fontSize:10,color:moduliStats.ok?"#10b981":"#888",marginTop:2 }}>
+                    Moduli validi schierati: <b>{moduliStats.validi}</b>/27 · {allenatore.modulo1} / {allenatore.modulo2}
+                  </div>
+                </div>
+                <Badge color={moduliStats.ok?"#10b981":"#f59e0b"}>{moduliStats.ok?"Vincolo raggiunto":"Da completare"}</Badge>
+              </div>
+              {canManageObiettivi && (
+                <div style={{ display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginBottom:10 }}>
+                  <input type="number" min="1" max="38" value={giornataModulo} onChange={e=>setGiornataModulo(e.target.value)}
+                    style={{ width:70,padding:"6px 8px",borderRadius:8,border:"1px solid #ffffff18",background:"#0d0f14",color:"#f0f0f0",fontSize:12 }} />
+                  <select value={moduloScelto} onChange={e=>setModuloScelto(e.target.value)}
+                    style={{ flex:1,minWidth:150,padding:"6px 8px",borderRadius:8,border:"1px solid #ffffff18",background:"#0d0f14",color:"#f0f0f0",fontSize:12 }}>
+                    <option value="">Modulo giornata...</option>
+                    {[allenatore.modulo1, allenatore.modulo2, "3-5-2", "3-4-3", "3-4-1-2", "3-4-2-1", "3-5-1-1", "4-3-3", "4-3-1-2", "4-4-2", "4-4-1-1", "4-2-3-1", "4-1-4-1"].filter((v,i,a)=>v&&a.indexOf(v)===i).map(m=><option key={m} value={m}>{m}</option>)}
+                  </select>
+                  <button onClick={salvaModuloTracker} disabled={savingAll||!moduloScelto}
+                    style={{ padding:"6px 10px",borderRadius:8,border:"none",background:"#a855f722",color:"#c084fc",fontSize:11,fontWeight:800,cursor:"pointer" }}>Salva modulo</button>
+                </div>
+              )}
+              {moduliTracker.length===0 ? <div style={{ fontSize:11,color:"#555" }}>Nessun modulo registrato.</div> : (
+                <div style={{ display:"flex",gap:5,flexWrap:"wrap" }}>
+                  {moduliTracker.map(r=>{
+                    const valido = r.modulo===allenatore.modulo1 || r.modulo===allenatore.modulo2;
+                    return <span key={r.giornata} style={{ fontSize:10,padding:"4px 7px",borderRadius:7,border:`1px solid ${valido?"#10b98135":"#ffffff15"}`,background:valido?"#10b98112":"#ffffff08",color:valido?"#10b981":"#888" }}>
+                      G{r.giornata}: {r.modulo}{canManageObiettivi&&<button onClick={()=>rimuoviModuloTracker(r.giornata)} style={{ marginLeft:5,border:"none",background:"transparent",color:"#666",cursor:"pointer",padding:0 }}>×</button>}
+                    </span>;
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display:"flex",justifyContent:"flex-end",marginBottom:8 }}>
+              {canManageObiettivi && <button onClick={handleIncassaFinali} disabled={savingAll}
+                style={{ padding:"7px 10px",borderRadius:8,border:"1px solid #f59e0b35",background:"#f59e0b12",color:"#f59e0b",fontSize:11,fontWeight:800,cursor:"pointer" }}>
+                💰 Incassa DS/DG disponibili
+              </button>}
+            </div>
             {["allenatore","ds","dg"].map(tipo=>{
               const items=obiettivi.filter(o=>o.tipo===tipo), info=tipoInfo[tipo];
               return (
@@ -4403,12 +4518,16 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                               {ob.soglia>0&&!comp&&<div style={{ flex:1,minWidth:60 }}><StatBar value={pg?.valore_attuale||0} max={ob.soglia} color={info.color} height={4}/></div>}
                               <Badge color={info.color}>+{ob.guadagno}M</Badge>
                               {ob.penalita>0&&<Badge color="#ef4444">−{ob.penalita}M</Badge>}
+                              {pg?.incassato&&<Badge color="#10b981">Incassato</Badge>}
+                              {pg?.malus_applicato&&<Badge color="#ef4444">Malus applicato</Badge>}
+                              {comp&&!pg?.incassato&&['ds','dg'].includes(String(ob.tipo||'').toLowerCase())&&<Badge color="#f59e0b">Incasso 31/05</Badge>}
                             </div>
                           </div>
-                          {isAdmin&&(
-                            <div style={{ display:"flex",gap:4,flexShrink:0 }}>
-                              <button onClick={()=>handleToggleC(ob,pg)} disabled={savingAll} style={{ padding:"4px 8px",borderRadius:6,border:"none",background:comp?"#10b98130":"#10b98115",color:"#10b981",fontSize:10,cursor:"pointer" }}>✓</button>
-                              {ob.penalita>0&&<button onClick={()=>handleToggleF(ob,pg)} disabled={savingAll} style={{ padding:"4px 8px",borderRadius:6,border:"none",background:fall?"#ef444430":"#ef444415",color:"#ef4444",fontSize:10,cursor:"pointer" }}>✕</button>}
+                          {canManageObiettivi&&(
+                            <div style={{ display:"flex",gap:4,flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end" }}>
+                              <button title="Completa / annulla" onClick={()=>handleToggleC(ob,pg)} disabled={savingAll} style={{ padding:"4px 8px",borderRadius:6,border:"none",background:comp?"#10b98130":"#10b98115",color:"#10b981",fontSize:10,cursor:"pointer" }}>✓</button>
+                              {ob.penalita>0&&<button title="Fallito / annulla" onClick={()=>handleToggleF(ob,pg)} disabled={savingAll} style={{ padding:"4px 8px",borderRadius:6,border:"none",background:fall?"#ef444430":"#ef444415",color:"#ef4444",fontSize:10,cursor:"pointer" }}>✕</button>}
+                              {comp&&!pg?.incassato&&<button title="Incassa" onClick={()=>handleIncassaObiettivo(ob)} disabled={savingAll} style={{ padding:"4px 8px",borderRadius:6,border:"none",background:"#f59e0b18",color:"#f59e0b",fontSize:10,cursor:"pointer" }}>💰</button>}
                             </div>
                           )}
                         </div>
@@ -4503,7 +4622,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
       <div>
         <div style={{ fontSize:11,fontWeight:700,color:"#f59e0b",letterSpacing:"0.1em",marginBottom:12 }}>💼 INVESTIMENTI</div>
         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12 }}>
-          {[{label:"USATO",value:`${totInv.toFixed(1)}M`,sub:"/ 30M",color:totInv>30?"#ef4444":"#f59e0b"},{label:"LIBERO",value:`${(30-totInv).toFixed(1)}M`,sub:"",color:(30-totInv)<5?"#ef4444":"#10b981"},{label:"GUADAGNI",value:`+${totGuad.toFixed(1)}M`,sub:"",color:"#10b981"}].map(s=>(
+          {[{label:"USATO",value:`${totInv.toFixed(1)}M`,sub:"/ 30M",color:totInv>30?"#ef4444":"#f59e0b"},{label:"INVERNALE",value:`${totInvInv.toFixed(1)}M`,sub:"/ 10M",color:totInvInv>10?"#ef4444":"#06b6d4"},{label:"GUADAGNI",value:`+${totGuad.toFixed(1)}M`,sub:"",color:"#10b981"}].map(s=>(
             <div key={s.label} style={{ background:"#ffffff08",borderRadius:10,padding:"10px 12px",textAlign:"center" }}>
               <div style={{ fontSize:8,color:"#555",letterSpacing:"0.06em",marginBottom:3 }}>{s.label}</div>
               <div style={{ fontSize:16,fontWeight:900,color:s.color,fontFamily:"'Bebas Neue',sans-serif" }}>{s.value}</div>
@@ -4521,9 +4640,15 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                   <div style={{ fontSize:12,fontWeight:700,color:"#e0e0e0" }}>{inv.nome}</div>
                   <div style={{ fontSize:9,color:"#555" }}><span style={{ color:ccol[inv.categoria]||"#888" }}>{inv.categoria}</span> · {inv.data_acquisto}</div>
                   {inv.note&&<div style={{ fontSize:10,color:"#818cf8",marginTop:2 }}>📝 {inv.note}</div>}
+                  {Array.isArray(inv.dati?.tracker)&&inv.dati.tracker.length>0&&(
+                    <div style={{ marginTop:4,display:"flex",flexDirection:"column",gap:2 }}>
+                      {inv.dati.tracker.slice(-3).map((t,idx)=><div key={idx} style={{ fontSize:9,color:"#9ca3af" }}>📌 {t.nota}</div>)}
+                    </div>
+                  )}
                 </div>
                 <Badge color="#ef4444">−{inv.costo}M</Badge>
                 {inv.valore_accumulato>0&&<Badge color="#10b981">+{Number(inv.valore_accumulato).toFixed(1)}M</Badge>}
+                {canManageInv&&<button onClick={()=>handleTrackerInv(inv)} disabled={savingInv} style={{ padding:"3px 8px",borderRadius:5,border:"1px solid #ffffff15",background:"#ffffff08",color:"#aaa",fontSize:10,cursor:"pointer" }}>Tracker</button>}
                 {isAdmin&&(editGuad?.id===inv.id?(
                   <div style={{ display:"flex",gap:4 }}>
                     <input style={{ padding:"3px 6px",borderRadius:5,border:"1px solid #ffffff18",background:"#0d0f14",color:"#f0f0f0",fontSize:11,width:56 }} type="number" step="0.1" value={editGuad.val} onChange={e=>setEditGuad(g=>({...g,val:e.target.value}))}/>
@@ -4540,7 +4665,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
             ))}
           </div>
         )}
-        {isAdmin&&(
+        {canManageInv&&(
           <div style={{ marginTop:12 }}>
             <button onClick={()=>setShowCatalogo(v=>!v)} style={{ padding:"7px 16px",borderRadius:8,border:"none",background:showCatalogo?"#ffffff12":"linear-gradient(135deg,#6366f1,#a855f7)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",marginBottom:showCatalogo?10:0 }}>
               {showCatalogo?"✕ Chiudi catalogo":"+ Acquista investimento"}
@@ -4840,7 +4965,8 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
   // Salary cap: stipendi rosa + 5M staff allenatore (se carta scelta)
   const salaryCapRosa = rosaPlayers.reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
   const salaryCapUsato = parseFloat((salaryCapRosa + scAllenatore).toFixed(2));
-  const salaryCapSforato = salaryCapUsato > 75;
+  const salaryCapLimite = 75 + Number(team.scBonusObiettivi || 0);
+  const salaryCapSforato = salaryCapUsato > salaryCapLimite;
   const oggi = new Date().toISOString().slice(0, 10);
   const mese = new Date().getMonth();
   const scEsenteGiuLug = mese === 5 || mese === 6;
@@ -4991,8 +5117,8 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 20 }}>
         {[
           { label: "Bilancio",  value: `${team.bilancio.toFixed(1)}M`,            color: team.bilancio < 10 ? "#f97316" : "#f0f0f0" },
-          { label: "SC Usato",  value: `${salaryCapUsato.toFixed(1)}M / 75M`,     color: salaryCapSforato ? "#ef4444" : "#10b981" },
-          { label: "SC Libero", value: `+${(75 - salaryCapUsato).toFixed(1)}M`,   color: salaryCapSforato ? "#ef4444" : "#10b981" },
+          { label: "SC Usato",  value: `${salaryCapUsato.toFixed(1)}M / ${salaryCapLimite.toFixed(1)}M`,     color: salaryCapSforato ? "#ef4444" : "#10b981" },
+          { label: "SC Libero", value: `${(salaryCapLimite - salaryCapUsato) >= 0 ? "+" : ""}${(salaryCapLimite - salaryCapUsato).toFixed(1)}M`,   color: salaryCapSforato ? "#ef4444" : "#10b981" },
         ].map(s => (
           <div key={s.label} style={{ background: "#ffffff08", borderRadius: 12, padding: "10px 12px", textAlign: "center" }}>
             <div style={{ fontSize: 9, color: "#777", letterSpacing: "0.06em", marginBottom: 4 }}>{s.label.toUpperCase()}</div>
@@ -5029,6 +5155,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
                 salaryCapUsato={salaryCapUsato}
                 salaryCapRosa={salaryCapRosa}
                 scAllenatore={scAllenatore}
+                salaryCapLimite={salaryCapLimite}
                 salaryCapSforato={salaryCapSforato}
                 scEsenteGiuLug={scEsenteGiuLug}
                 giorniSCNeg={giorniSCNeg}
@@ -5044,7 +5171,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
             )}
 
             {tab === "altro" && (
-              <AltroTab team={team} isAdmin={isAdmin} />
+              <AltroTab team={team} isAdmin={isAdmin} mySquadra={mySquadra} />
             )}
 
             {tab === "movimenti" && (
@@ -8773,6 +8900,13 @@ function AdminControlRoomPage({ teams }) {
   const [utentiLoading, setUtentiLoading] = useState(false);
   const [utentiEdit, setUtentiEdit] = useState(null); // { id, nome, bio, avatar_url, ruolo }
   const [utentiSaving, setUtentiSaving] = useState(false);
+  const [quoteAdmin, setQuoteAdmin] = useState(null);
+  const [investimentiAdmin, setInvestimentiAdmin] = useState(null);
+  const [obiettiviAdmin, setObiettiviAdmin] = useState(null);
+  const [vivaioAdmin, setVivaioAdmin] = useState(null);
+  const [prestitiAdmin, setPrestitiAdmin] = useState(null);
+  const [auditAdmin, setAuditAdmin] = useState(null);
+  const [adminTabBusy, setAdminTabBusy] = useState(null);
 
   async function load() {
     setLoading(true);
@@ -8814,7 +8948,8 @@ function AdminControlRoomPage({ teams }) {
   }
 
   async function loadClassifica() {
-    const { data } = await supabase.from('classifica').select('squadra, punti, gf, gs').eq('stagione', STAGIONE_CR).order('punti', { ascending: false });
+    const { data, error } = await supabase.from('classifica').select('squadra, pt, pt_totali, gf, gs').eq('stagione', STAGIONE_CR).order('pt', { ascending: false });
+    if (error) { alert(`Errore classifica: ${error.message}`); return; }
     setClassifica(data || []);
   }
 
@@ -8826,6 +8961,69 @@ function AdminControlRoomPage({ teams }) {
       setUtenti(data || []);
     } catch(e) { alert(`Errore caricamento utenti: ${e.message}`); }
     finally { setUtentiLoading(false); }
+  }
+
+
+  async function loadQuoteAdmin() {
+    setAdminTabBusy('quote_load');
+    try {
+      const { data, error } = await supabase.from('squadre').select('*').order('name');
+      if (error) throw error;
+      setQuoteAdmin(data || []);
+    } catch(e) { alert(`Errore quote: ${e.message}`); }
+    finally { setAdminTabBusy(null); }
+  }
+
+  async function loadInvestimentiAdmin() {
+    setAdminTabBusy('investimenti_load');
+    try {
+      const { data, error } = await supabase.from('investimenti').select('*').order('squadra').order('data_acquisto', { ascending: false });
+      if (error) throw error;
+      setInvestimentiAdmin(data || []);
+    } catch(e) { alert(`Errore investimenti: ${e.message}`); }
+    finally { setAdminTabBusy(null); }
+  }
+
+  async function loadObiettiviAdmin() {
+    setAdminTabBusy('obiettivi_load');
+    try {
+      const [allenatoriRes, progressiRes, moduliRes] = await Promise.all([
+        supabase.from('allenatori_carte').select('*').order('squadra', { ascending: true }),
+        supabase.from('progresso_obiettivi').select('*, obiettivi_carte(*)').eq('stagione', STAGIONE_CR),
+        supabase.from('moduli_allenatore_tracker').select('*').eq('stagione', STAGIONE_CR).order('squadra').order('giornata'),
+      ]);
+      if (allenatoriRes.error) throw allenatoriRes.error;
+      if (progressiRes.error) throw progressiRes.error;
+      setObiettiviAdmin({ allenatori: allenatoriRes.data || [], progressi: progressiRes.data || [], moduli: moduliRes.data || [] });
+    } catch(e) { alert(`Errore obiettivi: ${e.message}`); }
+    finally { setAdminTabBusy(null); }
+  }
+
+  async function loadVivaioAdmin() {
+    setAdminTabBusy('vivaio_load');
+    try {
+      const { data, error } = await supabase.from('rosa').select('*').eq('in_vivaio', true).order('squadra').order('nome');
+      if (error) throw error;
+      setVivaioAdmin(data || []);
+    } catch(e) { alert(`Errore vivaio: ${e.message}`); }
+    finally { setAdminTabBusy(null); }
+  }
+
+  async function loadPrestitiAdmin() {
+    setAdminTabBusy('prestiti_load');
+    try {
+      const { data, error } = await supabase.from('rosa').select('*').or('in_prestito.eq.true,rescissione_prestito_attiva.eq.true').order('squadra').order('nome');
+      if (error) throw error;
+      setPrestitiAdmin(data || []);
+    } catch(e) { alert(`Errore prestiti: ${e.message}`); }
+    finally { setAdminTabBusy(null); }
+  }
+
+  async function loadAuditAdmin() {
+    setAdminTabBusy('audit_load');
+    try { setAuditAdmin(await getAuditLog({ limit: 150 })); }
+    catch(e) { alert(`Errore audit: ${e.message}`); }
+    finally { setAdminTabBusy(null); }
   }
 
   async function salvaUtente(u) {
@@ -8911,6 +9109,11 @@ function AdminControlRoomPage({ teams }) {
 
   const tabs = [
     { key: 'panoramica',   icon: '📊', label: 'Panoramica' },
+    { key: 'quote',        icon: '💶', label: 'Quote' },
+    { key: 'investimenti_admin', icon: '📈', label: 'Investimenti' },
+    { key: 'obiettivi_admin', icon: '🎯', label: 'Obiettivi' },
+    { key: 'vivaio_admin', icon: '🌱', label: 'Vivaio' },
+    { key: 'prestiti_admin', icon: '🔁', label: 'Prestiti' },
     { key: 'mercato',      icon: '🏪', label: 'Mercato' },
     { key: 'aste',         icon: '🔔', label: 'Aste' },
     { key: 'stadio',       icon: '🏟', label: 'Stadio' },
@@ -8926,6 +9129,7 @@ function AdminControlRoomPage({ teams }) {
     { key: 'differiti',    icon: '⏳', label: 'Differiti' },
     { key: 'stagione',     icon: '⚙️', label: 'Stagione' },
     { key: 'telegram',     icon: '✈️', label: 'Telegram' },
+    { key: 'audit',        icon: '🧾', label: 'Audit' },
     { key: 'utenti',       icon: '👥', label: 'Utenti' },
   ];
 
@@ -9059,7 +9263,7 @@ function AdminControlRoomPage({ teams }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>🏟 ENTRATE STADIO MENSILI</div>
-                  <div style={{ fontSize: 11, color: '#555', marginTop: 4 }}>Base: 4M · Con Ristrutturazione Stadio: 5.5M · Pagamento il 1° di ogni mese</div>
+                  <div style={{ fontSize: 11, color: '#555', marginTop: 4 }}>Base: 4M · Bonus attivo da investimento stadio acquistato in stagioni precedenti: 5.5M · Pagamento il 1° di ogni mese</div>
                 </div>
                 <button
                   onClick={() => runBulk(applicaEntrateStadioTutte, 'Entrate stadio a tutti')}
@@ -9087,7 +9291,7 @@ function AdminControlRoomPage({ teams }) {
                       </div>
                       {/* Toggle upgrade */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 10, color: '#555' }}>Ristrutturazione Stadio</span>
+                        <span style={{ fontSize: 10, color: '#555' }}>Bonus stadio attivo ora</span>
                         <button
                           onClick={() => toggleStadio(sq.name)}
                           disabled={isBusyThis || isBusy}
@@ -9298,6 +9502,136 @@ function AdminControlRoomPage({ teams }) {
               </div>
             </div>
           )}
+
+          {/* ── QUOTE ── */}
+          {tab === 'quote' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>💶 QUOTE / EXTRA / ISCRIZIONE — STAGIONE {STAGIONE_CR}</div>
+              <div style={{ background: '#10b98108', border: '1px solid #10b98120', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#aaa', lineHeight: 1.6 }}>
+                Dashboard centrale per quota reale, extra budget biennale e iscrizione campionato. Le azioni massive restano idempotenti.
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button onClick={loadQuoteAdmin} style={{ padding: '7px 16px', borderRadius: 9, border: '1px solid #6366f130', background: '#6366f110', color: '#818cf8', fontSize: 12, fontWeight: 700 }}>📋 Carica quote</button>
+                <button onClick={() => runBulk(() => applicaIscrizioneATutti({ force: true, stagione: STAGIONE_CR }), 'Iscrizione campionato a tutti')} disabled={isBusy} style={{ padding: '7px 16px', borderRadius: 9, border: '1px solid #ef444430', background: '#ef444410', color: '#f87171', fontSize: 12, fontWeight: 700 }}>🏁 Applica iscrizione 30M</button>
+                <button onClick={() => runBulk(async () => { const r = await applicaQuoteAutomatiche({ data: new Date() }); return [...(r.iscrizioni||[]), ...(r.sync||[])]; }, 'Sincronizza quote automatiche')} disabled={isBusy} style={{ padding: '7px 16px', borderRadius: 9, border: '1px solid #10b98130', background: '#10b98110', color: '#10b981', fontSize: 12, fontWeight: 700 }}>🔄 Sync quote</button>
+              </div>
+              {quoteAdmin && (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', minWidth: 880, borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead><tr>{['Squadra','Quota €','Pagata il','Tesoriere','Extra stagione','€ biennio','Mln extra','Iscrizione'].map(h => <th key={h} style={{ textAlign:'left', padding:'8px', color:'#666', borderBottom:'1px solid #ffffff12' }}>{h}</th>)}</tr></thead>
+                    <tbody>{quoteAdmin.map(sq => (
+                      <tr key={sq.name} style={{ borderBottom:'1px solid #ffffff08' }}>
+                        <td style={{ padding:'8px', fontWeight:800, color:'#f0f0f0' }}>{sq.name}</td>
+                        <td style={{ padding:'8px', color: sq.quota_pagata ? '#10b981' : '#ef4444', fontWeight:700 }}>{sq.quota_pagata ? '✓' : '✗'} {sq.quota_importo_euro || 30}€</td>
+                        <td style={{ padding:'8px', color:'#aaa' }}>{sq.quota_pagata_il || '—'}</td>
+                        <td style={{ padding:'8px', color:'#aaa' }}>{sq.quota_tesoriere || '—'}</td>
+                        <td style={{ padding:'8px', color:'#aaa' }}>{Number(sq.euro_investiti || 0).toFixed(1)}€</td>
+                        <td style={{ padding:'8px', color:Number(sq.euro_biennio||0) > 10 ? '#ef4444' : '#aaa' }}>{Number(sq.euro_biennio || 0).toFixed(1)} / 10€</td>
+                        <td style={{ padding:'8px', color:'#10b981' }}>+{Number(sq.mln_extra || 0).toFixed(1)}M</td>
+                        <td style={{ padding:'8px', color: sq.iscrizione_pagata ? '#10b981' : '#f59e0b', fontWeight:700 }}>{sq.iscrizione_pagata ? `✓ ${sq.iscrizione_stagione_pagata || ''}` : 'Da applicare'}</td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── INVESTIMENTI ADMIN ── */}
+          {tab === 'investimenti_admin' && (
+            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em' }}>📈 INVESTIMENTI — CONTROLLO ADMIN</div>
+              <button onClick={loadInvestimentiAdmin} style={{ alignSelf:'flex-start', padding:'7px 16px', borderRadius:9, border:'1px solid #6366f130', background:'#6366f110', color:'#818cf8', fontSize:12, fontWeight:700 }}>📋 Carica investimenti</button>
+              {investimentiAdmin && (() => {
+                const byTeam = {};
+                for (const inv of investimentiAdmin) {
+                  byTeam[inv.squadra] ||= [];
+                  byTeam[inv.squadra].push(inv);
+                }
+                return <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:10 }}>
+                  {Object.entries(byTeam).sort().map(([squadra, rows]) => {
+                    const stag = rows.filter(r => r.stagione === STAGIONE_CR);
+                    const tot = stag.reduce((a,r)=>a+Number(r.costo||0),0);
+                    const inv = stag.filter(r => r.categoria === 'invernale').reduce((a,r)=>a+Number(r.costo||0),0);
+                    const effetti = rows.filter(r => ['SuperClub','Settore Giovanile Avanzato','Deroga U-21','Clausola Segreta','Ristrutturazione Stadio','DS Masterclass'].includes(r.nome));
+                    return <div key={squadra} style={{ background:'#ffffff06', border:'1px solid #ffffff12', borderRadius:12, padding:'12px 14px' }}>
+                      <div style={{ fontSize:13, fontWeight:900, color:'#f0f0f0' }}>{squadra}</div>
+                      <div style={{ fontSize:11, color: tot>30?'#ef4444':'#888', marginTop:4 }}>Stagione: {tot.toFixed(1)}M / 30M · Invernali: {inv.toFixed(1)}M / 10M</div>
+                      <div style={{ marginTop:8, display:'flex', flexDirection:'column', gap:5 }}>
+                        {rows.slice(0,8).map(r => <div key={r.id} style={{ fontSize:11, color:'#aaa', borderTop:'1px solid #ffffff08', paddingTop:5 }}>
+                          <b style={{ color:r.attivo === false ? '#666' : '#c7d2fe' }}>{r.nome}</b> · {r.costo}M · {r.stagione} {r.attivo === false ? '· inattivo' : ''}
+                          {Array.isArray(r.dati?.tracker) && r.dati.tracker.length > 0 && <span style={{ color:'#10b981' }}> · tracker {r.dati.tracker.length}</span>}
+                        </div>)}
+                        {effetti.length > 0 && <div style={{ fontSize:10, color:'#f59e0b', marginTop:4 }}>Effetti regolamentari: {effetti.map(e=>e.nome).join(' · ')}</div>}
+                      </div>
+                    </div>;
+                  })}
+                </div>;
+              })()}
+            </div>
+          )}
+
+          {/* ── OBIETTIVI ADMIN ── */}
+          {tab === 'obiettivi_admin' && (
+            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em' }}>🎯 OBIETTIVI — CONTROLLO COMPLETAMENTO / INCASSI / MODULI</div>
+              <button onClick={loadObiettiviAdmin} style={{ alignSelf:'flex-start', padding:'7px 16px', borderRadius:9, border:'1px solid #6366f130', background:'#6366f110', color:'#818cf8', fontSize:12, fontWeight:700 }}>📋 Carica obiettivi</button>
+              {obiettiviAdmin && <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))', gap:10 }}>
+                {(teams||[]).map(t => {
+                  const card = obiettiviAdmin.allenatori.find(a => a.squadra === t.name);
+                  const progressi = obiettiviAdmin.progressi.filter(p => p.squadra === t.name);
+                  const moduli = obiettiviAdmin.moduli.filter(m => m.squadra === t.name);
+                  const conteggio = conteggioModuliAllenatore(moduli, card);
+                  const completati = progressi.filter(p=>p.completato).length;
+                  const incassati = progressi.filter(p=>p.incassato).length;
+                  const finaliDaIncassare = progressi.filter(p => p.completato && !p.incassato && ['ds','dg'].includes(String(p.obiettivi_carte?.tipo||'').toLowerCase())).length;
+                  return <div key={t.name} style={{ background:'#ffffff06', border:'1px solid #ffffff12', borderRadius:12, padding:'12px 14px' }}>
+                    <div style={{ fontSize:13, fontWeight:900, color:'#f0f0f0' }}>{t.name}</div>
+                    <div style={{ fontSize:11, color:'#aaa', marginTop:4 }}>Carta: <b style={{ color:'#c7d2fe' }}>{card?.nome || '—'}</b></div>
+                    <div style={{ fontSize:11, color: conteggio.ok ? '#10b981' : '#f59e0b', marginTop:4 }}>Moduli validi: {conteggio.validi}/{conteggio.richiesti} · tot. tracciati {conteggio.totale}</div>
+                    <div style={{ fontSize:11, color:'#888', marginTop:4 }}>Obiettivi completati {completati} · incassati {incassati} · DS/DG da incassare {finaliDaIncassare}</div>
+                    {finaliDaIncassare > 0 && <button onClick={async()=>{ try { await incassaObiettiviFinali(t.name, STAGIONE_CR); await loadObiettiviAdmin(); } catch(e){ alert(e.message); } }} style={{ marginTop:8, padding:'5px 10px', borderRadius:7, border:'1px solid #10b98140', background:'#10b98112', color:'#10b981', fontSize:11, fontWeight:700 }}>💰 Incassa finali</button>}
+                  </div>;
+                })}
+              </div>}
+            </div>
+          )}
+
+          {/* ── VIVAIO ADMIN ── */}
+          {tab === 'vivaio_admin' && (
+            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em' }}>🌱 VIVAIO — SCADENZE E DECISIONI</div>
+              <button onClick={loadVivaioAdmin} style={{ alignSelf:'flex-start', padding:'7px 16px', borderRadius:9, border:'1px solid #6366f130', background:'#6366f110', color:'#818cf8', fontSize:12, fontWeight:700 }}>📋 Carica vivaio</button>
+              {vivaioAdmin && <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                {vivaioAdmin.length === 0 ? <div style={{ color:'#666', fontSize:12 }}>Nessun giocatore in vivaio.</div> : vivaioAdmin.map(p => {
+                  const aumento = Number(p.quot||0) - Number(p.quot_iniziale_vivaio ?? p.quot ?? 0);
+                  const alertV = p.vivaio_decisione_richiesta || Number(p.vivaio_presenze || p.presenze_voto || 0) >= 2 || aumento >= 2;
+                  return <div key={p.id} style={{ background: alertV ? '#f59e0b10' : '#ffffff06', border:`1px solid ${alertV ? '#f59e0b35' : '#ffffff12'}`, borderRadius:10, padding:'9px 12px', display:'flex', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
+                    <div><b style={{ color:'#f0f0f0' }}>{p.nome}</b> <span style={{ color:'#666' }}>· {p.squadra}</span><div style={{ fontSize:11, color:'#888' }}>Q {p.quot} · Q iniziale {p.quot_iniziale_vivaio ?? '—'} · presenze {p.vivaio_presenze ?? p.presenze_voto ?? 0}</div></div>
+                    <div style={{ fontSize:11, color: alertV ? '#f59e0b' : '#10b981', fontWeight:700 }}>{p.vivaio_decisione_richiesta ? `Decisione entro ${p.vivaio_decisione_scadenza || '—'}` : 'OK'}</div>
+                  </div>;
+                })}
+              </div>}
+            </div>
+          )}
+
+          {/* ── PRESTITI ADMIN ── */}
+          {tab === 'prestiti_admin' && (
+            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em' }}>🔁 PRESTITI / RIENTRI / RESCISSIONI</div>
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                <button onClick={loadPrestitiAdmin} style={{ padding:'7px 16px', borderRadius:9, border:'1px solid #6366f130', background:'#6366f110', color:'#818cf8', fontSize:12, fontWeight:700 }}>📋 Carica prestiti</button>
+                <button onClick={() => runBulk(async()=>{ const rows = await getPrestitiScaduti(); const out=[]; for (const p of rows||[]) out.push(await eseguiScadenzaPrestito(p)); return out; }, 'Processa prestiti scaduti')} disabled={isBusy} style={{ padding:'7px 16px', borderRadius:9, border:'1px solid #f59e0b30', background:'#f59e0b10', color:'#f59e0b', fontSize:12, fontWeight:700 }}>⏱ Processa scaduti</button>
+              </div>
+              {prestitiAdmin && <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                {prestitiAdmin.length === 0 ? <div style={{ color:'#666', fontSize:12 }}>Nessun prestito attivo.</div> : prestitiAdmin.map(p => <div key={p.id} style={{ background:'#ffffff06', border:'1px solid #ffffff12', borderRadius:10, padding:'9px 12px', display:'flex', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
+                  <div><b style={{ color:'#f0f0f0' }}>{p.nome}</b> <span style={{ color:'#666' }}>· in {p.squadra}</span><div style={{ fontSize:11, color:'#888' }}>{p.tag_rosa || p.prestito_tipo || 'PRESTITO'} · da {p.squadra_origine || p.proprietario || '—'} · scad. {p.scadenza_prestito || '—'}</div></div>
+                  <div style={{ fontSize:11, color:p.rescissione_prestito_attiva ? '#f59e0b' : '#10b981', fontWeight:700 }}>{p.rescissione_prestito_attiva ? `Rientro previsto ${p.rescissione_prestito_scadenza || '—'}` : 'Attivo'}</div>
+                </div>)}
+              </div>}
+            </div>
+          )}
+
           {/* ── MERCATO ── */}
           {tab === 'mercato' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -9386,8 +9720,8 @@ function AdminControlRoomPage({ teams }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>⚖️ FAIR PLAY FINANZIARIO — CONTROLLO SEMESTRALE (art. 7.3)</div>
               <div style={{ background: '#ef444408', border: '1px solid #ef444420', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#aaa', lineHeight: 1.6 }}>
-                Eseguire a <b style={{ color: '#f87171' }}>metà stagione (15/02)</b> e a <b style={{ color: '#f87171' }}>fine stagione (01/06)</b>.<br/>
-                Soglia: <b>50M</b> netto speso per semestre · Multa: <b>20% dell'eccedenza</b> · Oltre 60M: penale punti aggiuntiva.<br/>
+                Periodi regolamentari: <b style={{ color: '#f87171' }}>16/02 → 15/09</b> e <b style={{ color: '#f87171' }}>16/09 → 15/02</b>.<br/>
+                Soglia: <b>50M</b> netto speso · Fasce: 50–55 = 10M, 55–60 = 15M + 2pt, &gt;60 = 20M + 4pt + 5€.<br/>
                 <b style={{ color: '#f87171' }}>Operazione irreversibile</b> — verifica i dati prima di applicare.
               </div>
               <button onClick={loadFpf} style={{ alignSelf: 'flex-start', padding: '7px 16px', borderRadius: 9, border: '1px solid #6366f130', background: '#6366f110', color: '#818cf8', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>📊 Calcola situazione FPF</button>
@@ -9482,7 +9816,8 @@ function AdminControlRoomPage({ teams }) {
                                       data_multa: new Date().toISOString().slice(0, 10),
                                       applicata: true,
                                     });
-                                    await updateClassificaSquadra(t.name, { punti: Math.max(0, ((teams.find(x=>x.name===t.name)?.penalita)||0) - penPunti) });
+                                    const { data: clsRow } = await supabase.from('classifica').select('pt').eq('squadra', t.name).eq('stagione', STAGIONE_CR).single();
+                                    await updateClassificaSquadra(t.name, { pt: Math.max(0, Number(clsRow?.pt || 0) - penPunti) });
                                     alert(`✓ Penale −${penPunti} pt applicata a ${t.name}`);
                                     await load();
                                   } catch(e) { alert(e.message); }
@@ -9895,7 +10230,7 @@ function AdminControlRoomPage({ teams }) {
                         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                           <span style={{ fontSize: 16, fontWeight: 900, color: pos <= 3 ? '#f59e0b' : '#555', fontFamily: "'Bebas Neue',sans-serif", width: 24 }}>{pos}°</span>
                           <span style={{ fontSize: 13, fontWeight: 700, color: '#f0f0f0' }}>{sq.squadra}</span>
-                          <span style={{ fontSize: 11, color: '#666' }}>{sq.punti} pt</span>
+                          <span style={{ fontSize: 11, color: '#666' }}>{sq.pt ?? sq.pt_totali ?? '—'} pt</span>
                         </div>
                         <span style={{ fontSize: 13, fontWeight: 800, color: premio > 0 ? '#10b981' : '#444' }}>
                           {premio > 0 ? `+${premio}M` : '—'}
@@ -9941,6 +10276,25 @@ function AdminControlRoomPage({ teams }) {
                 style={{ alignSelf: 'flex-start', padding: '9px 20px', borderRadius: 10, border: '1.5px solid #6366f150', background: '#6366f115', color: '#818cf8', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
                 📋 Aggiorna contratti annuali
               </button>
+            </div>
+          )}
+
+
+          {/* ── AUDIT LOG ── */}
+          {tab === 'audit' && (
+            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em' }}>🧾 AUDIT LOG — ULTIME AZIONI</div>
+              <button onClick={loadAuditAdmin} style={{ alignSelf:'flex-start', padding:'7px 16px', borderRadius:9, border:'1px solid #6366f130', background:'#6366f110', color:'#818cf8', fontSize:12, fontWeight:700 }}>📋 Carica log</button>
+              {auditAdmin && <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:520, overflowY:'auto' }}>
+                {auditAdmin.length === 0 ? <div style={{ color:'#666', fontSize:12 }}>Nessun log disponibile.</div> : auditAdmin.map(l => <div key={l.id} style={{ background:'#ffffff06', border:'1px solid #ffffff12', borderRadius:10, padding:'9px 12px' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
+                    <b style={{ color:'#f0f0f0', fontSize:12 }}>{l.azione}</b>
+                    <span style={{ color:'#666', fontSize:10 }}>{l.timestamp ? new Date(l.timestamp).toLocaleString('it-IT') : ''}</span>
+                  </div>
+                  <div style={{ fontSize:11, color:'#aaa', marginTop:4 }}>{l.squadra || '—'} · {l.descrizione || ''}</div>
+                  {l.rollback_possibile && !l.rollback_effettuato && <button onClick={async()=>{ if(!window.confirm('Eseguire rollback di questa azione?')) return; try { await effettuaRollback(l.id, 'admin'); await loadAuditAdmin(); } catch(e){ alert(e.message); } }} style={{ marginTop:6, padding:'4px 9px', borderRadius:7, border:'1px solid #ef444440', background:'#ef444410', color:'#ef4444', fontSize:10, fontWeight:700 }}>↩ Rollback</button>}
+                </div>)}
+              </div>}
             </div>
           )}
 
@@ -11817,7 +12171,7 @@ function AppInner() {
     const ci = clubIdentities[t.name] || {};
     const base = { stemma_url: ci.stemma_url||null, maglia_casa_url: ci.maglia_casa_url||null, maglia_trasferta_url: ci.maglia_trasferta_url||null, maglia_terza_url: ci.maglia_terza_url||null };
     if (!db) return { ...t, ...base, fpf: fpfMap[t.name]??null };
-    return { ...t, ...base, bilancio: db.bilancio, salaryUsed: db.salary_used, giocatori: db.giocatori, u21: db.u21, fairPlay1: db.fair_play1, fairPlay2: db.fair_play2, penalita: db.penalita, guadGiornate: db.guad_giornate, guadObiettivi: db.guad_obiettivi, guadInv: db.guad_inv, clausoleIn: db.clausole_in, clausoleOut: db.clausole_out, euroInvestiti: db.euro_investiti||0, mlnExtra: db.mln_extra||0, euroBiennio: db.euro_biennio||0, scNegativoDal: db.sc_negativo_dal||null, mercatoBloccato: db.mercato_bloccato||false, bilancioNegDal: db.bilancio_neg_dal||null, bilancioNegSettimane: db.bilancio_neg_settimane||0, fallimento: db.fallimento||false, fallimentoDal: db.fallimento_dal||null, fpf: fpfMap[t.name]??null, biennio: db.biennio||'2025-27', quotaPagata: db.quota_pagata||false, quotaStagionePagata: db.quota_stagione_pagata||null, quotaPagataIl: db.quota_pagata_il||null, quotaTesoriere: db.quota_tesoriere||null, iscrizionePagata: db.iscrizione_pagata||false, iscrizioneStagionePagata: db.iscrizione_stagione_pagata||null, iscrizionePagataIl: db.iscrizione_pagata_il||null };
+    return { ...t, ...base, bilancio: db.bilancio, salaryUsed: db.salary_used, scBonusObiettivi: db.sc_bonus_obiettivi||0, giocatori: db.giocatori, u21: db.u21, fairPlay1: db.fair_play1, fairPlay2: db.fair_play2, penalita: db.penalita, guadGiornate: db.guad_giornate, guadObiettivi: db.guad_obiettivi, guadInv: db.guad_inv, clausoleIn: db.clausole_in, clausoleOut: db.clausole_out, euroInvestiti: db.euro_investiti||0, mlnExtra: db.mln_extra||0, euroBiennio: db.euro_biennio||0, scNegativoDal: db.sc_negativo_dal||null, mercatoBloccato: db.mercato_bloccato||false, bilancioNegDal: db.bilancio_neg_dal||null, bilancioNegSettimane: db.bilancio_neg_settimane||0, fallimento: db.fallimento||false, fallimentoDal: db.fallimento_dal||null, fpf: fpfMap[t.name]??null, biennio: db.biennio||'2025-27', quotaPagata: db.quota_pagata||false, quotaStagionePagata: db.quota_stagione_pagata||null, quotaPagataIl: db.quota_pagata_il||null, quotaTesoriere: db.quota_tesoriere||null, iscrizionePagata: db.iscrizione_pagata||false, iscrizioneStagionePagata: db.iscrizione_stagione_pagata||null, iscrizionePagataIl: db.iscrizione_pagata_il||null };
   }), [squadreDB, fpfMap, clubIdentities]);
 
   const isAdmin = profile?.ruolo === "admin" || profile?.ruolo === "founder";
