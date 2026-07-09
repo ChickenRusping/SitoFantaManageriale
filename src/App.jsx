@@ -164,7 +164,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, applicaPagamentiAutomatici, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento,
   getBonusTrattativa, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -5778,6 +5778,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const [showForm, setShowForm] = useState(false);
   const [showAstaForm, setShowAstaForm] = useState(false);
   const [now, setNow] = useState(new Date());
+  const [rispostaInCorso, setRispostaInCorso] = useState({});
 
   // ── Picker squadra/giocatore (nuovo form trattativa) ──────────────────────
   const emptyForm = {
@@ -5821,13 +5822,15 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   }, []);
 
   const loadAll = useCallback(async () => {
+    // Mercato: dati troppo sensibili per cache lunga.
+    // Dopo accetta/rifiuta/controfferta la UI deve aggiornarsi subito e non mostrare azioni ripetibili.
     const [t, a, as] = await Promise.all([
-      cachedFetch('trattative', () => getTrattative(), 180000),
-      cachedFetch('aste', () => getAste(), 180000),
-      cachedFetch('aste_svincolati_all', () => getAsteSvincolati(), 180000),
+      getTrattative(),
+      getAste(),
+      getAsteSvincolati(),
     ]);
-    setTrattative(t);
-    setAste(a);
+    setTrattative(t || []);
+    setAste(a || []);
     setAsteSvinc(as || []);
     setLoading(false);
   }, []);
@@ -6062,45 +6065,94 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   }
 
   async function rispondi(t, azione) {
+    if (rispostaInCorso[t.id]) return;
+
     if (azione === 'accettata' || azione === 'completata') {
-      await eseguiAccettazione(t);
+      setRispostaInCorso(prev => ({ ...prev, [t.id]: true }));
+      try { await eseguiAccettazione(t); }
+      finally { setRispostaInCorso(prev => { const n = { ...prev }; delete n[t.id]; return n; }); }
       return;
     }
 
-    // Rifiuta: incrementa n_rifiuti, reset deadline a now+24h
+    // Rifiuta: notifica l'altra squadra coinvolta e rimuove subito la card dalla UI.
+    // Se era una controproposta deve rispondere l'acquirente, quindi il destinatario del rifiuto è il cedente.
+    const destinatarioRifiuto = t.stato === 'controproposta' ? t.a_squadra : t.da_squadra;
     const nuoviRifiuti = (Number(t.n_rifiuti) || 0) + 1;
-    await updateTrattativa(t.id, {
+
+    setRispostaInCorso(prev => ({ ...prev, [t.id]: true }));
+    setTrattative(prev => prev.map(x => x.id === t.id ? {
+      ...x,
       stato: 'rifiutata',
       n_rifiuti: nuoviRifiuti,
       updated_at: new Date().toISOString(),
-      deadline_risposta: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-    });
-    // Notify the offering team that their offer was refused
-    sendTelegramNotification('trattativa_rifiutata', {
-      giocatore: t.giocatore,
-      importo: t.prezzo,
-    }, t.da_squadra);
-    await loadAll();
+    } : x));
+
+    try {
+      await updateTrattativa(t.id, {
+        stato: 'rifiutata',
+        n_rifiuti: nuoviRifiuti,
+        updated_at: new Date().toISOString(),
+        deadline_risposta: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+      });
+      sendTelegramNotification('trattativa_rifiutata', {
+        giocatore: t.giocatore,
+        importo: t.prezzo,
+        da_squadra: t.da_squadra,
+        a_squadra: t.a_squadra,
+      }, destinatarioRifiuto);
+    } catch(e) {
+      alert(`Errore: ${e.message}`);
+    } finally {
+      setRispostaInCorso(prev => { const n = { ...prev }; delete n[t.id]; return n; });
+      await loadAll();
+    }
   }
 
   async function inviaControfferta(t) {
+    if (rispostaInCorso[t.id]) return;
     const nuovoPrezzo = parseFloat(controffertaPrezzo);
     if (!nuovoPrezzo || nuovoPrezzo <= 0) { alert("Inserisci un prezzo valido"); return; }
     const quot = t.quot_giocatore || 0;
     if (nuovoPrezzo < quot / 2) { alert(`Prezzo minimo: ${(quot/2).toFixed(2)}M (½ della quotazione)`); return; }
-    // Mantiene stabili acquirente (da_squadra) e cedente (a_squadra).
-    // Lo stato controproposta indica che ora deve rispondere l'acquirente.
-    await updateTrattativa(t.id, {
+
+    setRispostaInCorso(prev => ({ ...prev, [t.id]: true }));
+    setTrattative(prev => prev.map(x => x.id === t.id ? {
+      ...x,
       stato: 'controproposta',
       prezzo: nuovoPrezzo,
       n_rifiuti: (Number(t.n_rifiuti) || 0) + 1,
       note: `[CONTROFFERTA ${nuovoPrezzo}M] ${t.note || ''}`.trim(),
       updated_at: new Date().toISOString(),
       deadline_risposta: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-    });
-    setControffertaId(null);
-    setControffertaPrezzo("");
-    await loadAll();
+    } : x));
+
+    try {
+      await updateTrattativa(t.id, {
+        stato: 'controproposta',
+        prezzo: nuovoPrezzo,
+        n_rifiuti: (Number(t.n_rifiuti) || 0) + 1,
+        note: `[CONTROFFERTA ${nuovoPrezzo}M] ${t.note || ''}`.trim(),
+        updated_at: new Date().toISOString(),
+        deadline_risposta: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+      });
+      const payload = {
+        giocatore: t.giocatore,
+        importo: nuovoPrezzo,
+        importo_precedente: t.prezzo,
+        da_squadra: t.da_squadra,
+        a_squadra: t.a_squadra,
+      };
+      // Notifica privata a entrambe le squadre coinvolte.
+      sendTelegramNotification('trattativa_controfferta', payload, t.da_squadra);
+      sendTelegramNotification('trattativa_controfferta', payload, t.a_squadra);
+      setControffertaId(null);
+      setControffertaPrezzo("");
+    } catch(e) {
+      alert(`Errore: ${e.message}`);
+    } finally {
+      setRispostaInCorso(prev => { const n = { ...prev }; delete n[t.id]; return n; });
+      await loadAll();
+    }
   }
 
   // ── Asta tra presidenti ───────────────────────────────────────────────────
@@ -6667,13 +6719,13 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                           {canRispondi && (
                             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                               <div style={{ display: "flex", gap: 6 }}>
-                                <button onClick={() => rispondi(t, 'accettata')} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "#10b98120", color: "#10b981", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✓ Accetta</button>
-                                <button onClick={() => rispondi(t, 'rifiutata')} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "#ef444420", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✕ Rifiuta</button>
+                                <button disabled={!!rispostaInCorso[t.id]} onClick={() => rispondi(t, 'accettata')} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "#10b98120", color: "#10b981", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✓ Accetta</button>
+                                <button disabled={!!rispostaInCorso[t.id]} onClick={() => rispondi(t, 'rifiutata')} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "#ef444420", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✕ Rifiuta</button>
                                 <button onClick={() => { setControffertaId(t.id); setControffertaPrezzo(String(t.prezzo || "")); }}
                                   style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #f59e0b33", background: "#f59e0b12", color: "#f59e0b", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                                   ↩ Controfferta
                                 </button>
-                                {isAdmin && <button onClick={() => rispondi(t, 'completata')} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "#6366f120", color: "#818cf8", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✅ Completata</button>}
+                                {isAdmin && <button disabled={!!rispostaInCorso[t.id]} onClick={() => rispondi(t, 'completata')} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "#6366f120", color: "#818cf8", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✅ Completata</button>}
                               </div>
                               {/* Form controfferta inline */}
                               {controffertaId === t.id && (
@@ -6686,7 +6738,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                                     style={{ width: 80, padding: "4px 8px", borderRadius: 6, border: "1px solid #f59e0b33", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}
                                   />
                                   <span style={{ fontSize: 11, color: "#888" }}>M</span>
-                                  <button onClick={() => inviaControfferta(t)} style={{ padding: "4px 12px", borderRadius: 7, border: "none", background: "#f59e0b", color: "#000", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>
+                                  <button disabled={!!rispostaInCorso[t.id]} onClick={() => inviaControfferta(t)} style={{ padding: "4px 12px", borderRadius: 7, border: "none", background: "#f59e0b", color: "#000", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>
                                     Invia
                                   </button>
                                   <button onClick={() => { setControffertaId(null); setControffertaPrezzo(""); }} style={{ padding: "4px 8px", borderRadius: 7, border: "none", background: "#ffffff10", color: "#888", fontSize: 11, cursor: "pointer" }}>
@@ -12050,30 +12102,19 @@ function AppInner() {
     setAuthLoading(false);
   }
 
-  // ── Pagamenti automatici: solo stipendi mensili + stadio ───────────────
-  // Le tasse settimanali sono volutamente escluse: si applicano solo dalla Control Room.
+  // ── Controlli automatici sicuri ────────────────────────────────────────────
+  // Non applichiamo più stipendi/stadio dal browser: su login multipli o più schede aperte
+  // il client può eseguire la stessa operazione più volte prima che il DB sia aggiornato.
+  // Stipendi e stadio vanno confermati dalla Control Room; qui restano solo controlli idempotenti.
   useEffect(() => {
     if (!session) return;
-    const now = new Date();
-    const mKey = `autopay_stip_stadio_${now.toISOString().slice(0,7)}`;
-    const pagamentiGiaEseguiti = localStorage.getItem(mKey);
-    const pagamentiPromise = pagamentiGiaEseguiti
-      ? Promise.resolve({ stipendi: [], stadio: [], errori: [] })
-      : applicaPagamentiAutomatici();
-
-    // Le quote devono essere controllate a ogni login: sono idempotenti e non devono dipendere
-    // dal flag mensile degli stipendi, altrimenti il 31/07 verrebbe saltato se il flag è già stato creato il 01/07.
-    Promise.all([pagamentiPromise, applicaQuoteAutomatiche()]).then(([r, q]) => {
-      if (r.stipendi?.length) { console.log(`✅ Stipendi auto: ${r.stipendi.length} squadre`); }
-      if (r.stadio?.length)   { console.log(`✅ Stadio auto: ${r.stadio.length} squadre`); }
+    applicaQuoteAutomatiche().then(q => {
       if (q.iscrizioni?.filter(x => x.ok).length) { console.log(`✅ Iscrizioni campionato auto: ${q.iscrizioni.filter(x => x.ok).length} squadre`); }
-      if (!pagamentiGiaEseguiti) localStorage.setItem(mKey, '1');
-      if (r.errori?.length) console.warn('⚠️ Errori pagamenti auto:', r.errori);
       if (q.errori?.length) console.warn('⚠️ Errori quote auto:', q.errori);
-      if (r.stipendi?.length || r.stadio?.length || q.sync?.length || q.iscrizioni?.filter(x => x.ok).length) {
+      if (q.sync?.length || q.iscrizioni?.filter(x => x.ok).length) {
         getSquadre().then(data => { if (data) setSquadreDB(data); });
       }
-    }).catch(e => console.warn('Pagamenti/quote auto:', e.message));
+    }).catch(e => console.warn('⚠️ Errore sync quote:', e.message));
   }, [session]);
 
   // ── Squadre realtime ──────────────────────────────────────────────────────
