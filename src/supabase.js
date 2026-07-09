@@ -1872,6 +1872,14 @@ function getPrimoDiMese() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
+function getMeseCorrenteRange() {
+  const d = new Date();
+  const start = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+  const next = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+  const end = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`;
+  return { start, end, meseISO: start.slice(0, 7) };
+}
+
 // Numero settimana ISO (1-53) per identificare univocamente la settimana
 function getWeekNumber(d = new Date()) {
   const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -3056,29 +3064,45 @@ export async function setStadioUpgrade(squadra, attivo, stagione = '2026-27') {
 // Applica le entrate stadio a TUTTE le squadre (trigger manuale admin)
 export async function applicaEntrateStadioTutte(stagione = '2026-27') {
   const oggi = new Date().toISOString().slice(0, 10);
-  const meseISO = new Date().toISOString().slice(0, 7);
+  const { start: meseStart, end: meseEnd, meseISO } = getMeseCorrenteRange();
   const stadioDesc = `Entrate stadio ${meseISO}`;
 
-  const { data: squadre } = await supabase.from('squadre').select('name, bilancio');
+  const { data: squadre, error: sqErr } = await supabase.from('squadre').select('name, bilancio');
+  if (sqErr) throw sqErr;
   if (!squadre?.length) return [];
 
   const currentStart = _stagioneStartFromLabel(stagione);
-  const { data: invAll } = await supabase.from('investimenti')
+  const { data: invAll, error: invErr } = await supabase.from('investimenti')
     .select('squadra, stagione').eq('nome', 'Ristrutturazione Stadio').eq('attivo', true);
+  if (invErr) throw invErr;
   const potenziate = new Set((invAll || [])
     .filter(i => _stagioneStartFromLabel(i.stagione) < currentStart)
     .map(i => i.squadra));
 
   const results = [];
   for (const sq of squadre) {
-    const { data: gia } = await supabase.from('movimenti').select('id')
-      .eq('squadra', sq.name).eq('descrizione', stadioDesc).limit(1);
-    if (gia?.length) { results.push({ squadra: sq.name, skip: true }); continue; }
+    try {
+      // Considera già pagata qualsiasi entrata stadio presente nel mese, anche se in vecchie versioni
+      // la descrizione non coincideva esattamente con `Entrate stadio YYYY-MM`.
+      const { data: gia, error: giaErr } = await supabase.from('movimenti').select('id')
+        .eq('squadra', sq.name)
+        .gte('data', meseStart)
+        .lt('data', meseEnd)
+        .ilike('descrizione', 'Entrate stadio%')
+        .limit(1);
+      if (giaErr) throw giaErr;
+      if (gia?.length) { results.push({ squadra: sq.name, skip: true }); continue; }
 
-    const entrata = potenziate.has(sq.name) ? 5.5 : 4;
-    await supabase.from('movimenti').insert({ squadra: sq.name, descrizione: stadioDesc, entrata, data: oggi });
-    await supabase.from('squadre').update({ bilancio: parseFloat((sq.bilancio + entrata).toFixed(2)) }).eq('name', sq.name);
-    results.push({ squadra: sq.name, entrata, ok: true });
+      const entrata = potenziate.has(sq.name) ? 5.5 : 4;
+      const nuovoBilancio = parseFloat((Number(sq.bilancio || 0) + entrata).toFixed(2));
+      const { error: movErr } = await supabase.from('movimenti').insert({ squadra: sq.name, descrizione: stadioDesc, entrata, data: oggi });
+      if (movErr) throw movErr;
+      const { error: updErr } = await supabase.from('squadre').update({ bilancio: nuovoBilancio }).eq('name', sq.name);
+      if (updErr) throw updErr;
+      results.push({ squadra: sq.name, entrata, ok: true });
+    } catch(e) {
+      results.push({ squadra: sq.name, ok: false, error: e.message });
+    }
   }
   if (results.some(r => r.ok)) {
     await sendTelegramNotification('stadio_applicato', { mese: meseISO });
@@ -3333,25 +3357,45 @@ export async function ripulisciStoricoTassePrimaDi(dataLimite = null) {
 // Applica stipendi mensili a TUTTE le squadre (trigger manuale admin)
 export async function applicaStipendioATutti() {
   const oggi = new Date().toISOString().slice(0, 10);
-  const meseISO = new Date().toISOString().slice(0, 7);
+  const { start: meseStart, end: meseEnd, meseISO } = getMeseCorrenteRange();
   const stipDesc = `Pagamento stipendi ${meseISO}`;
-  const { data: squadre } = await supabase.from('squadre').select('name, bilancio');
+  const { data: squadre, error: sqErr } = await supabase.from('squadre').select('name, bilancio');
+  if (sqErr) throw sqErr;
   if (!squadre?.length) return [];
   const results = [];
   for (const sq of squadre) {
-    const { data: gia } = await supabase.from('movimenti').select('id')
-      .eq('squadra', sq.name).eq('descrizione', stipDesc).limit(1);
-    if (gia?.length) { results.push({ squadra: sq.name, skip: true }); continue; }
-    const { data: rosa } = await supabase.from('rosa').select('quot, anni_contratto, anni')
-      .eq('squadra', sq.name).eq('in_vivaio', false);
-    const stipRosa = (rosa || []).reduce((s, p) => s + _calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
-    const { data: all } = await supabase.from('allenatori_carte').select('stipendio_sc')
-      .eq('squadra', sq.name).single().catch(() => ({ data: null }));
-    const totalStip = parseFloat((stipRosa + Number(all?.stipendio_sc || 0)).toFixed(2));
-    const rata = parseFloat((totalStip / 12).toFixed(2));
-    await supabase.from('movimenti').insert({ squadra: sq.name, descrizione: stipDesc, uscita: rata, data: oggi });
-    await supabase.from('squadre').update({ bilancio: parseFloat((sq.bilancio - rata).toFixed(2)), salary_used: totalStip }).eq('name', sq.name);
-    results.push({ squadra: sq.name, rata, ok: true });
+    try {
+      // Se gli stipendi sono già stati pagati manualmente nel mese con una vecchia descrizione
+      // tipo "Pagamento stipendi luglio 2026", la Control Room deve considerarli completati.
+      const { data: gia, error: giaErr } = await supabase.from('movimenti').select('id')
+        .eq('squadra', sq.name)
+        .gte('data', meseStart)
+        .lt('data', meseEnd)
+        .ilike('descrizione', 'Pagamento stipendi%')
+        .limit(1);
+      if (giaErr) throw giaErr;
+      if (gia?.length) { results.push({ squadra: sq.name, skip: true }); continue; }
+
+      const { data: rosa, error: rosaErr } = await supabase.from('rosa').select('quot, stip, anni_contratto, anni')
+        .eq('squadra', sq.name).eq('in_vivaio', false);
+      if (rosaErr) throw rosaErr;
+      const stipRosa = (rosa || []).reduce((s, p) => {
+        const stipSalvato = Number(p.stip);
+        return s + (Number.isFinite(stipSalvato) && stipSalvato > 0 ? stipSalvato : _calcolaStipCorretto(p.quot, p.anni_contratto, p.anni));
+      }, 0);
+      const { data: all } = await supabase.from('allenatori_carte').select('stipendio_sc')
+        .eq('squadra', sq.name).maybeSingle();
+      const totalStip = parseFloat((stipRosa + Number(all?.stipendio_sc || 0)).toFixed(2));
+      const rata = parseFloat((totalStip / 12).toFixed(2));
+      const nuovoBilancio = parseFloat((Number(sq.bilancio || 0) - rata).toFixed(2));
+      const { error: movErr } = await supabase.from('movimenti').insert({ squadra: sq.name, descrizione: stipDesc, uscita: rata, data: oggi });
+      if (movErr) throw movErr;
+      const { error: updErr } = await supabase.from('squadre').update({ bilancio: nuovoBilancio, salary_used: totalStip }).eq('name', sq.name);
+      if (updErr) throw updErr;
+      results.push({ squadra: sq.name, rata, ok: true });
+    } catch(e) {
+      results.push({ squadra: sq.name, ok: false, error: e.message });
+    }
   }
   if (results.some(r => r.ok)) {
     await sendTelegramNotification('stipendi_applicati', { mese: meseISO });
@@ -3362,10 +3406,8 @@ export async function applicaStipendioATutti() {
 // Stato finanziario riepilogativo per il Control Room
 export async function getControlRoomStatus() {
   const oggi = new Date().toISOString().slice(0, 10);
-  const meseISO = new Date().toISOString().slice(0, 7);
+  const { start: meseStart, end: meseEnd, meseISO } = getMeseCorrenteRange();
   const domenica = getDomenicaCorrente();
-  const stipDesc = `Pagamento stipendi ${meseISO}`;
-  const stadioDesc = `Entrate stadio ${meseISO}`;
 
   const ref = new Date(domenica);
   const lunedi = new Date(ref);
@@ -3379,7 +3421,7 @@ export async function getControlRoomStatus() {
   const [{ data: squadre }, { data: tasse }, { data: movMese }] = await Promise.all([
     supabase.from('squadre').select('*'),
     supabase.from('tasse_settimanali').select('squadra, data_controllo').gte('data_controllo', lunediStr).lte('data_controllo', domenicaStr),
-    supabase.from('movimenti').select('squadra, descrizione').gte('data', `${meseISO}-01`),
+    supabase.from('movimenti').select('squadra, descrizione, data').gte('data', meseStart).lt('data', meseEnd),
   ]);
 
   const squadreList = squadre || [];
@@ -3409,8 +3451,8 @@ export async function getControlRoomStatus() {
   const tasseDettagli = { countBySquadra: tasseCountBySquadra, dateBySquadra: tasseDateBySquadra, duplicate: tasseDuplicate, mancanti: tasseMancanti, extra: tasseExtra, totaleRecord: tasseTotRecord };
   const canApplicareTassa = tasseMancanti.length > 0;
 
-  const stipendiPagati = new Set((movMese || []).filter(m => m.descrizione === stipDesc).map(m => m.squadra));
-  const stadioPagato = new Set((movMese || []).filter(m => m.descrizione === stadioDesc).map(m => m.squadra));
+  const stipendiPagati = new Set((movMese || []).filter(m => String(m.descrizione || '').startsWith('Pagamento stipendi')).map(m => m.squadra));
+  const stadioPagato = new Set((movMese || []).filter(m => String(m.descrizione || '').startsWith('Entrate stadio')).map(m => m.squadra));
 
   return { squadre: squadreList, tassePagate, tasseDettagli, canApplicareTassa, stipendiPagati, stadioPagato, domenica, meseISO };
 }
