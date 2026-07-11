@@ -3577,6 +3577,32 @@ function FairSpendingSection({ team, isAdmin }) {
 }
 
 
+
+function isMovimentoStipendiMensili(descrizione = '') {
+  const d = String(descrizione || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+  return (
+    d.startsWith('pagamento stipendi') ||
+    d.startsWith('paga stipendi') ||
+    d.startsWith('stipendi mensili') ||
+    d.startsWith('stipendio mensile') ||
+    d === 'stipendi' ||
+    /^stipendi(\s|\(|$)/.test(d)
+  );
+}
+
+function getMeseCorrenteRangeClient() {
+  const d = new Date();
+  const start = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+  const next = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+  const end = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`;
+  return { start, end, meseISO: start.slice(0, 7) };
+}
+
 function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0, salaryCapLimite = 75, salaryCapSforato, scEsenteGiuLug, giorniSCNeg, contrattiScadenza: contrattiScadenzaProp, rosaPlayers, pagandoStipendi, handlePagaStipendi, isAdmin, mySquadra, onRefresh, onBilancioChange }) {
   const [contrattiScadenza, setContrattiScadenza] = useState(contrattiScadenzaProp || []);
   useEffect(() => { setContrattiScadenza(contrattiScadenzaProp || []); }, [contrattiScadenzaProp]);
@@ -3593,11 +3619,31 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
   const [euroInput, setEuroInput] = useState("");
   const [savingQuote, setSavingQuote] = useState(false);
   const [contrattiSort, setContrattiSort] = useState("ruolo"); // "ruolo" | "nome" | "quot"
+  const [stipendiMesePagati, setStipendiMesePagati] = useState(false);
+  const [stipendiMeseMovimento, setStipendiMeseMovimento] = useState(null);
+
+  const refreshStatoStipendiMese = useCallback(async () => {
+    const { start, end } = getMeseCorrenteRangeClient();
+    try {
+      const movimenti = await getMovimenti(team.name);
+      const match = (movimenti || []).find(m =>
+        m.data >= start &&
+        m.data < end &&
+        isMovimentoStipendiMensili(m.descrizione)
+      );
+      setStipendiMesePagati(Boolean(match));
+      setStipendiMeseMovimento(match || null);
+    } catch {
+      setStipendiMesePagati(false);
+      setStipendiMeseMovimento(null);
+    }
+  }, [team.name]);
 
   useEffect(() => {
     getTassePagate(team.name).then(setTasse);
     getFairSpending(team.name).then(setFairSpending);
-  }, [team.name]);
+    refreshStatoStipendiMese();
+  }, [team.name, refreshStatoStipendiMese]);
 
   const bilancio = team.bilancio;
   const tassa = calcolaTassa(bilancio);
@@ -3671,6 +3717,14 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
       if (onBilancioChange) onBilancioChange(parseFloat((bilancio - tassa.importo).toFixed(2)));
     } catch(e) { alert(e.message); }
     finally { setApplicandoTassa(false); }
+  }
+
+
+  async function handlePagaStipendiMese() {
+    if (stipendiMesePagati) return;
+    await handlePagaStipendi();
+    await refreshStatoStipendiMese();
+    if (onRefresh) onRefresh();
   }
 
   const Row = ({ label, value, color = "#aaa", large = false }) => (
@@ -3843,9 +3897,15 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
         <Row label="Rata mensile (1° del mese)" value={`−${(salaryCapUsato/12).toFixed(2)}M`} color="#f97316" large />
         <Row label="Totale annuale stipendi" value={`−${salaryCapUsato.toFixed(1)}M`} color="#f97316" large />
         {isAdmin && (
-          <button onClick={handlePagaStipendi} disabled={pagandoStipendi} style={{ width: "100%", marginTop: 12, padding: "9px", borderRadius: 9, border: "1px solid #f9731633", background: "#f9731618", color: "#f97316", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-            {pagandoStipendi ? "Pagamento in corso..." : `💸 Paga stipendi (−${(salaryCapUsato/12).toFixed(2)}M)`}
-          </button>
+          stipendiMesePagati ? (
+            <div style={{ width: "100%", marginTop: 12, padding: "9px", borderRadius: 9, border: "1px solid #10b98133", background: "#10b98112", color: "#10b981", fontSize: 12, fontWeight: 800, textAlign: "center" }}>
+              ✓ Stipendi già pagati nel mese corrente{stipendiMeseMovimento?.data ? ` (${stipendiMeseMovimento.data})` : ""}
+            </div>
+          ) : (
+            <button onClick={handlePagaStipendiMese} disabled={pagandoStipendi} style={{ width: "100%", marginTop: 12, padding: "9px", borderRadius: 9, border: "1px solid #f9731633", background: "#f9731618", color: "#f97316", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              {pagandoStipendi ? "Pagamento in corso..." : `💸 Paga stipendi (−${(salaryCapUsato/12).toFixed(2)}M)`}
+            </button>
+          )
         )}
       </div>
 
