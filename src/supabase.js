@@ -1880,6 +1880,48 @@ function getMeseCorrenteRange() {
   return { start, end, meseISO: start.slice(0, 7) };
 }
 
+function isPagamentoStipendiDescrizione(descrizione = '') {
+  const d = String(descrizione || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+  // Deve riconoscere tutti i formati storici/manuali usati nei movimenti:
+  // - "Pagamento stipendi 2026-07"
+  // - "Pagamento stipendi luglio 2026"
+  // - "Stipendi mensili (luglio)"
+  // - "Stipendi mensili luglio"
+  // - "Stipendi luglio 2026"
+  // Dal 1° del mese successivo lo stato torna da pagare perché il filtro data
+  // di getControlRoomStatus/applicaStipendioATutti usa sempre il mese corrente.
+  return (
+    d.startsWith('pagamento stipendi') ||
+    d.startsWith('paga stipendi') ||
+    d.startsWith('stipendi mensili') ||
+    d.startsWith('stipendio mensile') ||
+    d === 'stipendi' ||
+    /^stipendi(\s|\(|$)/.test(d)
+  );
+}
+
+function isEntrateStadioDescrizione(descrizione = '') {
+  const d = String(descrizione || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+  return (
+    d.startsWith('entrate stadio') ||
+    d.startsWith('entrata stadio') ||
+    d.startsWith('guadagno stadio') ||
+    d.startsWith('stadio mensile') ||
+    d.includes('guadagno mensile stadio')
+  );
+}
+
+
 // Numero settimana ISO (1-53) per identificare univocamente la settimana
 function getWeekNumber(d = new Date()) {
   const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -1918,15 +1960,16 @@ export async function applicaPagamentiAutomatici() {
   if (oggiStr === primoDiMese && ora >= 9) {
     for (const sq of squadre) {
       try {
-        // Controlla se gli stipendi sono già stati pagati questo mese (chiave esatta: YYYY-MM)
+        // Controlla se gli stipendi sono già stati pagati in qualunque formato nel mese corrente.
         const stipDesc = `Pagamento stipendi ${meseISO}`;
+        const { start: meseStartAuto, end: meseEndAuto } = getMeseCorrenteRange();
         const { data: gia } = await supabase
           .from('movimenti')
-          .select('id')
+          .select('id, descrizione, data')
           .eq('squadra', sq.name)
-          .eq('descrizione', stipDesc)
-          .limit(1);
-        if (gia?.length) continue;
+          .gte('data', meseStartAuto)
+          .lt('data', meseEndAuto);
+        if ((gia || []).some(m => isPagamentoStipendiDescrizione(m.descrizione))) continue;
 
         // Calcola totale stipendi dalla rosa attiva
         const { data: rosa } = await supabase
@@ -1972,13 +2015,14 @@ export async function applicaPagamentiAutomatici() {
     const stadioDesc = `Entrate stadio ${meseISO}`;
     for (const sq of squadre) {
       try {
+        const { start: meseStartStadio, end: meseEndStadio } = getMeseCorrenteRange();
         const { data: giaStadio } = await supabase
           .from('movimenti')
-          .select('id')
+          .select('id, descrizione, data')
           .eq('squadra', sq.name)
-          .eq('descrizione', stadioDesc)
-          .limit(1);
-        if (giaStadio?.length) continue;
+          .gte('data', meseStartStadio)
+          .lt('data', meseEndStadio);
+        if ((giaStadio || []).some(m => isEntrateStadioDescrizione(m.descrizione))) continue;
 
         const { data: inv } = await supabase
           .from('investimenti')
@@ -3084,14 +3128,16 @@ export async function applicaEntrateStadioTutte(stagione = '2026-27') {
     try {
       // Considera già pagata qualsiasi entrata stadio presente nel mese, anche se in vecchie versioni
       // la descrizione non coincideva esattamente con `Entrate stadio YYYY-MM`.
-      const { data: gia, error: giaErr } = await supabase.from('movimenti').select('id')
+      const { data: gia, error: giaErr } = await supabase.from('movimenti')
+        .select('id, descrizione, data')
         .eq('squadra', sq.name)
         .gte('data', meseStart)
-        .lt('data', meseEnd)
-        .ilike('descrizione', 'Entrate stadio%')
-        .limit(1);
+        .lt('data', meseEnd);
       if (giaErr) throw giaErr;
-      if (gia?.length) { results.push({ squadra: sq.name, skip: true }); continue; }
+      if ((gia || []).some(m => isEntrateStadioDescrizione(m.descrizione))) {
+        results.push({ squadra: sq.name, skip: true });
+        continue;
+      }
 
       const entrata = potenziate.has(sq.name) ? 5.5 : 4;
       const nuovoBilancio = parseFloat((Number(sq.bilancio || 0) + entrata).toFixed(2));
@@ -3367,14 +3413,16 @@ export async function applicaStipendioATutti() {
     try {
       // Se gli stipendi sono già stati pagati manualmente nel mese con una vecchia descrizione
       // tipo "Pagamento stipendi luglio 2026", la Control Room deve considerarli completati.
-      const { data: gia, error: giaErr } = await supabase.from('movimenti').select('id')
+      const { data: gia, error: giaErr } = await supabase.from('movimenti')
+        .select('id, descrizione, data')
         .eq('squadra', sq.name)
         .gte('data', meseStart)
-        .lt('data', meseEnd)
-        .ilike('descrizione', 'Pagamento stipendi%')
-        .limit(1);
+        .lt('data', meseEnd);
       if (giaErr) throw giaErr;
-      if (gia?.length) { results.push({ squadra: sq.name, skip: true }); continue; }
+      if ((gia || []).some(m => isPagamentoStipendiDescrizione(m.descrizione))) {
+        results.push({ squadra: sq.name, skip: true });
+        continue;
+      }
 
       const { data: rosa, error: rosaErr } = await supabase.from('rosa').select('quot, stip, anni_contratto, anni')
         .eq('squadra', sq.name).eq('in_vivaio', false);
@@ -3451,10 +3499,35 @@ export async function getControlRoomStatus() {
   const tasseDettagli = { countBySquadra: tasseCountBySquadra, dateBySquadra: tasseDateBySquadra, duplicate: tasseDuplicate, mancanti: tasseMancanti, extra: tasseExtra, totaleRecord: tasseTotRecord };
   const canApplicareTassa = tasseMancanti.length > 0;
 
-  const stipendiPagati = new Set((movMese || []).filter(m => String(m.descrizione || '').startsWith('Pagamento stipendi')).map(m => m.squadra));
-  const stadioPagato = new Set((movMese || []).filter(m => String(m.descrizione || '').startsWith('Entrate stadio')).map(m => m.squadra));
+  const stipendiMovimenti = (movMese || []).filter(m => isPagamentoStipendiDescrizione(m.descrizione));
+  const stadioMovimenti = (movMese || []).filter(m => isEntrateStadioDescrizione(m.descrizione));
+  const stipendiPagati = new Set(stipendiMovimenti.map(m => m.squadra));
+  const stadioPagato = new Set(stadioMovimenti.map(m => m.squadra));
 
-  return { squadre: squadreList, tassePagate, tasseDettagli, canApplicareTassa, stipendiPagati, stadioPagato, domenica, meseISO };
+  return {
+    squadre: squadreList,
+    tassePagate,
+    tasseDettagli,
+    canApplicareTassa,
+    stipendiPagati,
+    stadioPagato,
+    stipendiDettagli: {
+      movimenti: stipendiMovimenti,
+      countBySquadra: stipendiMovimenti.reduce((acc, m) => {
+        acc[m.squadra] = (acc[m.squadra] || 0) + 1;
+        return acc;
+      }, {}),
+    },
+    stadioDettagli: {
+      movimenti: stadioMovimenti,
+      countBySquadra: stadioMovimenti.reduce((acc, m) => {
+        acc[m.squadra] = (acc[m.squadra] || 0) + 1;
+        return acc;
+      }, {}),
+    },
+    domenica,
+    meseISO,
+  };
 }
 
 // ─── AUDIT LOG ────────────────────────────────────────────────────────────────
