@@ -9477,6 +9477,9 @@ function AdminControlRoomPage({ teams }) {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 12, fontWeight: 600, color: '#ddd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sq.name}</div>
                         <div style={{ fontSize: 10, color: '#555' }}>SC: {(sq.salary_used || 0).toFixed(1)}M → rata {((sq.salary_used || 0) / 12).toFixed(2)}M</div>
+                        {ok && status.stipendiDettagli?.countBySquadra?.[sq.name] > 0 && (
+                          <div style={{ fontSize: 9, color: '#10b981', marginTop: 2 }}>Movimento stipendi rilevato nel mese</div>
+                        )}
                       </div>
                       <div style={{ fontSize: 18 }}>{ok ? '✅' : '⏳'}</div>
                     </div>
