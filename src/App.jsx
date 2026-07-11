@@ -290,10 +290,31 @@ function contaMensilitaResidueDaPagare(date = new Date()) {
   return 12 - contaMensilitaGiaPagate(date);
 }
 
-function Badge({ children, color }) {
+function Badge({ children, color, style = {}, title }) {
   return (
-    <span style={{ background: color + "22", color, border: `1px solid ${color}44`, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>
+    <span title={title} style={{ background: color + "22", color, border: `1px solid ${color}44`, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", ...style }}>
       {children}
+    </span>
+  );
+}
+
+function DaCedereBadge({ compact = false }) {
+  return (
+    <span
+      title="Stipendio ridotto a gennaio: obbligo di cessione o svincolo entro il 15/09 dello stesso anno"
+      style={{
+        marginLeft: compact ? 4 : 0,
+        fontSize: compact ? 9 : 10,
+        background: "#ef444422",
+        color: "#f87171",
+        border: "1px solid #ef444466",
+        borderRadius: 4,
+        padding: compact ? "1px 4px" : "2px 6px",
+        fontWeight: 800,
+        whiteSpace: "nowrap",
+      }}
+    >
+      DA CEDERE 15/09
     </span>
   );
 }
@@ -2308,6 +2329,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                   <td style={{ padding:"7px 6px",color:fuori?"#ef4444":"#e0e0e0",fontWeight:600,wordBreak:"break-word" }}>
                     {p.nome}
                     {fuori&&<span style={{ marginLeft:4,fontSize:9,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444455",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>FUORI</span>}
+                    {p.da_cedere&&<DaCedereBadge compact />}
                     {!fuori&&p.anni>0&&p.anni<=21&&<span style={{ marginLeft:4,fontSize:9,background:"#8b5cf622",color:"#a78bfa",border:"1px solid #8b5cf644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>U21</span>}
                     {!fuori&&p.anni>=31&&<span style={{ marginLeft:4,fontSize:9,background:"#f9731622",color:"#fb923c",border:"1px solid #f9731644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>31+</span>}
                     {p.in_prestito&&<span title={`Prestito${p.squadra_originale ? ` da ${p.squadra_originale}` : ""}${p.scadenza_prestito ? ` · scad. ${p.scadenza_prestito}` : ""}`} style={{ marginLeft:4,fontSize:9,background:"#6366f122",color:"#a5b4fc",border:"1px solid #6366f144",borderRadius:4,padding:"1px 4px",fontWeight:800 }}>{p.tag_rosa || (p.prestito_tipo === 'prestito_obbligo' ? 'PREST. OBBL.' : p.prestito_tipo === 'prestito_secco' ? 'PREST. SECCO' : 'PREST. DIR.')}</span>}
@@ -3230,7 +3252,7 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
     setSaving(p.id);
     try {
       const { deveCedere } = await applicaRinnovoRibasso(p.id, parseFloat(stip), team.name);
-      if (deveCedere) alert(`⚠️ ${p.nome} (${p.anni}aa) deve essere ceduto/svincolato entro il 15/09, altrimenti penalità 5M + svincolo forzato.`);
+      if (deveCedere) alert(`⚠️ ${p.nome} (${p.anni}aa) deve essere ceduto/svincolato entro il 15/09 dello stesso anno, altrimenti penalità 5M + svincolo forzato.`);
       await caricaDati();
       if (onRefresh) onRefresh();
     } catch(e) { alert(e.message); }
@@ -3338,7 +3360,7 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
                           {gia ? "✅ " : ""}{p.nome}
                           <span style={{ fontSize: 10, color: "#888", marginLeft: 6 }}>{p.anni}aa</span>
                           {isU21 && <Badge color="#555" style={{ marginLeft: 4 }}>U21 — non riducibile</Badge>}
-                          {deveCedere && !gia && <Badge color="#f59e0b">22-30aa: dovrà cedere</Badge>}
+                          {deveCedere && !gia && <Badge color="#f59e0b">22-30aa: cedere entro 15/09</Badge>}
                           {isOver31 && <Badge color="#10b981">31+ — nessun obbligo</Badge>}
                         </div>
                         <div style={{ fontSize: 10, color: "#888" }}>
@@ -3375,7 +3397,7 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
               {/* Nota regolamento */}
               <div style={{ background: "#ffffff05", borderRadius: 9, padding: "8px 12px", fontSize: 10, color: "#444", lineHeight: 1.6 }}>
                 📋 <b>Art. 4.5:</b> Rialzi obbligatori — nuovo stip almeno Q/5 attuale. Ribassi facoltativi:
-                U21 non riducibili · 22-30aa riducibili ma devono cedere entro 15/09 (pena 5M + svincolo forzato) ·
+                U21 non riducibili · 22-30aa riducibili ma devono cedere entro 15/09 dello stesso anno (pena 5M + svincolo forzato) ·
                 31+aa riducibili senza penalità. Comunicare le scelte su WhatsApp entro 05/01 ore 20:00.
               </div>
             </>
@@ -3972,7 +3994,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
                 <span style={{ fontSize: 12, color: "#f0f0f0", fontWeight: 600 }}>{p.nome}</span>
                 <span style={{ fontSize: 10, color: "#888", marginLeft: 8 }}>{p.anni}aa · Q{p.quot} · {Number(p.stip).toFixed(2)}M</span>
               </div>
-              <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 700 }}>⛔ cedere entro 15/09</span>
+              <DaCedereBadge />
             </div>
           ))}
         </div>
