@@ -4103,37 +4103,81 @@ function AltroTab({ team, isAdmin, mySquadra }) {
   const [loadingBonus, setLoadingBonus] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadBonus() {
-      const { data: tratt } = await supabase.from('trattative')
-        .select('id,giocatore,da_squadra,a_squadra,stato')
-        .or(`da_squadra.eq.${team.name},a_squadra.eq.${team.name}`)
-        .in('stato',['completata','accettata','clausola_eseguita']);
-      if (!tratt?.length) { setBonusData([]); setLoadingBonus(false); return; }
-      const results = [];
-      for (const tr of tratt) {
-        const bonusList = await getBonusTrattativa(tr.id);
-        if (!bonusList?.length) continue;
-        const { data: lr } = await supabase.from('listone').select('*').ilike('nome',tr.giocatore).single().catch(()=>({data:null}));
-        for (const b of bonusList) {
-          const va = lr ? (()=>{
-            switch(b.tipo_bonus){
-              case 'partite_voto': return Number(lr.partite_voto||0);
-              case 'gol_fatti': return Number(lr.gol_fatti||0);
-              case 'assist': return Number(lr.assist||0);
-              case 'bonus_tot': return Number(lr.gol_fatti||0)+Number(lr.assist||0);
-              case 'ammonizioni': return Number(lr.ammonizioni||0);
-              case 'espulsioni': return Number(lr.espulsioni||0);
-              case 'gol_subiti': return Number(lr.gol_subiti||0);
-              case 'malus_tot': return Number(lr.ammonizioni||0)+Number(lr.espulsioni||0)+Number(lr.gol_subiti||0);
-              default: return 0;
-            }
-          })() : null;
-          results.push({bonus:b,trattativa:tr,valoreAttuale:va});
+      setLoadingBonus(true);
+      try {
+        const { data: tratt, error: trattErr } = await supabase.from('trattative')
+          .select('id,giocatore,da_squadra,a_squadra,stato')
+          .or(`da_squadra.eq.${team.name},a_squadra.eq.${team.name}`)
+          .in('stato',[
+            'in attesa',
+            'in_attesa',
+            'controproposta',
+            'accettata_differita',
+            'completata',
+            'accettata',
+            'clausola_eseguita'
+          ]);
+
+        if (trattErr) throw trattErr;
+        if (!tratt?.length) {
+          if (!cancelled) setBonusData([]);
+          return;
         }
+
+        const results = [];
+
+        for (const tr of tratt) {
+          try {
+            const bonusList = await getBonusTrattativa(tr.id);
+            if (!bonusList?.length) continue;
+
+            const { data: lr } = await supabase
+              .from('listone')
+              .select('*')
+              .ilike('nome', tr.giocatore)
+              .maybeSingle();
+
+            for (const b of bonusList) {
+              const va = lr ? (() => {
+                switch (b.tipo_bonus) {
+                  case 'partite_voto': return Number(lr.partite_voto || 0);
+                  case 'gol_fatti': return Number(lr.gol_fatti || 0);
+                  case 'assist': return Number(lr.assist || 0);
+                  case 'bonus_tot': return Number(lr.gol_fatti || 0) + Number(lr.assist || 0);
+                  case 'ammonizioni': return Number(lr.ammonizioni || 0);
+                  case 'espulsioni': return Number(lr.espulsioni || 0);
+                  case 'gol_subiti': return Number(lr.gol_subiti || 0);
+                  case 'malus_tot': return Number(lr.ammonizioni || 0) + Number(lr.espulsioni || 0) + Number(lr.gol_subiti || 0);
+                  default: return 0;
+                }
+              })() : null;
+
+              results.push({ bonus: b, trattativa: tr, valoreAttuale: va });
+            }
+          } catch (rowErr) {
+            console.warn('Errore caricamento bonus trattativa:', tr?.id, rowErr?.message || rowErr);
+          }
+        }
+
+        if (!cancelled) setBonusData(results);
+      } catch (e) {
+        console.warn('Errore caricamento bonus trattative:', e?.message || e);
+        if (!cancelled) setBonusData([]);
+      } finally {
+        if (!cancelled) setLoadingBonus(false);
       }
-      setBonusData(results); setLoadingBonus(false);
     }
+
     loadBonus();
+
+    const sub = subscribeTrattative(loadBonus);
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(sub);
+    };
   }, [team.name]);
 
   // ── ALLENATORE ───────────────────────────────────────────────────────────────
@@ -5063,8 +5107,8 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
   const fine31Mag = new Date(now.getFullYear(), 4, 31); // 31 maggio
   const alertContratti = contrattiScadenza.filter(p => !p.anni_giocatore || p.anni > 21);
 
-  const loadRosaStipendi = useCallback(async () => {
-    // Invalida cache quando carichiamo di proposito (es. dopo svincolo)
+  const loadRosaStipendi = useCallback(async ({ force = false } = {}) => {
+    if (force) cacheInvalidate('rosa_' + team.name);
     const data = await cachedFetch('rosa_' + team.name, () => getRosa(team.name), 600000);
     if (data) {
       const rosaAttiva = data.filter(p => !p.in_vivaio);
@@ -5074,7 +5118,8 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
     }
   }, [team.name]);
 
-  const loadContratti = useCallback(async () => {
+  const loadContratti = useCallback(async ({ force = false } = {}) => {
+    if (force) cacheInvalidate('contratti_' + team.name);
     const data = await cachedFetch('contratti_' + team.name, () => getContrattiInScadenza(team.name), 600000);
     if (data) setContrattiScadenza(data);
   }, [team.name]);
@@ -5100,7 +5145,14 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
       getAllenatoreBySquadra(team.name, STAGIONE_CORRENTE).then(a => setAllenatoreNome(a?.nome || null)),
     ]);
     const subObj = subscribeObiettivi(team.name, loadObiettivi);
-    return () => supabase.removeChannel(subObj);
+    const subRosa = subscribeRosa(team.name, () => {
+      loadRosaStipendi({ force: true });
+      loadContratti({ force: true });
+    });
+    return () => {
+      supabase.removeChannel(subObj);
+      supabase.removeChannel(subRosa);
+    };
   }, [loadRosaStipendi, loadContratti, loadClubIdentity, loadObiettivi, team.name]);
 
   async function handlePagaStipendi() {
@@ -6238,12 +6290,17 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
         await updateTrattativa(t.id, { stato: 'accettata_differita', updated_at: new Date().toISOString() });
       } else {
         await eseguiTrasferimento(t).catch(e => { throw new Error(`Trasferimento fallito: ${e.message}`); });
+        cacheInvalidate('rosa_' + t.da_squadra);
+        cacheInvalidate('rosa_' + t.a_squadra);
+        cacheInvalidate('contratti_' + t.da_squadra);
+        cacheInvalidate('contratti_' + t.a_squadra);
+        cacheInvalidate('rose_all_');
         await aggiornaFantaSquadraListone(t.giocatore, t.da_squadra).catch(e => { throw new Error(`Aggiornamento listoneSquadra fallito (giocatore trasferito ma listone non aggiornato): ${e.message}`); });
         await aggiornaStipendioDopoTrasferimento(t.giocatore, t.da_squadra).catch(e => { throw new Error(`Aggiornamento stipendio fallito (segnalarlo manualmente): ${e.message}`); });
+        cacheInvalidate('rosa_' + t.da_squadra);
+        cacheInvalidate('contratti_' + t.da_squadra);
         await logAzione({ utente: 'admin', squadra: t.da_squadra, azione: 'trasferimento', entita: 'trattative', entitaId: t.id, descrizione: `Trasferimento: ${t.giocatore} da ${t.a_squadra} a ${t.da_squadra} — ${t.prezzo}M (${t.tipo})`, dataPrima: { trattativa: t }, rollbackPossibile: false });
-        // Notify both teams via DM + canale gruppo
-        sendTelegramNotification('trattativa_accettata', { giocatore: t.giocatore, importo: t.prezzo, da_squadra: t.da_squadra, a_squadra: t.a_squadra }, t.da_squadra);
-        sendTelegramNotification('trattativa_accettata', { giocatore: t.giocatore, importo: t.prezzo, da_squadra: t.da_squadra, a_squadra: t.a_squadra }, t.a_squadra);
+        // Notifica unica nel canale: evita tripli messaggi. La trattativa resta visibile nel sito a entrambe le squadre.
         sendTelegramNotification('trattativa_accettata', { giocatore: t.giocatore, importo: t.prezzo, da_squadra: t.da_squadra, a_squadra: t.a_squadra });
       }
     } catch (e) {
@@ -6264,8 +6321,15 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     for (const t of differiti) {
       try {
         await eseguiTrasferimento(t);
+        cacheInvalidate('rosa_' + t.da_squadra);
+        cacheInvalidate('rosa_' + t.a_squadra);
+        cacheInvalidate('contratti_' + t.da_squadra);
+        cacheInvalidate('contratti_' + t.a_squadra);
+        cacheInvalidate('rose_all_');
         await aggiornaFantaSquadraListone(t.giocatore, t.da_squadra);
         await aggiornaStipendioDopoTrasferimento(t.giocatore, t.da_squadra);
+        cacheInvalidate('rosa_' + t.da_squadra);
+        cacheInvalidate('contratti_' + t.da_squadra);
         ok++;
       } catch(e) { err.push(`${t.giocatore}: ${e.message}`); }
     }
