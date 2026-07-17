@@ -889,6 +889,10 @@ export async function eseguiTrasferimento(trattativa) {
     clausola: "Clausola Rescissoria", scambio: "Scambio",
   };
   const descLabel = tipoLabel[tipo] || tipo;
+  const descLabelAcquirente = tipo === 'cessione' ? 'Acquisto'
+    : tipo === 'clausola' ? 'Acquisto clausola'
+    : tipo === 'scambio' ? 'Scambio in entrata'
+    : descLabel;
   const isPrestito = tipo.startsWith('prestito');
 
   // Convenzione trattative: da_squadra = acquirente/mittente; a_squadra = cedente/proprietario.
@@ -963,6 +967,9 @@ export async function eseguiTrasferimento(trattativa) {
         stip: nuovoStip,
         stip_originale: nuovoStip,
         anni_contratto: 1, // reimposta da anno 1 (art. 5.9)
+        rinnovo_confermato: false,
+        rinnovo_ribasso: false,
+        da_cedere: false,
         data_acquisto: oggi,
         in_prestito: false,
         prestito_tipo: null,
@@ -1024,7 +1031,7 @@ export async function eseguiTrasferimento(trattativa) {
     },
     {
       squadra: squadraAcquirente,
-      descrizione: `${descLabel}: ${giocatore} da ${squadraCedente}${notaFuori}`,
+      descrizione: `${descLabelAcquirente}: ${giocatore} da ${squadraCedente}${notaFuori}`,
       entrata: null,
       uscita: importoAcquirente,
       data: oggi,
@@ -4686,10 +4693,18 @@ export async function aggiornaStipendioDopoTrasferimento(nomeGiocatore, squadraD
 // ─── BONUS TRATTATIVA ────────────────────────────────────────────────────────
 
 export async function getBonusTrattativa(trattativaId) {
-  const { data, error } = await supabase.from('trattative_bonus')
-    .select('*').eq('trattativa_id', trattativaId).order('created_at');
-  if (error) return [];
-  return data;
+  if (!trattativaId) return [];
+  const { data, error } = await supabase
+    .from('trattative_bonus')
+    .select('*')
+    .eq('trattativa_id', trattativaId);
+  if (error) {
+    console.warn('getBonusTrattativa error:', error.message);
+    return [];
+  }
+  return (data || []).sort((a, b) =>
+    String(a.created_at || a.id || '').localeCompare(String(b.created_at || b.id || ''))
+  );
 }
 
 export async function insertBonusTrattativa(bonus) {
