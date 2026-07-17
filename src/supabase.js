@@ -216,20 +216,64 @@ export function calcolaRosaCompliance(players = []) {
 
 async function assertRosaDopoAggiunta(squadra, nuovoGiocatore, { ignoreMinimi = true } = {}) {
   if (nuovoGiocatore?.in_vivaio) return;
-  const { data: rosa } = await supabase.from('rosa').select('*').eq('squadra', squadra).eq('in_vivaio', false);
-  const futura = [...(rosa || []), { ...nuovoGiocatore, in_vivaio: false }];
-  const check = calcolaRosaCompliance(futura);
-  // Deroga U-21: fino al 01/06 bastano 1 U21 anche a 30 giocatori.
-  const totale = futura.length;
-  const u21 = futura.filter(p => Number(p.anni || 0) > 0 && Number(p.anni || 0) <= 21).length;
-  const u21Richiesti = await _getU21RichiestiConDeroga(squadra, totale, new Date());
-  const blocchi = check.issues.filter(msg => {
-    if (msg.startsWith('Con ') && msg.includes('Under-21')) return u21 < u21Richiesti;
-    if (!ignoreMinimi) return true;
-    return !msg.startsWith('Servono almeno');
-  });
-  if (u21 < u21Richiesti) blocchi.push(`Con ${totale} giocatori servono almeno ${u21Richiesti} Under-21: presenti ${u21}.`);
-  if (blocchi.length) throw new Error(`Operazione non consentita dal regolamento rosa: ${[...new Set(blocchi)].join(' ')}`);
+
+  const { data: rosa } = await supabase
+    .from('rosa')
+    .select('*')
+    .eq('squadra', squadra)
+    .eq('in_vivaio', false);
+
+  const rosaAttuale = rosa || [];
+  const playerInEntrata = { ...nuovoGiocatore, in_vivaio: false };
+  const futura = [...rosaAttuale, playerInEntrata];
+
+  const checkPrima = calcolaRosaCompliance(rosaAttuale);
+  const checkDopo = calcolaRosaCompliance(futura);
+
+  const totalePrima = rosaAttuale.length;
+  const totaleDopo = futura.length;
+
+  const u21Prima = rosaAttuale.filter(p => Number(p.anni || 0) > 0 && Number(p.anni || 0) <= 21).length;
+  const u21Dopo = futura.filter(p => Number(p.anni || 0) > 0 && Number(p.anni || 0) <= 21).length;
+
+  const u21RichiestiPrima = await _getU21RichiestiConDeroga(squadra, totalePrima, new Date());
+  const u21RichiestiDopo = await _getU21RichiestiConDeroga(squadra, totaleDopo, new Date());
+
+  const blocchi = [];
+
+  // Art. 3.2: blocca se l'operazione crea/peggiora un problema di numero massimo rosa.
+  if (totaleDopo > 30 && totaleDopo > totalePrima) {
+    blocchi.push(`Rosa oltre il massimo: ${totaleDopo}/30 giocatori.`);
+  }
+
+  // Art. 3.2: blocca se l'operazione crea/peggiora il requisito U21.
+  // Esempio: passare da 27 a 28 senza U21 richiesti può creare una nuova irregolarità.
+  const u21IrregolarePrima = u21Prima < u21RichiestiPrima;
+  const u21IrregolareDopo = u21Dopo < u21RichiestiDopo;
+  if (u21IrregolareDopo && (!u21IrregolarePrima || u21RichiestiDopo > u21RichiestiPrima)) {
+    blocchi.push(`Con ${totaleDopo} giocatori servono almeno ${u21RichiestiDopo} Under-21: presenti ${u21Dopo}.`);
+  }
+
+  // Art. 3.3: più di 5 giocatori della stessa squadra reale.
+  // Questo limite NON blocca il mercato: serve come irregolarità di rosa/formazione,
+  // ma una squadra deve poter comprare/vendere anche se l'operazione tocca o peggiora
+  // quel conteggio. Il controllo resta visibile nella compliance della rosa.
+  // Quindi qui non aggiungiamo blocchi per `Troppi giocatori del ...`.
+
+  // Gli altri problemi già presenti in rosa non devono impedire una trattativa in entrata
+  // se l'operazione non li crea o non li peggiora. Il blocco formazione resta gestito
+  // dalla compliance della rosa, non dal mercato.
+  if (!ignoreMinimi) {
+    for (const msg of checkDopo.issues) {
+      if (!checkPrima.issues.includes(msg) && !msg.startsWith('Con ') && !msg.includes('Troppi giocatori')) {
+        blocchi.push(msg);
+      }
+    }
+  }
+
+  if (blocchi.length) {
+    throw new Error(`Operazione non consentita dal regolamento rosa: ${[...new Set(blocchi)].join(' ')}`);
+  }
 }
 
 async function assertVivaioDopoAggiunta(squadra, giocatore) {
