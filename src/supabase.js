@@ -603,6 +603,15 @@ export async function insertMovimento(movimento) {
   return data;
 }
 
+export async function updateMovimento(id, fields) {
+  const payload = { ...fields };
+  if ('entrata' in payload && (payload.entrata === '' || payload.entrata === undefined)) payload.entrata = null;
+  if ('uscita' in payload && (payload.uscita === '' || payload.uscita === undefined)) payload.uscita = null;
+  const { data, error } = await supabase.from('movimenti').update(payload).eq('id', id).select().single();
+  if (error) throw error;
+  return data;
+}
+
 export async function deleteMovimento(id) {
   const { error } = await supabase.from('movimenti').delete().eq('id', id);
   if (error) throw error;
