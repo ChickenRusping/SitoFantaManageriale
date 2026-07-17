@@ -5861,6 +5861,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const [showAstaForm, setShowAstaForm] = useState(false);
   const [now, setNow] = useState(new Date());
   const [rispostaInCorso, setRispostaInCorso] = useState({});
+  const [bonusByTrattativa, setBonusByTrattativa] = useState({});
+  const [expandedTrattative, setExpandedTrattative] = useState({});
 
   // ── Picker squadra/giocatore (nuovo form trattativa) ──────────────────────
   const emptyForm = {
@@ -5880,6 +5882,9 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const [form, setForm] = useState(emptyForm);
   const [rosaTarget, setRosaTarget] = useState([]);
   const [loadingRosa, setLoadingRosa] = useState(false);
+  const [playerSearch, setPlayerSearch] = useState("");
+  const [playerSearchResults, setPlayerSearchResults] = useState([]);
+  const [loadingPlayerSearch, setLoadingPlayerSearch] = useState(false);
 
   // Form nuova asta
   const emptyAstaForm = { giocatore: "", quot: "", tipo_asta: "rialzo", note: "" };
@@ -5889,6 +5894,23 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const mySquadra = profile?.squadra;
   const squadraMittente = isAdmin ? (form.squadraMittente || mySquadra) : mySquadra;
   const mercato = getMercatoStatus();
+
+  const getBonusRows = useCallback((trattativaId) => bonusByTrattativa[trattativaId] || [], [bonusByTrattativa]);
+  const getBonusTotale = useCallback((trattativaId) => (getBonusRows(trattativaId) || [])
+    .reduce((sum, b) => sum + (Number(b.valore_mln) || 0), 0), [getBonusRows]);
+  const getPrezzoPotenziale = useCallback((trattativa) => {
+    const prezzoBase = Number(trattativa?.prezzo || 0);
+    return parseFloat((prezzoBase + getBonusTotale(trattativa?.id)).toFixed(2));
+  }, [getBonusTotale]);
+  const formatMln = (v) => `${Number(v || 0).toFixed(2).replace(/\.00$/, '')}M`;
+  const stimaStipendioNuovo = (trattativa) => parseFloat((Number(trattativa?.quot_giocatore || 0) / 5).toFixed(2));
+  const getSalaryRecap = (trattativa) => {
+    const buyer = teams.find(t => t.name === trattativa.da_squadra);
+    const currentSC = Number(buyer?.salaryUsed ?? buyer?.salary_used ?? 0);
+    const newStip = stimaStipendioNuovo(trattativa);
+    const newSC = parseFloat((currentSC + newStip).toFixed(2));
+    return { buyer, currentSC, newStip, newSC, freeAfter: parseFloat((75 - newSC).toFixed(2)) };
+  };
 
   // Per gli admin la squadra mittente predefinita è sempre quella del proprio profilo.
   useEffect(() => {
@@ -5911,7 +5933,12 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       getAste(),
       getAsteSvincolati(),
     ]);
-    setTrattative(t || []);
+    const trattativeList = t || [];
+    const bonusEntries = await Promise.all(
+      trattativeList.map(async tr => [tr.id, await getBonusTrattativa(tr.id)])
+    );
+    setBonusByTrattativa(Object.fromEntries(bonusEntries));
+    setTrattative(trattativeList);
     setAste(a || []);
     setAsteSvinc(as || []);
     setLoading(false);
@@ -5929,6 +5956,64 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     if (!mySquadra) return;
     getRosa(mySquadra).then(r => setMyRosa((r || []).filter(p => !p.in_vivaio).sort((a,b) => a.nome.localeCompare(b.nome))));
   }, [mySquadra]);
+
+
+  // ── Ricerca giocatore globale per nuova trattativa ─────────────────────────
+  useEffect(() => {
+    const q = playerSearch.trim().toLowerCase();
+    let cancelled = false;
+
+    async function runSearch() {
+      if (q.length < 2) {
+        setPlayerSearchResults([]);
+        return;
+      }
+
+      setLoadingPlayerSearch(true);
+      try {
+        const squadreCercabili = (teams || [])
+          .map(t => t.name)
+          .filter(name => name && name !== squadraMittente);
+
+        const rose = await Promise.all(
+          squadreCercabili.map(async squadra => {
+            try {
+              const data = await getRosa(squadra);
+              return (data || [])
+                .filter(p => !p.in_vivaio)
+                .filter(p => String(p.nome || '').toLowerCase().includes(q))
+                .map(p => ({ ...p, squadra }));
+            } catch {
+              return [];
+            }
+          })
+        );
+
+        if (cancelled) return;
+
+        const results = rose
+          .flat()
+          .sort((a, b) => {
+            const an = String(a.nome || '').toLowerCase();
+            const bn = String(b.nome || '').toLowerCase();
+            const aStarts = an.startsWith(q) ? 0 : 1;
+            const bStarts = bn.startsWith(q) ? 0 : 1;
+            return aStarts - bStarts || an.localeCompare(bn) || String(a.squadra).localeCompare(String(b.squadra));
+          })
+          .slice(0, 12);
+
+        setPlayerSearchResults(results);
+      } finally {
+        if (!cancelled) setLoadingPlayerSearch(false);
+      }
+    }
+
+    const timer = setTimeout(runSearch, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [playerSearch, squadraMittente, teams]);
 
   // ── Polling auto-close aste rialzo scadute (ogni minuto) ─────────────────
   useEffect(() => {
@@ -5995,6 +6080,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
   // ── Carica rosa quando si sceglie la squadra target ───────────────────────
   async function onSquadraTargetChange(squadraNome) {
+    setPlayerSearch('');
+    setPlayerSearchResults([]);
     setForm(f => ({ ...f, squadraTarget: squadraNome, giocatoreId: '', giocatoreNome: '', quot: 0, prezzo: '' }));
     if (!squadraNome) { setRosaTarget([]); return; }
     setLoadingRosa(true);
@@ -6017,6 +6104,40 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       prezzo: String(parseFloat((player.quot / 2).toFixed(2))),
       tipo: tipoForzato,
     }));
+  }
+
+
+  async function selezionaGiocatoreDaRicerca(player) {
+    if (!player?.squadra) return;
+    if (player.squadra === squadraMittente) {
+      alert("Non puoi acquistare un giocatore dalla stessa squadra mittente.");
+      return;
+    }
+
+    setLoadingRosa(true);
+    try {
+      const data = await getRosa(player.squadra);
+      const rosa = (data || []).filter(p => !p.in_vivaio);
+      setRosaTarget(rosa);
+
+      const trovato = rosa.find(p => String(p.id) === String(player.id)) ||
+        rosa.find(p => String(p.nome || '').toLowerCase() === String(player.nome || '').toLowerCase());
+
+      const quot = Number(trovato?.quot ?? player.quot ?? 0);
+      setForm(f => ({
+        ...f,
+        squadraTarget: player.squadra,
+        giocatoreId: trovato ? String(trovato.id) : String(player.id || ''),
+        giocatoreNome: trovato?.nome || player.nome,
+        quot,
+        prezzo: quot ? String(parseFloat((quot / 2).toFixed(2))) : "",
+      }));
+
+      setPlayerSearch("");
+      setPlayerSearchResults([]);
+    } finally {
+      setLoadingRosa(false);
+    }
   }
 
   // ── Aggiunge una riga bonus al form ───────────────────────────────────────
@@ -6053,7 +6174,15 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     if (da === form.squadraTarget) { alert('La squadra mittente e la squadra cedente devono essere diverse'); return; }
     const scad = form.tipo.startsWith('prestito') ? scadenzaPrestito(parseInt(form.durata_mesi)) : null;
     const tipoLabel = { cessione:'Acquisto diretto', clausola:'Clausola rescissoria', prestito:'Prestito con riscatto', prestito_secco:'Prestito secco' }[form.tipo] || form.tipo;
-    if (!window.confirm(`Inviare offerta?\n\n${tipoLabel}: ${form.giocatoreNome}\nDa: ${da} → ${form.squadraTarget}\nPrezzo: ${(form.tipo === 'clausola' ? valoreClausola(Number(form.quot)) : parseFloat(form.prezzo)||0).toFixed(2)}M`)) return;
+    const bonusValidi = form.bonusRows
+      .map(row => ({ ...row, soglia: Number(row.soglia), valore_mln: Number(row.valore_mln) }))
+      .filter(row => row.soglia > 0 && row.valore_mln > 0);
+    const bonusTotale = bonusValidi.reduce((sum, row) => sum + row.valore_mln, 0);
+    const prezzoPotenziale = parseFloat((prezzo + bonusTotale).toFixed(2));
+    const bonusPreview = bonusValidi.length
+      ? `\nBonus: +${bonusTotale.toFixed(2)}M potenziali\nTotale potenziale: ${prezzoPotenziale.toFixed(2)}M`
+      : '';
+    if (!window.confirm(`Inviare offerta?\n\n${tipoLabel}: ${form.giocatoreNome}\nDa: ${da} → ${form.squadraTarget}\nPrezzo fisso: ${prezzo.toFixed(2)}M${bonusPreview}`)) return;
 
     const trattativa = await insertTrattativa({
       da_squadra: da,
@@ -6072,18 +6201,17 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       deadline_risposta: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
     });
 
-    // Inserisci i bonus (parsa soglia e valore_mln da stringa a numero)
-    for (const row of form.bonusRows) {
-      const soglia = Number(row.soglia);
-      const valore_mln = Number(row.valore_mln);
-      if (!soglia || !valore_mln || soglia <= 0 || valore_mln <= 0) continue; // salta righe incomplete
-      await insertBonusTrattativa({ ...row, soglia, valore_mln, trattativa_id: trattativa.id });
+    // Inserisci i bonus già validati sopra.
+    for (const row of bonusValidi) {
+      await insertBonusTrattativa({ ...row, trattativa_id: trattativa.id });
     }
 
     // Notify the receiving team via Telegram DM
     sendTelegramNotification('trattativa_ricevuta', {
       giocatore: form.giocatoreNome,
       importo: prezzo,
+      bonus: bonusTotale,
+      importo_potenziale: prezzoPotenziale,
       da_squadra: da,
     }, form.squadraTarget);
 
@@ -6521,6 +6649,63 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                 </div>
               )}
 
+
+              {/* RICERCA RAPIDA GIOCATORE */}
+              <div style={{ marginBottom: 16, background: "#ffffff05", border: "1px solid #ffffff10", borderRadius: 12, padding: "12px 14px" }}>
+                <div style={{ fontSize: 10, color: "#888", marginBottom: 6, fontWeight: 800, letterSpacing: "0.08em" }}>🔎 CERCA GIOCATORE</div>
+                <input
+                  style={{ ...inp, width: "100%" }}
+                  value={playerSearch}
+                  onChange={e => setPlayerSearch(e.target.value)}
+                  placeholder="Scrivi almeno 2 lettere, es. Atta, Yildiz, Barella..."
+                />
+                {loadingPlayerSearch && <div style={{ marginTop: 8, fontSize: 11, color: "#555" }}>Ricerca in corso…</div>}
+                {!loadingPlayerSearch && playerSearch.trim().length >= 2 && playerSearchResults.length === 0 && (
+                  <div style={{ marginTop: 8, fontSize: 11, color: "#555" }}>Nessun giocatore trovato nelle rose avversarie.</div>
+                )}
+                {playerSearchResults.length > 0 && (
+                  <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6, maxHeight: 260, overflowY: "auto" }}>
+                    {playerSearchResults.map(p => {
+                      const team = teams.find(t => t.name === p.squadra);
+                      return (
+                        <button
+                          key={`${p.squadra}-${p.id || p.nome}`}
+                          type="button"
+                          onClick={() => selezionaGiocatoreDaRicerca(p)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            width: "100%",
+                            textAlign: "left",
+                            padding: "8px 10px",
+                            borderRadius: 9,
+                            border: `1px solid ${form.giocatoreId && String(form.giocatoreId) === String(p.id) ? "#6366f155" : "#ffffff12"}`,
+                            background: form.giocatoreId && String(form.giocatoreId) === String(p.id) ? "#6366f118" : "#ffffff06",
+                            color: "#ddd",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {team && <TeamAvatar team={team} size={24} />}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 800, color: "#f0f0f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {p.nome}
+                            </div>
+                            <div style={{ fontSize: 10, color: "#777" }}>
+                              {p.squadra} · {p.ruolo || "—"} · Q{p.quot ?? "—"} · stip {p.stip ?? ((Number(p.quot || 0) / 5).toFixed(2))}M
+                            </div>
+                          </div>
+                          <span style={{ fontSize: 10, color: "#818cf8", fontWeight: 800 }}>Seleziona</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                <div style={{ marginTop: 8, fontSize: 10, color: "#555" }}>
+                  Metodo alternativo: selezionando un giocatore da qui vengono compilati automaticamente squadra cedente, giocatore, quotazione e prezzo minimo.
+                </div>
+              </div>
+
               {/* STEP 1 — Scegli squadra */}
               <div style={{ marginBottom: 14 }}>
                 <div style={{ fontSize: 10, color: "#666", marginBottom: 6 }}>1. SQUADRA DA CUI ACQUISTARE</div>
@@ -6539,7 +6724,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
               {/* STEP 2 — Scegli giocatore */}
               {form.squadraTarget && (
                 <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 10, color: "#666", marginBottom: 6 }}>2. GIOCATORE</div>
+                  <div style={{ fontSize: 10, color: "#666", marginBottom: 6 }}>2. GIOCATORE {form.giocatoreNome && <span style={{ color: "#10b981" }}>· selezionato: {form.giocatoreNome}</span>}</div>
                   {loadingRosa
                     ? <div style={{ fontSize: 12, color: "#555" }}>Caricamento rosa…</div>
                     : (
@@ -6704,6 +6889,17 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                     {form.bonusRows.length > 0 && (
                       <div style={{ fontSize: 9, color: "#555", marginTop: 2 }}>I bonus vengono verificati automaticamente ad ogni aggiornamento del listone</div>
                     )}
+                    {(() => {
+                      const bonusTot = form.bonusRows.reduce((sum, r) => sum + (Number(r.valore_mln) || 0), 0);
+                      const prezzoBase = form.tipo === 'clausola' ? valoreClausola(Number(form.quot || 0)) : Number(form.prezzo || 0);
+                      if (!prezzoBase && !bonusTot) return null;
+                      return (
+                        <div style={{ marginTop: 8, background: "#10b9810a", border: "1px solid #10b98122", borderRadius: 9, padding: "8px 10px", fontSize: 10, color: "#aaa" }}>
+                          <b style={{ color: "#10b981" }}>Riepilogo offerta:</b> fisso {formatMln(prezzoBase)}{bonusTot > 0 ? ` + bonus ${formatMln(bonusTot)} = potenziale ${formatMln(prezzoBase + bonusTot)}` : ""}
+                          {form.quot > 0 && <span> · stipendio stimato in rosa acquirente: {formatMln(Number(form.quot) / 5)}/anno</span>}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {!mercato.aperto && (
@@ -6734,6 +6930,12 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                     const aTeam  = teams.find(x => x.name === t.a_squadra);
                     const squadraCheDeveRispondere = t.stato === 'controproposta' ? t.da_squadra : t.a_squadra;
                     const canRispondi = squadraCheDeveRispondere === mySquadra || isAdmin;
+                    const bonusRows = getBonusRows(t.id);
+                    const bonusTotale = getBonusTotale(t.id);
+                    const prezzoBase = Number(t.prezzo || 0);
+                    const prezzoPotenziale = getPrezzoPotenziale(t);
+                    const expanded = !!expandedTrattative[t.id];
+                    const salaryRecap = getSalaryRecap(t);
                     return (
                       <div key={t.id} style={{ background: urgente ? "#ef444410" : "#ffffff08", border: `1px solid ${urgente ? "#ef444430" : "#ffffff10"}`, borderRadius: 12, padding: "12px 14px", marginBottom: 8 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
@@ -6745,7 +6947,10 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                             <div style={{ fontSize: 10, color: "#888" }}>{tipoLabel[t.tipo] || t.tipo}{t.scadenza_prestito ? ` · scad. ${t.scadenza_prestito}` : ""}{t.stipendio_a_chi ? ` · stip: ${t.stipendio_a_chi}` : ""}</div>
                           </div>
                           <div style={{ textAlign: "right" }}>
-                            <div style={{ fontSize: 16, fontWeight: 900, color: "#10b981", fontFamily: "'Bebas Neue',sans-serif" }}>{t.prezzo}M</div>
+                            <div style={{ fontSize: 16, fontWeight: 900, color: "#10b981", fontFamily: "'Bebas Neue',sans-serif" }}>
+                              {formatMln(prezzoBase)}{bonusTotale > 0 && <span style={{ color: "#f59e0b" }}> + {formatMln(bonusTotale)}</span>}
+                            </div>
+                            {bonusTotale > 0 && <div style={{ fontSize: 9, color: "#10b981" }}>tot. potenziale {formatMln(prezzoPotenziale)}</div>}
                             {t.quot_giocatore > 0 && <div style={{ fontSize: 9, color: "#555" }}>Q{t.quot_giocatore} · min {prezzoMinimo(t.quot_giocatore)}M</div>}
                           </div>
                         </div>
@@ -6754,6 +6959,11 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                         {t.giocatore_scambio && <div style={{ fontSize: 11, color: "#818cf8", marginBottom: 6 }}>🔀 Contropartita: {t.giocatore_scambio}</div>}
                         {t.note && <div style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>📝 {t.note}</div>}
                         {t.fuori_mercato && <div style={{ fontSize: 10, color: "#f97316", marginBottom: 6 }}>📦 Trasferimento differito al 1° giorno di mercato (art. 5.1.1)</div>}
+                        {bonusRows.length > 0 && (
+                          <div style={{ fontSize: 10, color: "#f59e0b", marginBottom: 6, background: "#f59e0b0a", border: "1px solid #f59e0b22", borderRadius: 8, padding: "5px 8px", display: "inline-block" }}>
+                            🎯 {bonusRows.length} bonus inserit{bonusRows.length === 1 ? "o" : "i"} · valore potenziale {formatMln(bonusTotale)}
+                          </div>
+                        )}
 
                         {/* Stato notifica con penalità art. 5.3 */}
                         {(() => {
@@ -6793,21 +7003,71 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                           );
                         })()}
 
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedTrattative(prev => ({ ...prev, [t.id]: !prev[t.id] }))}
+                          style={{ marginBottom: 8, padding: "5px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: expanded ? "#6366f122" : "#ffffff08", color: expanded ? "#a5b4fc" : "#888", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                        >
+                          {expanded ? "▴ Nascondi dettagli" : "▾ Dettagli offerta"}
+                        </button>
+
+                        {expanded && (
+                          <div style={{ background: "#0d0f1480", border: "1px solid #ffffff12", borderRadius: 10, padding: "10px 12px", marginBottom: 10 }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 8, marginBottom: 10 }}>
+                              <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
+                                <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>PARTE FISSA</div>
+                                <div style={{ fontSize: 18, color: "#10b981", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(prezzoBase)}</div>
+                              </div>
+                              <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
+                                <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>BONUS POTENZIALI</div>
+                                <div style={{ fontSize: 18, color: bonusTotale > 0 ? "#f59e0b" : "#555", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(bonusTotale)}</div>
+                              </div>
+                              <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
+                                <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>TOTALE POTENZIALE</div>
+                                <div style={{ fontSize: 18, color: "#a5b4fc", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(prezzoPotenziale)}</div>
+                              </div>
+                            </div>
+
+                            {bonusRows.length > 0 ? (
+                              <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 10 }}>
+                                <div style={{ fontSize: 9, color: "#666", fontWeight: 800, letterSpacing: "0.08em" }}>DETTAGLIO BONUS</div>
+                                {bonusRows.map((b, idx) => (
+                                  <div key={b.id || idx} style={{ display: "flex", justifyContent: "space-between", gap: 8, background: "#ffffff05", borderRadius: 7, padding: "6px 8px", fontSize: 10, color: "#aaa" }}>
+                                    <span>🎯 {getLabelBonus(b.tipo_bonus)} ≥ {b.soglia}</span>
+                                    <span style={{ color: "#f59e0b", fontWeight: 800 }}>+{formatMln(b.valore_mln)} · {b.direzione === 'acquirente_paga' ? 'paga acquirente' : 'paga cedente'}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div style={{ fontSize: 10, color: "#555", marginBottom: 10 }}>Nessun bonus collegato a questa offerta.</div>
+                            )}
+
+                            <div style={{ background: "#10b98108", border: "1px solid #10b98122", borderRadius: 8, padding: "8px 10px" }}>
+                              <div style={{ fontSize: 9, color: "#10b981", fontWeight: 800, letterSpacing: "0.08em", marginBottom: 5 }}>IMPATTO SALARY CAP ACQUIRENTE</div>
+                              <div style={{ fontSize: 10, color: "#aaa", lineHeight: 1.6 }}>
+                                {salaryRecap.buyer?.name || t.da_squadra}: SC attuale {formatMln(salaryRecap.currentSC)} → nuovo stimato {formatMln(salaryRecap.newSC)}
+                                <br />
+                                Stipendio stimato giocatore: {formatMln(salaryRecap.newStip)} / anno · spazio residuo dopo acquisto: <b style={{ color: salaryRecap.freeAfter >= 0 ? "#10b981" : "#ef4444" }}>{formatMln(salaryRecap.freeAfter)}</b>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, width: "100%" }}>
                           {/* Countdown risposta 24h (art. 5.3) */}
                           <div style={{ fontSize: 10, color: urgente ? "#ef4444" : "#555" }}>
                             ⏱ {hLeft}h rimaste · penalità: {hLeft > 24 ? "—" : hLeft > 0 ? "1M" : hLeft === 0 ? "5M" : "96h rule"}
                           </div>
                           {canRispondi && (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                              <div style={{ display: "flex", gap: 6 }}>
-                                <button disabled={!!rispostaInCorso[t.id]} onClick={() => rispondi(t, 'accettata')} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "#10b98120", color: "#10b981", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✓ Accetta</button>
-                                <button disabled={!!rispostaInCorso[t.id]} onClick={() => rispondi(t, 'rifiutata')} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "#ef444420", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✕ Rifiuta</button>
-                                <button onClick={() => { setControffertaId(t.id); setControffertaPrezzo(String(t.prezzo || "")); }}
-                                  style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #f59e0b33", background: "#f59e0b12", color: "#f59e0b", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                            <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 6 }}>
+                              <div className="trattativa-actions">
+                                <button className="trattativa-action-btn" disabled={!!rispostaInCorso[t.id]} onClick={() => rispondi(t, 'accettata')} style={{ border: "none", background: "#10b98120", color: "#10b981" }}>✓ Accetta</button>
+                                <button className="trattativa-action-btn" disabled={!!rispostaInCorso[t.id]} onClick={() => rispondi(t, 'rifiutata')} style={{ border: "none", background: "#ef444420", color: "#ef4444" }}>✕ Rifiuta</button>
+                                <button className="trattativa-action-btn" onClick={() => { setControffertaId(t.id); setControffertaPrezzo(String(t.prezzo || "")); }}
+                                  style={{ border: "1px solid #f59e0b33", background: "#f59e0b12", color: "#f59e0b" }}>
                                   ↩ Controfferta
                                 </button>
-                                {isAdmin && <button disabled={!!rispostaInCorso[t.id]} onClick={() => rispondi(t, 'completata')} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "#6366f120", color: "#818cf8", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✅ Completata</button>}
+                                {isAdmin && <button className="trattativa-action-btn" disabled={!!rispostaInCorso[t.id]} onClick={() => rispondi(t, 'completata')} style={{ border: "none", background: "#6366f120", color: "#818cf8" }}>✅ Completata</button>}
                               </div>
                               {/* Form controfferta inline */}
                               {controffertaId === t.id && (
@@ -6984,6 +7244,9 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
             : tutteTrattative.filter(t => t.stato !== 'in attesa' && t.stato !== 'controproposta').map(t => {
               const daTeam = teams.find(x => x.name === t.da_squadra);
               const aTeam  = teams.find(x => x.name === t.a_squadra);
+              const bonusTotale = getBonusTotale(t.id);
+              const prezzoBase = Number(t.prezzo || 0);
+              const prezzoPotenziale = getPrezzoPotenziale(t);
               return (
                 <div key={t.id} style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                   {daTeam && <TeamAvatar team={daTeam} size={24} />}
@@ -6993,7 +7256,10 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                     <div style={{ fontSize: 12, fontWeight: 700, color: "#ddd" }}>{t.giocatore} · {tipoLabel[t.tipo] || t.tipo}</div>
                     <div style={{ fontSize: 10, color: "#666" }}>{new Date(t.created_at).toLocaleDateString("it-IT")}{t.fuori_mercato ? " · fuori mercato" : ""}</div>
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: "#aaa", fontFamily: "'Bebas Neue',sans-serif" }}>{t.prezzo}M</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: "#aaa", fontFamily: "'Bebas Neue',sans-serif", textAlign: "right" }}>
+                    {formatMln(prezzoBase)}{bonusTotale > 0 && <span style={{ color: "#f59e0b" }}> + {formatMln(bonusTotale)}</span>}
+                    {bonusTotale > 0 && <div style={{ fontSize: 9, color: "#666", fontFamily: "system-ui" }}>tot. {formatMln(prezzoPotenziale)}</div>}
+                  </div>
                   <Badge color={statoColor[t.stato] || "#888"}>{t.stato}</Badge>
                   {isAdmin && <button onClick={() => { if (window.confirm(`Eliminare la trattativa per ${t.giocatore}?`)) deleteTrattativa(t.id); }} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#ef444415", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>✕</button>}
                 </div>
