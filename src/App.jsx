@@ -164,7 +164,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento,
   getBonusTrattativa, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -5072,7 +5072,9 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
   };
   const [movimenti, setMovimenti] = useState([]);
   const [showMovForm, setShowMovForm] = useState(false);
-  const [movForm, setMovForm] = useState({ descrizione: "", entrata: "", uscita: "", data: new Date().toISOString().slice(0, 10) });
+  const emptyMovForm = { descrizione: "", entrata: "", uscita: "", data: new Date().toISOString().slice(0, 10) };
+  const [movForm, setMovForm] = useState(emptyMovForm);
+  const [editingMovimento, setEditingMovimento] = useState(null);
   const [movSort, setMovSort] = useState("data_desc");
   const [rosaPlayers, setRosaPlayers] = useState([]);
   const [contrattiScadenza, setContrattiScadenza] = useState([]);
@@ -5189,11 +5191,67 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
     return () => supabase.removeChannel(sub);
   }, [loadMovimenti, team.name]);
 
+  const valoreMovimento = (m) => Number(m?.entrata || 0) - Number(m?.uscita || 0);
+  const resetMovForm = () => {
+    setMovForm({ ...emptyMovForm, data: new Date().toISOString().slice(0, 10) });
+    setEditingMovimento(null);
+  };
+
+  function apriModificaMovimento(m) {
+    setEditingMovimento(m);
+    setMovForm({
+      descrizione: m.descrizione || "",
+      entrata: m.entrata ? String(m.entrata) : "",
+      uscita: m.uscita ? String(m.uscita) : "",
+      data: m.data || new Date().toISOString().slice(0, 10),
+    });
+    setShowMovForm(true);
+  }
+
   async function salvaMovimento() {
     if (!movForm.descrizione) return;
     const entrata = movForm.entrata ? parseFloat(movForm.entrata) : null;
     const uscita  = movForm.uscita  ? parseFloat(movForm.uscita)  : null;
+    if (entrata && uscita) { alert("Inserisci solo entrata oppure uscita, non entrambe."); return; }
+
     const dettaglio = entrata ? `Entrata: +${entrata}M` : uscita ? `Uscita: −${uscita}M` : "Nessun importo";
+
+    if (editingMovimento) {
+      if (!window.confirm(`Modificare il movimento?\n\n"${editingMovimento.descrizione}"\n→ "${movForm.descrizione}"\n${dettaglio}`)) return;
+
+      await updateMovimento(editingMovimento.id, {
+        descrizione: movForm.descrizione,
+        entrata,
+        uscita,
+        data: movForm.data,
+      });
+
+      const vecchioValore = valoreMovimento(editingMovimento);
+      const nuovoValore = Number(entrata || 0) - Number(uscita || 0);
+      const delta = parseFloat((nuovoValore - vecchioValore).toFixed(2));
+      const nuovoBilancio = parseFloat((Number(bilancioLive ?? team.bilancio ?? 0) + delta).toFixed(2));
+
+      await updateSquadra(team.name, { bilancio: nuovoBilancio });
+      await logAzione({
+        utente: isAdmin ? 'admin' : mySquadra,
+        squadra: team.name,
+        azione: 'movimento_modificato',
+        entita: 'movimenti',
+        entitaId: editingMovimento.id,
+        descrizione: `Movimento modificato: ${editingMovimento.descrizione} → ${movForm.descrizione}`,
+        dataPrima: editingMovimento,
+        dataDopo: { descrizione: movForm.descrizione, entrata, uscita, data: movForm.data },
+        rollbackPossibile: true,
+      }).catch(() => {});
+
+      setBilancioLive(nuovoBilancio);
+      setShowMovForm(false);
+      resetMovForm();
+      cacheInvalidate('movimenti_' + team.name);
+      await loadMovimenti();
+      return;
+    }
+
     if (!window.confirm(`Registrare il movimento?\n\n"${movForm.descrizione}"\n${dettaglio}`)) return;
     await insertMovimento({
       squadra: team.name,
@@ -5201,11 +5259,9 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
       entrata, uscita,
       data: movForm.data,
     });
-    // Ricalcola bilancio come somma di tutti i movimenti
     const nuovi = [...movimenti, { entrata, uscita }];
     const nuovoBilancio = parseFloat(nuovi.reduce((s, m) => s + (m.entrata || 0) - (m.uscita || 0), 0).toFixed(2));
     await updateSquadra(team.name, { bilancio: nuovoBilancio });
-    // Notifica privata Telegram al presidente della squadra
     sendTelegramNotification('movimento_privato', {
       descrizione: movForm.descrizione,
       entrata: entrata || null,
@@ -5214,7 +5270,8 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
     }, team.name);
     setBilancioLive(nuovoBilancio);
     setShowMovForm(false);
-    setMovForm({ descrizione: "", entrata: "", uscita: "", data: new Date().toISOString().slice(0, 10) });
+    resetMovForm();
+    cacheInvalidate('movimenti_' + team.name);
     await loadMovimenti();
   }
 
@@ -5226,6 +5283,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
     await updateSquadra(team.name, { bilancio: nuovoBilancio });
     await deleteMovimento(id);
     setBilancioLive(nuovoBilancio);
+    cacheInvalidate('movimenti_' + team.name);
     await loadMovimenti();
   }
 
@@ -5330,7 +5388,10 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
                       );
                     })}
                     {canEditMovimenti && (
-                      <button onClick={() => setShowMovForm(v => !v)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: showMovForm ? "#ffffff12" : "linear-gradient(135deg,#6366f1,#a855f7)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      <button onClick={() => {
+                        if (showMovForm) { setShowMovForm(false); resetMovForm(); }
+                        else { resetMovForm(); setShowMovForm(true); }
+                      }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: showMovForm ? "#ffffff12" : "linear-gradient(135deg,#6366f1,#a855f7)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                         {showMovForm ? "✕" : "+ Mov"}
                       </button>
                     )}
@@ -5339,6 +5400,16 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
 
                 {showMovForm && (
                   <div style={{ background: "#ffffff08", border: "1px solid #6366f133", borderRadius: 12, padding: 14, marginBottom: 14 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <div style={{ fontSize: 11, fontWeight: 800, color: editingMovimento ? "#f59e0b" : "#818cf8", letterSpacing: "0.06em" }}>
+                        {editingMovimento ? "✏️ MODIFICA MOVIMENTO" : "➕ NUOVO MOVIMENTO"}
+                      </div>
+                      {editingMovimento && (
+                        <button onClick={() => { setShowMovForm(false); resetMovForm(); }} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#ffffff10", color: "#888", fontSize: 10, cursor: "pointer" }}>
+                          Annulla modifica
+                        </button>
+                      )}
+                    </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                       <div style={{ gridColumn: "1 / -1" }}>
                         <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>DESCRIZIONE</div>
@@ -5362,7 +5433,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
                       </div>
                     </div>
                     <button onClick={salvaMovimento} style={{ width: "100%", padding: "9px", borderRadius: 9, border: "none", background: "#6366f1", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                      Salva movimento →
+                      {editingMovimento ? "Salva modifiche →" : "Salva movimento →"}
                     </button>
                   </div>
                 )}
@@ -5391,7 +5462,10 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
                           {m.entrata ? `+${m.entrata}M` : m.uscita ? `-${m.uscita}M` : "—"}
                         </div>
                         {canEditMovimenti && (
-                          <button onClick={() => rimuoviMovimento(m.id)} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#ef444418", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>✕</button>
+                          <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+                            <button onClick={() => apriModificaMovimento(m)} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#f59e0b18", color: "#f59e0b", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>✏️</button>
+                            <button onClick={() => rimuoviMovimento(m.id)} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#ef444418", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>✕</button>
+                          </div>
                         )}
                       </div>
                     ));
