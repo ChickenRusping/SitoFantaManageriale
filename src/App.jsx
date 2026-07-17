@@ -4508,7 +4508,10 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
             const soglia=Number(bonus.soglia),val=valoreAttuale??0;
             const pct=soglia>0?Math.min(100,Math.round((val/soglia)*100)):0;
             const completato=bonus.completato||val>=soglia;
-            const ioPago=(bonus.direzione==='acquirente_paga'&&trattativa.a_squadra===team.name)||(bonus.direzione==='cedente_paga'&&trattativa.da_squadra===team.name);
+            // Convenzione trattative: da_squadra = acquirente, a_squadra = cedente.
+            const ioPago =
+              (bonus.direzione === 'acquirente_paga' && trattativa.da_squadra === team.name) ||
+              (bonus.direzione === 'cedente_paga' && trattativa.a_squadra === team.name);
             return (
               <div key={bonus.id} style={{ background:completato?"#10b98110":"#ffffff08",border:`1.5px solid ${completato?"#10b98130":"#ffffff12"}`,borderRadius:12,padding:"12px 14px" }}>
                 <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8,gap:8,flexWrap:"wrap" }}>
@@ -7098,7 +7101,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                                 {bonusRows.map((b, idx) => (
                                   <div key={b.id || idx} style={{ display: "flex", justifyContent: "space-between", gap: 8, background: "#ffffff05", borderRadius: 7, padding: "6px 8px", fontSize: 10, color: "#aaa" }}>
                                     <span>🎯 {getLabelBonus(b.tipo_bonus)} ≥ {b.soglia}</span>
-                                    <span style={{ color: "#f59e0b", fontWeight: 800 }}>+{formatMln(b.valore_mln)} · {b.direzione === 'acquirente_paga' ? 'paga acquirente' : 'paga cedente'}</span>
+                                    <span style={{ color: "#f59e0b", fontWeight: 800 }}>+{formatMln(b.valore_mln)} · {b.direzione === 'acquirente_paga' ? "paga l'acquirente" : 'paga il cedente'}</span>
                                   </div>
                                 ))}
                               </div>
