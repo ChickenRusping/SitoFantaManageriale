@@ -3564,6 +3564,15 @@ export async function getControlRoomStatus() {
   const stipendiPagati = new Set(stipendiMovimenti.map(m => m.squadra));
   const stadioPagato = new Set(stadioMovimenti.map(m => m.squadra));
 
+  // Costo vivaio annuale (4M, art. 3.6.3): pagato se registrato per la stagione corrente,
+  // oppure con il vecchio flag booleano (dati storici precedenti all'introduzione della stagione).
+  const stagioneVivaio = getStagioneQuota(new Date());
+  const vivaioPagato = new Set(
+    squadreList
+      .filter(sq => sq.vivaio_stagione_pagata === stagioneVivaio || (sq.vivaio_pagato && !sq.vivaio_stagione_pagata))
+      .map(sq => sq.name)
+  );
+
   return {
     squadre: squadreList,
     tassePagate,
@@ -3571,6 +3580,8 @@ export async function getControlRoomStatus() {
     canApplicareTassa,
     stipendiPagati,
     stadioPagato,
+    vivaioPagato,
+    stagioneVivaio,
     stipendiDettagli: {
       movimenti: stipendiMovimenti,
       countBySquadra: stipendiMovimenti.reduce((acc, m) => {
@@ -3920,6 +3931,27 @@ export async function pagaCostoVivaio(squadra, bilancioAttuale) {
   await supabase.from('squadre').update({ bilancio: nuovoBilancio, vivaio_pagato: true, vivaio_stagione_pagata: getStagioneQuota(new Date()), vivaio_pagato_il: oggi }).eq('name', squadra);
   await supabase.from('movimenti').insert({ squadra, descrizione: 'Costo mantenimento vivaio (annuale)', uscita: COSTO, data: oggi });
   return nuovoBilancio;
+}
+
+// Applica il pagamento del costo vivaio (4M) a tutte le squadre che non l'hanno ancora
+// pagato per la stagione corrente. Salta le squadre già in regola (art. 3.6.3).
+export async function applicaCostoVivaioATutti(opts = {}) {
+  const stagione = opts.stagione || getStagioneQuota(new Date());
+  const { data: squadre, error } = await supabase.from('squadre').select('name, bilancio, vivaio_pagato, vivaio_stagione_pagata');
+  if (error) throw error;
+  if (!squadre?.length) return [];
+  const results = [];
+  for (const sq of squadre) {
+    const giaPagato = sq.vivaio_stagione_pagata === stagione || (sq.vivaio_pagato && !sq.vivaio_stagione_pagata);
+    if (giaPagato) { results.push({ squadra: sq.name, skip: true }); continue; }
+    try {
+      await pagaCostoVivaio(sq.name, sq.bilancio || 0);
+      results.push({ squadra: sq.name, ok: true });
+    } catch(e) {
+      results.push({ squadra: sq.name, ok: false, error: e.message });
+    }
+  }
+  return results;
 }
 
 // Giocatori svincolati idonei per il vivaio (under-23, Q <= 3)
