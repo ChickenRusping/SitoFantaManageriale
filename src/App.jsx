@@ -164,7 +164,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento,
   getBonusTrattativa, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -4101,6 +4101,7 @@ function AltroTab({ team, isAdmin, mySquadra }) {
   // ── BONUS TRATTATIVE ─────────────────────────────────────────────────────────
   const [bonusData, setBonusData] = useState([]);
   const [loadingBonus, setLoadingBonus] = useState(true);
+  const [bonusSectionOpen, setBonusSectionOpen] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -4500,8 +4501,17 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
 
       {/* ══ 1. BONUS TRATTATIVE ══ */}
       <div>
-        <div style={{ fontSize:11,fontWeight:700,color:"#818cf8",letterSpacing:"0.1em",marginBottom:12 }}>📊 BONUS TRATTATIVE</div>
-        {loadingBonus?<div style={{ fontSize:12,color:"#555" }}>Caricamento...</div>
+        <div
+          onClick={() => setBonusSectionOpen(v => !v)}
+          style={{ display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", marginBottom: bonusSectionOpen ? 12 : 0, userSelect:"none" }}>
+          <div style={{ fontSize:11,fontWeight:700,color:"#818cf8",letterSpacing:"0.1em", display:"flex", alignItems:"center", gap:6 }}>
+            📊 BONUS TRATTATIVE
+            {bonusData.length > 0 && <span style={{ fontSize:9, color:"#818cf8", background:"#6366f118", border:"1px solid #6366f130", borderRadius:999, padding:"1px 7px" }}>{bonusData.length}</span>}
+          </div>
+          <span style={{ fontSize:11, color:"#666" }}>{bonusSectionOpen ? "▴ Chiudi" : "▾ Apri"}</span>
+        </div>
+        {bonusSectionOpen && (
+        loadingBonus?<div style={{ fontSize:12,color:"#555" }}>Caricamento...</div>
         :bonusData.length===0?<div style={{ fontSize:12,color:"#555",fontStyle:"italic",background:"#ffffff06",border:"1px solid #ffffff10",borderRadius:10,padding:"14px" }}>Nessun bonus attivo nelle trattative.</div>
         :<div style={{ display:"flex",flexDirection:"column",gap:8 }}>
           {bonusData.map(({bonus,trattativa,valoreAttuale},i)=>{
@@ -4518,7 +4528,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                   <div>
                     <div style={{ fontSize:13,fontWeight:700,color:completato?"#10b981":"#e0e0e0" }}>
                       {completato&&"✅ "}{trattativa.giocatore}
-                      <span style={{ fontSize:10,color:"#555",fontWeight:400,marginLeft:6 }}>({trattativa.da_squadra} → {trattativa.a_squadra})</span>
+                      <span style={{ fontSize:10,color:"#555",fontWeight:400,marginLeft:6 }}>({trattativa.a_squadra} → {trattativa.da_squadra})</span>
                     </div>
                     <div style={{ fontSize:11,color:"#888",marginTop:2 }}>{getLabelBonus(bonus.tipo_bonus)} ≥ {soglia} · {ioPago?"⬆️ Tu paghi":"⬇️ Tu ricevi"}</div>
                   </div>
@@ -4539,7 +4549,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
               </div>
             );
           })}
-        </div>}
+        </div>)}
       </div>
 
       {/* ══ 2. ALLENATORE ══ */}
@@ -5992,6 +6002,10 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const [rispostaInCorso, setRispostaInCorso] = useState({});
   const [bonusByTrattativa, setBonusByTrattativa] = useState({});
   const [expandedTrattative, setExpandedTrattative] = useState({});
+  const [storicoFilterSquadra, setStoricoFilterSquadra] = useState("tutte");
+  const [storicoFilterTipo, setStoricoFilterTipo] = useState("tutti");
+  const [storicoFilterStato, setStoricoFilterStato] = useState("tutti");
+  const [storicoSearch, setStoricoSearch] = useState("");
 
   // ── Picker squadra/giocatore (nuovo form trattativa) ──────────────────────
   const emptyForm = {
@@ -6745,7 +6759,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
               </div>
               {differiti.map(t => (
                 <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", borderTop: "1px solid #ffffff08", flexWrap: "wrap", gap: 6 }}>
-                  <span style={{ fontSize: 12, color: "#ddd" }}>{t.giocatore} · {t.da_squadra} → {t.a_squadra} · {t.prezzo}M</span>
+                  <span style={{ fontSize: 12, color: "#ddd" }}>{t.giocatore} · {t.a_squadra} → {t.da_squadra} · {t.prezzo}M</span>
                   {isAdmin && getMercatoStatus().aperto && (
                     <button onClick={async () => { setLoading(true); try { await eseguiTrasferimento(t); await aggiornaFantaSquadraListone(t.giocatore, t.da_squadra); await aggiornaStipendioDopoTrasferimento(t.giocatore, t.da_squadra); await loadAll(); } catch(e){alert(e.message);} finally{setLoading(false);} }}
                       style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "#f9731622", color: "#f97316", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
@@ -7379,34 +7393,136 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       {tab === "storico" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em", marginBottom: 6 }}>📋 STORICO TRATTATIVE</div>
-          {loading ? <div style={{ fontSize: 12, color: "#555" }}>Caricamento...</div>
-            : tutteTrattative.filter(t => t.stato !== 'in attesa' && t.stato !== 'controproposta').length === 0
-            ? <div style={{ fontSize: 12, color: "#555", fontStyle: "italic" }}>Nessuna trattativa conclusa</div>
-            : tutteTrattative.filter(t => t.stato !== 'in attesa' && t.stato !== 'controproposta').map(t => {
-              const daTeam = teams.find(x => x.name === t.da_squadra);
-              const aTeam  = teams.find(x => x.name === t.a_squadra);
+
+          {/* ── Filtri ── */}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10, background: "#ffffff05", border: "1px solid #ffffff10", borderRadius: 10, padding: "10px 12px" }}>
+            <input
+              type="text" placeholder="🔍 Cerca giocatore..."
+              value={storicoSearch} onChange={e => setStoricoSearch(e.target.value)}
+              style={{ flex: "1 1 160px", padding: "6px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}
+            />
+            <select value={storicoFilterSquadra} onChange={e => setStoricoFilterSquadra(e.target.value)}
+              style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}>
+              <option value="tutte">Tutte le squadre</option>
+              {teams.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
+            </select>
+            <select value={storicoFilterTipo} onChange={e => setStoricoFilterTipo(e.target.value)}
+              style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}>
+              <option value="tutti">Tutti i tipi</option>
+              {Object.entries(tipoLabel).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            </select>
+            <select value={storicoFilterStato} onChange={e => setStoricoFilterStato(e.target.value)}
+              style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}>
+              <option value="tutti">Tutti gli stati</option>
+              {Array.from(new Set(tutteTrattative.filter(t => t.stato !== 'in attesa' && t.stato !== 'controproposta').map(t => t.stato))).map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            {(storicoFilterSquadra !== "tutte" || storicoFilterTipo !== "tutti" || storicoFilterStato !== "tutti" || storicoSearch) && (
+              <button
+                onClick={() => { setStoricoFilterSquadra("tutte"); setStoricoFilterTipo("tutti"); setStoricoFilterStato("tutti"); setStoricoSearch(""); }}
+                style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #ef444430", background: "#ef444412", color: "#f87171", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                ✕ Reset filtri
+              </button>
+            )}
+          </div>
+
+          {(() => {
+            const storicoFiltrato = tutteTrattative
+              .filter(t => t.stato !== 'in attesa' && t.stato !== 'controproposta')
+              .filter(t => storicoFilterSquadra === "tutte" || t.da_squadra === storicoFilterSquadra || t.a_squadra === storicoFilterSquadra)
+              .filter(t => storicoFilterTipo === "tutti" || t.tipo === storicoFilterTipo)
+              .filter(t => storicoFilterStato === "tutti" || t.stato === storicoFilterStato)
+              .filter(t => !storicoSearch || (t.giocatore || "").toLowerCase().includes(storicoSearch.toLowerCase()));
+
+            if (loading) return <div style={{ fontSize: 12, color: "#555" }}>Caricamento...</div>;
+            if (storicoFiltrato.length === 0) return <div style={{ fontSize: 12, color: "#555", fontStyle: "italic" }}>Nessuna trattativa trovata con questi filtri.</div>;
+
+            return storicoFiltrato.map(t => {
+              // Convenzione trattative: da_squadra = acquirente, a_squadra = cedente.
+              // Il trasferimento va mostrato nel verso reale: cedente → acquirente.
+              const daTeam = teams.find(x => x.name === t.a_squadra);
+              const aTeam  = teams.find(x => x.name === t.da_squadra);
               const bonusTotale = getBonusTotale(t.id);
+              const bonusRows = getBonusRows(t.id);
               const prezzoBase = Number(t.prezzo || 0);
               const prezzoPotenziale = getPrezzoPotenziale(t);
+              const expanded = !!expandedTrattative[t.id];
               return (
-                <div key={t.id} style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                  {daTeam && <TeamAvatar team={daTeam} size={24} />}
-                  <span style={{ fontSize: 10, color: "#555" }}>→</span>
-                  {aTeam && <TeamAvatar team={aTeam} size={24} />}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#ddd" }}>{t.giocatore} · {tipoLabel[t.tipo] || t.tipo}</div>
-                    <div style={{ fontSize: 10, color: "#666" }}>{new Date(t.created_at).toLocaleDateString("it-IT")}{t.fuori_mercato ? " · fuori mercato" : ""}</div>
+                <div key={t.id} style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: "10px 14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    {daTeam && <TeamAvatar team={daTeam} size={24} />}
+                    <span style={{ fontSize: 10, color: "#555" }}>→</span>
+                    {aTeam && <TeamAvatar team={aTeam} size={24} />}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#ddd" }}>{t.giocatore} · {tipoLabel[t.tipo] || t.tipo}</div>
+                      <div style={{ fontSize: 10, color: "#666" }}>{new Date(t.created_at).toLocaleDateString("it-IT")}{t.fuori_mercato ? " · fuori mercato" : ""}</div>
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: "#aaa", fontFamily: "'Bebas Neue',sans-serif", textAlign: "right" }}>
+                      {formatMln(prezzoBase)}{bonusTotale > 0 && <span style={{ color: "#f59e0b" }}> + {formatMln(bonusTotale)}</span>}
+                      {bonusTotale > 0 && <div style={{ fontSize: 9, color: "#666", fontFamily: "system-ui" }}>tot. {formatMln(prezzoPotenziale)}</div>}
+                    </div>
+                    <Badge color={statoColor[t.stato] || "#888"}>{t.stato}</Badge>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedTrattative(prev => ({ ...prev, [t.id]: !prev[t.id] }))}
+                      style={{ padding: "4px 10px", borderRadius: 7, border: "1px solid #6366f130", background: expanded ? "#6366f122" : "#6366f110", color: "#a5b4fc", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                      {expanded ? "▴ Nascondi" : "▾ Dettagli"}
+                    </button>
+                    {isAdmin && <button onClick={() => { if (window.confirm(`Eliminare la trattativa per ${t.giocatore}?`)) deleteTrattativa(t.id); }} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#ef444415", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>✕</button>}
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: "#aaa", fontFamily: "'Bebas Neue',sans-serif", textAlign: "right" }}>
-                    {formatMln(prezzoBase)}{bonusTotale > 0 && <span style={{ color: "#f59e0b" }}> + {formatMln(bonusTotale)}</span>}
-                    {bonusTotale > 0 && <div style={{ fontSize: 9, color: "#666", fontFamily: "system-ui" }}>tot. {formatMln(prezzoPotenziale)}</div>}
-                  </div>
-                  <Badge color={statoColor[t.stato] || "#888"}>{t.stato}</Badge>
-                  {isAdmin && <button onClick={() => { if (window.confirm(`Eliminare la trattativa per ${t.giocatore}?`)) deleteTrattativa(t.id); }} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#ef444415", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>✕</button>}
+
+                  {expanded && (
+                    <div style={{ marginTop: 10, background: "#0d0f1480", border: "1px solid #ffffff12", borderRadius: 10, padding: "10px 12px" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8, marginBottom: 10, fontSize: 11, color: "#aaa" }}>
+                        <div><span style={{ color: "#555" }}>Cedente:</span> {t.a_squadra}</div>
+                        <div><span style={{ color: "#555" }}>Acquirente:</span> {t.da_squadra}</div>
+                        <div><span style={{ color: "#555" }}>Tipo:</span> {tipoLabel[t.tipo] || t.tipo}</div>
+                        <div><span style={{ color: "#555" }}>Stato:</span> {t.stato}</div>
+                        {t.quot_giocatore > 0 && <div><span style={{ color: "#555" }}>Quotazione:</span> Q{t.quot_giocatore}</div>}
+                        {t.scadenza_prestito && <div><span style={{ color: "#555" }}>Scad. prestito:</span> {t.scadenza_prestito}</div>}
+                        {t.stipendio_a_chi && <div><span style={{ color: "#555" }}>Stipendio a:</span> {t.stipendio_a_chi}</div>}
+                        {t.giocatore_scambio && <div><span style={{ color: "#555" }}>Contropartita:</span> {t.giocatore_scambio}</div>}
+                        <div><span style={{ color: "#555" }}>Creata:</span> {new Date(t.created_at).toLocaleString("it-IT")}</div>
+                        {t.updated_at && <div><span style={{ color: "#555" }}>Aggiornata:</span> {new Date(t.updated_at).toLocaleString("it-IT")}</div>}
+                        {t.n_rifiuti > 0 && <div><span style={{ color: "#555" }}>Rifiuti/controfferte:</span> {t.n_rifiuti}</div>}
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8, marginBottom: bonusRows.length > 0 ? 10 : 0 }}>
+                        <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
+                          <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>PARTE FISSA</div>
+                          <div style={{ fontSize: 16, color: "#10b981", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(prezzoBase)}</div>
+                        </div>
+                        <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
+                          <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>BONUS</div>
+                          <div style={{ fontSize: 16, color: bonusTotale > 0 ? "#f59e0b" : "#555", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(bonusTotale)}</div>
+                        </div>
+                        <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
+                          <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>TOTALE POTENZIALE</div>
+                          <div style={{ fontSize: 16, color: "#a5b4fc", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(prezzoPotenziale)}</div>
+                        </div>
+                      </div>
+
+                      {bonusRows.length > 0 && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                          <div style={{ fontSize: 9, color: "#666", fontWeight: 800, letterSpacing: "0.08em" }}>DETTAGLIO BONUS</div>
+                          {bonusRows.map((b, idx) => (
+                            <div key={b.id || idx} style={{ display: "flex", justifyContent: "space-between", gap: 8, background: "#ffffff05", borderRadius: 7, padding: "6px 8px", fontSize: 10, color: "#aaa" }}>
+                              <span>🎯 {getLabelBonus(b.tipo_bonus)} ≥ {b.soglia}{b.completato ? " · ✅ completato" : ""}</span>
+                              <span style={{ color: "#f59e0b", fontWeight: 800 }}>+{formatMln(b.valore_mln)} · {b.direzione === 'acquirente_paga' ? "paga l'acquirente" : 'paga il cedente'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {t.note && <div style={{ fontSize: 11, color: "#888", marginTop: 8 }}>📝 {t.note}</div>}
+                    </div>
+                  )}
                 </div>
               );
-            })
-          }
+            });
+          })()}
+
 
           {/* Aste presidenti concluse */}
           {asteChiuse.length > 0 && (
@@ -10146,6 +10262,41 @@ function AdminControlRoomPage({ teams }) {
             <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
               <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em' }}>🌱 VIVAIO — SCADENZE E DECISIONI</div>
               <button onClick={loadVivaioAdmin} style={{ alignSelf:'flex-start', padding:'7px 16px', borderRadius:9, border:'1px solid #6366f130', background:'#6366f110', color:'#818cf8', fontSize:12, fontWeight:700 }}>📋 Carica vivaio</button>
+
+              {/* ── COSTO VIVAIO ANNUALE (4M) — pagamento e controllo ── */}
+              {status && (
+                <div style={{ marginTop: 4 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 10 }}>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>💶 COSTO VIVAIO ANNUALE (4M)</div>
+                      <div style={{ fontSize: 11, color: '#555', marginTop: 4 }}>Stagione {status.stagioneVivaio} · scadenza 15/08 · obbligatorio per tutti (art. 3.6.3)</div>
+                    </div>
+                    <button
+                      onClick={() => runBulk(applicaCostoVivaioATutti, 'Costo vivaio a tutti')}
+                      disabled={isBusy}
+                      style={{ padding: '8px 18px', borderRadius: 10, border: '1.5px solid #10b98150', background: '#10b98118', color: '#10b981', fontSize: 12, fontWeight: 700, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.6 : 1 }}>
+                      {busy === 'Costo vivaio a tutti' ? '⏳ Esecuzione...' : '💶 Applica costo vivaio a tutti'}
+                    </button>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 8 }}>
+                    {(status.squadre || []).sort((a,b) => a.name.localeCompare(b.name)).map(sq => {
+                      const team = teams?.find(t => t.name === sq.name);
+                      const ok = status.vivaioPagato.has(sq.name);
+                      return (
+                        <div key={sq.name} style={{ background: ok ? '#10b98108' : '#f59e0b08', border: `1px solid ${ok ? '#10b98130' : '#f59e0b25'}`, borderRadius: 10, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                          {team && <TeamAvatar team={team} size={28} />}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: '#ddd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sq.name}</div>
+                            <div style={{ fontSize: 10, color: '#555' }}>Bilancio: {(sq.bilancio||0).toFixed(1)}M</div>
+                          </div>
+                          <div style={{ fontSize: 18 }}>{ok ? '✅' : '⏳'}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {vivaioAdmin && <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                 {vivaioAdmin.length === 0 ? <div style={{ color:'#666', fontSize:12 }}>Nessun giocatore in vivaio.</div> : vivaioAdmin.map(p => {
                   const aumento = Number(p.quot||0) - Number(p.quot_iniziale_vivaio ?? p.quot ?? 0);
@@ -10982,7 +11133,7 @@ function AdminControlRoomPage({ teams }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 800, color: '#f0f0f0' }}>{t.giocatore}</div>
-                      <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>{t.da_squadra} → {t.a_squadra} · {t.prezzo}M · {t.tipo}</div>
+                      <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>{t.a_squadra} → {t.da_squadra} · {t.prezzo}M · {t.tipo}</div>
                       <div style={{ fontSize: 10, color: '#555', marginTop: 2 }}>Accettato: {new Date(t.updated_at).toLocaleDateString('it-IT')}</div>
                     </div>
                     <span style={{ padding: '3px 10px', borderRadius: 8, background: '#f9731615', border: '1px solid #f9731630', fontSize: 10, fontWeight: 700, color: '#f97316' }}>⏳ In attesa mercato</span>
