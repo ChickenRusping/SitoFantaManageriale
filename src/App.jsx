@@ -175,7 +175,7 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   aggiornaContrattiAnnuali, confermRinnovoBiennale,
   // Admin Control Room
   getStadioInvestimenti, setStadioUpgrade, applicaEntrateStadioTutte,
-  applicaTassaATutti, annullaTassaATutti, ripulisciAnomalieTasse, ripulisciStoricoTassePrimaDi, applicaStipendioATutti, getControlRoomStatus,
+  applicaTassaATutti, annullaTassaATutti, ripulisciAnomalieTasse, ripulisciStoricoTassePrimaDi, applicaStipendioATutti, getControlRoomStatus, aggiornaBudgetExtraSquadra,
   // Extra Control Room
   updateProfile, uploadAvatar,
   getMercatoOverride, setMercatoOverride, getTrasferimentiDifferiti,
@@ -9562,6 +9562,8 @@ function AdminControlRoomPage({ teams }) {
   const [utentiEdit, setUtentiEdit] = useState(null); // { id, nome, bio, avatar_url, ruolo }
   const [utentiSaving, setUtentiSaving] = useState(false);
   const [quoteAdmin, setQuoteAdmin] = useState(null);
+  const [budgetEdits, setBudgetEdits] = useState({});
+  const [savingBudget, setSavingBudget] = useState(null);
   const [investimentiAdmin, setInvestimentiAdmin] = useState(null);
   const [obiettiviAdmin, setObiettiviAdmin] = useState(null);
   const [vivaioAdmin, setVivaioAdmin] = useState(null);
@@ -9633,6 +9635,30 @@ function AdminControlRoomPage({ teams }) {
       setQuoteAdmin(data || []);
     } catch(e) { alert(`Errore quote: ${e.message}`); }
     finally { setAdminTabBusy(null); }
+  }
+
+  function getBudgetEditValue(sq, field) {
+    const edit = budgetEdits[sq.name];
+    if (edit && edit[field] !== undefined) return edit[field];
+    return sq[field] ?? 0;
+  }
+  function setBudgetEditValue(squadra, field, value) {
+    setBudgetEdits(prev => ({ ...prev, [squadra]: { ...prev[squadra], [field]: value } }));
+  }
+  async function handleSaveBudgetExtra(sq) {
+    const edit = budgetEdits[sq.name];
+    if (!edit) return;
+    setSavingBudget(sq.name);
+    try {
+      await aggiornaBudgetExtraSquadra(sq.name, {
+        euroInvestiti: edit.euro_investiti !== undefined ? edit.euro_investiti : undefined,
+        euroBiennio: edit.euro_biennio !== undefined ? edit.euro_biennio : undefined,
+        mlnExtra: edit.mln_extra !== undefined ? edit.mln_extra : undefined,
+      });
+      setQuoteAdmin(prev => prev.map(r => r.name === sq.name ? { ...r, ...edit } : r));
+      setBudgetEdits(prev => { const next = { ...prev }; delete next[sq.name]; return next; });
+    } catch(e) { alert(`Errore salvataggio: ${e.message}`); }
+    finally { setSavingBudget(null); }
   }
 
   async function loadInvestimentiAdmin() {
@@ -10181,20 +10207,48 @@ function AdminControlRoomPage({ teams }) {
               </div>
               {quoteAdmin && (
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', minWidth: 880, borderCollapse: 'collapse', fontSize: 12 }}>
-                    <thead><tr>{['Squadra','Quota €','Pagata il','Tesoriere','Extra stagione','€ biennio','Mln extra','Iscrizione'].map(h => <th key={h} style={{ textAlign:'left', padding:'8px', color:'#666', borderBottom:'1px solid #ffffff12' }}>{h}</th>)}</tr></thead>
-                    <tbody>{quoteAdmin.map(sq => (
-                      <tr key={sq.name} style={{ borderBottom:'1px solid #ffffff08' }}>
+                  <div style={{ fontSize: 11, color: '#666', marginBottom: 8 }}>✏️ I campi "Extra stagione", "€ biennio" e "Mln extra" sono modificabili — usali per correggere valori sbagliati rispetto al ledger reale (es. versamenti di stagioni precedenti non riportati correttamente).</div>
+                  <table style={{ width: '100%', minWidth: 980, borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead><tr>{['Squadra','Quota €','Pagata il','Tesoriere','Extra stagione','€ biennio','Mln extra','Iscrizione',''].map(h => <th key={h} style={{ textAlign:'left', padding:'8px', color:'#666', borderBottom:'1px solid #ffffff12' }}>{h}</th>)}</tr></thead>
+                    <tbody>{quoteAdmin.map(sq => {
+                      const hasEdit = !!budgetEdits[sq.name];
+                      const inputStyle = { width: 64, padding: '4px 6px', borderRadius: 6, border: '1px solid #ffffff20', background: '#0d0f14', color: '#f0f0f0', fontSize: 12 };
+                      return (
+                      <tr key={sq.name} style={{ borderBottom:'1px solid #ffffff08', background: hasEdit ? '#f59e0b08' : 'transparent' }}>
                         <td style={{ padding:'8px', fontWeight:800, color:'#f0f0f0' }}>{sq.name}</td>
                         <td style={{ padding:'8px', color: sq.quota_pagata ? '#10b981' : '#ef4444', fontWeight:700 }}>{sq.quota_pagata ? '✓' : '✗'} {sq.quota_importo_euro || 30}€</td>
                         <td style={{ padding:'8px', color:'#aaa' }}>{sq.quota_pagata_il || '—'}</td>
                         <td style={{ padding:'8px', color:'#aaa' }}>{sq.quota_tesoriere || '—'}</td>
-                        <td style={{ padding:'8px', color:'#aaa' }}>{Number(sq.euro_investiti || 0).toFixed(1)}€</td>
-                        <td style={{ padding:'8px', color:Number(sq.euro_biennio||0) > 10 ? '#ef4444' : '#aaa' }}>{Number(sq.euro_biennio || 0).toFixed(1)} / 10€</td>
-                        <td style={{ padding:'8px', color:'#10b981' }}>+{Number(sq.mln_extra || 0).toFixed(1)}M</td>
+                        <td style={{ padding:'8px' }}>
+                          <input type="number" step="0.5" style={inputStyle}
+                            value={getBudgetEditValue(sq, 'euro_investiti')}
+                            onChange={e => setBudgetEditValue(sq.name, 'euro_investiti', e.target.value === '' ? 0 : Number(e.target.value))} />€
+                        </td>
+                        <td style={{ padding:'8px' }}>
+                          <input type="number" step="0.5" style={{ ...inputStyle, borderColor: Number(getBudgetEditValue(sq,'euro_biennio')) > 10 ? '#ef444460' : '#ffffff20' }}
+                            value={getBudgetEditValue(sq, 'euro_biennio')}
+                            onChange={e => setBudgetEditValue(sq.name, 'euro_biennio', e.target.value === '' ? 0 : Number(e.target.value))} /> / 10€
+                        </td>
+                        <td style={{ padding:'8px' }}>
+                          +<input type="number" step="0.5" style={inputStyle}
+                            value={getBudgetEditValue(sq, 'mln_extra')}
+                            onChange={e => setBudgetEditValue(sq.name, 'mln_extra', e.target.value === '' ? 0 : Number(e.target.value))} />M
+                        </td>
                         <td style={{ padding:'8px', color: sq.iscrizione_pagata ? '#10b981' : '#f59e0b', fontWeight:700 }}>{sq.iscrizione_pagata ? `✓ ${sq.iscrizione_stagione_pagata || ''}` : 'Da applicare'}</td>
+                        <td style={{ padding:'8px' }}>
+                          {hasEdit && (
+                            <div style={{ display:'flex', gap:4 }}>
+                              <button onClick={() => handleSaveBudgetExtra(sq)} disabled={savingBudget === sq.name}
+                                style={{ padding:'4px 10px', borderRadius:6, border:'1px solid #10b98140', background:'#10b98118', color:'#10b981', fontSize:11, fontWeight:700, cursor: savingBudget===sq.name?'not-allowed':'pointer' }}>
+                                {savingBudget === sq.name ? '⏳' : '✓ Salva'}
+                              </button>
+                              <button onClick={() => setBudgetEdits(prev => { const next = { ...prev }; delete next[sq.name]; return next; })}
+                                style={{ padding:'4px 8px', borderRadius:6, border:'1px solid #ffffff20', background:'transparent', color:'#888', fontSize:11, fontWeight:700, cursor:'pointer' }}>✕</button>
+                            </div>
+                          )}
+                        </td>
                       </tr>
-                    ))}</tbody>
+                    );})}</tbody>
                   </table>
                 </div>
               )}
