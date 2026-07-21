@@ -3042,6 +3042,21 @@ export async function ritiraBudgetExtra(squadra) {
   return { nuovoBilancio, costoRitiro, rimborso: sq.mln_extra };
 }
 
+// Correzione manuale admin dei campi budget extra (euro investiti stagione, euro
+// cumulativi nel biennio, mln extra sbloccati). Usata dalla Control Room quando un
+// valore risulta sbagliato rispetto al ledger reale (es. un versamento della stagione
+// precedente non correttamente riportato nel nuovo biennio).
+export async function aggiornaBudgetExtraSquadra(squadra, { euroInvestiti, euroBiennio, mlnExtra } = {}) {
+  const fields = {};
+  if (euroInvestiti !== undefined && euroInvestiti !== null) fields.euro_investiti = Math.max(0, Number(euroInvestiti) || 0);
+  if (euroBiennio !== undefined && euroBiennio !== null) fields.euro_biennio = Math.max(0, Number(euroBiennio) || 0);
+  if (mlnExtra !== undefined && mlnExtra !== null) fields.mln_extra = Math.max(0, Number(mlnExtra) || 0);
+  if (!Object.keys(fields).length) return;
+  fields.updated_at = new Date().toISOString();
+  const { error } = await supabase.from('squadre').update(fields).eq('name', squadra);
+  if (error) throw error;
+}
+
 // Reset biennio (ogni 2 anni). Viene anche applicato automaticamente da sincronizzaQuoteStagione.
 export async function resetBiennio(squadra, nuovoBiennio = getBiennioQuota(new Date())) {
   await safeUpdateSquadraQuote(
