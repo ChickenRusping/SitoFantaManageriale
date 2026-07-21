@@ -2974,8 +2974,6 @@ export async function investiEuroExtra(squadra, euroAggiuntivi, opts = {}) {
 
   const stagione = opts.stagione || getStagioneQuota(now);
   const biennio = opts.biennio || getBiennioQuota(now);
-  const euro = Number(euroAggiuntivi);
-  if (!Number.isFinite(euro) || euro <= 0 || euro > MAX_EURO_EXTRA_BIENNIO) throw new Error('Importo non valido (1-10€)');
 
   const { data: sq, error } = await supabase
     .from('squadre')
@@ -2984,14 +2982,28 @@ export async function investiEuroExtra(squadra, euroAggiuntivi, opts = {}) {
     .single();
   if (error || !sq) throw error || new Error('Squadra non trovata');
 
+  // Tetto biennale: normalmente MAX_EURO_EXTRA_BIENNIO (10€), ma può essere
+  // personalizzato per singola squadra dalla Control Room (es. sanzioni/deroghe).
+  const maxBiennio = (sq.max_euro_biennio !== null && sq.max_euro_biennio !== undefined)
+    ? Number(sq.max_euro_biennio) : MAX_EURO_EXTRA_BIENNIO;
+
+  const euro = Number(euroAggiuntivi);
+  if (!Number.isFinite(euro) || euro <= 0 || euro > maxBiennio) throw new Error(`Importo non valido (1-${maxBiennio}€)`);
+
   // Se il DB è ancora al biennio vecchio, il conteggio biennale riparte da 0.
-  const euroBiennioAttuale = sq.biennio && sq.biennio !== biennio ? 0 : Number(sq.euro_biennio || 0);
+  const biennioCambiato = sq.biennio && sq.biennio !== biennio;
+  const euroBiennioAttuale = biennioCambiato ? 0 : Number(sq.euro_biennio || 0);
   const euroStagioneAttuale = sq.extra_stagione && sq.extra_stagione !== stagione ? 0 : Number(sq.euro_investiti || 0);
-  const maxDisponibili = Math.max(0, MAX_EURO_EXTRA_BIENNIO - euroBiennioAttuale);
+  const maxDisponibili = Math.max(0, maxBiennio - euroBiennioAttuale);
   if (euro > maxDisponibili) throw new Error(`Puoi investire al massimo ${maxDisponibili}€ nel biennio ${biennio}`);
 
   const mlnGuadagnati = parseFloat((euro * CAMBIO_EURO_MLN).toFixed(2));
   const oggi = isoDateLocal(now);
+
+  // Dettaglio per-stagione (per la Control Room): quanto investito in ciascuna delle
+  // due stagioni del biennio corrente. Si azzera quando cambia il biennio.
+  const stagioniPrec = biennioCambiato ? {} : (sq.euro_biennio_stagioni || {});
+  const euroBiennioStagioni = { ...stagioniPrec, [stagione]: Number(stagioniPrec[stagione] || 0) + euro };
 
   await safeUpdateSquadraQuote(
     squadra,
@@ -2999,6 +3011,7 @@ export async function investiEuroExtra(squadra, euroAggiuntivi, opts = {}) {
       bilancio: parseFloat((Number(sq.bilancio || 0) + mlnGuadagnati).toFixed(2)),
       euro_investiti: euroStagioneAttuale + euro,
       euro_biennio: euroBiennioAttuale + euro,
+      euro_biennio_stagioni: euroBiennioStagioni,
       mln_extra: Number(sq.mln_extra || 0) + mlnGuadagnati,
       biennio,
       extra_stagione: stagione,
@@ -3043,25 +3056,50 @@ export async function ritiraBudgetExtra(squadra) {
 }
 
 // Correzione manuale admin dei campi budget extra (euro investiti stagione, euro
-// cumulativi nel biennio, mln extra sbloccati). Usata dalla Control Room quando un
-// valore risulta sbagliato rispetto al ledger reale (es. un versamento della stagione
+// cumulativi nel biennio, dettaglio per singola stagione del biennio, tetto biennale
+// personalizzato, mln extra sbloccati). Usata dalla Control Room quando un valore
+// risulta sbagliato rispetto al ledger reale (es. un versamento della stagione
 // precedente non correttamente riportato nel nuovo biennio).
-export async function aggiornaBudgetExtraSquadra(squadra, { euroInvestiti, euroBiennio, mlnExtra } = {}) {
+export async function aggiornaBudgetExtraSquadra(squadra, { euroInvestiti, euroBiennio, mlnExtra, euroBiennioStagioni, maxEuroBiennio } = {}) {
   const fields = {};
   if (euroInvestiti !== undefined && euroInvestiti !== null) fields.euro_investiti = Math.max(0, Number(euroInvestiti) || 0);
-  if (euroBiennio !== undefined && euroBiennio !== null) fields.euro_biennio = Math.max(0, Number(euroBiennio) || 0);
   if (mlnExtra !== undefined && mlnExtra !== null) fields.mln_extra = Math.max(0, Number(mlnExtra) || 0);
+  if (maxEuroBiennio !== undefined) fields.max_euro_biennio = maxEuroBiennio === null ? null : Math.max(0, Number(maxEuroBiennio) || 0);
+
+  if (euroBiennioStagioni !== undefined && euroBiennioStagioni !== null) {
+    // Il dettaglio per-stagione è la fonte di verità: il totale del biennio viene
+    // sempre ricalcolato come somma delle sue stagioni, così i due valori non
+    // possono mai disallinearsi.
+    const clean = {};
+    for (const [stag, val] of Object.entries(euroBiennioStagioni)) clean[stag] = Math.max(0, Number(val) || 0);
+    fields.euro_biennio_stagioni = clean;
+    fields.euro_biennio = Object.values(clean).reduce((a, b) => a + b, 0);
+  } else if (euroBiennio !== undefined && euroBiennio !== null) {
+    fields.euro_biennio = Math.max(0, Number(euroBiennio) || 0);
+  }
+
   if (!Object.keys(fields).length) return;
   fields.updated_at = new Date().toISOString();
+
   const { error } = await supabase.from('squadre').update(fields).eq('name', squadra);
-  if (error) throw error;
+  if (error) {
+    // Fallback se la migrazione (euro_biennio_stagioni / max_euro_biennio) non è
+    // ancora stata eseguita sul DB: riprova senza i campi nuovi.
+    const msg = (error.message || '').toLowerCase();
+    const schemaError = msg.includes('column') || msg.includes('schema cache') || msg.includes('could not find');
+    if (!schemaError) throw error;
+    const { euro_biennio_stagioni, max_euro_biennio, ...rest } = fields;
+    if (!Object.keys(rest).length) throw error;
+    const { error: retryErr } = await supabase.from('squadre').update(rest).eq('name', squadra);
+    if (retryErr) throw retryErr;
+  }
 }
 
 // Reset biennio (ogni 2 anni). Viene anche applicato automaticamente da sincronizzaQuoteStagione.
 export async function resetBiennio(squadra, nuovoBiennio = getBiennioQuota(new Date())) {
   await safeUpdateSquadraQuote(
     squadra,
-    { euro_biennio: 0, euro_investiti: 0, mln_extra: 0, biennio: nuovoBiennio, extra_stagione: getStagioneQuota(new Date()), updated_at: new Date().toISOString() },
+    { euro_biennio: 0, euro_investiti: 0, mln_extra: 0, euro_biennio_stagioni: {}, biennio: nuovoBiennio, extra_stagione: getStagioneQuota(new Date()), updated_at: new Date().toISOString() },
     { euro_biennio: 0, euro_investiti: 0, mln_extra: 0, biennio: nuovoBiennio }
   );
 }
@@ -3123,6 +3161,7 @@ export async function sincronizzaQuoteStagione(opts = {}) {
     if (!sq.biennio || sq.biennio !== biennio) {
       patch.biennio = biennio;
       patch.euro_biennio = 0;
+      patch.euro_biennio_stagioni = {};
       fallback.biennio = biennio;
       fallback.euro_biennio = 0;
     }
@@ -5542,7 +5581,7 @@ export async function importa01Agosto(rows, stagione = '2026-27') {
   // Prima aggiorna listone completo
   await importListoneDaExcel(rows);
 
-  const { data: rosaAll } = await supabase.from('rosa').select('id, nome, anni, stip').eq('in_vivaio', false);
+  const { data: rosaAll } = await supabase.from('rosa').select('id, nome, anni, stip, fuori_lista').eq('in_vivaio', false);
   const { data: svinAll }  = await supabase.from('svincolati').select('id, nome').eq('stagione', stagione);
 
   const rosaMap  = {};
@@ -5555,6 +5594,7 @@ export async function importa01Agosto(rows, stagione = '2026-27') {
   const BATCH = 50;
 
   const validRows = rows.filter(r => (r['Nome'] || '').trim());
+  const nomiExcel = new Set(validRows.map(r => r['Nome'].trim().toLowerCase()));
 
   for (let i = 0; i < validRows.length; i += BATCH) {
     await Promise.all(validRows.slice(i, i + BATCH).map(async r => {
@@ -5605,6 +5645,7 @@ export async function importa01Agosto(rows, stagione = '2026-27') {
           stip,
           stip_originale: stip,
           clausola, quot_precedente: p.quot || quot,
+          fuori_lista: false, // torna in lista se prima era stato segnato fuori lista
           ...statsRosa,
         }).eq('id', p.id);
         rosaAggiornati++;
@@ -5628,7 +5669,17 @@ export async function importa01Agosto(rows, stagione = '2026-27') {
     }));
   }
 
-  return { rosaAggiornati, svinAggiornati, nuoviCreati, nonTrovati, totale: validRows.length };
+  // Giocatori in rosa che NON compaiono più nel nuovo database: restano nella rosa
+  // della squadra con la quotazione e i valori del vecchio database invariati, ma
+  // vengono segnati automaticamente come "fuori lista" (art. 4.7).
+  const usciti = (rosaAll || []).filter(p => !nomiExcel.has(p.nome.trim().toLowerCase()) && !p.fuori_lista);
+  for (let i = 0; i < usciti.length; i += BATCH) {
+    await Promise.all(usciti.slice(i, i + BATCH).map(p =>
+      supabase.from('rosa').update({ fuori_lista: true }).eq('id', p.id)
+    ));
+  }
+
+  return { rosaAggiornati, svinAggiornati, nuoviCreati, nonTrovati, fuoriListaSegnati: usciti.length, totale: validRows.length };
 }
 
 // ─── STAGIONE ─────────────────────────────────────────────────────────────────
