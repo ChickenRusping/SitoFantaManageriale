@@ -164,7 +164,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento,
   getBonusTrattativa, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -9627,6 +9627,17 @@ function AdminControlRoomPage({ teams }) {
   }
 
 
+  // Data le due stagioni che compongono un biennio (es. "2025-27" → "2025-26" e "2026-27"),
+  // restituisce quella diversa dalla stagione corrente (cioè l'"altra" stagione del biennio).
+  function getAltraStagioneBiennio(sq) {
+    const biennio = sq.biennio || STAGIONE_CR + ''; // fallback difensivo
+    const bStart = parseInt(biennio, 10);
+    if (!Number.isFinite(bStart)) return null;
+    const s1 = `${bStart}-${String(bStart + 1).slice(2)}`;
+    const s2 = `${bStart + 1}-${String(bStart + 2).slice(2)}`;
+    return s1 === STAGIONE_CR ? s2 : s1;
+  }
+
   async function loadQuoteAdmin() {
     setAdminTabBusy('quote_load');
     try {
@@ -9640,6 +9651,11 @@ function AdminControlRoomPage({ teams }) {
   function getBudgetEditValue(sq, field) {
     const edit = budgetEdits[sq.name];
     if (edit && edit[field] !== undefined) return edit[field];
+    if (field === 'stagione_prec') {
+      const altra = getAltraStagioneBiennio(sq);
+      return altra ? Number((sq.euro_biennio_stagioni || {})[altra] || 0) : 0;
+    }
+    if (field === 'max_euro_biennio') return sq.max_euro_biennio ?? '';
     return sq[field] ?? 0;
   }
   function setBudgetEditValue(squadra, field, value) {
@@ -9650,12 +9666,32 @@ function AdminControlRoomPage({ teams }) {
     if (!edit) return;
     setSavingBudget(sq.name);
     try {
+      const altra = getAltraStagioneBiennio(sq);
+      let euroBiennioStagioni;
+      if (edit.euro_investiti !== undefined || edit.stagione_prec !== undefined) {
+        const euroCorrente = edit.euro_investiti !== undefined ? edit.euro_investiti : Number(sq.euro_investiti || 0);
+        const euroPrec = edit.stagione_prec !== undefined ? edit.stagione_prec : Number((sq.euro_biennio_stagioni || {})[altra] || 0);
+        euroBiennioStagioni = { [STAGIONE_CR]: euroCorrente };
+        if (altra) euroBiennioStagioni[altra] = euroPrec;
+      }
       await aggiornaBudgetExtraSquadra(sq.name, {
         euroInvestiti: edit.euro_investiti !== undefined ? edit.euro_investiti : undefined,
-        euroBiennio: edit.euro_biennio !== undefined ? edit.euro_biennio : undefined,
+        euroBiennioStagioni,
         mlnExtra: edit.mln_extra !== undefined ? edit.mln_extra : undefined,
+        maxEuroBiennio: edit.max_euro_biennio !== undefined ? (edit.max_euro_biennio === '' ? null : edit.max_euro_biennio) : undefined,
       });
-      setQuoteAdmin(prev => prev.map(r => r.name === sq.name ? { ...r, ...edit } : r));
+      setQuoteAdmin(prev => prev.map(r => {
+        if (r.name !== sq.name) return r;
+        const next = { ...r };
+        if (edit.euro_investiti !== undefined) next.euro_investiti = edit.euro_investiti;
+        if (edit.mln_extra !== undefined) next.mln_extra = edit.mln_extra;
+        if (edit.max_euro_biennio !== undefined) next.max_euro_biennio = edit.max_euro_biennio === '' ? null : edit.max_euro_biennio;
+        if (euroBiennioStagioni) {
+          next.euro_biennio_stagioni = euroBiennioStagioni;
+          next.euro_biennio = Object.values(euroBiennioStagioni).reduce((a, b) => a + Number(b || 0), 0);
+        }
+        return next;
+      }));
       setBudgetEdits(prev => { const next = { ...prev }; delete next[sq.name]; return next; });
     } catch(e) { alert(`Errore salvataggio: ${e.message}`); }
     finally { setSavingBudget(null); }
@@ -10207,12 +10243,17 @@ function AdminControlRoomPage({ teams }) {
               </div>
               {quoteAdmin && (
                 <div style={{ overflowX: 'auto' }}>
-                  <div style={{ fontSize: 11, color: '#666', marginBottom: 8 }}>✏️ I campi "Extra stagione", "€ biennio" e "Mln extra" sono modificabili — usali per correggere valori sbagliati rispetto al ledger reale (es. versamenti di stagioni precedenti non riportati correttamente).</div>
-                  <table style={{ width: '100%', minWidth: 980, borderCollapse: 'collapse', fontSize: 12 }}>
-                    <thead><tr>{['Squadra','Quota €','Pagata il','Tesoriere','Extra stagione','€ biennio','Mln extra','Iscrizione',''].map(h => <th key={h} style={{ textAlign:'left', padding:'8px', color:'#666', borderBottom:'1px solid #ffffff12' }}>{h}</th>)}</tr></thead>
+                  <div style={{ fontSize: 11, color: '#666', marginBottom: 8 }}>✏️ Campi modificabili: quanto investito in ciascuna stagione del biennio, il tetto biennale e i milioni extra sbloccati — usali per correggere valori sbagliati rispetto al ledger reale (es. versamenti di stagioni precedenti non riportati correttamente). "€ biennio" è calcolato automaticamente come somma delle due stagioni.</div>
+                  <table style={{ width: '100%', minWidth: 1140, borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead><tr>{['Squadra','Quota €','Pagata il','Tesoriere',`Stagione ${STAGIONE_CR}`,'Altra stagione','€ biennio','Tetto biennio','Mln extra','Iscrizione',''].map(h => <th key={h} style={{ textAlign:'left', padding:'8px', color:'#666', borderBottom:'1px solid #ffffff12', whiteSpace:'nowrap' }}>{h}</th>)}</tr></thead>
                     <tbody>{quoteAdmin.map(sq => {
                       const hasEdit = !!budgetEdits[sq.name];
-                      const inputStyle = { width: 64, padding: '4px 6px', borderRadius: 6, border: '1px solid #ffffff20', background: '#0d0f14', color: '#f0f0f0', fontSize: 12 };
+                      const inputStyle = { width: 60, padding: '4px 6px', borderRadius: 6, border: '1px solid #ffffff20', background: '#0d0f14', color: '#f0f0f0', fontSize: 12 };
+                      const altraStagione = getAltraStagioneBiennio(sq);
+                      const euroCorrente = Number(getBudgetEditValue(sq, 'euro_investiti')) || 0;
+                      const euroPrec = Number(getBudgetEditValue(sq, 'stagione_prec')) || 0;
+                      const euroBiennioTot = euroCorrente + euroPrec;
+                      const tettoEff = getBudgetEditValue(sq, 'max_euro_biennio') === '' ? MAX_EURO_EXTRA_BIENNIO : Number(getBudgetEditValue(sq, 'max_euro_biennio'));
                       return (
                       <tr key={sq.name} style={{ borderBottom:'1px solid #ffffff08', background: hasEdit ? '#f59e0b08' : 'transparent' }}>
                         <td style={{ padding:'8px', fontWeight:800, color:'#f0f0f0' }}>{sq.name}</td>
@@ -10225,9 +10266,16 @@ function AdminControlRoomPage({ teams }) {
                             onChange={e => setBudgetEditValue(sq.name, 'euro_investiti', e.target.value === '' ? 0 : Number(e.target.value))} />€
                         </td>
                         <td style={{ padding:'8px' }}>
-                          <input type="number" step="0.5" style={{ ...inputStyle, borderColor: Number(getBudgetEditValue(sq,'euro_biennio')) > 10 ? '#ef444460' : '#ffffff20' }}
-                            value={getBudgetEditValue(sq, 'euro_biennio')}
-                            onChange={e => setBudgetEditValue(sq.name, 'euro_biennio', e.target.value === '' ? 0 : Number(e.target.value))} /> / 10€
+                          <input type="number" step="0.5" style={inputStyle}
+                            value={getBudgetEditValue(sq, 'stagione_prec')}
+                            onChange={e => setBudgetEditValue(sq.name, 'stagione_prec', e.target.value === '' ? 0 : Number(e.target.value))} />€
+                          <div style={{ fontSize:9, color:'#555', marginTop:2 }}>{altraStagione || '—'}</div>
+                        </td>
+                        <td style={{ padding:'8px', color: euroBiennioTot > tettoEff ? '#ef4444' : '#aaa', fontWeight:700 }}>{euroBiennioTot} / {tettoEff}€</td>
+                        <td style={{ padding:'8px' }}>
+                          <input type="number" step="0.5" placeholder={String(MAX_EURO_EXTRA_BIENNIO)} style={{ ...inputStyle, width: 56 }}
+                            value={getBudgetEditValue(sq, 'max_euro_biennio')}
+                            onChange={e => setBudgetEditValue(sq.name, 'max_euro_biennio', e.target.value === '' ? '' : Number(e.target.value))} />€
                         </td>
                         <td style={{ padding:'8px' }}>
                           +<input type="number" step="0.5" style={inputStyle}
@@ -10918,7 +10966,7 @@ function AdminControlRoomPage({ teams }) {
                         } else {
                           // 01/08: full import con creazione nuovi giocatori
                           const r = await importa01Agosto(dbImportPreview.rows, STAGIONE_CR);
-                          result = { rosaAggiornati: r.rosaAggiornati, svinAggiornati: r.svinAggiornati, nonTrovati: r.nonTrovati, totale: r.totale, note: `Aggiornamento completo: ${r.rosaAggiornati} in rosa, ${r.svinAggiornati} svincolati aggiornati, ${r.nuoviCreati} nuovi creati.` };
+                          result = { rosaAggiornati: r.rosaAggiornati, svinAggiornati: r.svinAggiornati, nonTrovati: r.nonTrovati, fuoriListaSegnati: r.fuoriListaSegnati, totale: r.totale, note: `Aggiornamento completo: ${r.rosaAggiornati} in rosa, ${r.svinAggiornati} svincolati aggiornati, ${r.nuoviCreati} nuovi creati, ${r.fuoriListaSegnati} segnati fuori lista.` };
                         }
                         setDbImportDone(result);
                         setDbImportPreview(null);
@@ -10939,6 +10987,7 @@ function AdminControlRoomPage({ teams }) {
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     {[
                       { label: 'Giocatori aggiornati', value: dbImportDone.rosaAggiornati, color: '#f59e0b' },
+                      ...(dbImportDone.fuoriListaSegnati !== undefined ? [{ label: 'Segnati fuori lista', value: dbImportDone.fuoriListaSegnati, color: dbImportDone.fuoriListaSegnati > 0 ? '#f97316' : '#555' }] : []),
                       { label: 'Non trovati', value: dbImportDone.nonTrovati?.length || 0, color: (dbImportDone.nonTrovati?.length || 0) > 0 ? '#ef4444' : '#555' },
                     ].map(s => (
                       <div key={s.label} style={{ flex: '1 1 120px', background: s.color + '10', border: `1px solid ${s.color}25`, borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
