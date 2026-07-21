@@ -72,9 +72,11 @@ async function compressForUpload(file, preset = 'news') {
   const presets = {
     avatar: { maxWidth: 500, maxHeight: 500, quality: 0.74 },
     stemma: { maxWidth: 500, maxHeight: 500, quality: 0.74 },
+    stemma_thumb: { maxWidth: 120, maxHeight: 120, quality: 0.7 },
     maglia: { maxWidth: 1200, maxHeight: 1200, quality: 0.76 },
     squadra: { maxWidth: 1400, maxHeight: 1400, quality: 0.78 },
     news: { maxWidth: 1600, maxHeight: 1600, quality: 0.78 },
+    news_thumb: { maxWidth: 640, maxHeight: 640, quality: 0.68 },
   };
   return await compressImageFile(file, presets[preset] || presets.news);
 }
@@ -698,7 +700,7 @@ export async function getClubIdentity(squadra) {
 
 // Fetch tutte le identity in un colpo solo (per arricchire mergedTeams con stemmi)
 export async function getAllClubIdentities() {
-  const { data, error } = await supabase.from('club_identity').select('squadra, stemma_url, maglia_casa_url, maglia_trasferta_url, maglia_terza_url');
+  const { data, error } = await supabase.from('club_identity').select('squadra, stemma_url, stemma_thumb_url, maglia_casa_url, maglia_trasferta_url, maglia_terza_url');
   if (error) return [];
   return data || [];
 }
@@ -726,12 +728,17 @@ export async function uploadImmagineSquadra(squadra, file, kind) {
 
   const preset = kind === 'stemma' ? 'stemma' : 'maglia';
   const optimized = await compressForUpload(file, preset);
+  // Lo stemma viene mostrato quasi ovunque a 20-50px (TeamAvatar): generiamo anche
+  // una thumbnail leggera così non si scarica la versione da 500px in ogni lista/tabella.
+  const optimizedThumb = kind === 'stemma' ? await compressForUpload(file, 'stemma_thumb') : null;
 
   // Filename univoco + cache lunga: quando si cambia immagine cambia URL, senza ?v=Date.now().
   const slug = squadra.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const path = uniqueStoragePath(`${slug}/${kind}`, optimized.name);
-  const { data: oldIdentity } = await supabase.from('club_identity').select(col).eq('squadra', squadra).maybeSingle();
+  const thumbCol = kind === 'stemma' ? 'stemma_thumb_url' : null;
+  const { data: oldIdentity } = await supabase.from('club_identity').select(`${col}${thumbCol ? `, ${thumbCol}` : ''}`).eq('squadra', squadra).maybeSingle();
   const oldUrl = oldIdentity?.[col];
+  const oldThumbUrl = thumbCol ? oldIdentity?.[thumbCol] : null;
 
   const { error: uploadErr } = await supabase.storage
     .from('team-images')
@@ -746,8 +753,25 @@ export async function uploadImmagineSquadra(squadra, file, kind) {
   const publicUrl = urlData?.publicUrl || null;
   if (!publicUrl) throw new Error('Impossibile ottenere URL pubblico');
 
-  await updateClubIdentity(squadra, { [col]: publicUrl });
+  const updateFields = { [col]: publicUrl };
+
+  if (optimizedThumb) {
+    const thumbPath = path.replace(/\.webp$/, '_thumb.webp');
+    const { error: thumbErr } = await supabase.storage
+      .from('team-images')
+      .upload(thumbPath, optimizedThumb, {
+        cacheControl: '31536000',
+        upsert: false,
+        contentType: optimizedThumb.type || WEBP_MIME,
+      });
+    if (thumbErr) throw thumbErr;
+    const { data: thumbUrlData } = supabase.storage.from('team-images').getPublicUrl(thumbPath);
+    updateFields[thumbCol] = thumbUrlData?.publicUrl || null;
+  }
+
+  await updateClubIdentity(squadra, updateFields);
   await removeOldStorageObject('team-images', oldUrl);
+  if (oldThumbUrl) await removeOldStorageObject('team-images', oldThumbUrl);
   return publicUrl;
 }
 
@@ -761,7 +785,9 @@ export async function rimuoviImmagineSquadra(squadra, kind) {
   };
   const col = fieldMap[kind];
   if (!col) throw new Error('Tipo immagine non valido');
-  await updateClubIdentity(squadra, { [col]: null });
+  const updateFields = { [col]: null };
+  if (kind === 'stemma') updateFields.stemma_thumb_url = null;
+  await updateClubIdentity(squadra, updateFields);
 }
 
 // ─── OBIETTIVI ────────────────────────────────────────────────────────────────
@@ -5083,20 +5109,39 @@ export async function toggleReaction(id, emoji, username, currentReactions) {
   if (error) throw error;
   return reactions;
 }
+// Genera due versioni dell'immagine: una "thumb" leggera per il feed (dove viene
+// mostrata comunque piccola dentro una griglia) e una "full" per il visualizzatore
+// a schermo intero. Questo evita che ogni utente scarichi l'immagine da 1600px
+// solo per vederla renderizzata a ~300px nella griglia del post — la causa
+// principale dei picchi di cached egress quando viene pubblicata una notizia con foto.
 export async function uploadNotiziaImmagine(file, path) {
   if (!file) throw new Error('Nessun file selezionato');
-  const optimized = await compressForUpload(file, 'news');
-  const requested = ensureWebpPath(path || `notizie/${optimized.name}`);
+  const [optimizedFull, optimizedThumb] = await Promise.all([
+    compressForUpload(file, 'news'),
+    compressForUpload(file, 'news_thumb'),
+  ]);
+  const requested = ensureWebpPath(path || `notizie/${optimizedFull.name}`);
   const prefix = requested.split('/').slice(0, -1).join('/') || 'notizie';
-  const finalPath = uniqueStoragePath(prefix, optimized.name);
-  const { error } = await supabase.storage.from('notizie-immagini').upload(finalPath, optimized, {
+  const finalPath = uniqueStoragePath(prefix, optimizedFull.name);
+  const thumbPath = finalPath.replace(/\.webp$/, '_thumb.webp');
+
+  const { error } = await supabase.storage.from('notizie-immagini').upload(finalPath, optimizedFull, {
     upsert: false,
-    contentType: optimized.type || WEBP_MIME,
+    contentType: optimizedFull.type || WEBP_MIME,
     cacheControl: '31536000',
   });
   if (error) throw error;
-  const { data: { publicUrl } } = supabase.storage.from('notizie-immagini').getPublicUrl(finalPath);
-  return publicUrl;
+
+  const { error: thumbError } = await supabase.storage.from('notizie-immagini').upload(thumbPath, optimizedThumb, {
+    upsert: false,
+    contentType: optimizedThumb.type || WEBP_MIME,
+    cacheControl: '31536000',
+  });
+  if (thumbError) throw thumbError;
+
+  const { data: { publicUrl: full } } = supabase.storage.from('notizie-immagini').getPublicUrl(finalPath);
+  const { data: { publicUrl: thumb } } = supabase.storage.from('notizie-immagini').getPublicUrl(thumbPath);
+  return { full, thumb };
 }
 export function subscribeNotizie(callback) { return supabase.channel('notizie-feed').on('postgres_changes', { event: '*', schema: 'public', table: 'notizie' }, callback).subscribe(); }
 export async function getCommenti(notiziaId) { const { data, error } = await supabase.from('commenti_notizie').select('*').eq('notizia_id', notiziaId).order('created_at', { ascending: true }); if (error) throw error; return data || []; }
