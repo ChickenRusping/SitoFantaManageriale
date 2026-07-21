@@ -329,11 +329,15 @@ function StatBar({ value, max, color, height = 6 }) {
 }
 
 function TeamAvatar({ team, size = 38 }) {
-  // Se disponibile lo stemma caricato, mostralo; altrimenti fallback al tag
-  if (team?.stemma_url) {
+  // Se disponibile lo stemma caricato, mostralo; altrimenti fallback al tag.
+  // Usiamo sempre la thumbnail leggera (generata all'upload): l'avatar è mostrato
+  // al massimo a ~50px, scaricare la versione da 500px in ogni lista sarebbe sprecato
+  // (è la principale fonte di cached egress su Supabase Storage).
+  const stemmaSrc = team?.stemma_thumb_url || team?.stemma_url;
+  if (stemmaSrc) {
     return (
       <div style={{ width: size, height: size, borderRadius: size * 0.28, overflow: "hidden", border: `2px solid ${team.color}66`, flexShrink: 0, boxShadow: `0 4px 14px ${team.color}33`, background: "#0d0f14" }}>
-        <img loading="lazy" decoding="async" src={team.stemma_url} alt={team.name}
+        <img loading="lazy" decoding="async" src={stemmaSrc} alt={team.name}
           style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
       </div>
     );
@@ -12102,12 +12106,16 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, 
       {/* Immagini */}
       {notizia.immagini?.length > 0 && (
         <div style={{ display:"grid", gridTemplateColumns:notizia.immagini.length===1?"1fr":"1fr 1fr", gap:4, borderRadius:12, overflow:"hidden", marginBottom:14 }}>
-          {notizia.immagini.slice(0,4).map((url,i) => (
-            <div key={i} style={{ position:"relative", paddingBottom:notizia.immagini.length===1?"52%":"60%", cursor:"pointer" }} onClick={() => setImgOpen(url)}>
-              <img loading="lazy" decoding="async" src={url} alt="" style={{ position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover" }}/>
-              {notizia.immagini.length>4&&i===3&&<div style={{ position:"absolute",inset:0,background:"#000000aa",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff" }}>+{notizia.immagini.length-4}</div>}
-            </div>
-          ))}
+          {notizia.immagini.slice(0,4).map((img,i) => {
+            const thumbSrc = typeof img === "string" ? img : (img.thumb || img.full);
+            const fullSrc  = typeof img === "string" ? img : (img.full || img.thumb);
+            return (
+              <div key={i} style={{ position:"relative", paddingBottom:notizia.immagini.length===1?"52%":"60%", cursor:"pointer" }} onClick={() => setImgOpen(fullSrc)}>
+                <img loading="lazy" decoding="async" src={thumbSrc} alt="" style={{ position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover" }}/>
+                {notizia.immagini.length>4&&i===3&&<div style={{ position:"absolute",inset:0,background:"#000000aa",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff" }}>+{notizia.immagini.length-4}</div>}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -12360,11 +12368,11 @@ function NewsComposer({ profile, teams, onPost, isAdmin, editingPost = null, onC
     if (!files.length) return;
     setUploading(true);
     try {
-      const urls = await Promise.all(files.map(async file => {
+      const imgs = await Promise.all(files.map(async file => {
         const path = `${profile.squadra || 'admin'}/${Date.now()}_${file.name}`;
-        return await uploadNotiziaImmagine(file, path);
+        return await uploadNotiziaImmagine(file, path); // { full, thumb }
       }));
-      setImmagini(v => [...v, ...urls]);
+      setImmagini(v => [...v, ...imgs]);
     } catch(err) { alert("Errore upload: " + err.message); }
     finally { setUploading(false); }
   }
@@ -12482,13 +12490,16 @@ function NewsComposer({ profile, teams, onPost, isAdmin, editingPost = null, onC
       {/* Preview immagini */}
       {immagini.length > 0 && (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-          {immagini.map((url, i) => (
-            <div key={i} style={{ position: "relative", width: 80, height: 80 }}>
-              <img loading="lazy" decoding="async" src={url} alt="" style={{ width: 80, height: 80, borderRadius: 8, objectFit: "cover" }} />
-              <button onClick={() => setImmagini(v => v.filter((_, j) => j !== i))}
-                style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: "#ef4444", border: "none", color: "#fff", fontSize: 11, fontWeight: 900, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
-            </div>
-          ))}
+          {immagini.map((img, i) => {
+            const previewSrc = typeof img === "string" ? img : (img.thumb || img.full);
+            return (
+              <div key={i} style={{ position: "relative", width: 80, height: 80 }}>
+                <img loading="lazy" decoding="async" src={previewSrc} alt="" style={{ width: 80, height: 80, borderRadius: 8, objectFit: "cover" }} />
+                <button onClick={() => setImmagini(v => v.filter((_, j) => j !== i))}
+                  style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: "#ef4444", border: "none", color: "#fff", fontSize: 11, fontWeight: 900, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -12525,11 +12536,12 @@ function NewsPage({ profile, isAdmin, teams }) {
   const [filtroCategoria, setFiltroCategoria] = useState("tutti");
   const [nuoviDisponibili, setNuoviDisponibili] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(5);
   const myName = profile?.nome || profile?.email || "";
 
   // Caricamento iniziale
   const loadNotizie = useCallback(async () => {
-    try { setNotizie(await getNotizie()); }
+    try { setNotizie(await getNotizie(undefined, 25)); }
     catch(e) { console.error(e); }
     finally { setLoading(false); }
   }, []);
@@ -12587,6 +12599,11 @@ function NewsPage({ profile, isAdmin, teams }) {
   const notizieFiltered = filtroCategoria === "tutti"
     ? notizie
     : notizie.filter(n => n.categoria === filtroCategoria);
+
+  useEffect(() => { setVisibleCount(5); }, [filtroCategoria]);
+
+  const notizieVisibili = notizieFiltered.slice(0, visibleCount);
+  const altreDisponibili = notizieFiltered.length - notizieVisibili.length;
 
   return (
     <div style={{ maxWidth: 860, margin: "0 auto" }}>
@@ -12646,7 +12663,7 @@ function NewsPage({ profile, isAdmin, teams }) {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {notizieFiltered.map(n => (
+          {notizieVisibili.map(n => (
             <NewsCard
               key={n.id}
               notizia={n}
@@ -12660,6 +12677,12 @@ function NewsPage({ profile, isAdmin, teams }) {
               profile={profile}
             />
           ))}
+          {altreDisponibili > 0 && (
+            <button onClick={() => setVisibleCount(v => v + 5)}
+              style={{ padding: "12px", borderRadius: 12, border: "1px solid #ffffff15", background: "#ffffff05", color: "#888", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              ▾ Mostra altre notizie ({altreDisponibili})
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -12834,7 +12857,7 @@ function AppInner() {
     function loadCI() {
       getAllClubIdentities().then(rows => {
         const map = {};
-        for (const r of rows || []) map[r.squadra] = { stemma_url: r.stemma_url, maglia_casa_url: r.maglia_casa_url, maglia_trasferta_url: r.maglia_trasferta_url, maglia_terza_url: r.maglia_terza_url };
+        for (const r of rows || []) map[r.squadra] = { stemma_url: r.stemma_url, stemma_thumb_url: r.stemma_thumb_url, maglia_casa_url: r.maglia_casa_url, maglia_trasferta_url: r.maglia_trasferta_url, maglia_terza_url: r.maglia_terza_url };
         setClubIdentities(map);
       });
     }
@@ -12853,7 +12876,7 @@ function AppInner() {
   const mergedTeams = useMemo(() => TEAMS.map(t => {
     const db = squadreDB.find(s => s.name === t.name);
     const ci = clubIdentities[t.name] || {};
-    const base = { stemma_url: ci.stemma_url||null, maglia_casa_url: ci.maglia_casa_url||null, maglia_trasferta_url: ci.maglia_trasferta_url||null, maglia_terza_url: ci.maglia_terza_url||null };
+    const base = { stemma_url: ci.stemma_url||null, stemma_thumb_url: ci.stemma_thumb_url||null, maglia_casa_url: ci.maglia_casa_url||null, maglia_trasferta_url: ci.maglia_trasferta_url||null, maglia_terza_url: ci.maglia_terza_url||null };
     if (!db) return { ...t, ...base, fpf: fpfMap[t.name]??null };
     return { ...t, ...base, bilancio: db.bilancio, salaryUsed: db.salary_used, scBonusObiettivi: db.sc_bonus_obiettivi||0, giocatori: db.giocatori, u21: db.u21, fairPlay1: db.fair_play1, fairPlay2: db.fair_play2, penalita: db.penalita, guadGiornate: db.guad_giornate, guadObiettivi: db.guad_obiettivi, guadInv: db.guad_inv, clausoleIn: db.clausole_in, clausoleOut: db.clausole_out, euroInvestiti: db.euro_investiti||0, mlnExtra: db.mln_extra||0, euroBiennio: db.euro_biennio||0, scNegativoDal: db.sc_negativo_dal||null, mercatoBloccato: db.mercato_bloccato||false, bilancioNegDal: db.bilancio_neg_dal||null, bilancioNegSettimane: db.bilancio_neg_settimane||0, fallimento: db.fallimento||false, fallimentoDal: db.fallimento_dal||null, fpf: fpfMap[t.name]??null, biennio: db.biennio||'2025-27', quotaPagata: db.quota_pagata||false, quotaStagionePagata: db.quota_stagione_pagata||null, quotaPagataIl: db.quota_pagata_il||null, quotaTesoriere: db.quota_tesoriere||null, iscrizionePagata: db.iscrizione_pagata||false, iscrizioneStagionePagata: db.iscrizione_stagione_pagata||null, iscrizionePagataIl: db.iscrizione_pagata_il||null };
   }), [squadreDB, fpfMap, clubIdentities]);
@@ -12888,7 +12911,7 @@ function AppInner() {
       <Route path="/lega" element={<LegaPage teams={mergedTeams} isAdmin={isAdmin}/>}/>
       <Route path="/mercato" element={<MercatoPage profile={profile} isAdmin={isAdmin} teams={mergedTeams} offerteInAttesa={offerteInAttesa} statoMercato={statoMercato}/>}/>
       {isAdmin && <Route path="/admin-control" element={<AdminControlRoomPage teams={mergedTeams}/>}/>}
-      <Route path="/storico" element={<StoricoPage isAdmin={isAdmin} allClubIdentities={Object.entries(clubIdentities).map(([squadra, ci]) => ({ squadra, logo_url: ci.stemma_url }))}/>}/>
+      <Route path="/storico" element={<StoricoPage isAdmin={isAdmin} allClubIdentities={Object.entries(clubIdentities).map(([squadra, ci]) => ({ squadra, logo_url: ci.stemma_thumb_url || ci.stemma_url }))}/>}/>
       <Route path="/profilo" element={<ProfileSettingsPage session={session} profile={profile} onProfileUpdated={()=>getProfile(session.user.id).then(p=>setProfile(p))}/>}/>
       <Route path="/presidente/:teamId" element={<PresidentePageWrapper mergedTeams={mergedTeams} isAdmin={isAdmin} mySquadra={mySquadra}/>}/>
       <Route path="/presidente/:teamId/:tab" element={<PresidentePageWrapper mergedTeams={mergedTeams} isAdmin={isAdmin} mySquadra={mySquadra}/>}/>
