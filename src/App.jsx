@@ -12440,6 +12440,7 @@ function NewsComposer({ profile, teams, onPost, isAdmin, editingPost = null, onC
   const [testo, setTesto] = useState("");
   const [categoria, setCategoria] = useState("news");
   const [immagini, setImmagini] = useState([]);
+  const [immaginiThumb, setImmaginiThumb] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [posting, setPosting] = useState(false);
   const [postAsAdmin, setPostAsAdmin] = useState(false);
@@ -12454,6 +12455,7 @@ function NewsComposer({ profile, teams, onPost, isAdmin, editingPost = null, onC
     setTesto(editingPost.testo || "");
     setCategoria(editingPost.categoria || "news");
     setImmagini(Array.isArray(editingPost.immagini) ? editingPost.immagini : []);
+    setImmaginiThumb(Array.isArray(editingPost.immagini_thumb) ? editingPost.immagini_thumb : []);
     setPostAsAdmin(editingPost.autore === 'Admin');
   }, [editingPost]);
 
@@ -12461,6 +12463,7 @@ function NewsComposer({ profile, teams, onPost, isAdmin, editingPost = null, onC
     setTitolo("");
     setTesto("");
     setImmagini([]);
+    setImmaginiThumb([]);
     setCategoria("news");
     setPostAsAdmin(false);
     setOpen(false);
@@ -12475,7 +12478,11 @@ function NewsComposer({ profile, teams, onPost, isAdmin, editingPost = null, onC
         const path = `${profile.squadra || 'admin'}/${Date.now()}_${file.name}`;
         return await uploadNotiziaImmagine(file, path); // { full, thumb }
       }));
-      setImmagini(v => [...v, ...imgs]);
+      // Due array paralleli di semplici stringhe (URL), non oggetti dentro un array:
+      // se la colonna a DB è un text[] salvare oggetti la corrompe (ogni elemento
+      // diventa "[object Object]" o un JSON stringificato non usabile come src).
+      setImmagini(v => [...v, ...imgs.map(x => x.full)]);
+      setImmaginiThumb(v => [...v, ...imgs.map(x => x.thumb)]);
     } catch(err) { alert("Errore upload: " + err.message); }
     finally { setUploading(false); }
   }
@@ -12490,6 +12497,7 @@ function NewsComposer({ profile, teams, onPost, isAdmin, editingPost = null, onC
           titolo: titolo.trim(),
           testo: testo.trim(),
           immagini,
+          immagini_thumb: immaginiThumb,
         });
       } else {
         await insertNotizia({
@@ -12499,6 +12507,7 @@ function NewsComposer({ profile, teams, onPost, isAdmin, editingPost = null, onC
           titolo: titolo.trim(),
           testo: testo.trim(),
           immagini,
+          immaginiThumb,
         });
         // Ogni nuova notizia viene annunciata normalmente nel canale Telegram.
         sendTelegramNotification('nuova_notizia', {
