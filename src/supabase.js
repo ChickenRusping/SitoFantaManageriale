@@ -5142,13 +5142,30 @@ export async function getNotizie(stagione = '2026-27', limit = 50) {
   if (error) throw error;
   return data || [];
 }
-export async function insertNotizia({ autore, squadra, categoria, titolo, testo, immagini = [], stagione = '2026-27' }) {
-  const { data, error } = await supabase.from('notizie').insert({ autore, squadra, categoria, titolo, testo, immagini, stagione }).select().single();
+function isMissingColumnError(error) {
+  const msg = (error?.message || '').toLowerCase();
+  return msg.includes('column') || msg.includes('schema cache') || msg.includes('could not find');
+}
+
+export async function insertNotizia({ autore, squadra, categoria, titolo, testo, immagini = [], immaginiThumb = [], stagione = '2026-27' }) {
+  const payload = { autore, squadra, categoria, titolo, testo, immagini, immagini_thumb: immaginiThumb, stagione };
+  let { data, error } = await supabase.from('notizie').insert(payload).select().single();
+  if (error && isMissingColumnError(error)) {
+    // La colonna immagini_thumb non esiste ancora (migrazione non eseguita):
+    // riprova salvando solo l'immagine full-size, niente si perde.
+    const { immagini_thumb, ...fallbackPayload } = payload;
+    ({ data, error } = await supabase.from('notizie').insert(fallbackPayload).select().single());
+  }
   if (error) throw error;
   return data;
 }
 export async function updateNotizia(id, fields) {
-  const { data, error } = await supabase.from('notizie').update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+  const payload = { ...fields, updated_at: new Date().toISOString() };
+  let { data, error } = await supabase.from('notizie').update(payload).eq('id', id).select().single();
+  if (error && isMissingColumnError(error) && 'immagini_thumb' in payload) {
+    const { immagini_thumb, ...fallbackPayload } = payload;
+    ({ data, error } = await supabase.from('notizie').update(fallbackPayload).eq('id', id).select().single());
+  }
   if (error) throw error;
   return data;
 }
