@@ -12039,6 +12039,28 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString("it-IT", { day: "2-digit", month: "short" });
 }
 
+// Risolve la coppia {thumbSrc, fullSrc} per un'immagine di una notizia, con
+// compatibilità verso vecchi post salvati prima dell'introduzione delle thumbnail
+// (stringa semplice), e ripristino automatico di eventuali voci corrotte: se in
+// passato è stato salvato un oggetto {full,thumb} dentro una colonna text[], il
+// valore che torna dal DB è una stringa JSON tipo '{"full":"...","thumb":"..."}'
+// invece di un URL — qui viene rilevata e ri-parsata così l'immagine torna a vedersi
+// senza dover ricaricare la foto.
+function resolveNewsImageSrc(raw, thumbParallel) {
+  if (raw && typeof raw === "object") {
+    return { thumbSrc: raw.thumb || raw.full || thumbParallel, fullSrc: raw.full || raw.thumb || thumbParallel };
+  }
+  if (typeof raw === "string" && raw.trim().startsWith("{")) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && (parsed.full || parsed.thumb)) {
+        return { thumbSrc: parsed.thumb || parsed.full, fullSrc: parsed.full || parsed.thumb };
+      }
+    } catch { /* non era JSON valido, trattalo come URL qui sotto */ }
+  }
+  return { thumbSrc: thumbParallel || raw, fullSrc: raw || thumbParallel };
+}
+
 function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, teams, profile }) {
   const [expanded, setExpanded] = useState(false);
   const [imgOpen, setImgOpen] = useState(null);
@@ -12210,8 +12232,7 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, 
       {notizia.immagini?.length > 0 && (
         <div style={{ display:"grid", gridTemplateColumns:notizia.immagini.length===1?"1fr":"1fr 1fr", gap:4, borderRadius:12, overflow:"hidden", marginBottom:14 }}>
           {notizia.immagini.slice(0,4).map((img,i) => {
-            const thumbSrc = typeof img === "string" ? img : (img.thumb || img.full);
-            const fullSrc  = typeof img === "string" ? img : (img.full || img.thumb);
+            const { thumbSrc, fullSrc } = resolveNewsImageSrc(img, notizia.immagini_thumb?.[i]);
             return (
               <div key={i} style={{ position:"relative", paddingBottom:notizia.immagini.length===1?"52%":"60%", cursor:"pointer" }} onClick={() => setImgOpen(fullSrc)}>
                 <img loading="lazy" decoding="async" src={thumbSrc} alt="" style={{ position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover" }}/>
@@ -12603,11 +12624,11 @@ function NewsComposer({ profile, teams, onPost, isAdmin, editingPost = null, onC
       {immagini.length > 0 && (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
           {immagini.map((img, i) => {
-            const previewSrc = typeof img === "string" ? img : (img.thumb || img.full);
+            const previewSrc = resolveNewsImageSrc(img, immaginiThumb[i]).thumbSrc;
             return (
               <div key={i} style={{ position: "relative", width: 80, height: 80 }}>
                 <img loading="lazy" decoding="async" src={previewSrc} alt="" style={{ width: 80, height: 80, borderRadius: 8, objectFit: "cover" }} />
-                <button onClick={() => setImmagini(v => v.filter((_, j) => j !== i))}
+                <button onClick={() => { setImmagini(v => v.filter((_, j) => j !== i)); setImmaginiThumb(v => v.filter((_, j) => j !== i)); }}
                   style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: "#ef4444", border: "none", color: "#fff", fontSize: 11, fontWeight: 900, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
               </div>
             );
