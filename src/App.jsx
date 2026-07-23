@@ -164,7 +164,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento,
   getBonusTrattativa, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -5817,6 +5817,21 @@ function ClubIdentityCard({ team, isAdmin, mySquadra }) {
 // Module-level override set by App on load
 let _mercatoOverride = null;
 let _rivalitaBloccata = false; // caricato all'avvio
+let _modalitaSvincolati = 'normale'; // 'chiuso' | 'normale' | 'libero' — caricato all'avvio
+
+// Combina la finestra di calendario (mar-mer interesse, ven aste — sempre valida
+// in modalità 'normale') con l'eventuale modalità impostata dall'admin in Control
+// Room. In 'chiuso' blocca tutto; in 'libero' è sempre aperta (72h dalla chiamata).
+function getFinestraChiamateEffettiva() {
+  const base = getFinestraChiamate();
+  if (_modalitaSvincolati === 'chiuso') {
+    return { ...base, aperta: false, modalita: 'chiuso', messaggio: '🔴 Mercato svincolati chiuso (Admin)' };
+  }
+  if (_modalitaSvincolati === 'libero') {
+    return { ...base, aperta: true, modalita: 'libero', messaggio: '🔓 Mercato libero — chiama quando vuoi (72h per gli interessati, poi asta a busta chiusa)' };
+  }
+  return { ...base, modalita: 'normale' };
+}
 
 // Finestre di mercato (art. 5.1)
 // Estivo:   01/06 09:00 → 15/09 24:00
@@ -7902,7 +7917,7 @@ function SvincolatiTable({ filtered, chiamateAttive, mySquadra, isAdmin, setShow
     _anniNum:  Number(p.anni  || 0),
   }));
   const { sorted, SortTh } = useSortableTable(rich, "_quotNum", "desc");
-  const finestra = getFinestraChiamate();
+  const finestra = getFinestraChiamateEffettiva();
 
   return (
     <div style={{ overflowX: "auto" }}>
@@ -7911,7 +7926,7 @@ function SvincolatiTable({ filtered, chiamateAttive, mySquadra, isAdmin, setShow
         <span style={{ fontSize: 10, padding: "3px 10px", borderRadius: 20, background: finestra.aperta ? "#10b98118" : "#ffffff08", color: finestra.aperta ? "#10b981" : "#555", border: `1px solid ${finestra.aperta ? "#10b98130" : "#ffffff10"}`, fontWeight: 600 }}>
           {finestra.messaggio}
         </span>
-        {isAdmin && !finestra.aperta && <span style={{ fontSize: 9, color: "#6366f1" }}>Admin: puoi chiamare sempre</span>}
+        {isAdmin && !finestra.aperta && finestra.modalita !== 'chiuso' && <span style={{ fontSize: 9, color: "#6366f1" }}>Admin: puoi chiamare sempre</span>}
       </div>
 
       <table style={{ width: "100%", minWidth: 480, borderCollapse: "collapse", fontSize: 12 }}>
@@ -8047,7 +8062,8 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
 
   async function chiamaGiocatore(player, perVivaio = false) {
     if (perVivaio && !isVivaioAcquistiAperti()) { alert('⛔ Le chiamate per il vivaio sono consentite solo dal 01/09 al 31/05.'); return; }
-    const finestra = getFinestraChiamate();
+    const finestra = getFinestraChiamateEffettiva();
+    if (finestra.modalita === 'chiuso') { alert(`⛔ ${finestra.messaggio}`); return; }
     if (!finestra.aperta && !isAdmin) {
       alert(`⛔ Finestra chiusa\n\n${finestra.messaggio}`); return;
     }
@@ -8117,7 +8133,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
     "Attaccanti": ["W;A","A","Pc"],
   };
 
-  const finestra = getFinestraChiamate();
+  const finestra = getFinestraChiamateEffettiva();
   const inpStyle = { padding: "8px 12px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 13 };
   const inpSm = { padding: "4px 6px", borderRadius: 6, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 11 };
 
@@ -9541,6 +9557,8 @@ function AdminControlRoomPage({ teams }) {
   const [tgLoading, setTgLoading] = useState(false);
   const [mercatoOvr, setMercatoOvr] = useState(null); // null=auto, 'aperto', 'chiuso'
   const [mercatoOvrLoading, setMercatoOvrLoading] = useState(false);
+  const [modalitaSvinc, setModalitaSvinc] = useState('normale'); // 'chiuso' | 'normale' | 'libero'
+  const [modalitaSvincLoading, setModalitaSvincLoading] = useState(false);
   const [asteAttive, setAsteAttive] = useState([]);
   const [fpfData, setFpfData] = useState(null);
   const [differiti, setDifferiti] = useState([]);
@@ -9594,6 +9612,12 @@ function AdminControlRoomPage({ teams }) {
     setMercatoOvrLoading(true);
     try { const v = await getMercatoOverride(); setMercatoOvr(v); }
     finally { setMercatoOvrLoading(false); }
+  }
+
+  async function loadModalitaSvinc() {
+    setModalitaSvincLoading(true);
+    try { const v = await getModalitaSvincolati(); setModalitaSvinc(v); }
+    finally { setModalitaSvincLoading(false); }
   }
 
   async function loadAste() {
@@ -9765,7 +9789,7 @@ function AdminControlRoomPage({ teams }) {
     finally { setUtentiSaving(false); }
   }
 
-  useEffect(() => { loadMercatoOvr(); }, []);
+  useEffect(() => { loadMercatoOvr(); loadModalitaSvinc(); }, []);
 
   useEffect(() => { load(); }, []);
 
@@ -10463,6 +10487,41 @@ function AdminControlRoomPage({ teams }) {
               <div style={{ fontSize: 12, color: '#555' }}>
                 Stato attuale: <b style={{ color: mercatoOvr === 'aperto' ? '#10b981' : mercatoOvr === 'chiuso' ? '#ef4444' : '#818cf8' }}>
                   {mercatoOvr === 'aperto' ? 'APERTO (override)' : mercatoOvr === 'chiuso' ? 'CHIUSO (override)' : 'Auto'}
+                </b>
+              </div>
+
+              <div style={{ height: 1, background: '#ffffff10', margin: '4px 0' }} />
+
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>🧑‍🤝‍🧑 MERCATO SVINCOLATI</div>
+              <div style={{ background: '#6366f108', border: '1px solid #6366f120', borderRadius: 12, padding: '14px 16px', fontSize: 12, color: '#aaa', lineHeight: 1.6 }}>
+                <b style={{ color: '#818cf8' }}>Normale</b>: chiamate mar-mer, aste il venerdì (comportamento di sempre).<br/>
+                <b style={{ color: '#10b981' }}>Senza Vincoli</b>: chiamabili in ogni momento — 72h per manifestare interesse, poi 12h a busta chiusa se c'è più di un interessato (altrimenti va subito all'unico interessato, come sempre).<br/>
+                <b style={{ color: '#ef4444' }}>Chiuso</b>: nessuna chiamata o offerta possibile, per nessuno (incluso admin). Le chiamate/aste già in corso restano valide e si concludono normalmente — il cambio modalità vale solo per le nuove.
+              </div>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {[
+                  { val: 'chiuso',  label: '🔴 Chiuso',         color: '#ef4444' },
+                  { val: 'normale', label: '🔄 Normale',        color: '#6366f1' },
+                  { val: 'libero',  label: '🔓 Senza Vincoli',  color: '#10b981' },
+                ].map(opt => (
+                  <button key={opt.val} disabled={modalitaSvincLoading}
+                    onClick={async () => {
+                      setModalitaSvincLoading(true);
+                      try {
+                        await setModalitaSvincolati(opt.val);
+                        _modalitaSvincolati = opt.val;
+                        setModalitaSvinc(opt.val);
+                      } catch(e) { alert(`Errore: ${e.message}`); }
+                      finally { setModalitaSvincLoading(false); }
+                    }}
+                    style={{ padding: '9px 18px', borderRadius: 10, border: `1.5px solid ${modalitaSvinc === opt.val ? opt.color : opt.color + '40'}`, background: modalitaSvinc === opt.val ? opt.color + '20' : 'transparent', color: modalitaSvinc === opt.val ? opt.color : '#666', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                    {opt.label} {modalitaSvinc === opt.val ? '✓' : ''}
+                  </button>
+                ))}
+              </div>
+              <div style={{ fontSize: 12, color: '#555' }}>
+                Stato attuale: <b style={{ color: modalitaSvinc === 'libero' ? '#10b981' : modalitaSvinc === 'chiuso' ? '#ef4444' : '#818cf8' }}>
+                  {modalitaSvinc === 'libero' ? 'SENZA VINCOLI' : modalitaSvinc === 'chiuso' ? 'CHIUSO' : 'NORMALE'}
                 </b>
               </div>
             </div>
@@ -12930,6 +12989,7 @@ function AppInner() {
     getMercatoOverride().then(v => { _mercatoOverride = v; setMercatoOverride_state(v); }).catch(() => { _mercatoOverride = null; });
     getRivalitaLock().then(v => { _rivalitaBloccata = v; }).catch(() => { _rivalitaBloccata = false; });
     getStagioneLabel().then(v => { setStagioneLabelState(v); }).catch(() => {});
+    getModalitaSvincolati().then(v => { _modalitaSvincolati = v; }).catch(() => { _modalitaSvincolati = 'normale'; });
   }, [session]);
 
   // ── Offerte in attesa: solo realtime, nessun polling ─────────────────────
