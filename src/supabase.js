@@ -411,6 +411,8 @@ export function isVivaioAcquistiAperti(date = new Date()) {
 // ── Inserisce la chiamata principale (tipo='prima') ───────────────────────────
 export async function insertChiamata(chiamata) {
   const now = new Date();
+  const modalita = await getModalitaSvincolati();
+  if (modalita === 'chiuso') throw new Error('Il mercato svincolati è momentaneamente chiuso.');
   if (chiamata?.per_vivaio && !isVivaioAcquistiAperti(now)) throw new Error('Le chiamate per il vivaio sono consentite solo dal 01/09 al 31/05.');
   if (chiamata?.per_vivaio) {
     if (!(Number(chiamata.anni || 0) > 0 && Number(chiamata.anni || 0) <= 23)) throw new Error('Giocatore non idoneo al vivaio: deve essere Under-23.');
@@ -421,22 +423,33 @@ export async function insertChiamata(chiamata) {
   if (chiamata?.squadra && chiamata?.giocatore) {
     await verificaRiacquistoConsentito(chiamata.squadra, chiamata.giocatore);
   }
-  const scadenzaInteresse = calcolaScadenzaInteresse(now);
-  const { data, error } = await supabase
-    .from('chiamate')
-    .insert({
-      ...chiamata,
-      tipo: 'prima',
-      stato: 'aperta',
-      scadenza_interesse: scadenzaInteresse.toISOString(),
-    })
-    .select().single();
+  // In modalità libera: 72h fisse dalla chiamata, nessun vincolo di giorno/orario.
+  // In modalità normale: le finestre di calendario restano quelle di sempre
+  // (l'enforcement in UI resta invariato, qui si calcola solo la scadenza).
+  const scadenzaInteresse = modalita === 'libero' ? calcolaScadenzaInteresseLibero(now) : calcolaScadenzaInteresse(now);
+  const payload = {
+    ...chiamata,
+    tipo: 'prima',
+    stato: 'aperta',
+    modalita,
+    scadenza_interesse: scadenzaInteresse.toISOString(),
+  };
+  let { data, error } = await supabase.from('chiamate').insert(payload).select().single();
+  if (error && isMissingColumnError(error)) {
+    // Colonna 'modalita' non ancora migrata: riprova senza (la modalità libera
+    // funziona comunque grazie alla scadenza_interesse già calcolata a 72h,
+    // solo creaAstaDaChiamate non saprà distinguere in modo esplicito — vedi lì).
+    const { modalita: _drop, ...fallbackPayload } = payload;
+    ({ data, error } = await supabase.from('chiamate').insert(fallbackPayload).select().single());
+  }
   if (error) throw error;
   return data;
 }
 
 // ── Aggiunge un interesse (tipo='interesse') ──────────────────────────────────
 export async function aggiungiInteresse(nomeGiocatore, squadra, perVivaio = false) {
+  const modalita = await getModalitaSvincolati();
+  if (modalita === 'chiuso') throw new Error('Il mercato svincolati è momentaneamente chiuso.');
   if (perVivaio && !isVivaioAcquistiAperti()) throw new Error('Gli interessamenti per il vivaio sono consentiti solo dal 01/09 al 31/05.');
   // Recupera la chiamata principale per avere la scadenza_interesse
   const { data: primaria } = await supabase
@@ -459,18 +472,22 @@ export async function aggiungiInteresse(nomeGiocatore, squadra, perVivaio = fals
     .select('id').eq('giocatore', nomeGiocatore).eq('squadra', squadra);
   if (gia?.length) throw new Error('Hai già manifestato interesse per questo giocatore');
 
-  const { data, error } = await supabase.from('chiamate')
-    .insert({
-      giocatore: nomeGiocatore,
-      ruolo: primaria.ruolo,
-      quot: primaria.quot,
-      squadra,
-      tipo: 'interesse',
-      stato: 'aperta',
-      per_vivaio: perVivaio,
-      scadenza_interesse: primaria.scadenza_interesse,
-    })
-    .select().single();
+  const payload = {
+    giocatore: nomeGiocatore,
+    ruolo: primaria.ruolo,
+    quot: primaria.quot,
+    squadra,
+    tipo: 'interesse',
+    stato: 'aperta',
+    per_vivaio: perVivaio,
+    modalita: primaria.modalita || modalita,
+    scadenza_interesse: primaria.scadenza_interesse,
+  };
+  let { data, error } = await supabase.from('chiamate').insert(payload).select().single();
+  if (error && isMissingColumnError(error)) {
+    const { modalita: _drop, ...fallbackPayload } = payload;
+    ({ data, error } = await supabase.from('chiamate').insert(fallbackPayload).select().single());
+  }
   if (error) throw error;
   return data;
 }
@@ -4428,30 +4445,42 @@ export async function creaAstaDaChiamate(nomeGiocatore) {
   if (!primaria) throw new Error('Chiamata principale non trovata');
 
   const scadenzaInteresse = new Date(primaria.scadenza_interesse);
+  const modalita = primaria.modalita || 'normale';
 
-  // Sempre: venerdì = giovedì + 1 giorno, slot base 13:00 UTC (14:00 Italia) + 30min per ogni asta già presente
-  const ven = new Date(scadenzaInteresse);
-  ven.setUTCDate(scadenzaInteresse.getUTCDate() + 1);
-  ven.setUTCHours(13, 0, 0, 0);
-  const slot = await calcolaSlotVenerdì(ven);
-  ven.setUTCMinutes(slot * 30);
-  const scadenzaOfferte = ven;
+  let scadenzaOfferte;
+  if (modalita === 'libero') {
+    // Modalità libera: 12h fisse dalla scadenza interesse, nessun ancoraggio al
+    // venerdì e nessuno stagger — ogni asta è indipendente e asincrona.
+    scadenzaOfferte = calcolaScadenzaOfferteLibero(scadenzaInteresse);
+  } else {
+    // Sempre: venerdì = giovedì + 1 giorno, slot base 13:00 UTC (14:00 Italia) + 30min per ogni asta già presente
+    const ven = new Date(scadenzaInteresse);
+    ven.setUTCDate(scadenzaInteresse.getUTCDate() + 1);
+    ven.setUTCHours(13, 0, 0, 0);
+    const slot = await calcolaSlotVenerdì(ven);
+    ven.setUTCMinutes(slot * 30);
+    scadenzaOfferte = ven;
+  }
 
-  const { data: asta, error } = await supabase.from('aste_svincolati')
-    .insert({
-      giocatore: nomeGiocatore,
-      ruolo: primaria.ruolo,
-      anni: primaria.anni || 0,
-      quot: primaria.quot,
-      squadra_serie_a: primaria.squadra_serie_a || '',
-      per_vivaio: primaria.per_vivaio || false,
-      aperta_da: primaria.squadra,
-      scadenza_interesse: scadenzaInteresse.toISOString(),
-      scadenza: scadenzaOfferte.toISOString(),
-      stato: 'raccolta_offerte',
-      n_interessati: chiamate.length,
-    })
-    .select().single();
+  const payload = {
+    giocatore: nomeGiocatore,
+    ruolo: primaria.ruolo,
+    anni: primaria.anni || 0,
+    quot: primaria.quot,
+    squadra_serie_a: primaria.squadra_serie_a || '',
+    per_vivaio: primaria.per_vivaio || false,
+    aperta_da: primaria.squadra,
+    modalita,
+    scadenza_interesse: scadenzaInteresse.toISOString(),
+    scadenza: scadenzaOfferte.toISOString(),
+    stato: 'raccolta_offerte',
+    n_interessati: chiamate.length,
+  };
+  let { data: asta, error } = await supabase.from('aste_svincolati').insert(payload).select().single();
+  if (error && isMissingColumnError(error)) {
+    const { modalita: _drop, ...fallbackPayload } = payload;
+    ({ data: asta, error } = await supabase.from('aste_svincolati').insert(fallbackPayload).select().single());
+  }
   if (error) throw error;
 
   await supabase.from('chiamate')
@@ -5235,6 +5264,33 @@ export async function setMercatoOverride(valore) {
   } else {
     await supabase.from('impostazioni').upsert({ chiave: 'mercato_override', valore }, { onConflict: 'chiave' });
   }
+}
+
+// ─── MODALITÀ MERCATO SVINCOLATI ──────────────────────────────────────────────
+// 'chiuso'  → nessuna chiamata/offerta possibile
+// 'normale' → comportamento di sempre (chiamate mar-mer, aste il venerdì)
+// 'libero'  → chiamabili in ogni momento; 72h per manifestare interesse, poi
+//             12h a busta chiusa se c'è più di un interessato (altrimenti va
+//             subito all'unico interessato, come nel normale)
+// Default 'normale' se non è mai stata impostata (nessuna migrazione richiesta:
+// la chiave semplicemente non esiste finché un admin non la cambia).
+export async function getModalitaSvincolati() {
+  const { data } = await supabase.from('impostazioni').select('valore').eq('chiave', 'modalita_svincolati').limit(1);
+  return data?.[0]?.valore || 'normale';
+}
+
+export async function setModalitaSvincolati(valore) {
+  // valore: 'chiuso' | 'normale' | 'libero'
+  await supabase.from('impostazioni').upsert({ chiave: 'modalita_svincolati', valore }, { onConflict: 'chiave' });
+}
+
+// Modalità libera (art. 6.3-bis): 72h fisse dalla chiamata per l'interesse,
+// poi 12h fisse a busta chiusa — nessun ancoraggio al calendario settimanale.
+export function calcolaScadenzaInteresseLibero(dataChiamata = new Date()) {
+  return new Date(new Date(dataChiamata).getTime() + 72 * 60 * 60 * 1000);
+}
+export function calcolaScadenzaOfferteLibero(scadenzaInteresse) {
+  return new Date(new Date(scadenzaInteresse).getTime() + 12 * 60 * 60 * 1000);
 }
 
 // Trasferimenti differiti
