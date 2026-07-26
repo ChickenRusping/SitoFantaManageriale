@@ -164,7 +164,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento,
   getBonusTrattativa, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -6189,6 +6189,33 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     return () => clearInterval(interval);
   }, [aste, loadAll]);
 
+  // ── Auto-scadenza aste a discesa ferme al prezzo minimo da 30+ min ─────────
+  // (art. 5.11-bis) Nessuno ha comprato entro 30 minuti dal raggiungimento del
+  // prezzo minimo (Q/2): l'asta scade da sola e il giocatore resta normalmente
+  // nella rosa di chi l'aveva indetta (non viene mai spostato, quindi non serve
+  // alcun trasferimento — solo chiudere il record dell'asta).
+  useEffect(() => {
+    async function checkFloorDiscesa() {
+      const attive = aste.filter(a => a.tipo_asta === 'discesa' && a.stato === 'attiva');
+      let changed = false;
+      for (const a of attive) {
+        const prezzoLive = prezzoDiscesaLive(a.quot_giocatore, a.avviata_at);
+        const atFloor = prezzoLive <= a.quot_giocatore / 2;
+        if (!atFloor) continue;
+        if (!a.floor_raggiunto_at) {
+          // Prima volta che rileviamo il minimo: segna il momento.
+          try { await updateAsta(a.id, { floor_raggiunto_at: new Date().toISOString() }); changed = true; } catch { /* colonna non ancora migrata: ignora */ }
+        } else if (new Date() - new Date(a.floor_raggiunto_at) >= 30 * 60 * 1000) {
+          // Sono passati 30+ minuti al prezzo minimo senza acquirenti: scade.
+          try { await updateAsta(a.id, { stato: 'scaduta' }); changed = true; } catch { /* ignora */ }
+        }
+      }
+      if (changed) await loadAll();
+    }
+    const interval = setInterval(checkFloorDiscesa, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [aste, loadAll]);
+
   // ── Polling penalità automatiche (ogni 5 min) ─────────────────────────────
   useEffect(() => {
     if (typeof applicaPenalitaRitardoAuto !== 'function') return;
@@ -6579,7 +6606,6 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
   // ── Offerta su asta a rialzo ───────────────────────────────────────────────
   async function faiOffertaRialzo(asta) {
-    const nuova = parseFloat((asta.offerta_attuale + 0.1).toFixed(2));
     // Controlla orario (00:00-08:00 congelato, art. 5.11)
     const ora = now.getHours();
     if (isInFreeze(ora)) {
@@ -6587,14 +6613,11 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       return;
     }
     const nuovaScadenza = calcolaScadenzaRialzoConFreeze(); // 2h attivi, freeze 00-08
-    await updateAsta(asta.id, {
-      offerta_attuale: nuova,
-      miglior_offerente: mySquadra,
-      ultima_offerta_at: new Date().toISOString(),
-      scadenza_asta: nuovaScadenza,
-    });
-    cacheInvalidate('aste');
-    await loadAll();
+    try {
+      await piazzaOffertaRialzo(asta.id, mySquadra, { nuovaScadenza });
+      cacheInvalidate('aste');
+      await loadAll();
+    } catch(e) { alert(`⚠️ ${e.message}`); await loadAll(); }
   }
 
   // ── Acquisto asta a discesa ────────────────────────────────────────────────
@@ -6603,13 +6626,13 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     if (!window.confirm(`Acquistare ${asta.giocatore} per ${prezzoAcquisto.toFixed(2)}M?`)) return;
     setLoading(true);
     try {
-      await updateAsta(asta.id, { stato: 'aggiudicata', vincitore: mySquadra, prezzo_finale: prezzoAcquisto });
+      await assegnaAsta(asta.id, mySquadra, prezzoAcquisto);
       await eseguiTrasferimento({ da_squadra: asta.da_squadra, a_squadra: mySquadra, giocatore: asta.giocatore, prezzo: prezzoAcquisto, tipo: 'cessione', quot_giocatore: asta.quot_giocatore, fuori_mercato: false, id: asta.id });
       await aggiornaFantaSquadraListone(asta.giocatore, mySquadra);
       await aggiornaStipendioDopoTrasferimento(asta.giocatore, mySquadra);
       sendTelegramNotification('asta_assegnata', { giocatore: asta.giocatore, vincitore: mySquadra, importo: prezzoAcquisto.toFixed(2) });
       await loadAll();
-    } catch(e) { alert(`Errore: ${e.message}`); }
+    } catch(e) { alert(`Errore: ${e.message}`); await loadAll(); }
     finally { setLoading(false); }
   }
 
@@ -6617,20 +6640,20 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   async function chiudiAstaRialzo(asta) {
     if (!asta.miglior_offerente) {
       if (!window.confirm(`Nessuna offerta per ${asta.giocatore}. Chiudere l'asta senza vincitore?`)) return;
-      await updateAsta(asta.id, { stato: 'scaduta' });
+      try { await scadeAstaSenzaVincitore(asta.id); } catch(e) { alert(`Errore: ${e.message}`); await loadAll(); return; }
       sendTelegramNotification('asta_assegnata', { giocatore: asta.giocatore, vincitore: null, importo: null });
       await loadAll(); return;
     }
     if (!window.confirm(`Aggiudicare ${asta.giocatore} a ${asta.miglior_offerente} per ${asta.offerta_attuale.toFixed(2)}M?`)) return;
     setLoading(true);
     try {
-      await updateAsta(asta.id, { stato: 'aggiudicata', vincitore: asta.miglior_offerente, prezzo_finale: asta.offerta_attuale });
+      await assegnaAsta(asta.id, asta.miglior_offerente, asta.offerta_attuale);
       await eseguiTrasferimento({ da_squadra: asta.da_squadra, a_squadra: asta.miglior_offerente, giocatore: asta.giocatore, prezzo: asta.offerta_attuale, tipo: 'cessione', quot_giocatore: asta.quot_giocatore, fuori_mercato: false, id: asta.id });
       await aggiornaFantaSquadraListone(asta.giocatore, asta.miglior_offerente);
       await aggiornaStipendioDopoTrasferimento(asta.giocatore, asta.miglior_offerente);
       sendTelegramNotification('asta_assegnata', { giocatore: asta.giocatore, vincitore: asta.miglior_offerente, importo: asta.offerta_attuale.toFixed(2) });
       await loadAll();
-    } catch(e) { alert(`Errore: ${e.message}`); }
+    } catch(e) { alert(`Errore: ${e.message}`); await loadAll(); }
     finally { setLoading(false); }
   }
 
@@ -7362,7 +7385,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                     <div style={{ marginBottom: 10 }}>
                       {scadFra !== null && <div style={{ fontSize: 11, color: scadFra === 0 ? "#ef4444" : scadFra < 30 ? "#f97316" : "#888", marginBottom: 6 }}>⏱ {scadFra === 0 ? "⏰ SCADUTA — in attesa di chiusura" : `Scade in ${scadFra < 60 ? `${scadFra} min` : `${Math.floor(scadFra/60)}h ${scadFra%60}min`}`}{horaCongelata ? " (CONGELATO)" : ""}</div>}
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        {a.proprietario !== mySquadra && !isAdmin && !horaCongelata && scadFra !== 0 && (
+                        {a.proprietario !== mySquadra && !!mySquadra && !horaCongelata && scadFra !== 0 && (
                           <button onClick={() => faiOffertaRialzo(a)} style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: "#f59e0b", color: "#000", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
                             📈 Offri {minRilancio}M
                           </button>
@@ -7379,15 +7402,18 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
                   {a.tipo_asta === 'discesa' && (
                     <div style={{ marginBottom: 10 }}>
-                      {isFloor
-                        ? <div style={{ fontSize: 11, color: "#ef4444", fontWeight: 700 }}>⛔ Asta scaduta — prezzo minimo raggiunto</div>
-                        : horaCongelata
-                          ? <div style={{ fontSize: 11, color: "#555" }}>🌙 Acquisti sospesi (00:00–08:00)</div>
-                          : a.proprietario !== mySquadra && !isAdmin && (
-                            <button onClick={() => acquistaDiscesa(a)} style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: "#f59e0b", color: "#000", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
-                              🛒 Acquista ora a {prezzoLive.toFixed(2)}M
-                            </button>
-                          )
+                      {isFloor && a.floor_raggiunto_at && (
+                        <div style={{ fontSize: 11, color: "#f97316", marginBottom: 6 }}>
+                          🔻 Prezzo minimo raggiunto — si annulla automaticamente tra {Math.max(0, 30 - Math.floor((now - new Date(a.floor_raggiunto_at)) / 60000))} min se nessuno compra
+                        </div>
+                      )}
+                      {horaCongelata
+                        ? <div style={{ fontSize: 11, color: "#555" }}>🌙 Acquisti sospesi (00:00–08:00)</div>
+                        : a.proprietario !== mySquadra && !!mySquadra && (
+                          <button onClick={() => acquistaDiscesa(a)} style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: "#f59e0b", color: "#000", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
+                            🛒 Acquista ora a {prezzoLive.toFixed(2)}M
+                          </button>
+                        )
                       }
                     </div>
                   )}
