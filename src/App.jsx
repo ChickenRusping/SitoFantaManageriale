@@ -5978,6 +5978,47 @@ function prezzoDiscesaLive(quotBase, avviataAt) {
   return Math.max(prezzo, minimo);
 }
 
+// Calcola il momento ESATTO (data/ora) in cui un'asta a discesa ha raggiunto il
+// prezzo minimo (Q/2), percorrendo in avanti i minuti attivi dalla partenza
+// dell'asta (stesso identico criterio di prezzoDiscesaLive/minutiAttiviTrascorsi,
+// incluso lo skip delle ore di freeze 00:00-08:00). Calcolato al volo dai dati
+// che l'asta ha già (avviata_at, quot_giocatore) — non richiede nessuna colonna
+// nuova né alcuna scrittura sul DB, quindi non può "non partire" per problemi di
+// migrazione o di scrittura mancata.
+function calcolaFloorRaggiuntoAt(quotBase, avviataAt) {
+  const minimo = parseFloat((quotBase / 2).toFixed(2));
+  const riduzioniFloor = Math.ceil((quotBase - minimo) / 0.25);
+  const minutiAttiviFloor = riduzioniFloor * 30;
+
+  let t = new Date(avviataAt);
+  let attivi = 0;
+  let guard = 0;
+  while (attivi < minutiAttiviFloor && guard < 10000) {
+    guard++;
+    const ora = t.getHours();
+    if (isInFreeze(ora)) {
+      const next08 = new Date(t);
+      next08.setHours(FREEZE_FINE, 0, 0, 0);
+      if (next08 <= t) next08.setDate(next08.getDate() + 1);
+      t = next08;
+    } else {
+      const mezzanotte = new Date(t);
+      mezzanotte.setDate(mezzanotte.getDate() + 1);
+      mezzanotte.setHours(FREEZE_INIZIO, 0, 0, 0);
+      const restanti = minutiAttiviFloor - attivi;
+      const finoAMezzanotteMin = (mezzanotte.getTime() - t.getTime()) / 60000;
+      if (restanti <= finoAMezzanotteMin) {
+        t = new Date(t.getTime() + restanti * 60000);
+        attivi = minutiAttiviFloor;
+      } else {
+        attivi += finoAMezzanotteMin;
+        t = mezzanotte;
+      }
+    }
+  }
+  return t; // istante esatto in cui il prezzo ha raggiunto il minimo
+}
+
 /* ─── MERCATO PAGE ──────────────────────────────────────────────────────────── */
 
 // ── Importa funzioni nuove (aggiunte in fondo a supabase.js) ─────────────────
@@ -6202,16 +6243,16 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
         const prezzoLive = prezzoDiscesaLive(a.quot_giocatore, a.avviata_at);
         const atFloor = prezzoLive <= a.quot_giocatore / 2;
         if (!atFloor) continue;
-        if (!a.floor_raggiunto_at) {
-          // Prima volta che rileviamo il minimo: segna il momento.
-          try { await updateAsta(a.id, { floor_raggiunto_at: new Date().toISOString() }); changed = true; } catch { /* colonna non ancora migrata: ignora */ }
-        } else if (new Date() - new Date(a.floor_raggiunto_at) >= 30 * 60 * 1000) {
-          // Sono passati 30+ minuti al prezzo minimo senza acquirenti: scade.
-          try { await updateAsta(a.id, { stato: 'scaduta' }); changed = true; } catch { /* ignora */ }
+        const floorAt = calcolaFloorRaggiuntoAt(a.quot_giocatore, a.avviata_at);
+        if (new Date() - floorAt >= 30 * 60 * 1000) {
+          // Sono passati 30+ minuti (di orologio, freeze escluso solo per il calcolo
+          // del raggiungimento minimo) senza acquirenti: l'asta scade da sola.
+          try { await scadeAstaSenzaVincitore(a.id); changed = true; } catch { /* ignora */ }
         }
       }
       if (changed) await loadAll();
     }
+    checkFloorDiscesa(); // controlla subito al mount, non solo dopo 60s
     const interval = setInterval(checkFloorDiscesa, 60 * 1000);
     return () => clearInterval(interval);
   }, [aste, loadAll]);
@@ -7402,11 +7443,15 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
                   {a.tipo_asta === 'discesa' && (
                     <div style={{ marginBottom: 10 }}>
-                      {isFloor && a.floor_raggiunto_at && (
-                        <div style={{ fontSize: 11, color: "#f97316", marginBottom: 6 }}>
-                          🔻 Prezzo minimo raggiunto — si annulla automaticamente tra {Math.max(0, 30 - Math.floor((now - new Date(a.floor_raggiunto_at)) / 60000))} min se nessuno compra
-                        </div>
-                      )}
+                      {isFloor && (() => {
+                        const floorAt = calcolaFloorRaggiuntoAt(a.quot_giocatore, a.avviata_at);
+                        const minutiRimasti = Math.max(0, 30 - Math.floor((now - floorAt) / 60000));
+                        return (
+                          <div style={{ fontSize: 11, color: "#f97316", marginBottom: 6 }}>
+                            🔻 Prezzo minimo raggiunto — si annulla automaticamente tra {minutiRimasti} min se nessuno compra
+                          </div>
+                        );
+                      })()}
                       {horaCongelata
                         ? <div style={{ fontSize: 11, color: "#555" }}>🌙 Acquisti sospesi (00:00–08:00)</div>
                         : a.proprietario !== mySquadra && !!mySquadra && (
