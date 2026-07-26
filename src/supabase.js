@@ -915,6 +915,65 @@ export async function updateAsta(id, fields) {
   if (error) throw error;
 }
 
+// ── Rilancio su asta a rialzo con lock ottimistico ────────────────────────────
+// Legge il prezzo attuale direttamente dal DB (non da uno stato client che
+// potrebbe essere qualche secondo indietro) e applica l'aggiornamento solo se
+// nessun altro ha già rilanciato nel frattempo. Senza questo controllo, due
+// rilanci quasi simultanei basati su un prezzo "vecchio" potrebbero far
+// risultare vincitore chi ha offerto per ultimo anche senza aver davvero
+// rilanciato sopra al prezzo reale.
+export async function piazzaOffertaRialzo(astaId, squadra, { nuovaScadenza, incremento = 0.1 } = {}) {
+  const { data: asta, error: e1 } = await supabase.from('aste').select('*').eq('id', astaId).single();
+  if (e1 || !asta) throw new Error('Asta non trovata');
+  if (asta.stato !== 'attiva') throw new Error('Questa asta non è più attiva.');
+  if (asta.proprietario === squadra) throw new Error('Non puoi offrire sulla tua stessa asta.');
+  if (asta.miglior_offerente === squadra) throw new Error('Sei già il miglior offerente su questa asta.');
+
+  const offertaAttualeLetta = Number(asta.offerta_attuale || 0);
+  const nuovaOfferta = parseFloat((offertaAttualeLetta + incremento).toFixed(2));
+
+  const { data: updated, error } = await supabase.from('aste')
+    .update({
+      offerta_attuale: nuovaOfferta,
+      miglior_offerente: squadra,
+      ultima_offerta_at: new Date().toISOString(),
+      scadenza_asta: nuovaScadenza,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', astaId)
+    .eq('offerta_attuale', offertaAttualeLetta) // fallisce se qualcuno ha rilanciato nel frattempo
+    .select();
+  if (error) throw error;
+  if (!updated?.length) throw new Error('Qualcuno ha rilanciato proprio ora — ricarica per vedere il nuovo prezzo e riprova.');
+  return updated[0];
+}
+
+// ── Assegnazione vincitore con lock ottimistico ───────────────────────────────
+// Usata sia per "Acquista ora" (discesa) sia per la chiusura manuale di un'asta
+// a rialzo: garantisce che due acquisti/chiusure quasi simultanei non possano
+// entrambi "vincere" lo stesso giocatore.
+export async function assegnaAsta(astaId, vincitore, prezzoFinale) {
+  const { data: updated, error } = await supabase.from('aste')
+    .update({ stato: 'aggiudicata', vincitore, prezzo_finale: prezzoFinale, updated_at: new Date().toISOString() })
+    .eq('id', astaId)
+    .eq('stato', 'attiva') // fallisce se già assegnata/chiusa da qualcun altro
+    .select();
+  if (error) throw error;
+  if (!updated?.length) throw new Error('Questa asta è già stata assegnata o chiusa da qualcun altro.');
+  return updated[0];
+}
+
+// ── Chiusura senza vincitore (nessuna offerta ricevuta) ───────────────────────
+export async function scadeAstaSenzaVincitore(astaId) {
+  const { data: updated, error } = await supabase.from('aste')
+    .update({ stato: 'scaduta', updated_at: new Date().toISOString() })
+    .eq('id', astaId)
+    .eq('stato', 'attiva')
+    .select();
+  if (error) throw error;
+  return (updated?.length || 0) > 0;
+}
+
 export function subscribeAste(callback) {
   return supabase.channel('aste-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'aste' }, callback)
