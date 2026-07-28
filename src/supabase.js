@@ -584,7 +584,10 @@ function isFPFEscluso(descrizione) {
     d.includes('u-21 migliorat') ||   // U-21 migliorato di più...
     d.includes('obiettivo') ||        // guadagno/penale obiettivo allenatore, ds, dg
     d.startsWith('riscossione invest') || // Riscossione investimento
-    d.startsWith('guadagno invest')      // Guadagno investimento
+    d.startsWith('guadagno invest') ||    // Guadagno investimento
+    // Iscrizione campionato (quota obbligatoria di lega, non un'operazione di mercato)
+    d.startsWith('iscrizione campionato') ||
+    d.startsWith('iscrizione al campionato')
   );
 }
 
@@ -3264,6 +3267,98 @@ export async function applicaIscrizioneATutti(opts = {}) {
   for (const sq of squadre) {
     const r = await applicaIscrizioneCampionato(sq.name, { data: now, stagione, force: true });
     results.push({ squadra: sq.name, ...r });
+  }
+  return results;
+}
+
+// Stato iscrizione campionato per tutte le squadre nella stagione indicata,
+// incluso il conteggio dei movimenti "Iscrizione campionato" effettivamente
+// registrati per ciascuna (per scoprire pagamenti duplicati).
+export async function getStatoIscrizioneTutte(stagione = '2026-27') {
+  const [{ data: squadre }, { data: movimenti }] = await Promise.all([
+    supabase.from('squadre').select('name, bilancio, iscrizione_pagata, iscrizione_stagione_pagata, iscrizione_pagata_il'),
+    supabase.from('movimenti').select('id, squadra, uscita, data, descrizione').ilike('descrizione', `Iscrizione campionato ${stagione}%`),
+  ]);
+  const bySquadra = new Map();
+  for (const m of (movimenti || [])) {
+    if (!bySquadra.has(m.squadra)) bySquadra.set(m.squadra, []);
+    bySquadra.get(m.squadra).push(m);
+  }
+  return (squadre || []).map(sq => {
+    const movs = bySquadra.get(sq.name) || [];
+    return {
+      squadra: sq.name,
+      pagata: sq.iscrizione_stagione_pagata === stagione || (!sq.iscrizione_stagione_pagata && sq.iscrizione_pagata === true),
+      pagataIl: sq.iscrizione_pagata_il,
+      nMovimenti: movs.length,
+      totaleAddebitato: parseFloat(movs.reduce((a, m) => a + Number(m.uscita || 0), 0).toFixed(2)),
+      duplicato: movs.length > 1,
+    };
+  });
+}
+
+// Rimuove l'iscrizione campionato da TUTTE le squadre per la stagione indicata:
+// rimborsa quanto effettivamente addebitato (anche se per errore fosse più di
+// una volta), elimina i movimenti collegati e resetta i flag così l'iscrizione
+// può essere riapplicata più avanti quando sarà il momento giusto.
+export async function annullaIscrizioneATutti(stagione = '2026-27') {
+  const { data: movimenti, error } = await supabase
+    .from('movimenti')
+    .select('id, squadra, uscita')
+    .ilike('descrizione', `Iscrizione campionato ${stagione}%`);
+  if (error) throw error;
+  if (!movimenti?.length) return [];
+
+  const bySquadra = new Map();
+  for (const m of movimenti) {
+    bySquadra.set(m.squadra, parseFloat(((bySquadra.get(m.squadra) || 0) + Number(m.uscita || 0)).toFixed(2)));
+  }
+
+  const results = [];
+  for (const [squadra, rimborso] of bySquadra.entries()) {
+    const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadra).single();
+    const nuovoBilancio = parseFloat((Number(sq?.bilancio || 0) + rimborso).toFixed(2));
+    await safeUpdateSquadraQuote(
+      squadra,
+      { bilancio: nuovoBilancio, iscrizione_pagata: false, iscrizione_stagione_pagata: null, iscrizione_pagata_il: null, updated_at: new Date().toISOString() },
+      { bilancio: nuovoBilancio, iscrizione_pagata: false }
+    );
+    results.push({ squadra, rimborso, ok: true });
+  }
+
+  await supabase.from('movimenti').delete().ilike('descrizione', `Iscrizione campionato ${stagione}%`);
+  return results;
+}
+
+// Ripulisce solo i DUPLICATI (una squadra addebitata più di una volta per la
+// stessa iscrizione): tiene il primo addebito, rimborsa e cancella gli altri.
+// A differenza di annullaIscrizioneATutti, chi ha pagato una volta sola resta
+// regolarmente iscritto.
+export async function ripulisciDuplicatiIscrizione(stagione = '2026-27') {
+  const { data: movimenti, error } = await supabase
+    .from('movimenti')
+    .select('id, squadra, uscita, data')
+    .ilike('descrizione', `Iscrizione campionato ${stagione}%`)
+    .order('data', { ascending: true })
+    .order('id', { ascending: true });
+  if (error) throw error;
+
+  const bySquadra = new Map();
+  for (const m of (movimenti || [])) {
+    if (!bySquadra.has(m.squadra)) bySquadra.set(m.squadra, []);
+    bySquadra.get(m.squadra).push(m);
+  }
+
+  const results = [];
+  for (const [squadra, list] of bySquadra.entries()) {
+    if (list.length <= 1) continue; // nessun duplicato
+    const [tieni, ...extra] = list;
+    const rimborso = parseFloat(extra.reduce((a, m) => a + Number(m.uscita || 0), 0).toFixed(2));
+    const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadra).single();
+    const nuovoBilancio = parseFloat((Number(sq?.bilancio || 0) + rimborso).toFixed(2));
+    await supabase.from('squadre').update({ bilancio: nuovoBilancio }).eq('name', squadra);
+    await supabase.from('movimenti').delete().in('id', extra.map(m => m.id));
+    results.push({ squadra, rimborso, rimossi: extra.length, tenuto: tieni.id });
   }
   return results;
 }
