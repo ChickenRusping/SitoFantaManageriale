@@ -164,7 +164,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento,
   getBonusTrattativa, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -1782,7 +1782,7 @@ function DeadlinePage({ isAdmin }) {
     { label: "Apertura mercato invernale",          month: 1,  day: 1,  section: "Mercato", type: "annual",  note: "Ore 09:00" },
     { label: "Chiusura mercato invernale",          month: 2,  day: 15, section: "Mercato", type: "annual",  note: "Ore 24:00" },
     // QUOTE
-    { label: "Quota iscrizione campionato (30M) — automatica", month: 7,  day: 31, section: "Quote",    type: "annual",  note: "Detratta automaticamente dal bilancio" },
+    { label: "Quota iscrizione campionato (30M) — manuale (admin)", month: 7,  day: 31, section: "Quote",    type: "annual",  note: "Applicata da un admin dalla Control Room, non più automatica" },
     { label: "Decisione investimento extra budget (0–10€)",     month: 8,  day: 14, section: "Quote",    type: "annual",  note: "Entro le 23:59" },
     { label: "Pagamento quota iscrizione (30€) al tesoriere",   month: 8,  day: 31, section: "Quote",    type: "annual",  note: "" },
     { label: "Inizio finestra ritiro budget extra",             month: 1,  day: 5,  section: "Quote",    type: "annual",  note: "Costo: 2× i milioni ottenuti" },
@@ -9651,6 +9651,7 @@ function AdminControlRoomPage({ teams }) {
   const [utentiEdit, setUtentiEdit] = useState(null); // { id, nome, bio, avatar_url, ruolo }
   const [utentiSaving, setUtentiSaving] = useState(false);
   const [quoteAdmin, setQuoteAdmin] = useState(null);
+  const [statoIscrizione, setStatoIscrizione] = useState(null);
   const [budgetEdits, setBudgetEdits] = useState({});
   const [savingBudget, setSavingBudget] = useState(null);
   const [investimentiAdmin, setInvestimentiAdmin] = useState(null);
@@ -9740,6 +9741,13 @@ function AdminControlRoomPage({ teams }) {
       if (error) throw error;
       setQuoteAdmin(data || []);
     } catch(e) { alert(`Errore quote: ${e.message}`); }
+    finally { setAdminTabBusy(null); }
+  }
+
+  async function loadStatoIscrizione() {
+    setAdminTabBusy('iscrizione_load');
+    try { setStatoIscrizione(await getStatoIscrizioneTutte(STAGIONE_CR)); }
+    catch(e) { alert(`Errore iscrizione: ${e.message}`); }
     finally { setAdminTabBusy(null); }
   }
 
@@ -10333,9 +10341,72 @@ function AdminControlRoomPage({ teams }) {
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <button onClick={loadQuoteAdmin} style={{ padding: '7px 16px', borderRadius: 9, border: '1px solid #6366f130', background: '#6366f110', color: '#818cf8', fontSize: 12, fontWeight: 700 }}>📋 Carica quote</button>
-                <button onClick={() => runBulk(() => applicaIscrizioneATutti({ force: true, stagione: STAGIONE_CR }), 'Iscrizione campionato a tutti')} disabled={isBusy} style={{ padding: '7px 16px', borderRadius: 9, border: '1px solid #ef444430', background: '#ef444410', color: '#f87171', fontSize: 12, fontWeight: 700 }}>🏁 Applica iscrizione 30M</button>
+                <button
+                  onClick={() => {
+                    const oggi = new Date().toLocaleDateString('it-IT');
+                    if (!window.confirm(`Applicare l'iscrizione campionato (−30M) a TUTTE le squadre?\n\nOggi è il ${oggi}. Questa azione è indipendente dalla data — assicurati che sia davvero il momento giusto prima di confermare.`)) return;
+                    runBulk(() => applicaIscrizioneATutti({ force: true, stagione: STAGIONE_CR }), 'Iscrizione campionato a tutti');
+                  }}
+                  disabled={isBusy} style={{ padding: '7px 16px', borderRadius: 9, border: '1px solid #ef444430', background: '#ef444410', color: '#f87171', fontSize: 12, fontWeight: 700 }}>🏁 Applica iscrizione 30M</button>
                 <button onClick={() => runBulk(async () => { const r = await applicaQuoteAutomatiche({ data: new Date() }); return [...(r.iscrizioni||[]), ...(r.sync||[])]; }, 'Sincronizza quote automatiche')} disabled={isBusy} style={{ padding: '7px 16px', borderRadius: 9, border: '1px solid #10b98130', background: '#10b98110', color: '#10b981', fontSize: 12, fontWeight: 700 }}>🔄 Sync quote</button>
               </div>
+
+              <div style={{ height: 1, background: '#ffffff10', margin: '4px 0' }} />
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>🏁 ISCRIZIONE CAMPIONATO — CONTROLLO</div>
+                  <div style={{ fontSize: 11, color: '#555', marginTop: 4 }}>Verifica chi è in regola e chi ha eventuali addebiti duplicati per la stagione {STAGIONE_CR}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button onClick={loadStatoIscrizione} disabled={isBusy} style={{ padding: '7px 16px', borderRadius: 9, border: '1px solid #6366f130', background: '#6366f110', color: '#818cf8', fontSize: 12, fontWeight: 700 }}>
+                    {busy === null && adminTabBusy === 'iscrizione_load' ? '⏳ Carico...' : '📋 Carica stato iscrizione'}
+                  </button>
+                  <button
+                    onClick={() => runBulk(async () => {
+                      const dup = await ripulisciDuplicatiIscrizione(STAGIONE_CR);
+                      await loadStatoIscrizione();
+                      return dup;
+                    }, 'Ripulisci duplicati iscrizione')}
+                    disabled={isBusy || !statoIscrizione?.some(s => s.duplicato)}
+                    style={{ padding: '7px 14px', borderRadius: 9, border: '1.5px solid #f59e0b50', background: '#f59e0b18', color: '#f59e0b', fontSize: 12, fontWeight: 700, cursor: (isBusy || !statoIscrizione?.some(s => s.duplicato)) ? 'not-allowed' : 'pointer', opacity: (isBusy || !statoIscrizione?.some(s => s.duplicato)) ? 0.55 : 1 }}>
+                    {busy === 'Ripulisci duplicati iscrizione' ? '⏳ Pulizia...' : '🧹 Ripulisci duplicati'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!window.confirm(`Rimuovere l'iscrizione campionato ${STAGIONE_CR} da TUTTE le squadre?\n\nOgni squadra a cui è stata addebitata verrà rimborsata dell'importo esatto pagato, e potrà essere riapplicata più avanti quando sarà il momento giusto.`)) return;
+                      runBulk(async () => {
+                        const r = await annullaIscrizioneATutti(STAGIONE_CR);
+                        await loadStatoIscrizione();
+                        return r;
+                      }, 'Rimuovi iscrizione a tutti');
+                    }}
+                    disabled={isBusy || !statoIscrizione?.some(s => s.nMovimenti > 0)}
+                    style={{ padding: '7px 14px', borderRadius: 9, border: '1.5px solid #ef444450', background: '#ef444418', color: '#ef4444', fontSize: 12, fontWeight: 700, cursor: (isBusy || !statoIscrizione?.some(s => s.nMovimenti > 0)) ? 'not-allowed' : 'pointer', opacity: (isBusy || !statoIscrizione?.some(s => s.nMovimenti > 0)) ? 0.55 : 1 }}>
+                    {busy === 'Rimuovi iscrizione a tutti' ? '⏳ Rimozione...' : '↩️ Rimuovi iscrizione a tutti'}
+                  </button>
+                </div>
+              </div>
+
+              {statoIscrizione && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(230px,1fr))', gap: 8 }}>
+                  {statoIscrizione.sort((a,b) => a.squadra.localeCompare(b.squadra)).map(s => {
+                    const team = teams?.find(t => t.name === s.squadra);
+                    return (
+                      <div key={s.squadra} style={{ background: s.duplicato ? '#ef444408' : s.pagata ? '#10b98108' : '#f59e0b08', border: `1px solid ${s.duplicato ? '#ef444440' : s.pagata ? '#10b98130' : '#f59e0b25'}`, borderRadius: 10, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                        {team && <TeamAvatar team={team} size={28} />}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: '#ddd', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.squadra}</div>
+                          <div style={{ fontSize: 10, color: s.duplicato ? '#ef4444' : s.pagata ? '#10b981' : '#f59e0b', marginTop: 2 }}>
+                            {s.nMovimenti === 0 ? 'Non ancora pagata' : `${s.nMovimenti} addebito${s.nMovimenti > 1 ? 'i' : ''} · ${s.totaleAddebitato}M totali${s.pagataIl ? ` · ${s.pagataIl}` : ''}`}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 18 }}>{s.duplicato ? '⚠️' : s.pagata ? '✅' : '⏳'}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               {quoteAdmin && (
                 <div style={{ overflowX: 'auto' }}>
                   <div style={{ fontSize: 11, color: '#666', marginBottom: 8 }}>✏️ Campi modificabili: quanto investito in ciascuna stagione del biennio, il tetto biennale e i milioni extra sbloccati — usali per correggere valori sbagliati rispetto al ledger reale (es. versamenti di stagioni precedenti non riportati correttamente). "€ biennio" è calcolato automaticamente come somma delle due stagioni.</div>
@@ -13103,10 +13174,10 @@ function AppInner() {
   const statoMercato = useDeadlineWatcher(useCallback((def) => {
     console.info(`⏰ Deadline scattata: ${def.label}`);
     if (def.id === 'iscrizione_campionato') {
-      applicaIscrizioneATutti({ force: true }).then(() => {
-        cacheInvalidate('classifica');
-        getSquadre().then(data => { if (data) setSquadreDB(data); });
-      }).catch(e => console.warn('Iscrizione campionato auto:', e.message));
+      // Non più automatica: quest'anno l'iscrizione campionato la applica un
+      // admin manualmente dalla Control Room (sezione Quote). Qui ci limitiamo
+      // a segnalarlo in console, nessuna azione automatica sui bilanci.
+      console.info('Iscrizione campionato: scadenza calendario raggiunta, ma l\'applicazione è manuale (Control Room → Quote).');
       return;
     }
     // Ricarica squadre (bilanci/stipendi potrebbero essere cambiati)
