@@ -5557,8 +5557,8 @@ export async function applicaMulteFPFTutte(stagione = '2026-27') {
 
     await supabase.from('squadre').update({ bilancio: nuovoBilancio }).eq('name', squadra);
     if (pt > 0) {
-      const { data: cls } = await supabase.from('classifica').select('pt').eq('squadra', squadra).eq('stagione', stagione).single();
-      if (cls) await supabase.from('classifica').update({ pt: Math.max(0, Number(cls.pt || 0) - pt), updated_at: new Date().toISOString() }).eq('squadra', squadra).eq('stagione', stagione);
+      const { data: cls } = await supabase.from('classifica').select('pt').eq('squadra', squadra).single();
+      if (cls) await supabase.from('classifica').update({ pt: Math.max(0, Number(cls.pt || 0) - pt), updated_at: new Date().toISOString() }).eq('squadra', squadra);
     }
     await supabase.from('movimenti').insert({ squadra, descrizione: `Multa FPF ${stagione} ${periodoKey} (netto: ${netto.toFixed(1)}M)`, uscita: multa, data: oggi });
     // Insert penalita record: descrizione contiene periodoKey per evitare che il primo controllo annuale blocchi il secondo.
@@ -5572,7 +5572,7 @@ export async function applicaMulteFPFTutte(stagione = '2026-27') {
 // Premi: distribuisci premi campionato in base alla classifica attuale
 export async function applicaPremiCampionato(stagione = '2026-27') {
   const oggi = new Date().toISOString().slice(0, 10);
-  const { data: classifica } = await supabase.from('classifica').select('squadra, pt, pt_totali').eq('stagione', stagione).order('pt', { ascending: false });
+  const { data: classifica } = await supabase.from('classifica').select('squadra, pt, pt_totali').order('pt', { ascending: false });
   if (!classifica?.length) throw new Error('Nessuna classifica trovata');
 
   const results = [];
