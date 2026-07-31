@@ -9716,7 +9716,7 @@ function AdminControlRoomPage({ teams }) {
   }
 
   async function loadClassifica() {
-    const { data, error } = await supabase.from('classifica').select('squadra, pt, pt_totali, gf, gs').eq('stagione', STAGIONE_CR).order('pt', { ascending: false });
+    const { data, error } = await supabase.from('classifica').select('squadra, pt, pt_totali, gf, gs').order('pt', { ascending: false });
     if (error) { alert(`Errore classifica: ${error.message}`); return; }
     setClassifica(data || []);
   }
@@ -10906,7 +10906,7 @@ function AdminControlRoomPage({ teams }) {
                                       data_multa: new Date().toISOString().slice(0, 10),
                                       applicata: true,
                                     });
-                                    const { data: clsRow } = await supabase.from('classifica').select('pt').eq('squadra', t.name).eq('stagione', STAGIONE_CR).single();
+                                    const { data: clsRow } = await supabase.from('classifica').select('pt').eq('squadra', t.name).single();
                                     await updateClassificaSquadra(t.name, { pt: Math.max(0, Number(clsRow?.pt || 0) - penPunti) });
                                     alert(`✓ Penale −${penPunti} pt applicata a ${t.name}`);
                                     await load();
