@@ -175,7 +175,7 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   aggiornaContrattiAnnuali, confermRinnovoBiennale,
   // Admin Control Room
   getStadioInvestimenti, setStadioUpgrade, applicaEntrateStadioTutte,
-  applicaTassaATutti, annullaTassaATutti, ripulisciAnomalieTasse, ripulisciStoricoTassePrimaDi, applicaStipendioATutti, getControlRoomStatus, aggiornaBudgetExtraSquadra,
+  applicaTassaATutti, annullaTassaATutti, ripulisciAnomalieTasse, ripulisciStoricoTassePrimaDi, applicaStipendioATutti, annullaStipendiATutti, annullaEntrateStadioATutti, getModalitaTassazione, setModalitaTassazione, getControlRoomStatus, aggiornaBudgetExtraSquadra,
   // Extra Control Room
   updateProfile, uploadAvatar,
   getMercatoOverride, setMercatoOverride, getTrasferimentiDifferiti,
@@ -3650,7 +3650,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
   }, [team.name, refreshStatoStipendiMese]);
 
   const bilancio = team.bilancio;
-  const tassa = calcolaTassa(bilancio);
+  const tassa = calcolaTassa(bilancio, _modalitaTassazione);
   const tasseAttive = isTassaAttiva();
   const fasciaNeg = getFasciaBilancioNeg(bilancio);
   const settNeg = team.bilancio_neg_settimane || 0;
@@ -5818,6 +5818,7 @@ function ClubIdentityCard({ team, isAdmin, mySquadra }) {
 let _mercatoOverride = null;
 let _rivalitaBloccata = false; // caricato all'avvio
 let _modalitaSvincolati = 'normale'; // 'chiuso' | 'normale' | 'libero' — caricato all'avvio
+let _modalitaTassazione = 'auto'; // 'auto' | 'flat' | 'scaglioni' — caricato all'avvio
 
 // Combina la finestra di calendario (mar-mer interesse, ven aste — sempre valida
 // in modalità 'normale') con l'eventuale modalità impostata dall'admin in Control
@@ -9630,6 +9631,8 @@ function AdminControlRoomPage({ teams }) {
   const [mercatoOvrLoading, setMercatoOvrLoading] = useState(false);
   const [modalitaSvinc, setModalitaSvinc] = useState('normale'); // 'chiuso' | 'normale' | 'libero'
   const [modalitaSvincLoading, setModalitaSvincLoading] = useState(false);
+  const [modalitaTassaz, setModalitaTassaz] = useState('auto'); // 'auto' | 'flat' | 'scaglioni'
+  const [modalitaTassazLoading, setModalitaTassazLoading] = useState(false);
   const [asteAttive, setAsteAttive] = useState([]);
   const [fpfData, setFpfData] = useState(null);
   const [differiti, setDifferiti] = useState([]);
@@ -9690,6 +9693,12 @@ function AdminControlRoomPage({ teams }) {
     setModalitaSvincLoading(true);
     try { const v = await getModalitaSvincolati(); setModalitaSvinc(v); }
     finally { setModalitaSvincLoading(false); }
+  }
+
+  async function loadModalitaTassaz() {
+    setModalitaTassazLoading(true);
+    try { const v = await getModalitaTassazione(); setModalitaTassaz(v); }
+    finally { setModalitaTassazLoading(false); }
   }
 
   async function loadAste() {
@@ -9868,7 +9877,7 @@ function AdminControlRoomPage({ teams }) {
     finally { setUtentiSaving(false); }
   }
 
-  useEffect(() => { loadMercatoOvr(); loadModalitaSvinc(); }, []);
+  useEffect(() => { loadMercatoOvr(); loadModalitaSvinc(); loadModalitaTassaz(); }, []);
 
   useEffect(() => { load(); }, []);
 
@@ -10097,6 +10106,15 @@ function AdminControlRoomPage({ teams }) {
                   style={{ padding: '8px 18px', borderRadius: 10, border: '1.5px solid #10b98150', background: '#10b98118', color: '#10b981', fontSize: 12, fontWeight: 700, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.6 : 1 }}>
                   {busy === 'Entrate stadio a tutti' ? '⏳ Esecuzione...' : '🏟 Applica entrate a tutti'}
                 </button>
+                <button
+                  onClick={() => {
+                    if (!window.confirm(`Rimuovere le entrate stadio di questo mese (${status?.meseISO}) da TUTTE le squadre?\n\nOgni squadra a cui è stata accreditata verrà stornata dell'importo esatto ricevuto.`)) return;
+                    runBulk(annullaEntrateStadioATutti, 'Rimuovi entrate stadio a tutti');
+                  }}
+                  disabled={isBusy || status?.stadioPagato.size === 0}
+                  style={{ padding: '8px 14px', borderRadius: 10, border: '1.5px solid #ef444450', background: '#ef444418', color: '#ef4444', fontSize: 12, fontWeight: 700, cursor: (isBusy || status?.stadioPagato.size === 0) ? 'not-allowed' : 'pointer', opacity: (isBusy || status?.stadioPagato.size === 0) ? 0.55 : 1 }}>
+                  {busy === 'Rimuovi entrate stadio a tutti' ? '⏳ Rimozione...' : '↩️ Rimuovi entrate a tutti'}
+                </button>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -10136,6 +10154,36 @@ function AdminControlRoomPage({ teams }) {
           {/* ── TASSE ── */}
           {tab === 'tasse' && status && (
             <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>📐 MODALITÀ TASSAZIONE</div>
+              <div style={{ background: '#6366f108', border: '1px solid #6366f120', borderRadius: 12, padding: '14px 16px', fontSize: 12, color: '#aaa', lineHeight: 1.6, marginTop: 8, marginBottom: 12 }}>
+                <b style={{ color: '#818cf8' }}>Auto</b>: comportamento di sempre — flat 1% dal 01/06 al 01/08 (art. 7.1.2), scaglioni il resto dell'anno.<br/>
+                <b style={{ color: '#10b981' }}>Flat 1%</b>: forza l'1% fisso per tutti indipendentemente dal calendario.<br/>
+                <b style={{ color: '#f59e0b' }}>Scaglioni</b>: forza gli scaglioni in base al bilancio indipendentemente dal calendario.
+              </div>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+                {[
+                  { val: 'auto',       label: '🔄 Auto (calendario)', color: '#6366f1' },
+                  { val: 'flat',       label: '🔒 Flat 1%',           color: '#10b981' },
+                  { val: 'scaglioni',  label: '📊 Scaglioni',         color: '#f59e0b' },
+                ].map(opt => (
+                  <button key={opt.val} disabled={modalitaTassazLoading}
+                    onClick={async () => {
+                      setModalitaTassazLoading(true);
+                      try {
+                        await setModalitaTassazione(opt.val);
+                        _modalitaTassazione = opt.val;
+                        setModalitaTassaz(opt.val);
+                      } catch(e) { alert(`Errore: ${e.message}`); }
+                      finally { setModalitaTassazLoading(false); }
+                    }}
+                    style={{ padding: '9px 18px', borderRadius: 10, border: `1.5px solid ${modalitaTassaz === opt.val ? opt.color : opt.color + '40'}`, background: modalitaTassaz === opt.val ? opt.color + '20' : 'transparent', color: modalitaTassaz === opt.val ? opt.color : '#666', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                    {opt.label} {modalitaTassaz === opt.val ? '✓' : ''}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ height: 1, background: '#ffffff10', margin: '4px 0 16px' }} />
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>📅 TASSA SETTIMANALE</div>
@@ -10169,7 +10217,7 @@ function AdminControlRoomPage({ teams }) {
                   const tassaCount = status.tasseDettagli?.countBySquadra?.[sq.name] || 0;
                   const tassaDates = status.tasseDettagli?.dateBySquadra?.[sq.name] || [];
                   const isDup = tassaCount > 1;
-                  const tassa = calcolaTassa(sq.bilancio || 0);
+                  const tassa = calcolaTassa(sq.bilancio || 0, _modalitaTassazione);
                   return (
                     <div key={sq.name} style={{ background: isDup ? '#ef444408' : ok ? '#10b98108' : '#f59e0b08', border: `1px solid ${isDup ? '#ef444440' : ok ? '#10b98130' : '#f59e0b25'}`, borderRadius: 10, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
                       {team && <TeamAvatar team={team} size={28} />}
@@ -10217,6 +10265,15 @@ function AdminControlRoomPage({ teams }) {
                   disabled={isBusy}
                   style={{ padding: '8px 18px', borderRadius: 10, border: '1.5px solid #6366f150', background: '#6366f118', color: '#818cf8', fontSize: 12, fontWeight: 700, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.6 : 1 }}>
                   {busy === 'Stipendi mensili a tutti' ? '⏳ Esecuzione...' : '💰 Applica stipendi a tutti'}
+                </button>
+                <button
+                  onClick={() => {
+                    if (!window.confirm(`Rimuovere il pagamento stipendi di questo mese (${status?.meseISO}) da TUTTE le squadre?\n\nOgni squadra a cui è stato addebitato verrà rimborsata dell'importo esatto pagato.`)) return;
+                    runBulk(annullaStipendiATutti, 'Rimuovi stipendi a tutti');
+                  }}
+                  disabled={isBusy || status?.stipendiPagati.size === 0}
+                  style={{ padding: '8px 14px', borderRadius: 10, border: '1.5px solid #ef444450', background: '#ef444418', color: '#ef4444', fontSize: 12, fontWeight: 700, cursor: (isBusy || status?.stipendiPagati.size === 0) ? 'not-allowed' : 'pointer', opacity: (isBusy || status?.stipendiPagati.size === 0) ? 0.55 : 1 }}>
+                  {busy === 'Rimuovi stipendi a tutti' ? '⏳ Rimozione...' : '↩️ Rimuovi stipendi a tutti'}
                 </button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 8 }}>
@@ -13132,6 +13189,7 @@ function AppInner() {
     getRivalitaLock().then(v => { _rivalitaBloccata = v; }).catch(() => { _rivalitaBloccata = false; });
     getStagioneLabel().then(v => { setStagioneLabelState(v); }).catch(() => {});
     getModalitaSvincolati().then(v => { _modalitaSvincolati = v; }).catch(() => { _modalitaSvincolati = 'normale'; });
+    getModalitaTassazione().then(v => { _modalitaTassazione = v; }).catch(() => { _modalitaTassazione = 'auto'; });
   }, [session]);
 
   // ── Offerte in attesa: solo realtime, nessun polling ─────────────────────
