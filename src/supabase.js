@@ -1934,11 +1934,19 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
 // ─── TASSE SETTIMANALI (art. 7.1) ─────────────────────────────────────────────
 
 // Calcola la tassa settimanale per un dato bilancio
-// art. 7.1 + 7.1.2: tassa sempre attiva, ma giu-ago = 1% flat per tutti
-export function calcolaTassa(bilancio) {
+// art. 7.1 + 7.1.2: tassa sempre attiva. Di default (modalitaOverride='auto') il
+// flat 1% scatta automaticamente giu-lug (art. 7.1.2); un admin può però forzare
+// manualmente 'flat' o 'scaglioni' in qualsiasi momento dalla Control Room,
+// bypassando il calendario.
+export function calcolaTassa(bilancio, modalitaOverride = 'auto') {
   if (bilancio <= 0) return { perc: 0, importo: 0 };
-  const m = new Date().getMonth(); // 0-based
-  const isPeriodoFlat = m === 5 || m === 6; // giu(5), lug(6) — art. 7.1.2: flat 1% solo dal 01/06 al 01/08
+  let isPeriodoFlat;
+  if (modalitaOverride === 'flat') isPeriodoFlat = true;
+  else if (modalitaOverride === 'scaglioni') isPeriodoFlat = false;
+  else {
+    const m = new Date().getMonth(); // 0-based
+    isPeriodoFlat = m === 5 || m === 6; // giu(5), lug(6) — art. 7.1.2: flat 1% solo dal 01/06 al 01/08
+  }
   if (isPeriodoFlat) return { perc: 1, importo: parseFloat((bilancio * 0.01).toFixed(2)), flat: true };
   if (bilancio <= 20)  return { perc: 1,  importo: parseFloat((bilancio * 0.01).toFixed(2)) };
   if (bilancio <= 40)  return { perc: 2,  importo: parseFloat((bilancio * 0.02).toFixed(2)) };
@@ -1946,6 +1954,15 @@ export function calcolaTassa(bilancio) {
   if (bilancio <= 80)  return { perc: 5,  importo: parseFloat((bilancio * 0.05).toFixed(2)) };
   if (bilancio <= 100) return { perc: 8,  importo: parseFloat((bilancio * 0.08).toFixed(2)) };
   return               { perc: 10, importo: parseFloat((bilancio * 0.10).toFixed(2)) };
+}
+
+// 'auto' (default, calendario giu-lug) | 'flat' (forza 1% sempre) | 'scaglioni' (forza scaglioni sempre)
+export async function getModalitaTassazione() {
+  const { data } = await supabase.from('impostazioni').select('valore').eq('chiave', 'modalita_tassazione').limit(1);
+  return data?.[0]?.valore || 'auto';
+}
+export async function setModalitaTassazione(valore) {
+  await supabase.from('impostazioni').upsert({ chiave: 'modalita_tassazione', valore }, { onConflict: 'chiave' });
 }
 
 // Tassa sempre attiva (art. 7.1 + 7.1.2: giu-ago = 1% flat, resto = scaglioni)
@@ -1961,8 +1978,8 @@ export async function getTassePagate(squadra) {
 }
 
 // Applica la tassa settimanale (domenica alle 23:00)
-export async function applicaTassaSettimana(squadra, bilancioCorrente, dataControllo = null, settimanaLabel = null) {
-  const { perc, importo, flat } = calcolaTassa(bilancioCorrente);
+export async function applicaTassaSettimana(squadra, bilancioCorrente, dataControllo = null, settimanaLabel = null, modalitaOverride = 'auto') {
+  const { perc, importo, flat } = calcolaTassa(bilancioCorrente, modalitaOverride);
   if (importo <= 0) return { skip: true, motivo: 'Bilancio 0 o negativo' };
 
   const oggi = new Date().toISOString().slice(0, 10);
@@ -2003,8 +2020,8 @@ export async function applicaTassaSettimana(squadra, bilancioCorrente, dataContr
   const nuovoBilancio = parseFloat((bilancioCorrente - importo).toFixed(2));
   await supabase.from('squadre').update({ bilancio: nuovoBilancio }).eq('name', squadra);
   const desc = flat
-    ? `Tassa settimanale 1% flat (bilancio ${bilancioCorrente.toFixed(2)}M) settimana ${wLabel}`
-    : `Tassa settimanale ${perc}% (bilancio ${bilancioCorrente.toFixed(2)}M) settimana ${wLabel}`;
+    ? `Tassa settimanale 1% flat (bilancio ${bilancioCorrente.toFixed(2)}M) settimana ${wLabel}${modalitaOverride === 'flat' ? ' [flat impostata da admin]' : ''}`
+    : `Tassa settimanale ${perc}% (bilancio ${bilancioCorrente.toFixed(2)}M) settimana ${wLabel}${modalitaOverride === 'scaglioni' ? ' [scaglioni impostati da admin]' : ''}`;
   await supabase.from('movimenti').insert({ squadra, descrizione: desc, uscita: importo, data: oggi });
   return { ok: true, importo, nuovoBilancio };
 }
@@ -3467,8 +3484,33 @@ export async function applicaEntrateStadioTutte(stagione = '2026-27') {
   return results;
 }
 
+// Rimuove le entrate stadio del mese corrente da TUTTE le squadre: storna
+// l'importo esatto accreditato ed elimina i movimenti collegati (stesso
+// approccio di annullaTassaATutti/annullaIscrizioneATutti).
+export async function annullaEntrateStadioATutti() {
+  const { start: meseStart, end: meseEnd } = getMeseCorrenteRange();
+  const { data: movimenti, error } = await supabase
+    .from('movimenti')
+    .select('id, squadra, entrata, descrizione')
+    .gte('data', meseStart).lt('data', meseEnd);
+  if (error) throw error;
+  const daRimuovere = (movimenti || []).filter(m => isEntrateStadioDescrizione(m.descrizione));
+  if (!daRimuovere.length) return [];
+
+  const results = [];
+  for (const m of daRimuovere) {
+    const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', m.squadra).single();
+    const nuovoBilancio = parseFloat((Number(sq?.bilancio || 0) - Number(m.entrata || 0)).toFixed(2));
+    await supabase.from('squadre').update({ bilancio: nuovoBilancio }).eq('name', m.squadra);
+    await supabase.from('movimenti').delete().eq('id', m.id);
+    results.push({ squadra: m.squadra, storno: Number(m.entrata || 0) });
+  }
+  return results;
+}
+
 // Applica la tassa settimanale a TUTTE le squadre (trigger manuale admin)
 export async function applicaTassaATutti() {
+  const modalitaTassazione = await getModalitaTassazione();
   const domenica = getDomenicaCorrente();
   const { week, year } = getWeekNumber(new Date());
   const settimanaLabel = `${week}/${year}`;
@@ -3491,7 +3533,7 @@ export async function applicaTassaATutti() {
       .lte('data_controllo', _domATTStr)
       .limit(1);
     if (gia?.length) { results.push({ squadra: sq.name, skip: true }); continue; }
-    const r = await applicaTassaSettimana(sq.name, sq.bilancio, domenica, settimanaLabel);
+    const r = await applicaTassaSettimana(sq.name, sq.bilancio, domenica, settimanaLabel, modalitaTassazione);
     results.push({ squadra: sq.name, ...r });
   }
   if (results.some(r => r.ok)) {
@@ -3758,6 +3800,32 @@ export async function applicaStipendioATutti() {
   }
   if (results.some(r => r.ok)) {
     await sendTelegramNotification('stipendi_applicati', { mese: meseISO });
+  }
+  return results;
+}
+
+// Rimuove il pagamento stipendi del mese corrente da TUTTE le squadre: rimborsa
+// l'importo esatto addebitato ed elimina i movimenti collegati (stesso approccio
+// di annullaTassaATutti/annullaIscrizioneATutti). Non tocca salary_used, che
+// riflette semplicemente il monte-ingaggi corrente della rosa, non un contatore
+// di quanto pagato finora.
+export async function annullaStipendiATutti() {
+  const { start: meseStart, end: meseEnd } = getMeseCorrenteRange();
+  const { data: movimenti, error } = await supabase
+    .from('movimenti')
+    .select('id, squadra, uscita, descrizione')
+    .gte('data', meseStart).lt('data', meseEnd);
+  if (error) throw error;
+  const daRimuovere = (movimenti || []).filter(m => isPagamentoStipendiDescrizione(m.descrizione));
+  if (!daRimuovere.length) return [];
+
+  const results = [];
+  for (const m of daRimuovere) {
+    const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', m.squadra).single();
+    const nuovoBilancio = parseFloat((Number(sq?.bilancio || 0) + Number(m.uscita || 0)).toFixed(2));
+    await supabase.from('squadre').update({ bilancio: nuovoBilancio }).eq('name', m.squadra);
+    await supabase.from('movimenti').delete().eq('id', m.id);
+    results.push({ squadra: m.squadra, rimborso: Number(m.uscita || 0) });
   }
   return results;
 }
