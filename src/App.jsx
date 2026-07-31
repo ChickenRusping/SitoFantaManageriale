@@ -9968,6 +9968,21 @@ function AdminControlRoomPage({ teams }) {
     { key: 'utenti',       icon: '👥', label: 'Utenti' },
   ];
 
+  // Raggruppamento in categorie per non avere 23 tab tutte in fila: prima si
+  // sceglie la categoria, poi la sotto-tab dentro quella categoria.
+  const tabGroups = [
+    { key: 'overview', icon: '📊', label: 'Panoramica', tabKeys: ['panoramica'] },
+    { key: 'finanze',  icon: '💰', label: 'Finanze',    tabKeys: ['quote', 'tasse', 'stipendi', 'stadio', 'fpf', 'bilancio_neg', 'premi'] },
+    { key: 'mercatogrp', icon: '⚽', label: 'Mercato',   tabKeys: ['mercato', 'aste', 'svincoli_cr', 'vivaio_admin', 'prestiti_admin', 'differiti'] },
+    { key: 'lega',     icon: '🏛', label: 'Lega',       tabKeys: ['investimenti_admin', 'obiettivi_admin', 'rivalita', 'contratti', 'stagione'] },
+    { key: 'sistema',  icon: '⚙️', label: 'Sistema',    tabKeys: ['database', 'telegram', 'audit', 'utenti'] },
+  ];
+  const groupOfTab = (tk) => tabGroups.find(g => g.tabKeys.includes(tk))?.key || 'overview';
+  const [activeGroup, setActiveGroup] = useState(() => groupOfTab(tab));
+  const currentGroup = tabGroups.find(g => g.key === activeGroup) || tabGroups[0];
+  const tabsInGroup = tabs.filter(t => currentGroup.tabKeys.includes(t.key));
+
+
   const isBusy = !!busy;
 
   return (
@@ -9990,15 +10005,31 @@ function AdminControlRoomPage({ teams }) {
         </div>
       )}
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
-        {tabs.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            style={{ padding: '7px 14px', borderRadius: 10, border: `1.5px solid ${tab === t.key ? '#f59e0b60' : '#ffffff15'}`, background: tab === t.key ? '#f59e0b18' : 'transparent', color: tab === t.key ? '#f59e0b' : '#666', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-            {t.icon} {t.label}
+      {/* Categorie */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+        {tabGroups.map(g => (
+          <button key={g.key}
+            onClick={() => {
+              setActiveGroup(g.key);
+              if (!g.tabKeys.includes(tab)) setTab(g.tabKeys[0]);
+            }}
+            style={{ padding: '8px 16px', borderRadius: 10, border: `1.5px solid ${activeGroup === g.key ? '#f59e0b70' : '#ffffff15'}`, background: activeGroup === g.key ? '#f59e0b1f' : '#ffffff06', color: activeGroup === g.key ? '#f59e0b' : '#888', fontSize: 12.5, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 }}>
+            {g.icon} {g.label}
           </button>
         ))}
       </div>
+
+      {/* Sotto-tab della categoria selezionata */}
+      {tabsInGroup.length > 1 && (
+        <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap', paddingLeft: 4, borderLeft: '2px solid #f59e0b30' }}>
+          {tabsInGroup.map(t => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              style={{ padding: '6px 12px', borderRadius: 9, border: `1px solid ${tab === t.key ? '#f59e0b50' : '#ffffff12'}`, background: tab === t.key ? '#f59e0b14' : 'transparent', color: tab === t.key ? '#f59e0b' : '#666', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+              {t.icon} {t.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <div style={{ color: '#555', fontSize: 13, padding: 20 }}>Caricamento...</div>
