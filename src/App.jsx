@@ -4196,8 +4196,8 @@ function AltroTab({ team, isAdmin, mySquadra }) {
         "Vinci almeno ≥5 giornate con punteggio >80",
         "Per ≥20 giornate 5 giocatori blu e/o viola devono partire titolari",
       ],
-      ds: ["Acquista ≥2 giocatori con clausola rescissoria"],
-      dg: ["Acquista giocatori per una spesa totale ≥100M", "Mantieni un salary cap sempre ≥67M"],
+      ds: ["Acquista ≥2 giocatori con clausola rescissoria (quotazione ≥4)"],
+      dg: ["Concludi la trattativa più costosa in una sessione di mercato", "Mantieni un salary cap sempre ≥67M"],
     },
     "Klopp": {
       moduli: "4-3-3 / 3-4-3",
@@ -4206,18 +4206,18 @@ function AltroTab({ team, isAdmin, mySquadra }) {
         "Ottieni ≥19 bonus dalle A titolari",
         "Ottieni il record di giornata ≥5 volte (deve essere ≥78 per valere)",
       ],
-      ds: ["Compra ≥4 giocatori che migliorino la quotazione di ≥5"],
+      ds: ["Compra ≥4 giocatori che migliorino la quotazione di ≥5 (devono essere giocatori acquistati, non già presenti in rosa)"],
       dg: ["Cedi giocatori per un totale di ≥100M", "Non spendere mai ≥25M di parte fissa in un singolo acquisto"],
     },
     "Luis Enrique": {
       moduli: "3-4-1-2 / 4-3-1-2",
       obiettivi: [
-        "Ottieni ≥105 bonus schierati",
+        "Le tue C o T schierate devono fare ≥20 bonus",
         "Completa ≥15 partite con ≥2 marcatori diversi",
         "Vinci contro tutti i presidenti almeno 1 volta, contro il rivale 2",
       ],
       ds: ["Mantieni una rosa di minimo 27 giocatori per ≥25 partite"],
-      dg: ["Riduci ≥4 ingaggi a metà stagione", "Ogni ultimo del mese, non puoi avere >2 giocatori con stipendio ≥5M"],
+      dg: ["Acquista ≥2 giocatori Under-21 per un valore di ≥25M totali", "Ogni ultimo del mese, non puoi avere >2 giocatori con stipendio ≥5M"],
     },
     "Conte": {
       moduli: "3-4-3 / 3-5-1-1",
@@ -4226,8 +4226,8 @@ function AltroTab({ team, isAdmin, mySquadra }) {
         "Ottieni ≥15 bonus dalle tue E e/o W schierate",
         "Vinci ≥7 giornate con scarto ≥10 punti",
       ],
-      ds: ["Cedi, anche in prestito, ad altri presidenti ≥3 giocatori ≥31 anni"],
-      dg: ["Concludi la trattativa più costosa in una sessione di mercato", "Spendi max 9M per un singolo investimento"],
+      ds: ["Cedi, anche in prestito, ad altri presidenti ≥2 giocatori ≥31 anni"],
+      dg: ["Acquista giocatori per una spesa totale ≥100M", "Spendi max 9M per un singolo investimento"],
     },
     "Capello": {
       moduli: "4-3-1-2 / 4-4-2",
@@ -4237,7 +4237,7 @@ function AltroTab({ team, isAdmin, mySquadra }) {
         "Completa ≥22 giornate con massimo 1 gol subito",
       ],
       ds: ["Devono prendere voto ≥8 giocatori verdi diversi, 2 volte"],
-      dg: ["Aumenta il valore totale rosa di ≥20M a fine anno (15/09→01/06)", "Non essere mai multato e non subire mai penalità"],
+      dg: ["Aumenta il valore totale rosa di ≥20M a fine anno (15/09→01/06, calcolato dopo l'aggiornamento del listone del 01/06)", "Non essere mai multato e non subire mai penalità"],
     },
     "Mourinho": {
       moduli: "4-2-3-1 / 4-4-1-1",
@@ -4257,7 +4257,7 @@ function AltroTab({ team, isAdmin, mySquadra }) {
         "La somma dei punti totali dei tuoi capitani a fine stagione deve essere ≥12",
       ],
       ds: ["Mantieni una rosa di massimo 26 giocatori per ≥25 partite"],
-      dg: ["Acquista ≥2 giocatori per un valore (fisso+bonus) di ≥30M l'uno", "Ottieni ≥75M dai guadagni di giornata"],
+      dg: ["Acquista ≥2 giocatori per un valore (fisso+bonus) di ≥30M l'uno", "Ottieni ≥40M dai guadagni di giornata"],
     },
     "Lippi": {
       moduli: "4-4-1-1 / 4-1-4-1",
@@ -4266,18 +4266,18 @@ function AltroTab({ team, isAdmin, mySquadra }) {
         "Le tue W e A schierate fanno ≥24 bonus",
         "Completa ≥12 giornate con 11 voti pieni, non subentrati",
       ],
-      ds: ["Fai fare ≥50 presenze ai tuoi Under-21 in rosa"],
+      ds: ["Fai fare ≥60 presenze ai tuoi Under-21 in rosa"],
       dg: ["Rimani con ≥15M di liquidità a fine mercato invernale", "I tuoi investimenti devono aver fruttato il 150% della spesa iniziale"],
     },
     "Sir Ferguson": {
       moduli: "4-4-2 / 3-5-2",
       obiettivi: [
-        "Nella stessa partita una Pc segna e una Pc fa assist, ≥1 volta",
-        "Le tue Pc schierate devono realizzare un totale di ≥20 gol",
+        "Nella stessa partita una Pc segna e una Pc fa assist, ≥2 volte",
+        "Le tue Pc schierate devono realizzare un totale di ≥30 gol",
         "In ≥4 giornate ≥3 giocatori blu e/o viola devono andare a voto con 6.5+",
       ],
       ds: ["Promuovi ≥1 giocatore dal vivaio e cedi/svincola ≥1 giocatore del vivaio"],
-      dg: ["Non pagare ≥2 svincoli ordinari in stagione", "Acquista ≥2 giocatori Under-21 per un valore di ≥25M totali"],
+      dg: ["Non pagare ≥2 svincoli ordinari in stagione", "Riduci ≥4 ingaggi a metà stagione"],
     },
     "Ancelotti": {
       moduli: "3-4-2-1 / 4-3-3",
@@ -4287,14 +4287,14 @@ function AltroTab({ team, isAdmin, mySquadra }) {
         "Completa ≥15 giornate con punteggio ≥75",
       ],
       ds: ["Mantieni ≥2 italiani per reparto Verde/Blu/Viola e ≥1 nei Gialli/Rossi; ≥100 presenze totali"],
-      dg: ["Chiudi la stagione con saldo positivo ≥20M", "Ogni ultimo del mese, il valore di ogni colore deve essere ≤30% del totale rosa"],
+      dg: ["Chiudi la stagione con saldo positivo ≥20M (condizione necessaria prima della consegna di premi e obiettivi)", "Ogni ultimo del mese, il valore di ogni colore deve essere ≤30% del totale rosa"],
     },
     "Sacchi": {
       moduli: "4-1-4-1 / 4-2-3-1",
       obiettivi: [
         "I tuoi giocatori verdi devono prendere voto 7+ in ≥13 giornate",
-        "Le tue T e W schierate fanno ≥20 bonus",
-        "Nei tuoi incontri deve realizzarsi l'over 3.5 in ≥16 match",
+        "Le tue T, Da e Dd schierate fanno ≥25 bonus",
+        "Nei tuoi incontri deve realizzarsi l'over 3.5 in ≥13 volte",
       ],
       ds: ["Acquista ≥3 giocatori stranieri con quotazione ≤8, devono fare ≥25 presenze totali"],
       dg: ["Compra ≥3 giocatori e rivendili a cifra più alta dell'acquisto", "Mantieni sempre ≥7M di liquidità"],
@@ -6067,6 +6067,10 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const [storicoFilterTipo, setStoricoFilterTipo] = useState("tutti");
   const [storicoFilterStato, setStoricoFilterStato] = useState("tutti");
   const [storicoSearch, setStoricoSearch] = useState("");
+  const [storicoSvincFilterStato, setStoricoSvincFilterStato] = useState("tutti");
+  const [storicoSvincFilterTipo, setStoricoSvincFilterTipo] = useState("tutti");
+  const [storicoSvincFilterSquadra, setStoricoSvincFilterSquadra] = useState("tutte");
+  const [storicoSvincSearch, setStoricoSvincSearch] = useState("");
 
   // ── Picker squadra/giocatore (nuovo form trattativa) ──────────────────────
   const emptyForm = {
@@ -7632,38 +7636,80 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
             </>
           )}
 
-          {/* Aste svincolati concluse */}
-          {(() => {
-            const storSvinc = asteSvinc.filter(a => a.stato !== 'raccolta_offerte').sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-            if (!storSvinc.length) return null;
-            return (
-              <>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em", marginTop: 16, marginBottom: 6 }}>📞 ASTE SVINCOLATI CONCLUSE</div>
-                {storSvinc.map(a => {
-                  const statoCol = a.stato === 'assegnata' ? "#10b981" : a.stato === 'annullata' ? "#ef4444" : "#555";
-                  const vincTeam = a.vincitore ? teams.find(t => t.name === a.vincitore) : null;
-                  return (
-                    <div key={a.id} style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: "10px 14px", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                      {vincTeam && <TeamAvatar team={vincTeam} size={24} />}
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#ddd" }}>
-                          {a.giocatore}
-                          {a.per_vivaio && <span style={{ marginLeft: 6, fontSize: 9, background: "#10b98118", color: "#10b981", border: "1px solid #10b98130", borderRadius: 6, padding: "1px 5px" }}>🌱 Vivaio</span>}
-                        </div>
-                        <div style={{ fontSize: 10, color: "#666" }}>
-                          {a.ruolo} · Q{a.quot}
-                          {a.vincitore ? ` · assegnato a ${a.vincitore}` : ""}
-                          {a.created_at ? ` · ${new Date(a.created_at).toLocaleDateString("it-IT")}` : ""}
-                        </div>
+          {/* Storico aste svincolati — sempre visibile, con filtri, per poterle controllare più avanti */}
+          <div style={{ marginTop: 24 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em", marginBottom: 8 }}>📞 STORICO ASTE SVINCOLATI</div>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10, background: "#ffffff05", border: "1px solid #ffffff10", borderRadius: 10, padding: "10px 12px" }}>
+              <input
+                type="text" placeholder="🔍 Cerca giocatore..."
+                value={storicoSvincSearch} onChange={e => setStoricoSvincSearch(e.target.value)}
+                style={{ flex: "1 1 160px", padding: "6px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}
+              />
+              <select value={storicoSvincFilterSquadra} onChange={e => setStoricoSvincFilterSquadra(e.target.value)}
+                style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}>
+                <option value="tutte">Tutte le squadre</option>
+                {teams.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
+              </select>
+              <select value={storicoSvincFilterTipo} onChange={e => setStoricoSvincFilterTipo(e.target.value)}
+                style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}>
+                <option value="tutti">Tutti</option>
+                <option value="vivaio">Solo vivaio</option>
+                <option value="normale">Solo normale</option>
+              </select>
+              <select value={storicoSvincFilterStato} onChange={e => setStoricoSvincFilterStato(e.target.value)}
+                style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}>
+                <option value="tutti">Tutti gli stati</option>
+                <option value="assegnata">Assegnata</option>
+                <option value="scaduta">Scaduta</option>
+                <option value="annullata">Annullata</option>
+              </select>
+              {(storicoSvincFilterSquadra !== "tutte" || storicoSvincFilterTipo !== "tutti" || storicoSvincFilterStato !== "tutti" || storicoSvincSearch) && (
+                <button
+                  onClick={() => { setStoricoSvincFilterSquadra("tutte"); setStoricoSvincFilterTipo("tutti"); setStoricoSvincFilterStato("tutti"); setStoricoSvincSearch(""); }}
+                  style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #ef444430", background: "#ef444412", color: "#f87171", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                  ✕ Reset filtri
+                </button>
+              )}
+            </div>
+
+            {(() => {
+              const storSvinc = asteSvinc
+                .filter(a => a.stato !== 'raccolta_offerte')
+                .filter(a => storicoSvincFilterSquadra === "tutte" || a.vincitore === storicoSvincFilterSquadra || a.aperta_da === storicoSvincFilterSquadra)
+                .filter(a => storicoSvincFilterTipo === "tutti" || (storicoSvincFilterTipo === "vivaio" ? a.per_vivaio : !a.per_vivaio))
+                .filter(a => storicoSvincFilterStato === "tutti" || a.stato === storicoSvincFilterStato)
+                .filter(a => !storicoSvincSearch || (a.giocatore || "").toLowerCase().includes(storicoSvincSearch.toLowerCase()))
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+              if (!asteSvinc.length) return <div style={{ fontSize: 12, color: "#555" }}>Caricamento...</div>;
+              if (!storSvinc.length) return <div style={{ fontSize: 12, color: "#555", fontStyle: "italic" }}>Nessuna asta svincolati trovata con questi filtri.</div>;
+
+              return storSvinc.map(a => {
+                const statoCol = a.stato === 'assegnata' ? "#10b981" : a.stato === 'annullata' ? "#ef4444" : "#555";
+                const vincTeam = a.vincitore ? teams.find(t => t.name === a.vincitore) : null;
+                return (
+                  <div key={a.id} style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: "10px 14px", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
+                    {vincTeam && <TeamAvatar team={vincTeam} size={24} />}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#ddd" }}>
+                        {a.giocatore}
+                        {a.per_vivaio && <span style={{ marginLeft: 6, fontSize: 9, background: "#10b98118", color: "#10b981", border: "1px solid #10b98130", borderRadius: 6, padding: "1px 5px" }}>🌱 Vivaio</span>}
                       </div>
-                      {a.prezzo_finale != null && <div style={{ fontSize: 14, fontWeight: 800, color: "#f59e0b", fontFamily: "'Bebas Neue',sans-serif" }}>{Number(a.prezzo_finale).toFixed(2)}M</div>}
-                      <Badge color={statoCol}>{a.stato}</Badge>
+                      <div style={{ fontSize: 10, color: "#666" }}>
+                        {a.ruolo} · Q{a.quot}
+                        {a.aperta_da ? ` · chiamato da ${a.aperta_da}` : ""}
+                        {a.vincitore ? ` · assegnato a ${a.vincitore}` : ""}
+                        {a.created_at ? ` · ${new Date(a.created_at).toLocaleDateString("it-IT")}` : ""}
+                      </div>
                     </div>
-                  );
-                })}
-              </>
-            );
-          })()}
+                    {a.prezzo_finale != null && <div style={{ fontSize: 14, fontWeight: 800, color: "#f59e0b", fontFamily: "'Bebas Neue',sans-serif" }}>{Number(a.prezzo_finale).toFixed(2)}M</div>}
+                    <Badge color={statoCol}>{a.stato}</Badge>
+                  </div>
+                );
+              });
+            })()}
+          </div>
         </div>
       )}
 
