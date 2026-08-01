@@ -4273,7 +4273,7 @@ function AltroTab({ team, isAdmin, mySquadra }) {
       moduli: "4-4-2 / 3-5-2",
       obiettivi: [
         "Nella stessa partita una Pc segna e una Pc fa assist, ≥2 volte",
-        "Le tue Pc schierate devono realizzare un totale di ≥30 gol",
+        "Le tue Pc schierate devono realizzare un totale di ≥30 bonus",
         "In ≥4 giornate ≥3 giocatori blu e/o viola devono andare a voto con 6.5+",
       ],
       ds: ["Promuovi ≥1 giocatore dal vivaio e cedi/svincola ≥1 giocatore del vivaio"],
@@ -4293,7 +4293,7 @@ function AltroTab({ team, isAdmin, mySquadra }) {
       moduli: "4-1-4-1 / 4-2-3-1",
       obiettivi: [
         "I tuoi giocatori verdi devono prendere voto 7+ in ≥13 giornate",
-        "Le tue T, Da e Dd schierate fanno ≥25 bonus",
+        "Le tue T, Ds e/o Dd schierate fanno ≥25 bonus",
         "Nei tuoi incontri deve realizzarsi l'over 3.5 in ≥13 volte",
       ],
       ds: ["Acquista ≥3 giocatori stranieri con quotazione ≤8, devono fare ≥25 presenze totali"],
