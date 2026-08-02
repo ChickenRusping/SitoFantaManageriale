@@ -3253,6 +3253,10 @@ export async function sincronizzaQuoteStagione(opts = {}) {
       patch.euro_investiti = 0;
       patch.extra_stagione = stagione;
       fallback.euro_investiti = 0;
+      // I mln extra di salary cap dagli obiettivi allenatore completati valgono solo
+      // per la stagione in cui sono stati guadagnati: si azzerano al cambio stagione.
+      patch.sc_bonus_obiettivi = 0;
+      fallback.sc_bonus_obiettivi = 0;
     }
     if (!sq.biennio || sq.biennio !== biennio) {
       patch.biennio = biennio;
