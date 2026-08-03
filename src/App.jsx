@@ -6750,15 +6750,16 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
       {/* ── Switcher Mercato / Svincolati ── */}
       <div style={{ display:"flex",gap:0,background:"#ffffff08",borderRadius:12,padding:4,alignSelf:"flex-start" }}>
-        {[["mercato","🤝 Mercato"],["svincolati","🔍 Svincolati"]].map(([k,l])=>(
+        {[["mercato","🤝 Mercato"],["svincolati","🔍 Svincolati"],["listone","📋 Listone"]].map(([k,l])=>(
           <button key={k} onClick={()=>setMercatoSection(k)}
-            style={{ padding:"8px 20px",borderRadius:9,border:"none",background:mercatoSection===k?(k==="mercato"?"#6366f1":"#10b981"):"transparent",color:mercatoSection===k?"#fff":"#666",fontSize:13,fontWeight:700,cursor:"pointer",transition:"all 0.15s" }}>
+            style={{ padding:"8px 20px",borderRadius:9,border:"none",background:mercatoSection===k?(k==="mercato"?"#6366f1":k==="svincolati"?"#10b981":"#f59e0b"):"transparent",color:mercatoSection===k?"#fff":"#666",fontSize:13,fontWeight:700,cursor:"pointer",transition:"all 0.15s" }}>
             {l}
           </button>
         ))}
       </div>
 
       {mercatoSection === "svincolati" && <SvincolatiPage profile={profile} isAdmin={isAdmin} teams={teams} />}
+      {mercatoSection === "listone" && <ListonePage teams={teams} />}
       {mercatoSection === "mercato" && <>
 
       {/* Banner notifiche offerte in attesa */}
@@ -8104,6 +8105,164 @@ function SvincolatiTable({ filtered, chiamateAttive, mySquadra, isAdmin, setShow
           })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+// ── LISTONE: tutti i giocatori del database (svincolati + rose), con statistiche,
+// filtri e ordinamento — sola lettura, per consultazione/scouting.
+function ListonePage({ teams }) {
+  const [listone, setListone] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterRuolo, setFilterRuolo] = useState("tutti");
+  const [filterSquadraSerieA, setFilterSquadraSerieA] = useState("tutte");
+  const [filterProprieta, setFilterProprieta] = useState("tutti"); // tutti | svincolati | rosa
+  const [filterFuoriLista, setFilterFuoriLista] = useState(false);
+  const [sortBy, setSortBy] = useState("quot");
+  const [sortDir, setSortDir] = useState("desc");
+  const [visibleCount, setVisibleCount] = useState(50);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const data = await getListone();
+      setListone(data || []);
+      setLoading(false);
+    })();
+  }, []);
+
+  const squadreSerieA = useMemo(() => {
+    if (!listone) return [];
+    return Array.from(new Set(listone.map(p => p.squadra_serie_a).filter(Boolean))).sort();
+  }, [listone]);
+
+  const ruoli = useMemo(() => {
+    if (!listone) return [];
+    return Array.from(new Set(listone.map(p => p.ruolo).filter(Boolean))).sort();
+  }, [listone]);
+
+  const filtrati = useMemo(() => {
+    if (!listone) return [];
+    let rows = listone
+      .filter(p => !search || (p.nome || "").toLowerCase().includes(search.toLowerCase()))
+      .filter(p => filterRuolo === "tutti" || p.ruolo === filterRuolo)
+      .filter(p => filterSquadraSerieA === "tutte" || p.squadra_serie_a === filterSquadraSerieA)
+      .filter(p => filterProprieta === "tutti" || (filterProprieta === "svincolati" ? !p.fanta_squadra : !!p.fanta_squadra))
+      .filter(p => filterFuoriLista || !p.fuori_lista);
+
+    rows = [...rows].sort((a, b) => {
+      const av = a[sortBy] ?? 0, bv = b[sortBy] ?? 0;
+      if (typeof av === "string") return sortDir === "desc" ? bv.localeCompare(av) : av.localeCompare(bv);
+      return sortDir === "desc" ? bv - av : av - bv;
+    });
+    return rows;
+  }, [listone, search, filterRuolo, filterSquadraSerieA, filterProprieta, filterFuoriLista, sortBy, sortDir]);
+
+  const sortOptions = [
+    { key: "quot", label: "Quotazione" },
+    { key: "media_voto", label: "Media voto" },
+    { key: "media_fantavoto", label: "Media fantavoto" },
+    { key: "partite_voto", label: "Partite a voto" },
+    { key: "gol_fatti", label: "Gol fatti" },
+    { key: "assist", label: "Assist" },
+    { key: "clausola", label: "Clausola" },
+    { key: "nome", label: "Nome (A-Z)" },
+  ];
+
+  if (loading) return <div style={{ fontSize: 13, color: "#666", padding: 20 }}>Caricamento listone...</div>;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div>
+        <div style={{ fontSize: 22, fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif", color: "#f0f0f0" }}>LISTONE COMPLETO</div>
+        <div style={{ fontSize: 12, color: "#666" }}>{listone.length} giocatori nel database · {filtrati.length} con questi filtri</div>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", background: "#ffffff05", border: "1px solid #ffffff10", borderRadius: 12, padding: "10px 12px" }}>
+        <input
+          type="text" placeholder="🔍 Cerca giocatore..."
+          value={search} onChange={e => { setSearch(e.target.value); setVisibleCount(50); }}
+          style={{ flex: "1 1 160px", padding: "7px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}
+        />
+        <select value={filterRuolo} onChange={e => { setFilterRuolo(e.target.value); setVisibleCount(50); }}
+          style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}>
+          <option value="tutti">Tutti i ruoli</option>
+          {ruoli.map(r => <option key={r} value={r}>{r}</option>)}
+        </select>
+        <select value={filterSquadraSerieA} onChange={e => { setFilterSquadraSerieA(e.target.value); setVisibleCount(50); }}
+          style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}>
+          <option value="tutte">Tutte le squadre Serie A</option>
+          {squadreSerieA.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={filterProprieta} onChange={e => { setFilterProprieta(e.target.value); setVisibleCount(50); }}
+          style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}>
+          <option value="tutti">Svincolati + in rosa</option>
+          <option value="svincolati">Solo svincolati</option>
+          <option value="rosa">Solo in rosa</option>
+        </select>
+        <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#888", padding: "0 6px" }}>
+          <input type="checkbox" checked={filterFuoriLista} onChange={e => { setFilterFuoriLista(e.target.checked); setVisibleCount(50); }} />
+          Includi fuori lista
+        </label>
+        <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+          style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}>
+          {sortOptions.map(o => <option key={o.key} value={o.key}>Ordina: {o.label}</option>)}
+        </select>
+        <button onClick={() => setSortDir(d => d === "desc" ? "asc" : "desc")}
+          style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid #ffffff18", background: "#ffffff08", color: "#aaa", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+          {sortDir === "desc" ? "↓ Decrescente" : "↑ Crescente"}
+        </button>
+      </div>
+
+      <div style={{ overflowX: "auto", border: "1px solid #ffffff10", borderRadius: 12 }}>
+        <table style={{ width: "100%", minWidth: 980, borderCollapse: "collapse", fontSize: 11.5 }}>
+          <thead>
+            <tr style={{ background: "#ffffff06" }}>
+              {["Nome","Ruolo","Sq. Serie A","Proprietà","Quot","Salario","Clausola","Presenze","M.Voto","M.Fantavoto","Gol","Assist","Amm.","Esp.","Rig.parati","Rig.segn./sbagl."].map(h => (
+                <th key={h} style={{ textAlign: "left", padding: "8px 10px", color: "#666", borderBottom: "1px solid #ffffff12", whiteSpace: "nowrap", fontWeight: 700 }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtrati.slice(0, visibleCount).map(p => {
+              const team = p.fanta_squadra ? teams?.find(t => t.name === p.fanta_squadra) : null;
+              return (
+                <tr key={p.id || p.nome} style={{ borderBottom: "1px solid #ffffff08", opacity: p.fuori_lista ? 0.5 : 1 }}>
+                  <td style={{ padding: "7px 10px", fontWeight: 700, color: "#ddd", whiteSpace: "nowrap" }}>{p.nome}{p.fuori_lista && <span style={{ marginLeft: 5, fontSize: 9, color: "#ef4444" }}>FUORI</span>}</td>
+                  <td style={{ padding: "7px 10px", color: "#aaa" }}>{p.ruolo || "—"}</td>
+                  <td style={{ padding: "7px 10px", color: "#aaa" }}>{p.squadra_serie_a || "—"}</td>
+                  <td style={{ padding: "7px 10px" }}>
+                    {p.fanta_squadra
+                      ? <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#818cf8" }}>{team && <TeamAvatar team={team} size={16} />}{p.fanta_squadra}</span>
+                      : <span style={{ color: "#10b981" }}>Svincolato</span>}
+                  </td>
+                  <td style={{ padding: "7px 10px", color: "#f59e0b", fontWeight: 700 }}>{p.quot ?? "—"}</td>
+                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.salario ?? "—"}</td>
+                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.clausola ?? "—"}</td>
+                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.partite_voto ?? 0}</td>
+                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.media_voto ?? 0}</td>
+                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.media_fantavoto ?? 0}</td>
+                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.gol_fatti ?? 0}</td>
+                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.assist ?? 0}</td>
+                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.ammonizioni ?? 0}</td>
+                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.espulsioni ?? 0}</td>
+                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.rigori_parati ?? 0}</td>
+                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.rigori_segnati ?? 0}/{p.rigori_sbagliati ?? 0}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {filtrati.length === 0 && <div style={{ padding: 20, textAlign: "center", fontSize: 12, color: "#555", fontStyle: "italic" }}>Nessun giocatore trovato con questi filtri.</div>}
+      </div>
+
+      {visibleCount < filtrati.length && (
+        <button onClick={() => setVisibleCount(v => v + 50)}
+          style={{ padding: "12px", borderRadius: 12, border: "1px solid #ffffff15", background: "#ffffff05", color: "#888", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+          ▾ Mostra altri {Math.min(50, filtrati.length - visibleCount)} giocatori
+        </button>
+      )}
     </div>
   );
 }
