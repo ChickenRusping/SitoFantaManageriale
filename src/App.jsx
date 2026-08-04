@@ -4746,7 +4746,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
           </>
         ):(
           <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-            <div style={{ fontSize:11,color:"#888" }}>Nessun allenatore scelto per {STAGIONE_CORRENTE}.{isAdmin&&<span style={{ color:"#6366f1" }}> Scegli una carta (5M).</span>}</div>
+            <div style={{ fontSize:11,color:"#888" }}>Nessun allenatore scelto per {STAGIONE_CORRENTE}.{canManageObiettivi&&<span style={{ color:"#6366f1" }}> Scegli una carta (5M).</span>}</div>
             {/* Coach preview modal */}
             {coachPreview && (() => {
               const info = OBIETTIVI_ALLENATORI[coachPreview];
@@ -4790,7 +4790,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                     ) : (
                       <div style={{ color:"#555",fontSize:12 }}>Obiettivi non disponibili.</div>
                     )}
-                    {isAdmin && disp && (
+                    {canManageObiettivi && disp && (
                       <button onClick={()=>{ setCoachPreview(null); handleScegli(coachPreview); }} disabled={savingAll}
                         style={{ width:"100%",padding:"10px",borderRadius:10,border:"1.5px solid #6366f150",background:"#6366f120",color:"#818cf8",fontSize:13,fontWeight:800,cursor:"pointer" }}>
                         Scegli {coachPreview} — 5M
@@ -4814,7 +4814,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                     </div>
                     <div style={{ display:"flex",gap:6,alignItems:"center" }}>
                       <span style={{ fontSize:10,color:"#555" }}>📋 Dettagli</span>
-                      {isAdmin&&disp&&<button onClick={e=>{e.stopPropagation();handleScegli(all.nome);}} disabled={savingAll} style={{ padding:"5px 12px",borderRadius:7,border:"none",background:"#6366f122",color:"#818cf8",fontSize:11,fontWeight:700,cursor:"pointer" }}>Scegli −5M</button>}
+                      {canManageObiettivi&&disp&&<button onClick={e=>{e.stopPropagation();handleScegli(all.nome);}} disabled={savingAll} style={{ padding:"5px 12px",borderRadius:7,border:"none",background:"#6366f122",color:"#818cf8",fontSize:11,fontWeight:700,cursor:"pointer" }}>Scegli −5M</button>}
                     </div>
                   </div>
                 </div>
