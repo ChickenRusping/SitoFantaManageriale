@@ -2386,34 +2386,34 @@ export async function getFairSpending(squadra) {
 
 // ─── ALLENATORI CARTE (art. 9) ────────────────────────────────────────────────
 
-export async function getAllenatori(stagione = '2026-27') {
+export async function getAllenatori(stagione = getStagioneQuota()) {
   const { data, error } = await supabase.from('allenatori_carte')
     .select('*').eq('stagione', stagione).order('nome');
   if (error) return [];
   return data;
 }
 
-export async function getAllenatoreBySquadra(squadra, stagione = '2026-27') {
+export async function getAllenatoreBySquadra(squadra, stagione = getStagioneQuota()) {
   const { data } = await supabase.from('allenatori_carte')
     .select('*').eq('squadra', squadra).eq('stagione', stagione).limit(1);
   return data?.[0] ?? null;
 }
 
-export async function getObiettiviCarta(allenatore, stagione = '2026-27') {
+export async function getObiettiviCarta(allenatore, stagione = getStagioneQuota()) {
   const { data, error } = await supabase.from('obiettivi_carte')
     .select('*').eq('allenatore', allenatore).eq('stagione', stagione).order('ordine');
   if (error) return [];
   return data;
 }
 
-export async function getProgressoObiettivi(squadra, stagione = '2026-27') {
+export async function getProgressoObiettivi(squadra, stagione = getStagioneQuota()) {
   const { data, error } = await supabase.from('progresso_obiettivi')
     .select('*, obiettivi_carte(*)').eq('squadra', squadra).eq('stagione', stagione);
   if (error) return [];
   return data;
 }
 
-function _fineCampionatoObiettivi(stagione = '2026-27') {
+function _fineCampionatoObiettivi(stagione = getStagioneQuota()) {
   const startYear = Number(String(stagione).slice(0, 4)) || new Date().getFullYear();
   return `${startYear + 1}-05-31`;
 }
@@ -2458,7 +2458,7 @@ async function _applicaMovimentoObiettivo({ squadra, obiettivo, importo, descriz
   return nuovoBilancio;
 }
 
-export async function upsertProgresso(squadra, obiettivoId, fields, stagione = '2026-27') {
+export async function upsertProgresso(squadra, obiettivoId, fields, stagione = getStagioneQuota()) {
   const obiettivo = await _getObiettivoCartaById(obiettivoId);
   const tipo = String(obiettivo.tipo || '').toLowerCase();
   const completato = Boolean(fields.completato);
@@ -2507,7 +2507,7 @@ export async function upsertProgresso(squadra, obiettivoId, fields, stagione = '
   }
 }
 
-export async function incassaObiettivo(squadra, obiettivoId, stagione = '2026-27') {
+export async function incassaObiettivo(squadra, obiettivoId, stagione = getStagioneQuota()) {
   const obiettivo = await _getObiettivoCartaById(obiettivoId);
   const { data: prog, error: progErr } = await supabase.from('progresso_obiettivi')
     .select('*').eq('squadra', squadra).eq('obiettivo_id', obiettivoId).eq('stagione', stagione).single();
@@ -2537,7 +2537,7 @@ export async function incassaObiettivo(squadra, obiettivoId, stagione = '2026-27
   return { incassato: true, importo };
 }
 
-export async function applicaMalusObiettivo(squadra, obiettivoId, stagione = '2026-27') {
+export async function applicaMalusObiettivo(squadra, obiettivoId, stagione = getStagioneQuota()) {
   const obiettivo = await _getObiettivoCartaById(obiettivoId);
   const { data: prog, error: progErr } = await supabase.from('progresso_obiettivi')
     .select('*').eq('squadra', squadra).eq('obiettivo_id', obiettivoId).eq('stagione', stagione).single();
@@ -2559,7 +2559,7 @@ export async function applicaMalusObiettivo(squadra, obiettivoId, stagione = '20
   return { applicato: true, importo };
 }
 
-export async function incassaObiettiviFinali(squadra, stagione = '2026-27') {
+export async function incassaObiettiviFinali(squadra, stagione = getStagioneQuota()) {
   const fine = _fineCampionatoObiettivi(stagione);
   if (_oggiISO() < fine) throw new Error(`Gli obiettivi DS/DG sono incassabili dal ${fine}.`);
   const { data, error } = await supabase.from('progresso_obiettivi')
@@ -2576,14 +2576,14 @@ export async function incassaObiettiviFinali(squadra, stagione = '2026-27') {
   return { totale: parseFloat(tot.toFixed(2)) };
 }
 
-export async function getModuloTracker(squadra, stagione = '2026-27') {
+export async function getModuloTracker(squadra, stagione = getStagioneQuota()) {
   const { data, error } = await supabase.from('moduli_allenatore_tracker')
     .select('*').eq('squadra', squadra).eq('stagione', stagione).order('giornata');
   if (error) return [];
   return data || [];
 }
 
-export async function upsertModuloTracker(squadra, giornata, modulo, stagione = '2026-27') {
+export async function upsertModuloTracker(squadra, giornata, modulo, stagione = getStagioneQuota()) {
   const { error } = await supabase.from('moduli_allenatore_tracker').upsert({
     squadra,
     stagione,
@@ -2594,7 +2594,7 @@ export async function upsertModuloTracker(squadra, giornata, modulo, stagione = 
   if (error) throw error;
 }
 
-export async function deleteModuloTracker(squadra, giornata, stagione = '2026-27') {
+export async function deleteModuloTracker(squadra, giornata, stagione = getStagioneQuota()) {
   const { error } = await supabase.from('moduli_allenatore_tracker')
     .delete().eq('squadra', squadra).eq('stagione', stagione).eq('giornata', Number(giornata));
   if (error) throw error;
@@ -2865,7 +2865,7 @@ export async function aggiornaTrackerInvestimento(id, voce) {
 
 // ─── SPONSOR ─────────────────────────────────────────────────────────────────
 
-export async function getSponsor(squadra, stagione = '2025-26') {
+export async function getSponsor(squadra, stagione = getStagioneQuota()) {
   const { data, error } = await supabase.from('sponsor')
     .select('*').eq('squadra', squadra).eq('stagione', stagione);
   if (error) return [];
@@ -2922,7 +2922,7 @@ export async function applicaMulta(squadra, importoMln, motivo, penaId) {
 }
 
 // Conta recidive di un tipo per una squadra
-export async function countRecidive(squadra, codiceTipo, stagione = '2025-26') {
+export async function countRecidive(squadra, codiceTipo, stagione = getStagioneQuota()) {
   const { count } = await supabase.from('penalita')
     .select('id', { count: 'exact', head: true })
     .eq('squadra', squadra).eq('codice_tipo', codiceTipo).eq('stagione', stagione);
@@ -3307,7 +3307,7 @@ export async function applicaIscrizioneATutti(opts = {}) {
 // Stato iscrizione campionato per tutte le squadre nella stagione indicata,
 // incluso il conteggio dei movimenti "Iscrizione campionato" effettivamente
 // registrati per ciascuna (per scoprire pagamenti duplicati).
-export async function getStatoIscrizioneTutte(stagione = '2026-27') {
+export async function getStatoIscrizioneTutte(stagione = getStagioneQuota()) {
   const [{ data: squadre }, { data: movimenti }] = await Promise.all([
     supabase.from('squadre').select('name, bilancio, iscrizione_pagata, iscrizione_stagione_pagata, iscrizione_pagata_il'),
     supabase.from('movimenti').select('id, squadra, uscita, data, descrizione').ilike('descrizione', `Iscrizione campionato ${stagione}%`),
@@ -3334,7 +3334,7 @@ export async function getStatoIscrizioneTutte(stagione = '2026-27') {
 // rimborsa quanto effettivamente addebitato (anche se per errore fosse più di
 // una volta), elimina i movimenti collegati e resetta i flag così l'iscrizione
 // può essere riapplicata più avanti quando sarà il momento giusto.
-export async function annullaIscrizioneATutti(stagione = '2026-27') {
+export async function annullaIscrizioneATutti(stagione = getStagioneQuota()) {
   const { data: movimenti, error } = await supabase
     .from('movimenti')
     .select('id, squadra, uscita')
@@ -3367,7 +3367,7 @@ export async function annullaIscrizioneATutti(stagione = '2026-27') {
 // stessa iscrizione): tiene il primo addebito, rimborsa e cancella gli altri.
 // A differenza di annullaIscrizioneATutti, chi ha pagato una volta sola resta
 // regolarmente iscritto.
-export async function ripulisciDuplicatiIscrizione(stagione = '2026-27') {
+export async function ripulisciDuplicatiIscrizione(stagione = getStagioneQuota()) {
   const { data: movimenti, error } = await supabase
     .from('movimenti')
     .select('id, squadra, uscita, data')
@@ -3413,7 +3413,7 @@ export async function applicaQuoteAutomatiche(opts = {}) {
 
 // Restituisce gli upgrade stadio che danno bonus nella stagione indicata.
 // Regola: l'investimento acquistato in una stagione produce +1,5M dalla stagione successiva.
-export async function getStadioInvestimenti(stagione = '2026-27') {
+export async function getStadioInvestimenti(stagione = getStagioneQuota()) {
   const currentStart = _stagioneStartFromLabel(stagione);
   const { data } = await supabase.from('investimenti')
     .select('*')
@@ -3424,7 +3424,7 @@ export async function getStadioInvestimenti(stagione = '2026-27') {
 
 // Toggle admin del BONUS ATTIVO nella stagione indicata.
 // Per ottenere effetto nella stagione corrente, crea/rimuove un record nella stagione precedente.
-export async function setStadioUpgrade(squadra, attivo, stagione = '2026-27') {
+export async function setStadioUpgrade(squadra, attivo, stagione = getStagioneQuota()) {
   const currentStart = _stagioneStartFromLabel(stagione);
   const stagioneOrigine = `${currentStart - 1}-${String(currentStart).slice(2)}`;
   if (attivo) {
@@ -3450,7 +3450,7 @@ export async function setStadioUpgrade(squadra, attivo, stagione = '2026-27') {
 }
 
 // Applica le entrate stadio a TUTTE le squadre (trigger manuale admin)
-export async function applicaEntrateStadioTutte(stagione = '2026-27') {
+export async function applicaEntrateStadioTutte(stagione = getStagioneQuota()) {
   const oggi = new Date().toISOString().slice(0, 10);
   const { start: meseStart, end: meseEnd, meseISO } = getMeseCorrenteRange();
   const stadioDesc = `Entrate stadio ${meseISO}`;
@@ -4297,7 +4297,7 @@ export function filtraVivaioCandidati(freeAgents) {
 }
 // ─── SVINCOLATI DB (art. 3.6, sostituisce FREE_AGENTS statico) ───────────────
 
-export async function getSvincolatiDB(stagione = '2025-26') {
+export async function getSvincolatiDB(stagione = getStagioneQuota()) {
   const { data, error } = await supabase
     .from('svincolati')
     .select('*')
@@ -4307,7 +4307,7 @@ export async function getSvincolatiDB(stagione = '2025-26') {
   return data;
 }
 
-export async function upsertSvincolato(player, stagione = '2025-26') {
+export async function upsertSvincolato(player, stagione = getStagioneQuota()) {
   const { error } = await supabase.from('svincolati').upsert(
     { ...player, stagione, updated_at: new Date().toISOString() },
     { onConflict: 'nome,stagione' }
@@ -4328,9 +4328,9 @@ export async function deleteSvincolato(id) {
 }
 
 // Import da array Excel/XLSX — upsert massivo
-export async function importSvincolatiDaArray(rows, stagione = '2025-26') {
+export async function importSvincolatiDaArray(rows, stagione = getStagioneQuota()) {
   const mapped = rows.map(r => ({
-    nome: r.nome || r.Nome || '',
+    nome: (r.nome || r.Nome || '').toString().trim(),
     ruolo: r.ruolo || r.Ruolo || '',
     anni: Number(r.anni || r.Anni || 0),
     quot: Number(r.quot || r.Quotazione || r.Q || 0),
@@ -4490,7 +4490,7 @@ export function isFinestraRibasso() {
 }
 
 // Carica storico aggiornamenti per una squadra
-export async function getAggiornamenti(squadra, stagione = '2025-26') {
+export async function getAggiornamenti(squadra, stagione = getStagioneQuota()) {
   const { data } = await supabase.from('aggiornamenti_stipendi')
     .select('*').eq('squadra', squadra).eq('stagione', stagione)
     .order('data_aggiornamento', { ascending: false });
@@ -5356,7 +5356,7 @@ export async function confermRinnovoBiennale(playerId) {
 
 // ─── PREMI INDIVIDUALI (art. 12.4-12.5) ──────────────────────────────────────
 
-export async function calcolaPremiIndividuali(stagione = '2026-27') {
+export async function calcolaPremiIndividuali(stagione = getStagioneQuota()) {
   // Legge tutte le rose e calcola le classifiche individuali
   const { data: squadre } = await supabase.from('squadre').select('name');
   if (!squadre) return null;
@@ -5403,7 +5403,7 @@ export async function calcolaPremiIndividuali(stagione = '2026-27') {
 
 // ─── NOTIZIE ──────────────────────────────────────────────────────────────────
 
-export async function getNotizie(stagione = '2026-27', limit = 50) {
+export async function getNotizie(stagione = getStagioneQuota(), limit = 50) {
   const { data, error } = await supabase.from('notizie').select('*, commenti_notizie(count)').eq('stagione', stagione).order('pinnata', { ascending: false }).order('created_at', { ascending: false }).limit(limit);
   if (!error && data) data.forEach(n => { n.commenti_count = n.commenti_notizie?.[0]?.count ?? 0; delete n.commenti_notizie; });
   if (error) throw error;
@@ -5414,7 +5414,7 @@ function isMissingColumnError(error) {
   return msg.includes('column') || msg.includes('schema cache') || msg.includes('could not find');
 }
 
-export async function insertNotizia({ autore, squadra, categoria, titolo, testo, immagini = [], immaginiThumb = [], stagione = '2026-27' }) {
+export async function insertNotizia({ autore, squadra, categoria, titolo, testo, immagini = [], immaginiThumb = [], stagione = getStagioneQuota() }) {
   const payload = { autore, squadra, categoria, titolo, testo, immagini, immagini_thumb: immaginiThumb, stagione };
   let { data, error } = await supabase.from('notizie').insert(payload).select().single();
   if (error && isMissingColumnError(error)) {
@@ -5542,7 +5542,7 @@ export async function getTrasferimentiDifferiti() {
 // Correzione v11: la penalità viene considerata già applicata solo per lo stesso
 // periodo FPF, non per tutta la stagione. Così il controllo 16/02→15/09 e quello
 // 16/09→15/02 possono entrambi generare una multa nella stessa stagione.
-export async function applicaMulteFPFTutte(stagione = '2026-27') {
+export async function applicaMulteFPFTutte(stagione = getStagioneQuota()) {
   const sem = getSemestreCorrente();
   const fpfMap = await getFpfTutteSquadre();
   const oggi = new Date().toISOString().slice(0, 10);
@@ -5586,7 +5586,7 @@ export async function applicaMulteFPFTutte(stagione = '2026-27') {
 }
 
 // Premi: distribuisci premi campionato in base alla classifica attuale
-export async function applicaPremiCampionato(stagione = '2026-27') {
+export async function applicaPremiCampionato(stagione = getStagioneQuota()) {
   const oggi = new Date().toISOString().slice(0, 10);
   const { data: classifica } = await supabase.from('classifica').select('squadra, pt, pt_totali').order('pt', { ascending: false });
   if (!classifica?.length) throw new Error('Nessuna classifica trovata');
@@ -5732,7 +5732,7 @@ export async function setRivalitaLock(bloccata) {
 
 // ─── IMPORT DATABASE FANTA.XLSX ───────────────────────────────────────────────
 
-export async function importDatabaseFanta(rows, stagione = '2026-27') {
+export async function importDatabaseFanta(rows, stagione = getStagioneQuota()) {
   // 1. Aggiorna listone + stats rosa via funzione esistente (match case-insensitive per nome)
   const totaleListone = await importListoneDaExcel(rows);
 
@@ -5822,7 +5822,7 @@ export async function calcolaTop5GlobaleQuotReale() {
 // Applica aggiornamento 01/01:
 // - top 5 rialzo: overwrite quot/stip con quot_reale
 // - top 5 ribasso: nessuna azione automatica (i presidenti scelgono entro 05/01)
-export async function applica01Gennaio(top5Rialzo, stagione = '2026-27') {
+export async function applica01Gennaio(top5Rialzo, stagione = getStagioneQuota()) {
   const oggi = new Date().toISOString().slice(0, 10);
   let rialziApplicati = 0;
   for (const p of top5Rialzo) {
@@ -5850,7 +5850,7 @@ export async function applica01Gennaio(top5Rialzo, stagione = '2026-27') {
 
 // Applica aggiornamento 01/06 o 01/08:
 // Tutti i giocatori in rosa: quot = quot_reale, stip/clausola ricalcolati
-export async function applica01GiugnoAgosto(stagione = '2026-27') {
+export async function applica01GiugnoAgosto(stagione = getStagioneQuota()) {
   const { data } = await supabase
     .from('rosa')
     .select('id, nome, anni, quot, quot_reale, stip, squadra')
@@ -5888,7 +5888,7 @@ export async function applica01GiugnoAgosto(stagione = '2026-27') {
 //   - Se il giocatore è in rosa (match per nome case-insensitive): aggiorna stats + quot_reale + squadra_serie_a + anni + ruolo, poi applica quot=quot_reale
 //   - Se è in svincolati: aggiorna tutti i campi
 //   - Se non esiste né in rosa né in svincolati: crea nuova voce in svincolati
-export async function importa01Agosto(rows, stagione = '2026-27') {
+export async function importa01Agosto(rows, stagione = getStagioneQuota()) {
   // Prima aggiorna listone completo
   await importListoneDaExcel(rows);
 
@@ -5966,8 +5966,8 @@ export async function importa01Agosto(rows, stagione = '2026-27') {
           ...statsSvin,
         }).eq('id', svinMap[nomeLower].id);
         svinAggiornati++;
-      } else if (quot > 0) {
-        // Nuovo giocatore: crea in svincolati.
+      } else if (quot > 0 && !(r['FantaSquadra'] || '').toString().trim()) {
+        // Nuovo giocatore libero (nessuna FantaSquadra nel file): crea in svincolati.
         // Usiamo upsert (onConflict nome+stagione) invece di insert semplice:
         // se per qualsiasi motivo esiste già una riga con lo stesso nome/stagione
         // (es. residuo di uno svincolo precedente), un insert "cieco" fallirebbe
@@ -5984,6 +5984,14 @@ export async function importa01Agosto(rows, stagione = '2026-27') {
         } else {
           nuoviCreati++;
         }
+      } else if (quot > 0) {
+        // Il file indica una FantaSquadra per questo nome, ma non è stato trovato
+        // né in rosa né tra gli svincolati: quasi certamente un cambio di grafia
+        // del nome (es. "Castro" → "Castro S.") rispetto a quanto salvato in rosa.
+        // NON va creato come svincolato: sarebbe un doppione fantasma per un
+        // giocatore che in realtà è già assegnato a una squadra. Segnaliamo per
+        // la verifica manuale del nome invece di inserirlo silenziosamente.
+        nonTrovati.push(`${nome} (FantaSquadra "${(r['FantaSquadra'] || '').toString().trim()}" nel file ma nessun match in rosa/svincolati — verificare il nome, es. cambio grafia)`);
       } else {
         nonTrovati.push(nome);
       }
