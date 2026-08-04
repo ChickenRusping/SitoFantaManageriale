@@ -173,7 +173,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
   getBonusTrattativa, getBonusTrattativeBatch, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -191,7 +191,7 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   applicaMulteFPFTutte, applicaPremiCampionato,
   // Database Fanta import + Rivalità lock
   importDatabaseFanta, getRivalitaLock, setRivalitaLock,
-  calcolaTop5GlobaleQuotReale, applica01Gennaio, applica01GiugnoAgosto, importa01Agosto,
+  applica01GiugnoAgosto, importa01Agosto,
   getStagioneLabel, setStagioneLabel,
   getTorneo, setTorneo,
   // Telegram
@@ -3239,11 +3239,10 @@ function ContrattoRinnovoRow({ p, team, isAdmin, mySquadra, onToggle }) {
 /* ─── FINANZE TAB ────────────────────────────────────────────────────────────── */
 /* ─── AGGIORNAMENTO STIPENDI 01/01 ───────────────────────────────────────────── */
 function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh }) {
-  const [dati, setDati] = useState(null); // { rialzi, ribassi }
+  const [dati, setDati] = useState(null); // { rialzi, ribassi, rialziInSospeso, ribassiInSospeso, ... }
   const [storico, setStorico] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(null);
-  const [nuoviStip, setNuoviStip] = useState({}); // { playerId: valore }
   const [open, setOpen] = useState(false);
 
   const finestraRibasso = isFinestraRibasso();
@@ -3255,7 +3254,7 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
   async function caricaDati() {
     setLoading(true);
     const [top5, stor] = await Promise.all([
-      calcolaTop5Aggiornamenti(team.name),
+      calcolaTop5Aggiornamenti(team.name, STAGIONE_CORRENTE),
       getAggiornamenti(team.name, STAGIONE_CORRENTE),
     ]);
     setDati(top5);
@@ -3268,33 +3267,24 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
   }, [open, team.name]);
 
   async function handleRialzo(p) {
-    const stip = nuoviStip[p.id];
-    if (!stip || parseFloat(stip) <= Number(p.stip)) {
-      alert(`Inserisci un valore maggiore dello stipendio attuale (${Number(p.stip).toFixed(2)}M)`);
-      return;
-    }
     setSaving(p.id);
     try {
-      await applicaRinnovoRialzo(p.id, parseFloat(stip), team.name);
+      await applicaTop5Rialzo(p.id, team.name, STAGIONE_CORRENTE);
       await caricaDati();
       if (onRefresh) onRefresh();
     } catch(e) { alert(e.message); }
     finally { setSaving(null); }
   }
 
-  async function handleRibasso(p) {
-    const stip = nuoviStip[p.id];
-    if (!stip || parseFloat(stip) >= Number(p.stip)) {
-      alert(`Inserisci un valore minore dello stipendio attuale (${Number(p.stip).toFixed(2)}M)`);
-      return;
-    }
-    if (!finestraRibasso) {
+  async function handleRibasso(p, ridurre) {
+    if (ridurre && !finestraRibasso) {
       alert('La finestra per il ribasso è chiusa (01/01 → 05/01 ore 20:00)');
       return;
     }
+    if (ridurre && !window.confirm(`Ridurre ${p.nome} a Q${p.quot_reale} (stip. ${(p.quot_reale/5).toFixed(2)}M)?`)) return;
     setSaving(p.id);
     try {
-      const { deveCedere } = await applicaRinnovoRibasso(p.id, parseFloat(stip), team.name);
+      const { deveCedere } = await applicaTop5Ribasso(p.id, team.name, ridurre, STAGIONE_CORRENTE);
       if (deveCedere) alert(`⚠️ ${p.nome} (${p.anni}aa) deve essere ceduto/svincolato entro il 15/09 dello stesso anno, altrimenti penalità 5M + svincolo forzato.`);
       await caricaDati();
       if (onRefresh) onRefresh();
@@ -3305,8 +3295,6 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
   // Mostra la sezione solo a gennaio o se ci sono rinnovi pending
   if (!isGennaio && !hasDaCedere && storico.length === 0) return null;
 
-  const stipDefault = (p) => nuoviStip[p.id] ?? parseFloat((p.quot / 5).toFixed(2));
-
   return (
     <div style={{ background: "#f59e0b08", border: "1.5px solid #f59e0b25", borderRadius: 14, overflow: "hidden" }}>
       <div onClick={() => setOpen(v => !v)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", cursor: "pointer" }}>
@@ -3316,8 +3304,8 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
           </div>
           <div style={{ fontSize: 10, color: "#555", marginTop: 2 }}>
             {finestraRibasso
-              ? "⏳ FINESTRA RIBASSO APERTA — entro 05/01 ore 20:00"
-              : isGennaio ? "Gennaio — verifica i top-5 incrementi/decrementi"
+              ? "⏳ FINESTRA RIBASSO/SCELTE APERTA — entro 05/01 ore 20:00"
+              : isGennaio ? "Gennaio — verifica i top-5 incrementi/decrementi della tua rosa"
               : "Storico rinnovi stagione"}
           </div>
         </div>
@@ -3333,14 +3321,14 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
               {/* TOP 5 RIALZI — obbligatorio */}
               <div>
                 <div style={{ fontSize: 10, fontWeight: 700, color: "#f97316", letterSpacing: "0.07em", marginBottom: 8 }}>
-                  📈 TOP 5 INCREMENTI — RINNOVO OBBLIGATORIO AL RIALZO
+                  📈 TOP 5 INCREMENTI DELLA TUA ROSA — RINNOVO OBBLIGATORIO
                 </div>
                 <div style={{ fontSize: 10, color: "#555", marginBottom: 8 }}>
-                  I 5 giocatori con maggior aumento di quotazione devono ricevere un aumento di stipendio.
-                  Nuovo stipendio minimo: Q attuale / 5 = {dati.rialzi[0] ? `${(dati.rialzi[0].quot/5).toFixed(2)}M` : "—"}
+                  I 5 giocatori della tua rosa con il maggior aumento di quotazione reale ricevono automaticamente
+                  la nuova quotazione (e stipendio/clausola conseguenti). Gli U21 sono esclusi per regolamento.
                 </div>
-                {dati.rialzi.length === 0 ? (
-                  <div style={{ fontSize: 11, color: "#444", fontStyle: "italic" }}>Nessun incremento rilevato — aggiornare quot_precedente prima</div>
+                {dati.rialzi.length === 0 && dati.rialziInSospeso.length === 0 ? (
+                  <div style={{ fontSize: 11, color: "#444", fontStyle: "italic" }}>Nessun incremento rilevato per questa squadra.</div>
                 ) : dati.rialzi.map(p => {
                   const gia = storico.find(s => s.giocatore_id === p.id && s.tipo === 'rialzo');
                   return (
@@ -3351,30 +3339,42 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
                           <span style={{ fontSize: 10, color: "#888", marginLeft: 6 }}>{p.anni}aa</span>
                         </div>
                         <div style={{ fontSize: 10, color: "#888" }}>
-                          Q precedente: {p.quot_precedente} → Q attuale: {p.quot}
+                          Q {p.quot} → Q {p.quot_reale}
                           <span style={{ color: "#10b981", marginLeft: 4 }}>Δ+{p.delta}</span>
-                          · Stip attuale: {Number(p.stip).toFixed(2)}M
+                          · Nuovo stip: {(p.quot_reale/5).toFixed(2)}M
                         </div>
                       </div>
                       {gia ? (
                         <Badge color="#10b981">+{gia.nuovo_stip}M applicato</Badge>
                       ) : isAdmin ? (
-                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                          <input
-                            type="number" step="0.01" placeholder={`min ${(p.quot/5).toFixed(2)}`}
-                            value={nuoviStip[p.id] ?? ""}
-                            onChange={e => setNuoviStip(s => ({...s, [p.id]: e.target.value}))}
-                            style={{ width: 72, padding: "4px 6px", borderRadius: 6, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 11 }}
-                          />
-                          <button onClick={() => handleRialzo(p)} disabled={saving === p.id}
-                            style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "#f9731622", color: "#f97316", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                            {saving === p.id ? "..." : "↑ Applica"}
-                          </button>
-                        </div>
+                        <button onClick={() => handleRialzo(p)} disabled={saving === p.id}
+                          style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: "#f9731622", color: "#f97316", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                          {saving === p.id ? "..." : "↑ Applica"}
+                        </button>
                       ) : <Badge color="#f59e0b">Da aggiornare</Badge>}
                     </div>
                   );
                 })}
+                {dati.rialziInSospeso.length > 0 && (
+                  <div style={{ marginTop: 8, background: "#f9731608", border: "1px solid #f9731625", borderRadius: 10, padding: "10px 12px" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "#f97316", marginBottom: 6 }}>
+                      ⚖️ PAREGGIO — {dati.rialziInSospeso.length} giocatori a pari incremento per {dati.postiRialziLiberi} post{dati.postiRialziLiberi === 1 ? "o" : "i"} residuo, scegli tu chi rinnova{!finestraRibasso ? " (finestra chiusa)" : " entro 05/01 ore 20:00"}
+                    </div>
+                    {dati.rialziInSospeso.map(p => (
+                      <div key={p.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "6px 0", flexWrap: "wrap" }}>
+                        <div style={{ flex: 1, fontSize: 12, color: "#f0f0f0" }}>
+                          {p.nome} <span style={{ fontSize: 10, color: "#888" }}>{p.anni}aa · Δ+{p.delta} · Q{p.quot}→Q{p.quot_reale}</span>
+                        </div>
+                        {isAdmin && (
+                          <button onClick={() => handleRialzo(p)} disabled={saving === p.id || !finestraRibasso}
+                            style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: finestraRibasso ? "#f9731622" : "#ffffff10", color: finestraRibasso ? "#f97316" : "#555", fontSize: 10, fontWeight: 700, cursor: finestraRibasso ? "pointer" : "not-allowed" }}>
+                            {saving === p.id ? "..." : "✓ Scegli lui"}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div style={{ height: 1, background: "#ffffff10" }} />
@@ -3382,51 +3382,47 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
               {/* TOP 5 RIBASSI — facoltativo entro 05/01 */}
               <div>
                 <div style={{ fontSize: 10, fontWeight: 700, color: "#10b981", letterSpacing: "0.07em", marginBottom: 8 }}>
-                  📉 TOP 5 DECREMENTI — RIBASSO FACOLTATIVO (entro 05/01 ore 20:00)
+                  📉 TOP 5 DECREMENTI DELLA TUA ROSA — RIBASSO FACOLTATIVO (entro 05/01 ore 20:00)
                 </div>
                 <div style={{ fontSize: 10, color: "#555", marginBottom: 8 }}>
                   {finestraRibasso
-                    ? "⏳ Finestra aperta — comunica le scelte su WhatsApp entro 05/01 ore 20:00"
+                    ? "⏳ Finestra aperta. Se non riduci, la quotazione resta quella attuale."
                     : "Finestra chiusa — disponibile dal 01/01 al 05/01 ore 20:00"}
                 </div>
-                {dati.ribassi.length === 0 ? (
-                  <div style={{ fontSize: 11, color: "#444", fontStyle: "italic" }}>Nessun decremento rilevato</div>
+                {dati.ribassi.length === 0 && dati.ribassiInSospeso.length === 0 ? (
+                  <div style={{ fontSize: 11, color: "#444", fontStyle: "italic" }}>Nessun decremento rilevato per questa squadra.</div>
                 ) : dati.ribassi.map(p => {
                   const gia = storico.find(s => s.giocatore_id === p.id && s.tipo === 'ribasso');
-                  const isU21 = p.anni <= 21;
                   const isOver31 = p.anni >= 31;
                   const deveCedere = p.anni >= 22 && p.anni <= 30;
                   return (
                     <div key={p.id} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "8px 0", borderBottom: "1px solid #ffffff08", flexWrap: "wrap" }}>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: gia ? "#10b981" : isU21 ? "#555" : "#f0f0f0" }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: gia ? "#10b981" : "#f0f0f0" }}>
                           {gia ? "✅ " : ""}{p.nome}
                           <span style={{ fontSize: 10, color: "#888", marginLeft: 6 }}>{p.anni}aa</span>
-                          {isU21 && <Badge color="#555" style={{ marginLeft: 4 }}>U21 — non riducibile</Badge>}
-                          {deveCedere && !gia && <Badge color="#f59e0b">22-30aa: cedere entro 15/09</Badge>}
+                          {deveCedere && !gia && <Badge color="#f59e0b">22-30aa: cedere entro 15/09 se riduci</Badge>}
                           {isOver31 && <Badge color="#10b981">31+ — nessun obbligo</Badge>}
                         </div>
                         <div style={{ fontSize: 10, color: "#888" }}>
-                          Q: {p.quot_precedente} → {p.quot}
+                          Q attuale: {p.quot} · Q reale: {p.quot_reale}
                           <span style={{ color: "#ef4444", marginLeft: 4 }}>Δ{p.delta}</span>
-                          · Stip attuale: {Number(p.stip).toFixed(2)}M · Min ribasso: {(p.quot/5).toFixed(2)}M
+                          · Stip attuale: {Number(p.stip).toFixed(2)}M
                         </div>
                       </div>
                       {gia ? (
-                        <Badge color="#10b981">{gia.nuovo_stip}M applicato{gia.note?.includes('cedere') ? ' · da cedere' : ''}</Badge>
-                      ) : isU21 ? (
-                        <Badge color="#555">Non riducibile</Badge>
+                        gia.tipo === 'ribasso' && gia.quot_dopo !== gia.quot_prima ? (
+                          <Badge color="#10b981">{gia.nuovo_stip}M applicato{gia.note?.includes('cedere') ? ' · da cedere' : ''}</Badge>
+                        ) : <Badge color="#555">Non ridotto</Badge>
                       ) : isAdmin && finestraRibasso ? (
-                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                          <input
-                            type="number" step="0.01" placeholder={`max ${(p.quot/5).toFixed(2)}`}
-                            value={nuoviStip[p.id] ?? ""}
-                            onChange={e => setNuoviStip(s => ({...s, [p.id]: e.target.value}))}
-                            style={{ width: 72, padding: "4px 6px", borderRadius: 6, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 11 }}
-                          />
-                          <button onClick={() => handleRibasso(p)} disabled={saving === p.id}
-                            style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "#10b98122", color: "#10b981", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                            {saving === p.id ? "..." : "↓ Applica"}
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button onClick={() => handleRibasso(p, true)} disabled={saving === p.id}
+                            style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: "#10b98122", color: "#10b981", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                            {saving === p.id ? "..." : "↓ Riduci"}
+                          </button>
+                          <button onClick={() => handleRibasso(p, false)} disabled={saving === p.id}
+                            style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid #ffffff18", background: "transparent", color: "#888", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                            ✕ Non ridurre
                           </button>
                         </div>
                       ) : !finestraRibasso ? (
@@ -3435,13 +3431,41 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
                     </div>
                   );
                 })}
+                {dati.ribassiInSospeso.length > 0 && (
+                  <div style={{ marginTop: 8, background: "#10b98108", border: "1px solid #10b98125", borderRadius: 10, padding: "10px 12px" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "#10b981", marginBottom: 6 }}>
+                      ⚖️ PAREGGIO — {dati.ribassiInSospeso.length} giocatori a pari decremento per {dati.postiRibassiLiberi} post{dati.postiRibassiLiberi === 1 ? "o" : "i"} residuo, decidi tu quali eventualmente ridurre{!finestraRibasso ? " (finestra chiusa)" : " entro 05/01 ore 20:00"}
+                    </div>
+                    {dati.ribassiInSospeso.map(p => (
+                      <div key={p.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "6px 0", flexWrap: "wrap" }}>
+                        <div style={{ flex: 1, fontSize: 12, color: "#f0f0f0" }}>
+                          {p.nome} <span style={{ fontSize: 10, color: "#888" }}>{p.anni}aa · Δ{p.delta} · Q{p.quot}→Q{p.quot_reale}</span>
+                        </div>
+                        {isAdmin && (
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button onClick={() => handleRibasso(p, true)} disabled={saving === p.id || !finestraRibasso}
+                              style={{ padding: "5px 12px", borderRadius: 6, border: "none", background: finestraRibasso ? "#10b98122" : "#ffffff10", color: finestraRibasso ? "#10b981" : "#555", fontSize: 10, fontWeight: 700, cursor: finestraRibasso ? "pointer" : "not-allowed" }}>
+                              {saving === p.id ? "..." : "↓ Riduci"}
+                            </button>
+                            <button onClick={() => handleRibasso(p, false)} disabled={saving === p.id || !finestraRibasso}
+                              style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid #ffffff18", background: "transparent", color: "#888", fontSize: 10, fontWeight: 700, cursor: finestraRibasso ? "pointer" : "not-allowed" }}>
+                              ✕ Non ridurre
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Nota regolamento */}
               <div style={{ background: "#ffffff05", borderRadius: 9, padding: "8px 12px", fontSize: 10, color: "#444", lineHeight: 1.6 }}>
-                📋 <b>Art. 4.5:</b> Rialzi obbligatori — nuovo stip almeno Q/5 attuale. Ribassi facoltativi:
-                U21 non riducibili · 22-30aa riducibili ma devono cedere entro 15/09 dello stesso anno (pena 5M + svincolo forzato) ·
-                31+aa riducibili senza penalità. Comunicare le scelte su WhatsApp entro 05/01 ore 20:00.
+                📋 <b>Art. 4.5:</b> Rialzi obbligatori — 5 per squadra, quotazione/stipendio/clausola aggiornati al valore reale.
+                Ribassi facoltativi — 5 per squadra: se non riduci la quotazione resta quella attuale fino al 01/06 (o fino a un
+                trasferimento); U21 esclusi · 22-30aa riducibili ma devono cedere entro 15/09 dello stesso anno (pena 5M + svincolo
+                forzato) · 31+aa riducibili senza penalità. In caso di pareggio sul confine del 5° posto, decide il presidente
+                entro la stessa finestra del ribasso (05/01 ore 20:00).
               </div>
             </>
           ) : null}
@@ -11453,11 +11477,16 @@ function AdminControlRoomPage({ teams }) {
           {tab === 'database' && (() => {
             const TIPI = [
               { key: 'settimanale', label: '📅 Settimanale', desc: 'Stats + quot reale. Quota in rosa invariata.' },
-              { key: '01/01',       label: '🗓 01/01',        desc: 'Top 5 rialzo obbligatorio + finestra ribasso fino 05/01 20:00.' },
               { key: '01/06',       label: '☀️ 01/06',        desc: 'Aggiornamento completo quotazioni per tutti.' },
               { key: '01/08',       label: '🏖 01/08',        desc: 'Aggiornamento completo quotazioni per tutti.' },
             ];
-            const tipoColor = { settimanale: '#818cf8', '01/01': '#f59e0b', '01/06': '#10b981', '01/08': '#10b981' };
+            // Non c'è più un tipo "01/01" dedicato: a gennaio basta fare un
+            // aggiornamento Settimanale (aggiorna quot_reale per tutti) e poi
+            // ogni presidente applica i propri top-5 rialzo/ribasso dal
+            // pannello "Aggiornamento stipendi 01/01" nella tab Finanze della
+            // propria pagina — calcolato PER SQUADRA, non più con un unico
+            // top-5 di lega come faceva questo pulsante in precedenza.
+            const tipoColor = { settimanale: '#818cf8', '01/06': '#10b981', '01/08': '#10b981' };
             const c = tipoColor[dbTipo] || '#818cf8';
 
             return (
@@ -11491,20 +11520,13 @@ function AdminControlRoomPage({ teams }) {
                         const rows = XLSX.utils.sheet_to_json(ws);
                         const rosaCheck = rows.filter(r => r['FantaSquadra']).length;
                         const svinCheck = rows.filter(r => !r['FantaSquadra'] && r['QUOT.'] > 0).length;
-                        // Per 01/01: carica anteprima top5 dopo import
-                        let top5Preview = null;
-                        if (dbTipo === '01/01') {
-                          // Prima importa il file per aggiornare quot_reale, poi calcola top5
-                          await importDatabaseFanta(rows, STAGIONE_CR);
-                          top5Preview = await calcolaTop5GlobaleQuotReale();
-                        }
-                        setDbImportPreview({ rows, rosaCheck, svinCheck, nomeFile: file.name, top5Preview });
+                        setDbImportPreview({ rows, rosaCheck, svinCheck, nomeFile: file.name });
                       } catch(err) { alert('Errore: ' + err.message); }
                       finally { setDbImportBusy(false); e.target.value = ''; }
                     }}
                   />
                 </label>
-                {dbImportBusy && <span style={{ fontSize: 12, color: '#555' }}>⏳ {dbTipo === '01/01' ? 'Import + calcolo top5…' : 'Lettura file…'}</span>}
+                {dbImportBusy && <span style={{ fontSize: 12, color: '#555' }}>⏳ Lettura file…</span>}
               </div>
 
               {/* Anteprima */}
@@ -11525,55 +11547,6 @@ function AdminControlRoomPage({ teams }) {
                     ))}
                   </div>
 
-                  {/* 01/01: mostra top5 rialzo e ribasso */}
-                  {dbTipo === '01/01' && dbImportPreview.top5Preview && (
-                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                      {/* Top 5 rialzo */}
-                      <div style={{ flex: 1, minWidth: 200 }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: '#10b981', letterSpacing: '0.06em', marginBottom: 8 }}>📈 TOP 5 RIALZO OBBLIGATORIO</div>
-                        {dbImportPreview.top5Preview.rialzi.length === 0
-                          ? <div style={{ fontSize: 11, color: '#555' }}>Nessun rialzo</div>
-                          : dbImportPreview.top5Preview.rialzi.map(p => (
-                            <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: '1px solid #ffffff08' }}>
-                              <div>
-                                <span style={{ fontSize: 12, fontWeight: 700, color: '#f0f0f0' }}>{p.nome}</span>
-                                <span style={{ fontSize: 10, color: '#666', marginLeft: 6 }}>{p.squadra}</span>
-                              </div>
-                              <div style={{ textAlign: 'right' }}>
-                                <span style={{ fontSize: 11, color: '#10b981', fontWeight: 700 }}>+{p.delta} Q</span>
-                                <div style={{ fontSize: 9, color: '#555' }}>{p.quot} → {p.quot_reale}</div>
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                      {/* Top 5 ribasso */}
-                      <div style={{ flex: 1, minWidth: 200 }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b', letterSpacing: '0.06em', marginBottom: 8 }}>📉 TOP 5 RIBASSO (scelta presidenti entro 05/01 20:00)</div>
-                        {dbImportPreview.top5Preview.ribassi.length === 0
-                          ? <div style={{ fontSize: 11, color: '#555' }}>Nessun ribasso</div>
-                          : dbImportPreview.top5Preview.ribassi.map(p => {
-                            const isU21 = p.anni > 0 && p.anni <= 21;
-                            const is3031 = p.anni >= 31;
-                            return (
-                              <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: '1px solid #ffffff08' }}>
-                                <div>
-                                  <span style={{ fontSize: 12, fontWeight: 700, color: '#f0f0f0' }}>{p.nome}</span>
-                                  <span style={{ fontSize: 10, color: '#666', marginLeft: 6 }}>{p.squadra}</span>
-                                  {isU21 && <span style={{ fontSize: 9, color: '#ef4444', marginLeft: 4 }}>U21 ✗</span>}
-                                  {!isU21 && !is3031 && <span style={{ fontSize: 9, color: '#f97316', marginLeft: 4 }}>22-30 (cedere)</span>}
-                                  {is3031 && <span style={{ fontSize: 9, color: '#10b981', marginLeft: 4 }}>31+ OK</span>}
-                                </div>
-                                <div style={{ textAlign: 'right' }}>
-                                  <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700 }}>{p.delta} Q</span>
-                                  <div style={{ fontSize: 9, color: '#555' }}>{p.quot} → {p.quot_reale}</div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                      </div>
-                    </div>
-                  )}
-
                   {/* 01/06 / 01/08: nota */}
                   {(dbTipo === '01/06' || dbTipo === '01/08') && (
                     <div style={{ background: '#10b98110', border: '1px solid #10b98130', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: '#10b981' }}>
@@ -11585,29 +11558,30 @@ function AdminControlRoomPage({ teams }) {
                     disabled={dbImportBusy}
                     onClick={async () => {
                       const label = TIPI.find(t=>t.key===dbTipo)?.label || dbTipo;
-                      if (!window.confirm(`Applicare aggiornamento ${label}?\n\n${dbTipo==='01/01' ? `• Top 5 rialzo: quotazioni applicate subito\n• Top 5 ribasso: finestra aperta per i presidenti fino al 05/01 20:00` : dbTipo==='settimanale' ? 'Stats + quot_reale aggiornati. Quotazioni in rosa invariate.' : 'Tutte le quotazioni in rosa verranno aggiornate a quot_reale.'}`)) return;
+                      if (!window.confirm(`Applicare aggiornamento ${label}?\n\n${dbTipo==='settimanale' ? 'Stats + quot reale aggiornati. Quotazioni in rosa invariate.' : 'Tutte le quotazioni in rosa verranno aggiornate a quot reale.'}`)) return;
                       setDbImportBusy(true);
                       try {
                         let result;
                         if (dbTipo === 'settimanale') {
-                          result = await importDatabaseFanta(dbImportPreview.rows, STAGIONE_CR);
-                        } else if (dbTipo === '01/01') {
-                          // Import già fatto al caricamento file, ora applica i rialzi
-                          const { rialziApplicati } = await applica01Gennaio(dbImportPreview.top5Preview.rialzi, STAGIONE_CR);
-                          result = { rosaAggiornati: rialziApplicati, svinAggiornati: 0, nonTrovati: [], totale: dbImportPreview.rows.length, note: 'Top 5 rialzi applicati. Finestra ribasso aperta per i presidenti.' };
+                          const r = await importDatabaseFanta(dbImportPreview.rows, STAGIONE_CR);
+                          result = { ...r, note: `Stats aggiornate, quotazioni "in ombra" salvate in quot_reale (quotazione in rosa invariata): ${r.rosaAggiornati} in rosa, ${r.svinAggiornati} svincolati aggiornati, ${r.nuoviCreati} nuovi creati, ${r.fuoriListaSegnati} segnati fuori lista.` };
                         } else if (dbTipo === '01/06') {
-                          await importDatabaseFanta(dbImportPreview.rows, STAGIONE_CR);
+                          const rSett = await importDatabaseFanta(dbImportPreview.rows, STAGIONE_CR);
                           const { aggiornati, totale } = await applica01GiugnoAgosto(STAGIONE_CR);
-                          result = { rosaAggiornati: aggiornati, svinAggiornati: 0, nonTrovati: [], totale, note: 'Quotazioni aggiornate per tutti i giocatori in rosa.' };
+                          result = { rosaAggiornati: aggiornati, svinAggiornati: rSett.svinAggiornati, nuoviCreati: rSett.nuoviCreati, nonTrovati: rSett.nonTrovati, fuoriListaSegnati: rSett.fuoriListaSegnati, totale, note: `Quotazioni aggiornate per tutti i giocatori in rosa. ${rSett.svinAggiornati} svincolati aggiornati, ${rSett.nuoviCreati} nuovi creati, ${rSett.fuoriListaSegnati} segnati fuori lista.` };
                         } else {
                           // 01/08: full import con creazione nuovi giocatori
                           const r = await importa01Agosto(dbImportPreview.rows, STAGIONE_CR);
                           result = { rosaAggiornati: r.rosaAggiornati, svinAggiornati: r.svinAggiornati, nuoviCreati: r.nuoviCreati, nonTrovati: r.nonTrovati, fuoriListaSegnati: r.fuoriListaSegnati, totale: r.totale, note: `Aggiornamento completo: ${r.rosaAggiornati} in rosa, ${r.svinAggiornati} svincolati aggiornati, ${r.nuoviCreati} nuovi creati, ${r.fuoriListaSegnati} segnati fuori lista.` };
                         }
-                        // Ogni ramo sopra scrive su "listone" e/o "svincolati": invalida
-                        // le cache così Listone e Svincolati mostrano subito i dati nuovi.
+                        // Ogni ramo sopra scrive su "listone", "svincolati" e (tranne
+                        // "settimanale" per quot/stip) anche "rosa": invalida tutte e tre
+                        // le cache, altrimenti la pagina rosa di una squadra già visitata
+                        // di recente continua a mostrare i valori vecchi fino al timeout
+                        // della cache (10 min) anche se il database è già aggiornato.
                         cacheInvalidate('listone');
                         cacheInvalidate('svincolati_');
+                        cacheInvalidate('rosa_');
                         setDbImportDone(result);
                         setDbImportPreview(null);
                       } catch(err) { alert('Errore: ' + err.message); }
