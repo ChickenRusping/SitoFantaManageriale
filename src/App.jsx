@@ -22,6 +22,15 @@ function calcolaBiennioCorrente() {
 const STAGIONE_CORRENTE = calcolaStaginoCorrente();
 const BIENNIO_CORRENTE  = calcolaBiennioCorrente();
 
+// Confronto "tollerante" tra nomi squadra: ignora maiuscole/minuscole e spazi/
+// punteggiatura. Serve perché il campo "FantaSquadra" importato dal listone
+// Excel a volte non è scritto carattere per carattere come il nome canonico
+// della squadra (es. "Finocchiona A C" nel file vs "Finocchiona AC" in app):
+// senza questa tolleranza il match esatto fallisce silenziosamente e la
+// squadra proprietaria (quindi anche lo stemma) non viene trovata.
+function normNomeSquadra(s) { return (s || "").toString().toLowerCase().replace(/[^a-z0-9]/g, ""); }
+function stessaSquadra(a, b) { const na = normNomeSquadra(a), nb = normNomeSquadra(b); return !!na && !!nb && na === nb; }
+
 // ─── CACHE IN MEMORIA ────────────────────────────────────────────────────────
 // Evita di ricaricare gli stessi dati ogni volta che si naviga tra le pagine.
 // I dati vengono invalidati da realtime/azioni locali; TTL lungo come rete di sicurezza (default 10 minuti).
@@ -2089,6 +2098,7 @@ function checkRosaCompliance(players) {
 function RosaVivaiTab({ team, isAdmin, mySquadra }) {
   const teamName = team.name;
   const navigate = useNavigate();
+  const location = useLocation();
   const canEdit = isAdmin || mySquadra === teamName;
   const isOwn = mySquadra === teamName;
 
@@ -2204,11 +2214,8 @@ Passa all'anno 3.`))return;
   }
 
   // ── apre popup: su desktop onClick, su mobile onClick (stesso gesto tap) ──
-  function openPopup(e, player, mode) {
-    e.preventDefault();
-    e.stopPropagation();
+  function openPopupAtRect(rect, player, mode) {
     setTipoSvincolo('ordinario'); setEstero(false); setOfferMode('cessione');
-    const rect = e.currentTarget.getBoundingClientRect();
     const popupW = Math.min(310, window.innerWidth - 16);
     const popupEstH = 420;
     const x = Math.max(8, Math.min(rect.left, window.innerWidth - popupW - 8));
@@ -2217,6 +2224,28 @@ Passa all'anno 3.`))return;
     const y = belowY + popupEstH < window.innerHeight ? belowY : Math.max(8, aboveY);
     setPopup({ player, mode, x, y, w: popupW });
   }
+  function openPopup(e, player, mode) {
+    e.preventDefault();
+    e.stopPropagation();
+    openPopupAtRect(e.currentTarget.getBoundingClientRect(), player, mode);
+  }
+
+  // ── apertura automatica del popup quando si arriva da un link "?player=Nome"
+  // (es. click su un giocatore dal Listone): stessa identica azione di un tap
+  // sulla riga del giocatore in questa pagina.
+  useEffect(() => {
+    if (loading) return;
+    const wanted = new URLSearchParams(location.search).get('player');
+    if (!wanted) return;
+    const p = players.find(pl => pl.nome === wanted) || vivaio.find(pl => pl.nome === wanted);
+    if (p) {
+      const rect = { left: Math.max(8, window.innerWidth / 2 - 155), bottom: Math.max(60, window.innerHeight / 3), top: Math.max(60, window.innerHeight / 3) };
+      openPopupAtRect(rect, p, isOwn ? 'own' : 'other');
+    }
+    // Rimuove il parametro dall'URL per non riaprire il popup ad ogni refresh dei dati.
+    navigate(location.pathname, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   async function handleDemoteToVivaio(player) {
     if (!window.confirm(`Spostare ${player.nome} al Vivaio?\n\nRequisiti: Under-23, Q≤3, 0 presenze.`)) return;
@@ -6052,7 +6081,15 @@ const URGENZA_COLORS_MERCATO = {
 function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMercato }) {
   const location = useLocation();
   const [tab, setTab] = useState("trattative");
-  const [mercatoSection, setMercatoSection] = useState("mercato");
+  const [mercatoSection, setMercatoSection] = useState(() => new URLSearchParams(location.search).get("section") || "mercato");
+  // Se si arriva da un link tipo "/mercato?section=svincolati" mentre la pagina
+  // Mercato è già montata (es. click su un giocatore dal Listone), la sezione
+  // va sincronizzata anche dopo il mount, non solo allo stato iniziale.
+  useEffect(() => {
+    const s = new URLSearchParams(location.search).get("section");
+    if (s && s !== mercatoSection) setMercatoSection(s);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
   const [trattative, setTrattative] = useState([]);
   const [aste, setAste] = useState([]);
   const [asteSvinc, setAsteSvinc] = useState([]);
@@ -6759,7 +6796,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       </div>
 
       {mercatoSection === "svincolati" && <SvincolatiPage profile={profile} isAdmin={isAdmin} teams={teams} />}
-      {mercatoSection === "listone" && <ListonePage teams={teams} />}
+      {mercatoSection === "listone" && <ListonePage teams={teams} profile={profile} />}
       {mercatoSection === "mercato" && <>
 
       {/* Banner notifiche offerte in attesa */}
@@ -8111,7 +8148,9 @@ function SvincolatiTable({ filtered, chiamateAttive, mySquadra, isAdmin, setShow
 
 // ── LISTONE: tutti i giocatori del database (svincolati + rose), con statistiche,
 // filtri e ordinamento — sola lettura, per consultazione/scouting.
-function ListonePage({ teams }) {
+function ListonePage({ teams, profile }) {
+  const navigate = useNavigate();
+  const mySquadra = profile?.squadra;
   const [listone, setListone] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -8170,6 +8209,34 @@ function ListonePage({ teams }) {
     { key: "nome", label: "Nome (A-Z)" },
   ];
 
+  // Trova la squadra proprietaria del giocatore in modo tollerante a spazi/maiuscole
+  // (il campo "FantaSquadra" nel listone Excel non sempre coincide carattere per
+  // carattere col nome canonico della squadra — vedi stessaSquadra()).
+  function trovaSquadra(p) {
+    if (!p.fanta_squadra) return null;
+    return teams?.find(t => stessaSquadra(t.name, p.fanta_squadra)) || null;
+  }
+
+  // Click su un giocatore: apre lo stesso identico menù azioni che si otterrebbe
+  // cliccandolo nella sua pagina di origine (rosa propria/altrui, o svincolati).
+  function apriAzioniGiocatore(p) {
+    const team = trovaSquadra(p);
+    if (team) {
+      navigate(`/presidente/${team.id}/rosa?player=${encodeURIComponent(p.nome)}`);
+    } else {
+      navigate(`/mercato?section=svincolati&player=${encodeURIComponent(p.nome)}`);
+    }
+  }
+
+  // Click sul nome della squadra proprietaria: apre la rosa di quella squadra
+  // (o l'elenco svincolati se il giocatore è libero).
+  function apriSquadraProprietaria(p, e) {
+    e.stopPropagation();
+    const team = trovaSquadra(p);
+    if (team) navigate(`/presidente/${team.id}/rosa`);
+    else navigate(`/mercato?section=svincolati`);
+  }
+
   if (loading) return <div style={{ fontSize: 13, color: "#666", padding: 20 }}>Caricamento listone...</div>;
 
   return (
@@ -8226,16 +8293,22 @@ function ListonePage({ teams }) {
           </thead>
           <tbody>
             {filtrati.slice(0, visibleCount).map(p => {
-              const team = p.fanta_squadra ? teams?.find(t => t.name === p.fanta_squadra) : null;
+              const team = trovaSquadra(p);
+              const mia = team && stessaSquadra(team.name, mySquadra);
               return (
-                <tr key={p.id || p.nome} style={{ borderBottom: "1px solid #ffffff08", opacity: p.fuori_lista ? 0.5 : 1 }}>
+                <tr key={p.id || p.nome}
+                  onClick={() => apriAzioniGiocatore(p)}
+                  title={mia ? "Gestisci il tuo giocatore" : team ? "Vedi la rosa e fai un'offerta" : "Vai agli svincolati per chiamarlo"}
+                  style={{ borderBottom: "1px solid #ffffff08", opacity: p.fuori_lista ? 0.5 : 1, cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                   <td style={{ padding: "7px 10px", fontWeight: 700, color: "#ddd", whiteSpace: "nowrap" }}>{p.nome}{p.fuori_lista && <span style={{ marginLeft: 5, fontSize: 9, color: "#ef4444" }}>FUORI</span>}</td>
                   <td style={{ padding: "7px 10px", color: "#aaa" }}>{p.ruolo || "—"}</td>
                   <td style={{ padding: "7px 10px", color: "#aaa" }}>{p.squadra_serie_a || "—"}</td>
-                  <td style={{ padding: "7px 10px" }}>
+                  <td style={{ padding: "7px 10px" }} onClick={e => apriSquadraProprietaria(p, e)}>
                     {p.fanta_squadra
-                      ? <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#818cf8" }}>{team && <TeamAvatar team={team} size={16} />}{p.fanta_squadra}</span>
-                      : <span style={{ color: "#10b981" }}>Svincolato</span>}
+                      ? <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#818cf8", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#818cf855" }}>{team && <TeamAvatar team={team} size={16} />}{p.fanta_squadra}</span>
+                      : <span style={{ color: "#10b981", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#10b98155" }}>Svincolato</span>}
                   </td>
                   <td style={{ padding: "7px 10px", color: "#f59e0b", fontWeight: 700 }}>{p.quot ?? "—"}</td>
                   <td style={{ padding: "7px 10px", color: "#888" }}>{p.salario ?? "—"}</td>
@@ -8269,6 +8342,8 @@ function ListonePage({ teams }) {
 
 function SvincolatiPage({ profile, isAdmin, teams }) {
   const vivaioAperto = isVivaioAcquistiAperti();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [search, setSearch]           = useState("");
   const [ruoloFilter, setRuoloFilter] = useState("Tutti");
   const [soloVivaio, setSoloVivaio]   = useState(false);
@@ -8303,6 +8378,18 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
     setInvestimenti(invData || []);
     setLoading(false);
   }, [mySquadra]);
+
+  // Apertura automatica del form "Chiama" quando si arriva da un link
+  // "?player=Nome" (es. click su uno svincolato dal Listone).
+  useEffect(() => {
+    if (loading) return;
+    const wanted = new URLSearchParams(location.search).get('player');
+    if (!wanted) return;
+    const p = svincolatiDB.find(sv => sv.nome === wanted);
+    if (p) setShowCallForm(p);
+    navigate(location.pathname, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   useEffect(() => {
     loadAll();
