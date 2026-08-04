@@ -173,10 +173,10 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, completaUnicoInteressato, creaAstaDaChiamate, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaRinnovoRialzo, applicaRinnovoRibasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
-  getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento,
-  getBonusTrattativa, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
+  getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
+  getBonusTrattativa, getBonusTrattativeBatch, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
   getNotizie, insertNotizia, updateNotizia, deleteNotizia, togglePinnata, toggleReaction, uploadNotiziaImmagine, subscribeNotizie,
   getCommenti, insertCommento, updateCommento, deleteCommento, subscribeCommenti,
   calcolaStatoTrattativaMercato, applicaPenalitaRitardoAuto,
@@ -325,6 +325,52 @@ function DaCedereBadge({ compact = false }) {
     >
       DA CEDERE 15/09
     </span>
+  );
+}
+
+// Mini-grafico del trend di quotazione di un giocatore (storico_quotazioni),
+// pensato per stare dentro un popup/modale già esistente senza appesantirlo:
+// niente libreria esterna, solo un piccolo SVG. Compare in tutti i menù
+// giocatore (rosa propria/altrui, chiamata svincolati).
+function GraficoQuotazione({ nome }) {
+  const [storico, setStorico] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setStorico(null);
+    if (!nome) return;
+    getStoricoQuotazioni(nome).then(d => { if (!cancelled) setStorico(d || []); });
+    return () => { cancelled = true; };
+  }, [nome]);
+
+  if (!nome || storico === null) return null;
+  if (storico.length < 2) return null; // con 0-1 punti non c'è un trend da mostrare
+
+  const W = 280, H = 56, PAD = 4;
+  const quots = storico.map(p => Number(p.quot));
+  const min = Math.min(...quots), max = Math.max(...quots);
+  const range = max - min || 1;
+  const stepX = storico.length > 1 ? (W - PAD * 2) / (storico.length - 1) : 0;
+  const pts = storico.map((p, i) => [
+    PAD + i * stepX,
+    H - PAD - ((Number(p.quot) - min) / range) * (H - PAD * 2),
+  ]);
+  const trend = quots[quots.length - 1] - quots[0];
+  const color = trend > 0 ? "#10b981" : trend < 0 ? "#ef4444" : "#888";
+
+  return (
+    <div style={{ marginTop: 4, marginBottom: 4, padding: "8px 10px", background: "#ffffff05", border: "1px solid #ffffff10", borderRadius: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+        <span style={{ fontSize: 9, color: "#666", fontWeight: 700, letterSpacing: "0.06em" }}>📈 TREND QUOTAZIONE</span>
+        <span style={{ fontSize: 11, fontWeight: 800, color }}>
+          {trend > 0 ? "+" : ""}{trend.toFixed(0)} · Q{quots[0]} → Q{quots[quots.length - 1]}
+        </span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="none">
+        <polyline points={pts.map(([x, y]) => `${x},${y}`).join(" ")} fill="none" stroke={color} strokeWidth="2" />
+        {pts.map(([x, y], i) => <circle key={i} cx={x} cy={y} r="2.2" fill={color} />)}
+      </svg>
+    </div>
   );
 }
 
@@ -2196,6 +2242,7 @@ ${pe>0?`⚠️ Penale extra +${pe}M
       sendTelegramNotification('svincolo', { giocatore: player.nome, quotazione: player.quot, squadra: teamName, tipo: tipoSvincolo });
       cacheInvalidate('rosa_' + teamName);
       cacheInvalidate('vivaio_' + teamName);
+      cacheInvalidate('svincolati_'); // il giocatore appena svincolato deve comparire subito tra gli svincolati
       setPopup(null); setTipoSvincolo('ordinario'); setEstero(false);
       await loadAll();
     } catch(e){alert(`Errore: ${e.message}`);}
@@ -2430,6 +2477,8 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
             </div>
             <button onClick={()=>setPopup(null)} style={{ background:"none",border:"none",color:"#555",fontSize:18,cursor:"pointer",padding:"0 4px",lineHeight:1 }}>✕</button>
           </div>
+
+          <GraficoQuotazione nome={popup.player.nome} />
 
           {popup.mode==='own'?(
             <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
@@ -5681,7 +5730,7 @@ function ClubIdentityRight({ team, clubIdentity, isAdmin, mySquadra, onRefresh }
     finally { setSaving(false); }
   }
 
-  const TEAMS_LIST = ["Alcool Campi","AK Toio","Agnus Dei FC","Balillareal","Borjcellona","Wehrmacht FC","Finocchiona AC","Shalpe 104"];
+  const TEAMS_LIST = TEAMS.map(t => t.name);
   const altreSquadre = TEAMS_LIST.filter(n => n !== team.name);
 
   // Rivale e Gemellato: bloccati se lock globale attivo OPPURE già scelti — solo admin può sempre modificare
@@ -6179,10 +6228,11 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       getAsteSvincolati(),
     ]);
     const trattativeList = t || [];
-    const bonusEntries = await Promise.all(
-      trattativeList.map(async tr => [tr.id, await getBonusTrattativa(tr.id)])
-    );
-    setBonusByTrattativa(Object.fromEntries(bonusEntries));
+    // Una sola query per i bonus di TUTTE le trattative invece di N query (una
+    // per trattativa): questo loadAll riparte ad ogni evento realtime su
+    // trattative/aste/aste_svincolati, quindi con la vecchia versione ogni
+    // azione di un qualsiasi utente moltiplicava il carico su tutti i client.
+    setBonusByTrattativa(await getBonusTrattativeBatch(trattativeList.map(tr => tr.id)));
     setTrattative(trattativeList);
     setAste(a || []);
     setAsteSvinc(as || []);
@@ -6220,24 +6270,12 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
           .map(t => t.name)
           .filter(name => name && name !== squadraMittente);
 
-        const rose = await Promise.all(
-          squadreCercabili.map(async squadra => {
-            try {
-              const data = await getRosa(squadra);
-              return (data || [])
-                .filter(p => !p.in_vivaio)
-                .filter(p => String(p.nome || '').toLowerCase().includes(q))
-                .map(p => ({ ...p, squadra }));
-            } catch {
-              return [];
-            }
-          })
-        );
-
+        // Una sola query su tutte le squadre invece di una per squadra (7 query
+        // ad ogni digitazione con la vecchia versione, anche con debounce).
+        const trovati = await cercaGiocatoriInRose(q, squadreCercabili);
         if (cancelled) return;
 
-        const results = rose
-          .flat()
+        const results = trovati
           .sort((a, b) => {
             const an = String(a.nome || '').toLowerCase();
             const bn = String(b.nome || '').toLowerCase();
@@ -6277,7 +6315,11 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   // prezzo minimo (Q/2): l'asta scade da sola e il giocatore resta normalmente
   // nella rosa di chi l'aveva indetta (non viene mai spostato, quindi non serve
   // alcun trasferimento — solo chiudere il record dell'asta).
+  // Il controllo scrive sul DB: lo esegue solo un client admin, non ognuno dei
+  // presidenti collegati contemporaneamente (altrimenti N client tentano la
+  // stessa scrittura in parallelo ad ogni scadenza, sprecando query per tutti).
   useEffect(() => {
+    if (!isAdmin) return;
     async function checkFloorDiscesa() {
       const attive = aste.filter(a => a.tipo_asta === 'discesa' && a.stato === 'attiva');
       let changed = false;
@@ -8148,6 +8190,73 @@ function SvincolatiTable({ filtered, chiamateAttive, mySquadra, isAdmin, setShow
 
 // ── LISTONE: tutti i giocatori del database (svincolati + rose), con statistiche,
 // filtri e ordinamento — sola lettura, per consultazione/scouting.
+// Sezione admin (Control Room → Sistema → Conflitti): mostra le righe del
+// listone la cui FantaSquadra non corrisponde a nessuna delle squadre
+// canoniche — il tipo di problema silenzioso che ha causato il caso
+// Castro/Finocchiona (nome scritto in modo leggermente diverso tra l'Excel e
+// l'app, quindi né lo stemma né l'aggiornamento rosa scattavano). Calcolato
+// live ad ogni apertura della pagina, non serve nessuna tabella nuova.
+function ConflittiListonePage({ teams }) {
+  const [conflitti, setConflitti] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const nomiCanonici = (teams || []).map(t => t.name);
+    const data = await getConflittiListone(nomiCanonici);
+    setConflitti(data);
+    setLoading(false);
+  }, [teams]);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) return <div style={{ fontSize: 13, color: '#666', padding: 20 }}>Controllo in corso...</div>;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>⚠️ CONFLITTI LISTONE</div>
+        <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+          Giocatori con una FantaSquadra nel listone che non corrisponde a nessuna delle 8 squadre — quasi sempre un nome scritto in modo diverso tra l'Excel e l'app (es. spazi, abbreviazioni). Finché non correggi il nome, quel giocatore non compare correttamente nella rosa della sua squadra.
+        </div>
+      </div>
+
+      <button onClick={load} disabled={loading}
+        style={{ padding: '7px 14px', borderRadius: 9, border: '1px solid #f59e0b40', background: '#f59e0b12', color: '#f59e0b', fontSize: 12, fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start' }}>
+        🔄 Ricontrolla
+      </button>
+
+      {conflitti.length === 0 ? (
+        <div style={{ background: '#10b98110', border: '1px solid #10b98130', borderRadius: 10, padding: '14px 16px', fontSize: 13, color: '#10b981' }}>
+          ✅ Nessun conflitto trovato: tutte le FantaSquadre nel listone corrispondono a una squadra canonica.
+        </div>
+      ) : (
+        <div style={{ overflowX: 'auto', border: '1px solid #ffffff10', borderRadius: 12 }}>
+          <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: '#ffffff06' }}>
+                {['Giocatore', 'Sq. Serie A', 'Q', 'FantaSquadra nel file'].map(h => (
+                  <th key={h} style={{ textAlign: 'left', padding: '8px 10px', color: '#666', borderBottom: '1px solid #ffffff12', fontWeight: 700 }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {conflitti.map(r => (
+                <tr key={r.nome} style={{ borderBottom: '1px solid #ffffff08' }}>
+                  <td style={{ padding: '7px 10px', fontWeight: 700, color: '#f0f0f0' }}>{r.nome}</td>
+                  <td style={{ padding: '7px 10px', color: '#aaa' }}>{r.squadra_serie_a || '—'}</td>
+                  <td style={{ padding: '7px 10px', color: '#f59e0b', fontWeight: 700 }}>{r.quot ?? '—'}</td>
+                  <td style={{ padding: '7px 10px', color: '#ef4444', fontWeight: 700 }}>"{r.fanta_squadra}"</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ListonePage({ teams, profile }) {
   const navigate = useNavigate();
   const mySquadra = profile?.squadra;
@@ -8165,7 +8274,10 @@ function ListonePage({ teams, profile }) {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const data = await getListone();
+      // Il listone (~650 righe) non cambia se non dopo un import in Control Room:
+      // cachedFetch evita di riscaricarlo per intero ogni volta che si torna su
+      // questa pagina (invalidato esplicitamente dopo ogni import riuscito).
+      const data = await cachedFetch('listone', getListone, 600000);
       setListone(data || []);
       setLoading(false);
     })();
@@ -8368,8 +8480,13 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
   }, []);
 
   const loadAll = useCallback(async () => {
+    // chiamate/aste sono realtime (loadAll riparte ad ogni evento): NON vanno
+    // messe in cache o l'aggiornamento in tempo reale smetterebbe di funzionare.
+    // svincolati invece cambia raramente (solo dopo uno svincolo/import/asta),
+    // quindi qui la cache evita di riscaricare l'intera tabella ad ogni singolo
+    // evento realtime su chiamate — che è di gran lunga il caso più frequente.
     const [chiamateData, svincolatiData, asteData, invData] = await Promise.all([
-      getChiamate(), getSvincolatiDB(STAGIONE_CORRENTE), getAsteSvincolati(),
+      getChiamate(), cachedFetch('svincolati_' + STAGIONE_CORRENTE, () => getSvincolatiDB(STAGIONE_CORRENTE), 600000), getAsteSvincolati(),
       mySquadra ? getInvestimenti(mySquadra) : Promise.resolve([]),
     ]);
     if (chiamateData) setChiamate(chiamateData);
@@ -8466,6 +8583,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws);
       const n = await importSvincolatiDaArray(rows, STAGIONE_CORRENTE);
+      cacheInvalidate('svincolati_');
       alert(`✅ Importati ${n} svincolati`);
       await loadAll();
     } catch(err) { alert("Errore: " + err.message); }
@@ -8483,6 +8601,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
       quot: Number(editSvincolato.quot||0),
       fuori_lista: Boolean(editSvincolato.fuori_lista),
     });
+    cacheInvalidate('svincolati_');
     setEditSvincolato(null);
     await loadAll();
   }
@@ -8775,6 +8894,9 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
               <button onClick={() => { setShowCallForm(null); setCallVivaio(false); }}
                 style={{ background: "none", border: "none", color: "#555", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: "0 4px" }}>✕</button>
             </div>
+
+            <GraficoQuotazione nome={showCallForm.nome} />
+
             {/* Squadra */}
             <div>
               <div style={{ fontSize: 10, color: "#555", marginBottom: 4 }}>SQUADRA INTERESSATA</div>
@@ -10251,6 +10373,7 @@ function AdminControlRoomPage({ teams }) {
     { key: 'svincoli_cr',  icon: '✂️', label: 'Svincoli' },
     { key: 'rivalita',     icon: '⚔️', label: 'Rivalità' },
     { key: 'database',     icon: '📊', label: 'Database' },
+    { key: 'conflitti',    icon: '⚠️', label: 'Conflitti' },
     { key: 'premi',        icon: '🏆', label: 'Premi' },
     { key: 'contratti',    icon: '📋', label: 'Contratti' },
     { key: 'differiti',    icon: '⏳', label: 'Differiti' },
@@ -10267,7 +10390,7 @@ function AdminControlRoomPage({ teams }) {
     { key: 'finanze',  icon: '💰', label: 'Finanze',    tabKeys: ['quote', 'tasse', 'stipendi', 'stadio', 'fpf', 'bilancio_neg', 'premi'] },
     { key: 'mercatogrp', icon: '⚽', label: 'Mercato',   tabKeys: ['mercato', 'aste', 'svincoli_cr', 'vivaio_admin', 'prestiti_admin', 'differiti'] },
     { key: 'lega',     icon: '🏛', label: 'Lega',       tabKeys: ['investimenti_admin', 'obiettivi_admin', 'rivalita', 'contratti', 'stagione'] },
-    { key: 'sistema',  icon: '⚙️', label: 'Sistema',    tabKeys: ['database', 'telegram', 'audit', 'utenti'] },
+    { key: 'sistema',  icon: '⚙️', label: 'Sistema',    tabKeys: ['database', 'conflitti', 'telegram', 'audit', 'utenti'] },
   ];
   const groupOfTab = (tk) => tabGroups.find(g => g.tabKeys.includes(tk))?.key || 'overview';
   const [activeGroup, setActiveGroup] = useState(() => groupOfTab(tab));
@@ -11341,8 +11464,7 @@ function AdminControlRoomPage({ teams }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {(teams || []).map(t => {
                     const ci = rivalitaData.find(r => r.squadra === t.name) || {};
-                    const TEAMS_LIST_CR = ["Alcool Campi","AK Toio","Agnus Dei FC","Balillareal","Borjcellona","Wehrmacht FC","Finocchiona AC","Shalpe 104"];
-                    const altre = TEAMS_LIST_CR.filter(n => n !== t.name);
+                    const altre = TEAMS.map(x => x.name).filter(n => n !== t.name);
                     const isRivBusy = rivalitaBusy === `riv_${t.name}`;
                     const isGemBusy = rivalitaBusy === `gem_${t.name}`;
                     const selStyle = { padding: '4px 8px', borderRadius: 6, border: '1px solid #ffffff15', background: '#0d0f14', color: '#f0f0f0', fontSize: 11 };
@@ -11549,6 +11671,10 @@ function AdminControlRoomPage({ teams }) {
                           const r = await importa01Agosto(dbImportPreview.rows, STAGIONE_CR);
                           result = { rosaAggiornati: r.rosaAggiornati, svinAggiornati: r.svinAggiornati, nuoviCreati: r.nuoviCreati, nonTrovati: r.nonTrovati, fuoriListaSegnati: r.fuoriListaSegnati, totale: r.totale, note: `Aggiornamento completo: ${r.rosaAggiornati} in rosa, ${r.svinAggiornati} svincolati aggiornati, ${r.nuoviCreati} nuovi creati, ${r.fuoriListaSegnati} segnati fuori lista.` };
                         }
+                        // Ogni ramo sopra scrive su "listone" e/o "svincolati": invalida
+                        // le cache così Listone e Svincolati mostrano subito i dati nuovi.
+                        cacheInvalidate('listone');
+                        cacheInvalidate('svincolati_');
                         setDbImportDone(result);
                         setDbImportPreview(null);
                       } catch(err) { alert('Errore: ' + err.message); }
@@ -11593,6 +11719,9 @@ function AdminControlRoomPage({ teams }) {
             </div>
             );
           })()}
+
+          {/* ── CONFLITTI LISTONE ── */}
+          {tab === 'conflitti' && <ConflittiListonePage teams={teams} />}
 
           {/* ── PREMI ── */}
           {tab === 'premi' && (
