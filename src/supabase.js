@@ -5961,6 +5961,7 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
       const squadra_serie_a = (r['Sq.'] || '').trim() || null;
       const anni = Number(r['Under'] || r['Età'] || 0) || null;
       const ruolo = (r['R.MANTRA'] || '').trim() || null;
+      const fuoriListaRiga = Boolean((r['Fuori lista'] || '').toString().trim());
       const stip = parseFloat((quot / 5).toFixed(2));
       const clausola = parseFloat((quot * 1.75).toFixed(2));
       const statsRosa = {
@@ -5983,7 +5984,10 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
         const p = rosaMap[nomeLower];
         const updatePayload = {
           quot_reale: quot, squadra_serie_a, anni, ruolo,
-          fuori_lista: false, // torna in lista se prima era stato segnato fuori lista
+          // Rispetta l'asterisco "Fuori lista" del file: se il file lo marca
+          // fuori lista lo segna tale, altrimenti lo rimette in lista (utile
+          // se era stato marcato in un import precedente e ora è rientrato).
+          fuori_lista: fuoriListaRiga,
           ...statsRosa,
         };
         if (aggiornaQuotazioneRosa) {
@@ -5999,6 +6003,7 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
       } else if (svinMap[nomeLower]) {
         await supabase.from('svincolati').update({
           quot, stip, clausola, ruolo, squadra_serie_a: squadra_serie_a || null,
+          fuori_lista: fuoriListaRiga,
           ...statsSvin,
         }).eq('id', svinMap[nomeLower].id);
         svinAggiornati++;
@@ -6011,6 +6016,7 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
           await upsertSvincolatoSafe({
             nome, quot, stip, clausola, ruolo,
             squadra_serie_a: squadra_serie_a || null,
+            fuori_lista: fuoriListaRiga,
             ...statsSvin,
           }, stagione);
           nuoviCreati++;
