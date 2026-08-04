@@ -1770,33 +1770,13 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
 }
 
 /* ─── DEADLINE PAGE ─────────────────────────────────────────────────────────── */
-function DeadlinePage({ isAdmin }) {
+function DeadlinePage() {
   const [now, setNow] = useState(new Date());
-  const [applicandoIscrizione, setApplicandoIscrizione] = useState(false);
-  const [iscrizioneApplicata, setIscrizioneApplicata] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 600000);
     return () => clearInterval(t);
   }, []);
-
-  // 31/07 23:59 — iscrizione campionato automatica
-  const y = now.getFullYear();
-  const scadenzaIscrizione = new Date(y, 6, 31, 23, 59, 0);
-  const iscrizioneScaduta = now >= scadenzaIscrizione;
-
-  async function handleAutoIscrizione() {
-    if (!window.confirm("Applicare la quota iscrizione campionato (−30M) a TUTTE le squadre?\n\nQuesta azione è irreversibile e registra un movimento per ognuna.")) return;
-    setApplicandoIscrizione(true);
-    try {
-      const results = await applicaIscrizioneATutti();
-      const applicati = results.filter(r => r.ok).length;
-      const saltati   = results.filter(r => r.skip).length;
-      setIscrizioneApplicata(true);
-      alert(`✅ Fatto!\n${applicati} squadre aggiornate · ${saltati} già pagate`);
-    } catch(e) { alert(`Errore: ${e.message}`); }
-    finally { setApplicandoIscrizione(false); }
-  }
 
   function parseDate(str) {
     // Formato "DD MMM YYYY" o "DD/MM/YYYY"
@@ -1951,25 +1931,6 @@ function DeadlinePage({ isAdmin }) {
             </div>
             {prossima.days > 0 && <div style={{ fontSize: 10, color: "#666" }}>giorni</div>}
           </div>
-        </div>
-      )}
-
-      {/* Banner auto-iscrizione 31/07 */}
-      {isAdmin && iscrizioneScaduta && !iscrizioneApplicata && (
-        <div style={{ background: "#f9731615", border: "1.5px solid #f9731640", borderRadius: 14, padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#f97316", letterSpacing: "0.08em", marginBottom: 4 }}>⚡ AZIONE AUTOMATICA — ISCRIZIONE CAMPIONATO</div>
-            <div style={{ fontSize: 12, color: "#ccc" }}>La deadline 31/07 è scaduta — applicare la quota iscrizione (−30M) a tutte le squadre</div>
-          </div>
-          <button onClick={handleAutoIscrizione} disabled={applicandoIscrizione}
-            style={{ padding: "9px 18px", borderRadius: 10, border: "none", background: "#f97316", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-            {applicandoIscrizione ? "Applicazione..." : "⚡ Applica a tutte (−30M)"}
-          </button>
-        </div>
-      )}
-      {iscrizioneApplicata && (
-        <div style={{ background: "#10b98115", border: "1px solid #10b98133", borderRadius: 10, padding: "10px 16px", fontSize: 12, color: "#10b981" }}>
-          ✅ Iscrizione campionato applicata a tutte le squadre questa sessione
         </div>
       )}
 
