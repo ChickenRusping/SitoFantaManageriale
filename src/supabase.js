@@ -1860,30 +1860,31 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
   // IMPORTANTE: controlliamo l'errore. Se questa scrittura fallisce NON dobbiamo
   // procedere a cancellare il giocatore dalla rosa, altrimenti il giocatore
   // sparisce del tutto (né in rosa, né tra gli svincolati).
-  const { error: svincErr } = await supabase.from('svincolati').upsert({
-    nome: player.nome,
-    ruolo: player.ruolo,
-    anni: player.anni || 0,
-    quot: player.quot || 0,
-    stip: player.stip || 0,
-    clausola: parseFloat(((player.quot || 0) * 1.75).toFixed(2)),
-    fuori_lista: false,
-    squadra_serie_a: player.squadra_serie_a || null,
-    partite: player.partite || 0,
-    media_voto: player.media_voto || 0,
-    media_fantavoto: player.media_fantavoto || 0,
-    gol: player.gol || 0,
-    assist: player.assist || 0,
-    ammonizioni: player.ammonizioni || 0,
-    espulsioni: player.espulsioni || 0,
-    autogol: player.autogol || 0,
-    rigori_parati: player.rigori_parati || 0,
-    rigori_segnati: player.rigori_segnati || 0,
-    rigori_sbagliati: player.rigori_sbagliati || 0,
-    gol_subiti: player.gol_subiti || 0,
-    stagione: stagioneDaData(oggi),
-    updated_at: new Date().toISOString(),
-  }, { onConflict: 'nome,stagione' });
+  let svincErr = null;
+  try {
+    await upsertSvincolatoSafe({
+      nome: player.nome,
+      ruolo: player.ruolo,
+      anni: player.anni || 0,
+      quot: player.quot || 0,
+      stip: player.stip || 0,
+      clausola: parseFloat(((player.quot || 0) * 1.75).toFixed(2)),
+      fuori_lista: false,
+      squadra_serie_a: player.squadra_serie_a || null,
+      partite: player.partite || 0,
+      media_voto: player.media_voto || 0,
+      media_fantavoto: player.media_fantavoto || 0,
+      gol: player.gol || 0,
+      assist: player.assist || 0,
+      ammonizioni: player.ammonizioni || 0,
+      espulsioni: player.espulsioni || 0,
+      autogol: player.autogol || 0,
+      rigori_parati: player.rigori_parati || 0,
+      rigori_segnati: player.rigori_segnati || 0,
+      rigori_sbagliati: player.rigori_sbagliati || 0,
+      gol_subiti: player.gol_subiti || 0,
+    }, stagioneDaData(oggi));
+  } catch (e) { svincErr = e; }
 
   if (svincErr) {
     console.error('eseguiSvincolo: scrittura in svincolati fallita, ANNULLO lo svincolo per evitare di perdere il giocatore:', player.nome, svincErr);
@@ -4307,12 +4308,34 @@ export async function getSvincolatiDB(stagione = getStagioneQuota()) {
   return data;
 }
 
-export async function upsertSvincolato(player, stagione = getStagioneQuota()) {
-  const { error } = await supabase.from('svincolati').upsert(
-    { ...player, stagione, updated_at: new Date().toISOString() },
-    { onConflict: 'nome,stagione' }
-  );
+// Scrive un giocatore in "svincolati" SENZA fare affidamento su un vincolo di
+// unicità (nome,stagione) lato database — su Supabase quel vincolo può mancare,
+// nel qual caso .upsert({onConflict:...}) non evita affatto i doppioni e ogni
+// import ripetuto crea una nuova riga con ID diverso per lo stesso giocatore.
+// Cerchiamo quindi prima la riga esistente per nome (case-insensitive) e
+// stagione: se c'è, la aggiorniamo per id; altrimenti inseriamo una riga nuova.
+async function upsertSvincolatoSafe(payload, stagione) {
+  const nome = (payload.nome || '').toString().trim();
+  const { data: existing, error: findErr } = await supabase
+    .from('svincolati')
+    .select('id')
+    .eq('stagione', stagione)
+    .ilike('nome', nome)
+    .limit(1);
+  if (findErr) throw findErr;
+  const row = { ...payload, nome, stagione, updated_at: new Date().toISOString() };
+  if (existing && existing[0]) {
+    const { error } = await supabase.from('svincolati').update(row).eq('id', existing[0].id);
+    if (error) throw error;
+    return { id: existing[0].id, created: false };
+  }
+  const { data: inserted, error } = await supabase.from('svincolati').insert(row).select('id').single();
   if (error) throw error;
+  return { id: inserted.id, created: true };
+}
+
+export async function upsertSvincolato(player, stagione = getStagioneQuota()) {
+  await upsertSvincolatoSafe(player, stagione);
 }
 
 export async function updateSvincolatoStats(id, stats) {
@@ -4350,15 +4373,15 @@ export async function importSvincolatiDaArray(rows, stagione = getStagioneQuota(
     rigori_segnati: Number(r.rigori_segnati || r.Rs || 0),
     rigori_sbagliati: Number(r.rigori_sbagliati || r.Rsb || 0),
     gol_subiti: Number(r.gol_subiti || r.Gs || 0),
-    stagione,
   })).filter(r => r.nome && r.ruolo);
 
-  // Upsert in batch da 100
-  for (let i = 0; i < mapped.length; i += 100) {
-    const batch = mapped.slice(i, i + 100);
-    const { error } = await supabase.from('svincolati')
-      .upsert(batch, { onConflict: 'nome,stagione' });
-    if (error) throw error;
+  // Un giocatore alla volta tramite upsertSvincolatoSafe (select by nome+stagione,
+  // poi update per id o insert): evita i doppioni con ID diverso che il semplice
+  // .upsert({onConflict:'nome,stagione'}) non preveniva quando quel vincolo di
+  // unicità non esiste davvero sul database.
+  const BATCH = 20;
+  for (let i = 0; i < mapped.length; i += BATCH) {
+    await Promise.all(mapped.slice(i, i + BATCH).map(r => upsertSvincolatoSafe(r, stagione)));
   }
   return mapped.length;
 }
@@ -5968,21 +5991,19 @@ export async function importa01Agosto(rows, stagione = getStagioneQuota()) {
         svinAggiornati++;
       } else if (quot > 0 && !(r['FantaSquadra'] || '').toString().trim()) {
         // Nuovo giocatore libero (nessuna FantaSquadra nel file): crea in svincolati.
-        // Usiamo upsert (onConflict nome+stagione) invece di insert semplice:
-        // se per qualsiasi motivo esiste già una riga con lo stesso nome/stagione
-        // (es. residuo di uno svincolo precedente), un insert "cieco" fallirebbe
-        // per violazione del vincolo di unicità e il giocatore andrebbe perso
-        // in silenzio. Con upsert la riga viene comunque scritta/aggiornata.
-        const { error: nuovoErr } = await supabase.from('svincolati').upsert({
-          nome, quot, stip, clausola, ruolo, stagione,
-          squadra_serie_a: squadra_serie_a || null,
-          ...statsSvin,
-        }, { onConflict: 'nome,stagione' });
-        if (nuovoErr) {
+        // upsertSvincolatoSafe cerca prima per nome+stagione ed evita così i
+        // doppioni con ID diverso che si formavano quando il vincolo di
+        // unicità (nome,stagione) non esisteva davvero sul database.
+        try {
+          await upsertSvincolatoSafe({
+            nome, quot, stip, clausola, ruolo,
+            squadra_serie_a: squadra_serie_a || null,
+            ...statsSvin,
+          }, stagione);
+          nuoviCreati++;
+        } catch (nuovoErr) {
           console.error('importa01Agosto: creazione svincolato fallita:', nome, nuovoErr);
           nonTrovati.push(`${nome} (errore creazione: ${nuovoErr.message || nuovoErr.code || 'sconosciuto'})`);
-        } else {
-          nuoviCreati++;
         }
       } else if (quot > 0) {
         // Il file indica una FantaSquadra per questo nome, ma non è stato trovato
