@@ -6315,11 +6315,10 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   // prezzo minimo (Q/2): l'asta scade da sola e il giocatore resta normalmente
   // nella rosa di chi l'aveva indetta (non viene mai spostato, quindi non serve
   // alcun trasferimento — solo chiudere il record dell'asta).
-  // Il controllo scrive sul DB: lo esegue solo un client admin, non ognuno dei
-  // presidenti collegati contemporaneamente (altrimenti N client tentano la
-  // stessa scrittura in parallelo ad ogni scadenza, sprecando query per tutti).
+  // Eseguito da OGNI client connesso (non solo admin): è la scelta voluta per
+  // evitare che un presidente possa comprare un giocatore la cui asta era già
+  // scaduta ma nessun admin era online per chiuderla in tempo.
   useEffect(() => {
-    if (!isAdmin) return;
     async function checkFloorDiscesa() {
       const attive = aste.filter(a => a.tipo_asta === 'discesa' && a.stato === 'attiva');
       let changed = false;
@@ -10377,7 +10376,6 @@ function AdminControlRoomPage({ teams }) {
     { key: 'premi',        icon: '🏆', label: 'Premi' },
     { key: 'contratti',    icon: '📋', label: 'Contratti' },
     { key: 'differiti',    icon: '⏳', label: 'Differiti' },
-    { key: 'stagione',     icon: '⚙️', label: 'Stagione' },
     { key: 'telegram',     icon: '✈️', label: 'Telegram' },
     { key: 'audit',        icon: '🧾', label: 'Audit' },
     { key: 'utenti',       icon: '👥', label: 'Utenti' },
@@ -10389,7 +10387,7 @@ function AdminControlRoomPage({ teams }) {
     { key: 'overview', icon: '📊', label: 'Panoramica', tabKeys: ['panoramica'] },
     { key: 'finanze',  icon: '💰', label: 'Finanze',    tabKeys: ['quote', 'tasse', 'stipendi', 'stadio', 'fpf', 'bilancio_neg', 'premi'] },
     { key: 'mercatogrp', icon: '⚽', label: 'Mercato',   tabKeys: ['mercato', 'aste', 'svincoli_cr', 'vivaio_admin', 'prestiti_admin', 'differiti'] },
-    { key: 'lega',     icon: '🏛', label: 'Lega',       tabKeys: ['investimenti_admin', 'obiettivi_admin', 'rivalita', 'contratti', 'stagione'] },
+    { key: 'lega',     icon: '🏛', label: 'Lega',       tabKeys: ['investimenti_admin', 'obiettivi_admin', 'rivalita', 'contratti'] },
     { key: 'sistema',  icon: '⚙️', label: 'Sistema',    tabKeys: ['database', 'conflitti', 'telegram', 'audit', 'utenti'] },
   ];
   const groupOfTab = (tk) => tabGroups.find(g => g.tabKeys.includes(tk))?.key || 'overview';
@@ -10741,32 +10739,6 @@ function AdminControlRoomPage({ teams }) {
                   );
                 })}
               </div>
-            </div>
-          )}
-
-          {/* ── STAGIONE ── */}
-          {tab === 'stagione' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em', marginBottom: 4 }}>⚙️ OPERAZIONI DI STAGIONE</div>
-              {[
-                { label: '📋 Iscrizione campionato a tutti (−30M)', fn: applicaIscrizioneATutti, color: '#f97316', desc: 'Applica il costo iscrizione alle squadre che non l\'hanno ancora pagata' },
-                { label: '🔄 Aggiornamento quote (da Listone)', fn: null, color: '#6366f1', desc: 'Da eseguire da Mercato → Listone', disabled: true },
-              ].map(op => (
-                <div key={op.label} style={{ background: op.color + '08', border: `1px solid ${op.color}25`, borderRadius: 12, padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: op.disabled ? '#444' : '#ccc' }}>{op.label}</div>
-                    <div style={{ fontSize: 11, color: '#555', marginTop: 3 }}>{op.desc}</div>
-                  </div>
-                  {!op.disabled && (
-                    <button
-                      onClick={() => op.fn && runBulk(op.fn, op.label)}
-                      disabled={isBusy || op.disabled}
-                      style={{ padding: '7px 16px', borderRadius: 9, border: `1.5px solid ${op.color}50`, background: op.color + '18', color: op.color, fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
-                      Esegui
-                    </button>
-                  )}
-                </div>
-              ))}
             </div>
           )}
           {tab === 'telegram' && (
