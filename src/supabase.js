@@ -176,6 +176,25 @@ export function subscribeSquadre(callback) {
 
 // ─── ROSA ─────────────────────────────────────────────────────────────────────
 
+// Ricerca giocatori per nome su più squadre in UNA sola query, invece di una
+// query per squadra come faceva prima il form nuova trattativa (7 query ad
+// ogni digitazione con debounce). Nessun effetto collaterale di vivaio/prestiti
+// qui: è solo lettura per la lista risultati, i dati completi e aggiornati si
+// caricano con getRosa() solo quando l'utente sceglie effettivamente un giocatore.
+export async function cercaGiocatoriInRose(query, squadre) {
+  const q = (query || '').trim();
+  if (q.length < 2 || !squadre?.length) return [];
+  const { data, error } = await supabase
+    .from('rosa')
+    .select('id, nome, squadra, ruolo, quot, stip, in_vivaio')
+    .in('squadra', squadre)
+    .eq('in_vivaio', false)
+    .ilike('nome', `%${q}%`)
+    .limit(30);
+  if (error) { console.warn('cercaGiocatoriInRose error:', error.message); return []; }
+  return data || [];
+}
+
 export async function getRosa(squadra) {
   // Applica eventuali scadenze vivaio prima di restituire la rosa.
   // Se il SQL di migrazione non è ancora stato eseguito, non blocchiamo il caricamento.
@@ -4997,7 +5016,12 @@ export function subscribeAsteSvincolati(callback) {
 // ─── LISTONE (database 2 — tutti i giocatori) ────────────────────────────────
 
 export async function getListone() {
-  const { data, error } = await supabase.from('listone').select('*').order('quot', { ascending: false });
+  // Colonne effettivamente usate dal Listone (evita di scaricare gol_subiti,
+  // rigori_calciati, autogol, numero, updated_at per ~650 righe ad ogni caricamento).
+  const { data, error } = await supabase
+    .from('listone')
+    .select('id, nome, ruolo, anni, squadra_serie_a, fanta_squadra, quot, salario, clausola, fuori_lista, partite_voto, media_voto, media_fantavoto, gol_fatti, assist, ammonizioni, espulsioni, rigori_parati, rigori_segnati, rigori_sbagliati')
+    .order('quot', { ascending: false });
   if (error) return [];
   return data;
 }
@@ -5006,6 +5030,37 @@ export async function getListoneBySquadra(fantaSquadra) {
   const { data, error } = await supabase.from('listone').select('*').eq('fanta_squadra', fantaSquadra).order('ruolo');
   if (error) return [];
   return data;
+}
+
+// Storico delle variazioni di quotazione di un giocatore (tabella
+// storico_quotazioni, popolata da importListoneDaExcel ad ogni import in cui
+// la quotazione cambia). Usato dal mini-grafico "trend quotazione".
+export async function getStoricoQuotazioni(nome) {
+  if (!nome) return [];
+  const { data, error } = await supabase
+    .from('storico_quotazioni')
+    .select('quot, registrato_il')
+    .ilike('nome', nome.trim())
+    .order('registrato_il', { ascending: true });
+  if (error) return [];
+  return data || [];
+}
+
+// Righe del listone con una FantaSquadra assegnata che però non corrisponde a
+// nessuna delle squadre canoniche (nomeSquadre): quasi sempre un cambio di
+// grafia del nome tra l'Excel e l'app (vedi caso Castro/Finocchiona) che
+// altrimenti passa inosservato finché qualcuno non nota lo stemma mancante o
+// la rosa non aggiornata. squadreCanoniche va passato dal chiamante (App.jsx,
+// dove vive già l'elenco squadre) per non duplicarlo qui.
+export async function getConflittiListone(squadreCanoniche) {
+  const { data, error } = await supabase
+    .from('listone')
+    .select('nome, fanta_squadra, squadra_serie_a, quot')
+    .not('fanta_squadra', 'is', null);
+  if (error) return [];
+  const norm = s => (s || '').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+  const canoniciNorm = new Set((squadreCanoniche || []).map(norm));
+  return (data || []).filter(r => r.fanta_squadra && !canoniciNorm.has(norm(r.fanta_squadra)));
 }
 
 // Importa il listone da un array di righe Excel (usato nella pagina admin)
@@ -5046,12 +5101,35 @@ export async function importListoneDaExcel(rows) {
       };
     });
 
+  // Rileva le variazioni di quotazione PRIMA di sovrascrivere il listone, per
+  // poterle registrare in storico_quotazioni (alimenta il grafico "trend
+  // quotazione" mostrato nei popup giocatore). Letture in batch da 200 nomi
+  // con .in(), non una query per giocatore.
+  const quotPrecedenti = {};
+  for (let i = 0; i < mapped.length; i += 200) {
+    const nomiBatch = mapped.slice(i, i + 200).map(r => r.nome);
+    const { data } = await supabase.from('listone').select('nome, quot').in('nome', nomiBatch);
+    for (const r of (data || [])) quotPrecedenti[r.nome] = r.quot;
+  }
+  const oggi = new Date().toISOString().slice(0, 10);
+  const nuovoStorico = mapped
+    .filter(r => r.quot > 0 && Number(quotPrecedenti[r.nome]) !== Number(r.quot))
+    .map(r => ({ nome: r.nome, quot: r.quot, registrato_il: oggi }));
+
   // Upsert in batch da 100
   for (let i = 0; i < mapped.length; i += 100) {
     const batch = mapped.slice(i, i + 100);
     const { error } = await supabase.from('listone').upsert(batch, { onConflict: 'nome' });
     if (error) throw error;
   }
+
+  // Scrive lo storico quotazioni (best-effort: se la tabella non esiste ancora
+  // non deve bloccare l'import del listone).
+  try {
+    for (let i = 0; i < nuovoStorico.length; i += 200) {
+      await supabase.from('storico_quotazioni').insert(nuovoStorico.slice(i, i + 200));
+    }
+  } catch (e) { console.warn('storico_quotazioni: scrittura fallita (tabella creata?):', e.message); }
 
   // Aggiorna solo le statistiche dei giocatori in rosa (NON quot/stip/clausola)
   const { data: rosa } = await supabase.from('rosa').select('id, nome').eq('in_vivaio', false);
@@ -5116,6 +5194,32 @@ export async function getBonusTrattativa(trattativaId) {
   return (data || []).sort((a, b) =>
     String(a.created_at || a.id || '').localeCompare(String(b.created_at || b.id || ''))
   );
+}
+
+// Come getBonusTrattativa ma per più trattative in una volta sola (1 query invece
+// di N): usata dalla pagina Mercato che altrimenti farebbe una query per ogni
+// trattativa visibile ad ogni refresh (anche in risposta a un realtime event
+// scatenato da un'azione di un altro utente).
+export async function getBonusTrattativeBatch(trattativaIds) {
+  const ids = (trattativaIds || []).filter(Boolean);
+  if (!ids.length) return {};
+  const { data, error } = await supabase
+    .from('trattative_bonus')
+    .select('*')
+    .in('trattativa_id', ids);
+  if (error) {
+    console.warn('getBonusTrattativeBatch error:', error.message);
+    return {};
+  }
+  const byId = {};
+  for (const id of ids) byId[id] = [];
+  for (const b of (data || [])) {
+    (byId[b.trattativa_id] ||= []).push(b);
+  }
+  for (const id of ids) {
+    byId[id].sort((a, b) => String(a.created_at || a.id || '').localeCompare(String(b.created_at || b.id || '')));
+  }
+  return byId;
 }
 
 export async function insertBonusTrattativa(bonus) {
@@ -5918,22 +6022,28 @@ export async function importa01Agosto(rows, stagione = getStagioneQuota()) {
   const { data: rosaAll } = await supabase.from('rosa').select('id, nome, anni, stip, fuori_lista').eq('in_vivaio', false);
   const { data: svinAll }  = await supabase.from('svincolati').select('id, nome').eq('stagione', stagione);
 
+  // Normalizza accenti e spazi multipli (non la punteggiatura, per non fondere
+  // per errore giocatori realmente diversi come "Castro" e "Castro S."): serve
+  // solo a tollerare piccole variazioni di formattazione tra Excel e database.
+  const normPlayerName = s => (s || '').toString().trim().toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ');
+
   const rosaMap  = {};
-  for (const p of (rosaAll  || [])) rosaMap[p.nome.trim().toLowerCase()]  = p;
+  for (const p of (rosaAll  || [])) rosaMap[normPlayerName(p.nome)]  = p;
   const svinMap  = {};
-  for (const s of (svinAll  || [])) svinMap[s.nome.trim().toLowerCase()]  = s;
+  for (const s of (svinAll  || [])) svinMap[normPlayerName(s.nome)]  = s;
 
   let rosaAggiornati = 0, svinAggiornati = 0, nuoviCreati = 0;
   const nonTrovati = [];
   const BATCH = 50;
 
   const validRows = rows.filter(r => (r['Nome'] || '').trim());
-  const nomiExcel = new Set(validRows.map(r => r['Nome'].trim().toLowerCase()));
+  const nomiExcel = new Set(validRows.map(r => normPlayerName(r['Nome'])));
 
   for (let i = 0; i < validRows.length; i += BATCH) {
     await Promise.all(validRows.slice(i, i + BATCH).map(async r => {
       const nome = (r['Nome'] || '').trim();
-      const nomeLower = nome.toLowerCase();
+      const nomeLower = normPlayerName(nome);
       const quot = Number(r['QUOT.'] || 0);
       const squadra_serie_a = (r['Sq.'] || '').trim() || null;
       const anni = Number(r['Under'] || r['Età'] || 0) || null;
@@ -6022,7 +6132,7 @@ export async function importa01Agosto(rows, stagione = getStagioneQuota()) {
   // Giocatori in rosa che NON compaiono più nel nuovo database: restano nella rosa
   // della squadra con la quotazione e i valori del vecchio database invariati, ma
   // vengono segnati automaticamente come "fuori lista" (art. 4.7).
-  const usciti = (rosaAll || []).filter(p => !nomiExcel.has(p.nome.trim().toLowerCase()) && !p.fuori_lista);
+  const usciti = (rosaAll || []).filter(p => !nomiExcel.has(normPlayerName(p.nome)) && !p.fuori_lista);
   for (let i = 0; i < usciti.length; i += BATCH) {
     await Promise.all(usciti.slice(i, i + BATCH).map(p =>
       supabase.from('rosa').update({ fuori_lista: true }).eq('id', p.id)
