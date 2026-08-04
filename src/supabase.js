@@ -1077,14 +1077,23 @@ export async function eseguiTrasferimento(trattativa) {
 
   if (player) {
     // ── 2. Calcola nuovo stipendio (art. 5.9): basato su quotazione attuale ──
-    const nuovaQuot = trattativa.quot_giocatore || player.quot;
+    // Un trasferimento "scongela" la quotazione: il giocatore passa alla nuova
+    // squadra con la quotazione reale di mercato (quot_reale), non con quella
+    // congelata che aveva nella rosa di provenienza — coerente con la regola
+    // per cui solo un cambio di proprietà (o le finestre 01/06/01/08/01/01)
+    // possono far muovere la Q di un giocatore già in rosa.
+    const nuovaQuot = Number(player.quot_reale) > 0 ? Number(player.quot_reale) : (trattativa.quot_giocatore || player.quot);
     const nuovoStip = parseFloat((nuovaQuot / 5).toFixed(2));
+    const nuovaClausola = parseFloat((nuovaQuot * 1.75).toFixed(2));
 
     if (isPrestito) {
       // Prestito: aggiorna squadra temporanea, mantieni traccia del proprietario
       // Chi paga lo stipendio dipende da stipendio_a_chi
       await supabase.from('rosa').update({
         squadra: squadraAcquirente,
+        quot: nuovaQuot,
+        quot_precedente: player.quot,
+        clausola: nuovaClausola,
         in_prestito: true,
         prestito_tipo: tipo,
         tag_rosa: tipo === 'prestito_secco' ? 'PRESTITO SECCO' : tipo === 'prestito_obbligo' ? 'PRESTITO OBBLIGO' : 'PRESTITO DIRITTO',
@@ -1097,6 +1106,9 @@ export async function eseguiTrasferimento(trattativa) {
       // Cessione definitiva: aggiorna squadra e stipendio
       await supabase.from('rosa').update({
         squadra: squadraAcquirente,
+        quot: nuovaQuot,
+        quot_precedente: player.quot,
+        clausola: nuovaClausola,
         stip: nuovoStip,
         stip_originale: nuovoStip,
         anni_contratto: 1, // reimposta da anno 1 (art. 5.9)
@@ -4419,63 +4431,112 @@ export function filtraVivaioCandidatiDB(svincolati) {
 
 // Calcola i top-5 incrementi e decrementi per una squadra
 // Confronta quot attuale vs quot_precedente
-export async function calcolaTop5Aggiornamenti(squadra) {
+// ─── AGGIORNAMENTO 01/01 PER SQUADRA (art. 4.5) ──────────────────────────────
+// Basato su quot_reale (la quotazione di mercato aggiornata ad ogni import,
+// mai congelata) confrontata con quot (la quotazione in vigore in rosa, ferma
+// fino a 01/06/01/08/01/01 o un trasferimento): NON su quot_precedente, che con
+// l'update Settimanale non tocca più quot per chi è già in rosa e quindi non
+// si muove mai durante l'anno.
+//
+// Selezione: top-5 rialzo (esclusi gli U21, che non hanno aumenti — si passa
+// al 6°, 7°... finché non se ne trovano 5) e top-5 ribasso, PER SQUADRA (non
+// sulla lega intera). Se più giocatori sono a pari incremento/decremento
+// esattamente sul confine del 5° posto, non si sceglie arbitrariamente: quei
+// giocatori finiscono in "inSospeso" e il presidente decide lui chi occupa i
+// posti rimasti (vedi sceltaTop5 in App.jsx).
+function _selezionaTop5ConPareggi(candidatiOrdinati, postiTotali = 5) {
+  if (!candidatiOrdinati.length) return { garantiti: [], inSospeso: [], postiLiberi: 0 };
+  if (candidatiOrdinati.length <= postiTotali) return { garantiti: candidatiOrdinati, inSospeso: [], postiLiberi: 0 };
+  const sogliaDelta = Math.abs(candidatiOrdinati[postiTotali - 1].delta);
+  const garantiti = candidatiOrdinati.filter(p => Math.abs(p.delta) > sogliaDelta);
+  const alPareggio = candidatiOrdinati.filter(p => Math.abs(p.delta) === sogliaDelta);
+  const postiLiberi = postiTotali - garantiti.length;
+  if (alPareggio.length <= postiLiberi) return { garantiti: [...garantiti, ...alPareggio], inSospeso: [], postiLiberi: 0 };
+  return { garantiti, inSospeso: alPareggio, postiLiberi };
+}
+
+export async function calcolaTop5Aggiornamenti(squadra, stagione = getStagioneQuota()) {
   const { data: rosa } = await supabase
     .from('rosa')
-    .select('id, nome, anni, ruolo, quot, quot_precedente, stip, rinnovo_ribasso, da_cedere')
+    .select('id, nome, anni, ruolo, quot, quot_reale, stip, clausola, rinnovo_ribasso, da_cedere')
     .eq('squadra', squadra)
     .eq('in_vivaio', false);
 
-  if (!rosa?.length) return { rialzi: [], ribassi: [] };
+  if (!rosa?.length) return { rialzi: [], ribassi: [], rialziInSospeso: [], ribassiInSospeso: [], postiRialziLiberi: 0, postiRibassiLiberi: 0 };
+
+  // Chi ha già una decisione registrata questa stagione non va riproposto.
+  const { data: decisi } = await supabase.from('decisioni_top5').select('giocatore_id, tipo').eq('squadra', squadra).eq('stagione', stagione);
+  const idDecisi = { rialzo: new Set(), ribasso: new Set() };
+  for (const d of (decisi || [])) idDecisi[d.tipo]?.add(d.giocatore_id);
 
   const conDelta = rosa
-    .filter(p => p.quot_precedente != null)
+    .filter(p => p.quot_reale != null && Number(p.quot_reale) !== Number(p.quot))
     .map(p => ({
       ...p,
-      delta: parseFloat((Number(p.quot) - Number(p.quot_precedente)).toFixed(2)),
-      stipNuovo: parseFloat((Number(p.quot) / 5).toFixed(2)),
-    }))
-    .filter(p => p.delta !== 0);
+      delta: parseFloat((Number(p.quot_reale) - Number(p.quot)).toFixed(2)),
+      stipNuovo: parseFloat((Number(p.quot_reale) / 5).toFixed(2)),
+    }));
 
-  const rialzi  = [...conDelta].filter(p => p.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 5);
-  const ribassi = [...conDelta].filter(p => p.delta < 0).sort((a, b) => a.delta - b.delta).slice(0, 5);
+  const isU21 = p => Number(p.anni || 0) > 0 && Number(p.anni || 0) <= 21;
 
-  return { rialzi, ribassi };
+  // Rialzo obbligatorio: gli U21 non hanno aumenti contrattuali (art. 4.8.1),
+  // vengono scartati e si passa ai successivi in graduatoria.
+  const candidatiRialzo = conDelta
+    .filter(p => p.delta > 0 && !isU21(p) && !idDecisi.rialzo.has(p.id))
+    .sort((a, b) => b.delta - a.delta);
+  // Stessa esclusione U21 per il ribasso: non potendo comunque ridurre il loro
+  // stipendio (art. 4.8.1), non ha senso occupare un posto in classifica con loro.
+  const candidatiRibasso = conDelta
+    .filter(p => p.delta < 0 && !isU21(p) && !idDecisi.ribasso.has(p.id))
+    .sort((a, b) => a.delta - b.delta);
+
+  const { garantiti: rialzi, inSospeso: rialziInSospeso, postiLiberi: postiRialziLiberi } = _selezionaTop5ConPareggi(candidatiRialzo);
+  const { garantiti: ribassi, inSospeso: ribassiInSospeso, postiLiberi: postiRibassiLiberi } = _selezionaTop5ConPareggi(candidatiRibasso);
+
+  return { rialzi, ribassi, rialziInSospeso, ribassiInSospeso, postiRialziLiberi, postiRibassiLiberi };
 }
 
-// Applica rinnovo al rialzo obbligatorio (aggiorna stip e stip_originale)
-export async function applicaRinnovoRialzo(playerId, nuovoStip, squadra) {
+// Applica il rialzo obbligatorio 01/01: quotazione, stipendio e clausola
+// salgono al valore reale di mercato (quot_reale).
+export async function applicaTop5Rialzo(playerId, squadra, stagione = getStagioneQuota()) {
   const oggi = new Date().toISOString().slice(0, 10);
   const { data: p } = await supabase.from('rosa').select('*').eq('id', playerId).single();
   if (!p) throw new Error('Giocatore non trovato');
+  const nuovaQuot = Number(p.quot_reale);
+  const nuovoStip = parseFloat((nuovaQuot / 5).toFixed(2));
+  const nuovaClausola = parseFloat((nuovaQuot * 1.75).toFixed(2));
 
   await supabase.from('rosa').update({
+    quot: nuovaQuot,
+    quot_precedente: p.quot,
     stip: nuovoStip,
     stip_originale: nuovoStip,
-    quot_precedente: p.quot,  // aggiorna la quot precedente al valore attuale
+    clausola: nuovaClausola,
   }).eq('id', playerId);
 
-  // Registra nel log aggiornamenti
   await supabase.from('aggiornamenti_stipendi').upsert({
     squadra, giocatore_id: playerId, nome: p.nome,
-    quot_prima: p.quot_precedente || p.quot,
-    quot_dopo: p.quot,
-    delta: parseFloat((Number(p.quot) - Number(p.quot_precedente || p.quot)).toFixed(2)),
-    tipo: 'rialzo',
-    rinnovo_effettuato: true,
-    nuovo_stip: nuovoStip,
-    data_aggiornamento: oggi,
-    stagione: stagioneDaData(oggi),
+    quot_prima: p.quot, quot_dopo: nuovaQuot,
+    delta: parseFloat((nuovaQuot - Number(p.quot)).toFixed(2)),
+    tipo: 'rialzo', rinnovo_effettuato: true,
+    nuovo_stip: nuovoStip, data_aggiornamento: oggi, stagione,
   }, { onConflict: 'stagione,giocatore_id' });
 
-  return nuovoStip;
+  await supabase.from('decisioni_top5').upsert({
+    squadra, giocatore_id: playerId, stagione, tipo: 'rialzo', esito: 'applicato', data: oggi,
+  }, { onConflict: 'giocatore_id,stagione,tipo' });
+
+  return { nuovaQuot, nuovoStip, nuovaClausola };
 }
 
-// Applica rinnovo al ribasso (entro 05/01 alle 20:00)
-// Per 22-30 anni: imposta da_cedere=true
-// Per 31+: nessun obbligo
-// Per U21: non consentito
-export async function applicaRinnovoRibasso(playerId, nuovoStip, squadra) {
+// Applica (o rifiuta) il ribasso opzionale 01/01 (entro 05/01 alle 20:00).
+// Se il presidente riduce: quotazione, stipendio e clausola scendono al valore
+// reale di mercato (esattamente come il rialzo), e per 22-30 anni scatta
+// l'obbligo di cessione (da_cedere). Se NON riduce: nulla cambia (quotazione
+// resta quella vecchia) — si registra solo la decisione per non riproporla.
+// Per U21: non consentito (art. 4.8.1) — vengono già esclusi a monte da
+// calcolaTop5Aggiornamenti, questo è un controllo di sicurezza in più.
+export async function applicaTop5Ribasso(playerId, squadra, ridurre, stagione = getStagioneQuota()) {
   const { data: p } = await supabase.from('rosa').select('*').eq('id', playerId).single();
   if (!p) throw new Error('Giocatore non trovato');
 
@@ -4483,45 +4544,46 @@ export async function applicaRinnovoRibasso(playerId, nuovoStip, squadra) {
   if (isU21) throw new Error(`${p.nome} è Under-21 — non è possibile ridurre il contratto`);
 
   const oggi = new Date().toISOString().slice(0, 10);
+
+  if (!ridurre) {
+    await supabase.from('decisioni_top5').upsert({
+      squadra, giocatore_id: playerId, stagione, tipo: 'ribasso', esito: 'rifiutato', data: oggi,
+    }, { onConflict: 'giocatore_id,stagione,tipo' });
+    return { ridotto: false };
+  }
+
+  const nuovaQuot = Number(p.quot_reale);
+  const nuovoStip = parseFloat((nuovaQuot / 5).toFixed(2));
+  const nuovaClausola = parseFloat((nuovaQuot * 1.75).toFixed(2));
   const deveCedere = p.anni >= 22 && p.anni <= 30;
 
   await supabase.from('rosa').update({
+    quot: nuovaQuot,
+    quot_precedente: p.quot,
     stip: nuovoStip,
+    clausola: nuovaClausola,
     rinnovo_ribasso: true,
     da_cedere: deveCedere,
     data_rinnovo_ribasso: oggi,
-    quot_precedente: p.quot,
   }).eq('id', playerId);
 
   await supabase.from('aggiornamenti_stipendi').upsert({
     squadra, giocatore_id: playerId, nome: p.nome,
-    quot_prima: p.quot_precedente || p.quot,
-    quot_dopo: p.quot,
-    delta: parseFloat((Number(p.quot) - Number(p.quot_precedente || p.quot)).toFixed(2)),
-    tipo: 'ribasso',
-    rinnovo_effettuato: true,
-    nuovo_stip: nuovoStip,
-    data_aggiornamento: oggi,
-    stagione: stagioneDaData(oggi),
+    quot_prima: p.quot, quot_dopo: nuovaQuot,
+    delta: parseFloat((nuovaQuot - Number(p.quot)).toFixed(2)),
+    tipo: 'ribasso', rinnovo_effettuato: true,
+    nuovo_stip: nuovoStip, data_aggiornamento: oggi, stagione,
     note: deveCedere ? 'Da cedere entro 15/09' : 'Over 31 - nessun obbligo',
   }, { onConflict: 'stagione,giocatore_id' });
 
-  return { nuovoStip, deveCedere };
+  await supabase.from('decisioni_top5').upsert({
+    squadra, giocatore_id: playerId, stagione, tipo: 'ribasso', esito: 'applicato', data: oggi,
+  }, { onConflict: 'giocatore_id,stagione,tipo' });
+
+  return { ridotto: true, nuovaQuot, nuovoStip, deveCedere };
 }
 
-// Aggiorna quot_precedente a fine ciclo (da chiamare dopo aver fatto tutti i rinnovi)
-export async function aggiornaPrecedenti(squadra) {
-  await supabase.from('rosa')
-    .update({ quot_precedente: supabase.rpc('get_quot', {}) })
-    .eq('squadra', squadra);
-  // Più semplice: aggiorna campo per campo
-  const { data } = await supabase.from('rosa').select('id, quot').eq('squadra', squadra);
-  for (const p of data || []) {
-    await supabase.from('rosa').update({ quot_precedente: p.quot }).eq('id', p.id);
-  }
-}
-
-// Verifica finestra ribasso (01/01 → 05/01 ore 20:00)
+// Verifica finestra ribasso / scelta pareggi (01/01 → 05/01 ore 20:00)
 export function isFinestraRibasso() {
   const ora = new Date();
   const m = ora.getMonth() + 1, d = ora.getDate(), h = ora.getHours();
@@ -5859,164 +5921,15 @@ export async function setRivalitaLock(bloccata) {
 
 // ─── IMPORT DATABASE FANTA.XLSX ───────────────────────────────────────────────
 
-export async function importDatabaseFanta(rows, stagione = getStagioneQuota()) {
-  // 1. Aggiorna listone + stats rosa via funzione esistente (match case-insensitive per nome)
-  const totaleListone = await importListoneDaExcel(rows);
-
-  // 2. Carica rose (id + nome) per aggiornare quot_reale
-  const { data: rosaAll } = await supabase.from('rosa').select('id, nome').eq('in_vivaio', false);
-  const rosaMap = {};
-  for (const p of (rosaAll || [])) rosaMap[p.nome.trim().toLowerCase()] = p;
-
-  // 3. Costruisci mappa nome→quot dal file
-  const quotMap = {};
-  for (const r of rows) {
-    const nome = (r['Nome'] || '').trim();
-    const quot = Number(r['QUOT.'] || 0);
-    if (nome && quot > 0) quotMap[nome.toLowerCase()] = { nome, quot, squadra_serie_a: r['Sq.'] || null };
-  }
-
-  // 4. Aggiorna quot_reale in rosa (case-insensitive)
-  let rosaAggiornati = 0, nonTrovati = [];
-  const BATCH = 50;
-  const rosaEntries = Object.entries(rosaMap);
-  for (let i = 0; i < rosaEntries.length; i += BATCH) {
-    await Promise.all(rosaEntries.slice(i, i + BATCH).map(async ([nomeLower, p]) => {
-      const q = quotMap[nomeLower];
-      if (!q) { nonTrovati.push(p.nome); return; }
-      await supabase.from('rosa').update({ quot_reale: q.quot, squadra_serie_a: q.squadra_serie_a }).eq('id', p.id);
-      rosaAggiornati++;
-    }));
-  }
-
-  // 5. Aggiorna svincolati: quot/stip/clausola + stats (già fatto dal listone, ma anche nella tabella svincolati)
-  const { data: svinAll } = await supabase.from('svincolati').select('id, nome').eq('stagione', stagione);
-  let svinAggiornati = 0;
-  for (let i = 0; i < (svinAll || []).length; i += BATCH) {
-    await Promise.all((svinAll || []).slice(i, i + BATCH).map(async s => {
-      const q = quotMap[s.nome.trim().toLowerCase()];
-      if (!q) return;
-      const stip = parseFloat((q.quot / 5).toFixed(2));
-      const clausola = parseFloat((q.quot * 1.75).toFixed(2));
-      // Trova riga completa per le stats
-      const row = rows.find(r => (r['Nome'] || '').trim().toLowerCase() === s.nome.trim().toLowerCase());
-      if (!row) return;
-      await supabase.from('svincolati').update({
-        quot: q.quot, stip, clausola,
-        partite: Number(row['Partite a voto'] || 0),
-        media_voto: Number(row['Media Voto'] || 0),
-        media_fantavoto: Number(row['Media Fantavoto'] || 0),
-        gol: Number(row['Gol fatti'] || 0),
-        gol_subiti: Number(row['Gol subiti'] || 0),
-        rigori_parati: Number(row['Rigori Parati'] || 0),
-        rigori_segnati: Number(row['Rigori Segnati'] || 0),
-        rigori_sbagliati: Number(row['Rigori Sbagliati'] || 0),
-        assist: Number(row['Assist'] || 0),
-        ammonizioni: Number(row['Ammonizioni'] || 0),
-        espulsioni: Number(row['Espulsioni'] || 0),
-        autogol: Number(row['Autogol'] || 0),
-      }).eq('id', s.id);
-      svinAggiornati++;
-    }));
-  }
-
-  return { rosaAggiornati, svinAggiornati, nonTrovati, totale: totaleListone };
-}
-
-// ─── AGGIORNAMENTI PERIODICI DATABASE ────────────────────────────────────────
-
-// Calcola top5 rialzo/ribasso globale basandosi su quot_reale vs quot
-export async function calcolaTop5GlobaleQuotReale() {
-  const { data } = await supabase
-    .from('rosa')
-    .select('id, nome, anni, ruolo, quot, quot_reale, stip, squadra, rinnovo_ribasso, da_cedere')
-    .eq('in_vivaio', false)
-    .not('quot_reale', 'is', null);
-
-  const conDelta = (data || [])
-    .map(p => ({
-      ...p,
-      delta: parseFloat((Number(p.quot_reale) - Number(p.quot)).toFixed(2)),
-      stipNuovo: parseFloat((Number(p.quot_reale) / 5).toFixed(2)),
-    }))
-    .filter(p => p.delta !== 0);
-
-  const rialzi  = [...conDelta].filter(p => p.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 5);
-  const ribassi = [...conDelta].filter(p => p.delta < 0).sort((a, b) => a.delta - b.delta).slice(0, 5);
-  return { rialzi, ribassi };
-}
-
-// Applica aggiornamento 01/01:
-// - top 5 rialzo: overwrite quot/stip con quot_reale
-// - top 5 ribasso: nessuna azione automatica (i presidenti scelgono entro 05/01)
-export async function applica01Gennaio(top5Rialzo, stagione = getStagioneQuota()) {
-  const oggi = new Date().toISOString().slice(0, 10);
-  let rialziApplicati = 0;
-  for (const p of top5Rialzo) {
-    const nuovaQuot = Number(p.quot_reale);
-    const nuovoStip = parseFloat((nuovaQuot / 5).toFixed(2));
-    const nuovaClausola = parseFloat((nuovaQuot * 1.75).toFixed(2));
-    await supabase.from('rosa').update({
-      quot: nuovaQuot,
-      stip: nuovoStip,
-      stip_originale: nuovoStip,
-      clausola: nuovaClausola,
-      quot_precedente: p.quot,
-      quot_reale: nuovaQuot,
-    }).eq('id', p.id);
-    await supabase.from('aggiornamenti_stipendi').upsert({
-      squadra: p.squadra, giocatore_id: p.id, nome: p.nome,
-      quot_prima: p.quot, quot_dopo: nuovaQuot, delta: p.delta,
-      tipo: 'rialzo', rinnovo_effettuato: true,
-      nuovo_stip: nuovoStip, data_aggiornamento: oggi, stagione,
-    }, { onConflict: 'stagione,giocatore_id' });
-    rialziApplicati++;
-  }
-  return { rialziApplicati };
-}
-
-// Applica aggiornamento 01/06 o 01/08:
-// Tutti i giocatori in rosa: quot = quot_reale, stip/clausola ricalcolati
-export async function applica01GiugnoAgosto(stagione = getStagioneQuota()) {
-  const { data } = await supabase
-    .from('rosa')
-    .select('id, nome, anni, quot, quot_reale, stip, squadra')
-    .eq('in_vivaio', false)
-    .not('quot_reale', 'is', null);
-
-  const oggi = new Date().toISOString().slice(0, 10);
-  let aggiornati = 0;
-  const BATCH = 50;
-  const players = (data || []).filter(p => Number(p.quot_reale) > 0);
-
-  for (let i = 0; i < players.length; i += BATCH) {
-    await Promise.all(players.slice(i, i + BATCH).map(async p => {
-      const nuovaQuot = Number(p.quot_reale);
-      const isU21 = p.anni > 0 && p.anni <= 21;
-      const nuovoStip = isU21
-        ? Number(p.stip) // U21: stip invariato per art. 4.8.1
-        : parseFloat((nuovaQuot / 5).toFixed(2));
-      const nuovaClausola = parseFloat((nuovaQuot * 1.75).toFixed(2));
-      await supabase.from('rosa').update({
-        quot: nuovaQuot,
-        stip: nuovoStip,
-        stip_originale: nuovoStip,
-        clausola: nuovaClausola,
-        quot_precedente: p.quot,
-      }).eq('id', p.id);
-      aggiornati++;
-    }));
-  }
-  return { aggiornati, totale: players.length };
-}
-
-// Aggiornamento 01/08 – full import con creazione nuove voci per giocatori non presenti.
-// Per ogni riga del file:
-//   - Se il giocatore è in rosa (match per nome case-insensitive): aggiorna stats + quot_reale + squadra_serie_a + anni + ruolo, poi applica quot=quot_reale
-//   - Se è in svincolati: aggiorna tutti i campi
-//   - Se non esiste né in rosa né in svincolati: crea nuova voce in svincolati
-export async function importa01Agosto(rows, stagione = getStagioneQuota()) {
-  // Prima aggiorna listone completo
+// Nucleo comune a "Settimanale" e "01/08": stessa identica logica di
+// riconoscimento (giocatore in rosa / tra gli svincolati / nuovo / uscito dal
+// database), differiscono SOLO per se la quotazione (quindi stipendio e
+// clausola) dei giocatori già in rosa viene aggiornata subito oppure no.
+// L'unificazione evita che le due versioni si comportino diversamente per un
+// dettaglio dimenticato in una sola delle due (come successo con la creazione
+// dei nuovi svincolati, che esisteva solo in una delle due funzioni).
+async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
+  // Aggiorna listone + stats rosa via funzione esistente (match case-insensitive per nome)
   await importListoneDaExcel(rows);
 
   const { data: rosaAll } = await supabase.from('rosa').select('id, nome, anni, stip, fuori_lista').eq('in_vivaio', false);
@@ -6064,34 +5977,24 @@ export async function importa01Agosto(rows, stagione = getStagioneQuota()) {
         espulsioni:       Number(r['Espulsioni'] || 0),
         autogol:          Number(r['Autogol'] || 0),
       };
-      const statsSvin = {
-        partite:          statsRosa.partite,
-        media_voto:       statsRosa.media_voto,
-        media_fantavoto:  statsRosa.media_fantavoto,
-        gol:              statsRosa.gol,
-        gol_subiti:       statsRosa.gol_subiti,
-        rigori_parati:    statsRosa.rigori_parati,
-        rigori_segnati:   statsRosa.rigori_segnati,
-        rigori_sbagliati: statsRosa.rigori_sbagliati,
-        assist:           statsRosa.assist,
-        ammonizioni:      statsRosa.ammonizioni,
-        espulsioni:       statsRosa.espulsioni,
-        autogol:          statsRosa.autogol,
-      };
+      const statsSvin = { ...statsRosa };
 
       if (rosaMap[nomeLower]) {
         const p = rosaMap[nomeLower];
-        const isU21 = (anni || p.anni || 0) > 0 && (anni || p.anni || 0) <= 21;
-        await supabase.from('rosa').update({
-          quot_reale: quot, quot, squadra_serie_a, anni, ruolo,
-          // Art. 4.2/4.8.1: gli U21 non hanno aumenti contrattuali percentuali,
-          // ma lo stipendio base segue sempre la quotazione aggiornata (Q/5).
-          stip,
-          stip_originale: stip,
-          clausola, quot_precedente: p.quot || quot,
+        const updatePayload = {
+          quot_reale: quot, squadra_serie_a, anni, ruolo,
           fuori_lista: false, // torna in lista se prima era stato segnato fuori lista
           ...statsRosa,
-        }).eq('id', p.id);
+        };
+        if (aggiornaQuotazioneRosa) {
+          // Art. 4.2/4.8.1: gli U21 non hanno aumenti contrattuali percentuali,
+          // ma lo stipendio base segue sempre la quotazione aggiornata (Q/5).
+          Object.assign(updatePayload, {
+            quot, stip, stip_originale: stip, clausola,
+            quot_precedente: p.quot || quot,
+          });
+        }
+        await supabase.from('rosa').update(updatePayload).eq('id', p.id);
         rosaAggiornati++;
       } else if (svinMap[nomeLower]) {
         await supabase.from('svincolati').update({
@@ -6112,7 +6015,7 @@ export async function importa01Agosto(rows, stagione = getStagioneQuota()) {
           }, stagione);
           nuoviCreati++;
         } catch (nuovoErr) {
-          console.error('importa01Agosto: creazione svincolato fallita:', nome, nuovoErr);
+          console.error('_importDatabaseCore: creazione svincolato fallita:', nome, nuovoErr);
           nonTrovati.push(`${nome} (errore creazione: ${nuovoErr.message || nuovoErr.code || 'sconosciuto'})`);
         }
       } else if (quot > 0) {
@@ -6140,6 +6043,63 @@ export async function importa01Agosto(rows, stagione = getStagioneQuota()) {
   }
 
   return { rosaAggiornati, svinAggiornati, nuoviCreati, nonTrovati, fuoriListaSegnati: usciti.length, totale: validRows.length };
+}
+
+// Update Settimanale: come l'update di fine stagione/inizio stagione in
+// miniatura — stessi controlli (nuovi giocatori → svincolati, spariti →
+// fuori lista, stats e squadra aggiornate per tutti) MA la quotazione (quindi
+// stipendio e clausola) dei giocatori già in rosa NON cambia: viene solo
+// registrata in quot_reale, "in ombra", pronta per essere applicata nelle
+// finestre 01/06, 01/08 o 01/01.
+export async function importDatabaseFanta(rows, stagione = getStagioneQuota()) {
+  return _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa: false });
+}
+
+// ─── AGGIORNAMENTI PERIODICI DATABASE ────────────────────────────────────────
+// (l'aggiornamento 01/01 non ha più un tipo di import dedicato: vedi
+// calcolaTop5Aggiornamenti/applicaTop5Rialzo/applicaTop5Ribasso più sopra,
+// calcolate per squadra invece che su un unico top-5 di lega)
+
+// Applica aggiornamento 01/06 o 01/08:
+// Tutti i giocatori in rosa: quot = quot_reale, stip/clausola ricalcolati
+export async function applica01GiugnoAgosto(stagione = getStagioneQuota()) {
+  const { data } = await supabase
+    .from('rosa')
+    .select('id, nome, anni, quot, quot_reale, stip, squadra')
+    .eq('in_vivaio', false)
+    .not('quot_reale', 'is', null);
+
+  const oggi = new Date().toISOString().slice(0, 10);
+  let aggiornati = 0;
+  const BATCH = 50;
+  const players = (data || []).filter(p => Number(p.quot_reale) > 0);
+
+  for (let i = 0; i < players.length; i += BATCH) {
+    await Promise.all(players.slice(i, i + BATCH).map(async p => {
+      const nuovaQuot = Number(p.quot_reale);
+      const isU21 = p.anni > 0 && p.anni <= 21;
+      const nuovoStip = isU21
+        ? Number(p.stip) // U21: stip invariato per art. 4.8.1
+        : parseFloat((nuovaQuot / 5).toFixed(2));
+      const nuovaClausola = parseFloat((nuovaQuot * 1.75).toFixed(2));
+      await supabase.from('rosa').update({
+        quot: nuovaQuot,
+        stip: nuovoStip,
+        stip_originale: nuovoStip,
+        clausola: nuovaClausola,
+        quot_precedente: p.quot,
+      }).eq('id', p.id);
+      aggiornati++;
+    }));
+  }
+  return { aggiornati, totale: players.length };
+}
+
+// Aggiornamento 01/08 — full import con creazione nuove voci per giocatori non
+// presenti e, a differenza di Settimanale, applica SUBITO la nuova quotazione
+// (quindi stipendio e clausola) ai giocatori già in rosa.
+export async function importa01Agosto(rows, stagione = getStagioneQuota()) {
+  return _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa: true });
 }
 
 // ─── STAGIONE ─────────────────────────────────────────────────────────────────
