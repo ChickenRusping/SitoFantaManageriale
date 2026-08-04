@@ -11460,7 +11460,7 @@ function AdminControlRoomPage({ teams }) {
                         } else {
                           // 01/08: full import con creazione nuovi giocatori
                           const r = await importa01Agosto(dbImportPreview.rows, STAGIONE_CR);
-                          result = { rosaAggiornati: r.rosaAggiornati, svinAggiornati: r.svinAggiornati, nonTrovati: r.nonTrovati, fuoriListaSegnati: r.fuoriListaSegnati, totale: r.totale, note: `Aggiornamento completo: ${r.rosaAggiornati} in rosa, ${r.svinAggiornati} svincolati aggiornati, ${r.nuoviCreati} nuovi creati, ${r.fuoriListaSegnati} segnati fuori lista.` };
+                          result = { rosaAggiornati: r.rosaAggiornati, svinAggiornati: r.svinAggiornati, nuoviCreati: r.nuoviCreati, nonTrovati: r.nonTrovati, fuoriListaSegnati: r.fuoriListaSegnati, totale: r.totale, note: `Aggiornamento completo: ${r.rosaAggiornati} in rosa, ${r.svinAggiornati} svincolati aggiornati, ${r.nuoviCreati} nuovi creati, ${r.fuoriListaSegnati} segnati fuori lista.` };
                         }
                         setDbImportDone(result);
                         setDbImportPreview(null);
