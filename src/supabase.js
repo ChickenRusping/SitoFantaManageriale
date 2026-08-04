@@ -5998,7 +5998,7 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
         rosaAggiornati++;
       } else if (svinMap[nomeLower]) {
         await supabase.from('svincolati').update({
-          quot, stip, clausola, squadra_serie_a: squadra_serie_a || null,
+          quot, stip, clausola, ruolo, squadra_serie_a: squadra_serie_a || null,
           ...statsSvin,
         }).eq('id', svinMap[nomeLower].id);
         svinAggiornati++;
