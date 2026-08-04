@@ -3217,7 +3217,7 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
     setLoading(true);
     const [top5, stor] = await Promise.all([
       calcolaTop5Aggiornamenti(team.name),
-      getAggiornamenti(team.name),
+      getAggiornamenti(team.name, STAGIONE_CORRENTE),
     ]);
     setDati(top5);
     setStorico(stor);
@@ -8294,7 +8294,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
 
   const loadAll = useCallback(async () => {
     const [chiamateData, svincolatiData, asteData, invData] = await Promise.all([
-      getChiamate(), getSvincolatiDB(), getAsteSvincolati(),
+      getChiamate(), getSvincolatiDB(STAGIONE_CORRENTE), getAsteSvincolati(),
       mySquadra ? getInvestimenti(mySquadra) : Promise.resolve([]),
     ]);
     if (chiamateData) setChiamate(chiamateData);
@@ -8378,7 +8378,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
       const wb = XLSX.read(buf);
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws);
-      const n = await importSvincolatiDaArray(rows);
+      const n = await importSvincolatiDaArray(rows, STAGIONE_CORRENTE);
       alert(`✅ Importati ${n} svincolati`);
       await loadAll();
     } catch(err) { alert("Errore: " + err.message); }
