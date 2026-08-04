@@ -6077,10 +6077,12 @@ export async function applica01GiugnoAgosto(stagione = getStagioneQuota()) {
   for (let i = 0; i < players.length; i += BATCH) {
     await Promise.all(players.slice(i, i + BATCH).map(async p => {
       const nuovaQuot = Number(p.quot_reale);
-      const isU21 = p.anni > 0 && p.anni <= 21;
-      const nuovoStip = isU21
-        ? Number(p.stip) // U21: stip invariato per art. 4.8.1
-        : parseFloat((nuovaQuot / 5).toFixed(2));
+      // Niente eccezione U21 qui: la quotazione (e quindi lo stip base Q/5)
+      // aggiorna tutti allo stesso modo. L'unica cosa che gli U21 NON hanno è
+      // il bonus percentuale di rinnovo contrattuale (+10%/+20%), che è un
+      // calcolo di visualizzazione fatto in calcolaStipCorretto() lato rosa,
+      // non qualcosa da congelare qui in fase di import.
+      const nuovoStip = parseFloat((nuovaQuot / 5).toFixed(2));
       const nuovaClausola = parseFloat((nuovaQuot * 1.75).toFixed(2));
       await supabase.from('rosa').update({
         quot: nuovaQuot,
