@@ -1857,7 +1857,10 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
   }
 
   // ── 1. Salva stats nella tabella svincolati prima di rimuovere ───────────────
-  await supabase.from('svincolati').upsert({
+  // IMPORTANTE: controlliamo l'errore. Se questa scrittura fallisce NON dobbiamo
+  // procedere a cancellare il giocatore dalla rosa, altrimenti il giocatore
+  // sparisce del tutto (né in rosa, né tra gli svincolati).
+  const { error: svincErr } = await supabase.from('svincolati').upsert({
     nome: player.nome,
     ruolo: player.ruolo,
     anni: player.anni || 0,
@@ -1882,8 +1885,17 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
     updated_at: new Date().toISOString(),
   }, { onConflict: 'nome,stagione' });
 
+  if (svincErr) {
+    console.error('eseguiSvincolo: scrittura in svincolati fallita, ANNULLO lo svincolo per evitare di perdere il giocatore:', player.nome, svincErr);
+    throw new Error(`Impossibile completare lo svincolo di ${player.nome}: errore nel salvataggio tra gli svincolati (${svincErr.message || svincErr.code || 'errore sconosciuto'}). Il giocatore è rimasto in rosa, nessuna modifica è stata applicata.`);
+  }
+
   // ── 2. Rimuovi dalla rosa ─────────────────────────────────────────────────
-  await supabase.from('rosa').delete().eq('id', player.id);
+  const { error: delErr } = await supabase.from('rosa').delete().eq('id', player.id);
+  if (delErr) {
+    console.error('eseguiSvincolo: cancellazione dalla rosa fallita dopo aver già scritto tra gli svincolati:', player.nome, delErr);
+    throw new Error(`${player.nome} è stato salvato tra gli svincolati ma non è stato possibile rimuoverlo dalla rosa (${delErr.message || delErr.code || 'errore sconosciuto'}). Controlla manualmente per evitare un doppione.`);
+  }
 
   // ── 3. Aggiorna bilancio ──────────────────────────────────────────────────
   const nuovoBilancio = parseFloat((bilancioAttuale - costoTotale).toFixed(2));
@@ -5955,13 +5967,23 @@ export async function importa01Agosto(rows, stagione = '2026-27') {
         }).eq('id', svinMap[nomeLower].id);
         svinAggiornati++;
       } else if (quot > 0) {
-        // Nuovo giocatore: inserisce in svincolati
-        await supabase.from('svincolati').insert({
+        // Nuovo giocatore: crea in svincolati.
+        // Usiamo upsert (onConflict nome+stagione) invece di insert semplice:
+        // se per qualsiasi motivo esiste già una riga con lo stesso nome/stagione
+        // (es. residuo di uno svincolo precedente), un insert "cieco" fallirebbe
+        // per violazione del vincolo di unicità e il giocatore andrebbe perso
+        // in silenzio. Con upsert la riga viene comunque scritta/aggiornata.
+        const { error: nuovoErr } = await supabase.from('svincolati').upsert({
           nome, quot, stip, clausola, ruolo, stagione,
           squadra_serie_a: squadra_serie_a || null,
           ...statsSvin,
-        });
-        nuoviCreati++;
+        }, { onConflict: 'nome,stagione' });
+        if (nuovoErr) {
+          console.error('importa01Agosto: creazione svincolato fallita:', nome, nuovoErr);
+          nonTrovati.push(`${nome} (errore creazione: ${nuovoErr.message || nuovoErr.code || 'sconosciuto'})`);
+        } else {
+          nuoviCreati++;
+        }
       } else {
         nonTrovati.push(nome);
       }
