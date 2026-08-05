@@ -10084,6 +10084,8 @@ function AdminControlRoomPage({ teams }) {
   const [modalitaTassaz, setModalitaTassaz] = useState('auto'); // 'auto' | 'flat' | 'scaglioni'
   const [modalitaTassazLoading, setModalitaTassazLoading] = useState(false);
   const [asteAttive, setAsteAttive] = useState([]);
+  const [chiamateAperte, setChiamateAperte] = useState(null); // null = non ancora caricate
+  const [rimuovendoInteresse, setRimuovendoInteresse] = useState(null); // id chiamata in corso di rimozione
   const [fpfData, setFpfData] = useState(null);
   const [differiti, setDifferiti] = useState([]);
   const [classifica, setClassifica] = useState([]);
@@ -10154,6 +10156,32 @@ function AdminControlRoomPage({ teams }) {
   async function loadAste() {
     const { data } = await supabase.from('aste_svincolati').select('*').eq('stato', 'raccolta_offerte').order('scadenza', { ascending: true });
     setAsteAttive(data || []);
+  }
+
+  // Recap di tutti gli interessamenti aperti (chiamate non ancora concluse),
+  // raggruppati per giocatore — serve a correggere in un click un presidente
+  // che si è interessato per errore, senza dover toccare Supabase a mano.
+  async function loadChiamateAperte() {
+    const all = await getChiamate();
+    const aperte = (all || []).filter(c => c.stato !== 'conclusa' && c.giocatore);
+    const perGiocatore = {};
+    for (const c of aperte) {
+      (perGiocatore[c.giocatore] ||= []).push(c);
+    }
+    setChiamateAperte(Object.entries(perGiocatore).map(([giocatore, chiamate]) => ({
+      giocatore,
+      chiamate: chiamate.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)),
+    })));
+  }
+
+  async function rimuoviInteresse(chiamata) {
+    if (!window.confirm(`Rimuovere l'interesse di ${chiamata.squadra} per ${chiamata.giocatore}?`)) return;
+    setRimuovendoInteresse(chiamata.id);
+    try {
+      await deleteChiamata(chiamata.id, { forceAdmin: true, motivoAdmin: 'Rimosso da Control Room (interesse per errore)' });
+      await loadChiamateAperte();
+    } catch (e) { alert(e.message); }
+    finally { setRimuovendoInteresse(null); }
   }
 
   async function loadFpf() {
@@ -11223,6 +11251,43 @@ function AdminControlRoomPage({ teams }) {
                         📡 DS Masterclass
                       </button>
                     </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* ── RECAP INTERESSAMENTI + RIMOZIONE ── */}
+              <div style={{ height: 1, background: '#ffffff10', margin: '8px 0' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>📋 INTERESSAMENTI APERTI — TUTTI I GIOCATORI</div>
+                  <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>Chiamate/interessi non ancora conclusi, per correggere un interessamento sbagliato senza toccare Supabase.</div>
+                </div>
+                <button onClick={loadChiamateAperte} style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid #6366f130', background: '#6366f110', color: '#818cf8', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>🔄 Aggiorna</button>
+              </div>
+              {chiamateAperte === null && <div style={{ color: '#555', fontSize: 12 }}>Clicca "Aggiorna" per caricare.</div>}
+              {chiamateAperte !== null && chiamateAperte.length === 0 && <div style={{ color: '#555', fontSize: 12, fontStyle: 'italic' }}>Nessun interessamento aperto al momento.</div>}
+              {chiamateAperte?.map(({ giocatore, chiamate }) => (
+                <div key={giocatore} style={{ background: '#ffffff06', border: '1px solid #ffffff10', borderRadius: 12, padding: '12px 14px' }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#f0f0f0', marginBottom: 8 }}>
+                    {giocatore}
+                    <span style={{ fontSize: 10, fontWeight: 400, color: '#666', marginLeft: 8 }}>{chiamate.length} interessat{chiamate.length === 1 ? 'o' : 'i'}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {chiamate.map(c => (
+                      <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, background: '#ffffff05', borderRadius: 8, padding: '6px 10px', flexWrap: 'wrap' }}>
+                        <div style={{ fontSize: 12, color: '#ccc' }}>
+                          <b>{c.squadra}</b>
+                          <span style={{ fontSize: 10, color: '#666', marginLeft: 6 }}>
+                            {c.tipo === 'prima' ? '📞 ha chiamato' : '✋ interessato'} · {c.stato}
+                            {c.created_at ? ` · ${new Date(c.created_at).toLocaleDateString('it-IT')}` : ''}
+                          </span>
+                        </div>
+                        <button onClick={() => rimuoviInteresse(c)} disabled={rimuovendoInteresse === c.id}
+                          style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #ef444430', background: '#ef444412', color: '#f87171', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
+                          {rimuovendoInteresse === c.id ? '…' : '✕ Rimuovi'}
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
