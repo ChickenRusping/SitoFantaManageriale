@@ -1010,6 +1010,71 @@ export function subscribeAste(callback) {
 // 4. Aggiorna i bilanci di entrambe le squadre
 // 5. Marca la trattativa come "completata"
 // Per prestiti: tiene traccia della scadenza, non sposta definitivamente
+// Quando un giocatore viene rivenduto prima che i bonus del suo acquisto
+// precedente siano stati raggiunti, quell'accordo decadrebbe senza che il
+// vecchio cedente incassi mai nulla. Alla rivendita liquidiamo quei bonus
+// ancora pendenti al 50% forfettario del loro valore, indipendentemente da
+// quanto il giocatore si sia avvicinato alla soglia.
+async function _liquidaBonusPendentiAllaRivendita(giocatoreNome, squadraCedente) {
+  // L'acquisto più recente con cui squadraCedente (che ora sta rivendendo)
+  // aveva ottenuto questo giocatore — era lei l'acquirente in quella trattativa.
+  const { data: acquisti } = await supabase
+    .from('trattative')
+    .select('id, da_squadra, a_squadra')
+    .ilike('giocatore', giocatoreNome)
+    .eq('da_squadra', squadraCedente)
+    .in('stato', ['completata', 'accettata', 'clausola_eseguita'])
+    .order('updated_at', { ascending: false })
+    .limit(1);
+  const acquisto = acquisti?.[0];
+  if (!acquisto) return [];
+
+  const { data: bonusPendenti } = await supabase
+    .from('trattative_bonus')
+    .select('*')
+    .eq('trattativa_id', acquisto.id)
+    .eq('completato', false);
+  if (!bonusPendenti?.length) return [];
+
+  const oggi = new Date().toISOString().slice(0, 10);
+  const liquidati = [];
+  for (const bonus of bonusPendenti) {
+    const importo = parseFloat((Number(bonus.valore_mln || 0) * 0.5).toFixed(2));
+    if (importo <= 0) continue;
+    // Stessa convenzione di checkECompletaBonus: acquirente_paga = paga chi
+    // aveva comprato (squadraCedente, ora rivenditore) verso chi glielo aveva
+    // ceduto in origine; cedente_paga = il contrario.
+    const squadraPaga   = bonus.direzione === 'acquirente_paga' ? acquisto.da_squadra : acquisto.a_squadra;
+    const squadraRiceve = bonus.direzione === 'acquirente_paga' ? acquisto.a_squadra : acquisto.da_squadra;
+
+    const { data: sqs } = await supabase.from('squadre').select('name, bilancio').in('name', [squadraPaga, squadraRiceve]);
+    const bilPaga   = sqs?.find(s => s.name === squadraPaga)?.bilancio   || 0;
+    const bilRiceve = sqs?.find(s => s.name === squadraRiceve)?.bilancio || 0;
+    await supabase.from('squadre').update({ bilancio: parseFloat((bilPaga   - importo).toFixed(2)) }).eq('name', squadraPaga);
+    await supabase.from('squadre').update({ bilancio: parseFloat((bilRiceve + importo).toFixed(2)) }).eq('name', squadraRiceve);
+
+    const descBonus = _labelBonus(bonus.tipo_bonus);
+    await supabase.from('movimenti').insert([
+      { squadra: squadraPaga,   descrizione: `Liquidazione 50% bonus alla rivendita: ${giocatoreNome} — ${descBonus} ≥${bonus.soglia} (pagamento)`, uscita: importo,  data: oggi },
+      { squadra: squadraRiceve, descrizione: `Liquidazione 50% bonus alla rivendita: ${giocatoreNome} — ${descBonus} ≥${bonus.soglia} (incasso)`,   entrata: importo, data: oggi },
+    ]);
+
+    await supabase.from('trattative_bonus').update({
+      completato: true,
+      data_completamento: oggi,
+    }).eq('id', bonus.id);
+
+    // Qui invece si cancella del tutto dalla pagina Altro di entrambe le
+    // squadre coinvolte nell'accordo originale: non è stato "raggiunto" per
+    // davvero, è stato liquidato forfettariamente perché il giocatore è stato
+    // rivenduto — non ha senso restasse visibile come "Attivata".
+    await supabase.from('clausole').delete().eq('trattativa_bonus_id', bonus.id);
+
+    liquidati.push({ bonus: bonus.id, giocatore: giocatoreNome, importo, squadraPaga, squadraRiceve });
+  }
+  return liquidati;
+}
+
 export async function eseguiTrasferimento(trattativa) {
   const { da_squadra, a_squadra, giocatore, prezzo, tipo, quota_giocatore, quot_giocatore,
           scadenza_prestito, stipendio_a_chi, fuori_mercato, id,
@@ -1137,6 +1202,14 @@ export async function eseguiTrasferimento(trattativa) {
         in_prestito: false, prestito_tipo: null, tag_rosa: null, squadra_originale: null, scadenza_prestito: null,
       }).eq('id', p2.id);
     }
+  }
+
+  // ── 2c. Liquidazione bonus pendenti di un precedente acquisto di questo
+  // giocatore da parte del cedente (vedi _liquidaBonusPendentiAllaRivendita).
+  // Solo cessioni definitive: un prestito non cambia davvero la proprietà.
+  if (!isPrestito) {
+    try { await _liquidaBonusPendentiAllaRivendita(giocatore, squadraCedente); }
+    catch (e) { console.warn('Liquidazione bonus alla rivendita fallita:', e.message); }
   }
 
   // Se il giocatore non è trovato nella rosa (es. svincolato), non sposta nulla
@@ -5265,6 +5338,12 @@ export async function importListoneDaExcel(rows) {
   // Solo quando un giocatore è stato trasferito (fanta_squadra aggiornata dall'app)
   // Questo è gestito da aggiornaStipendioDopoTrasferimento()
 
+  // Controlla e paga i bonus clausola non ancora completati (best-effort: se
+  // fallisce non deve bloccare l'import, che è la parte critica). Prima questa
+  // chiamata esisteva solo in una pagina admin senza alcuna route collegata,
+  // quindi in pratica i bonus non venivano mai controllati/pagati.
+  try { await checkECompletaBonus(); } catch (e) { console.warn('checkECompletaBonus fallito dopo import listone:', e.message); }
+
   return mapped.length;
 }
 
@@ -5396,6 +5475,10 @@ export async function checkECompletaBonus() {
       completato: true,
       data_completamento: oggi,
     }).eq('id', bonus.id);
+
+    // Segna come attivate (non le cancelliamo: restano visibili come storico
+    // "Attivata" nella pagina Altro di entrambe le squadre coinvolte).
+    await supabase.from('clausole').update({ completata: true, attivata: true }).eq('trattativa_bonus_id', bonus.id);
 
     risultati.push({ bonus: bonus.id, giocatore: trattativa.giocatore, tipo: bonus.tipo_bonus, importo, squadraPaga, squadraRiceve });
   }
