@@ -6142,6 +6142,14 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const [storicoSvincFilterTipo, setStoricoSvincFilterTipo] = useState("tutti");
   const [storicoSvincFilterSquadra, setStoricoSvincFilterSquadra] = useState("tutte");
   const [storicoSvincSearch, setStoricoSvincSearch] = useState("");
+  // Ogni sottosezione dello storico si apre/chiude indipendentemente dalle
+  // altre, e mostra solo le ultime 15 voci finché non se ne chiedono altre —
+  // evita di renderizzare centinaia di card ad ogni apertura della tab.
+  const STORICO_PAGE = 15;
+  const [storicoAperto, setStoricoAperto] = useState({ trattative: true, asteConcluse: true, asteSvinc: true });
+  const [storicoVisibili, setStoricoVisibili] = useState({ trattative: STORICO_PAGE, asteConcluse: STORICO_PAGE, asteSvinc: STORICO_PAGE });
+  const toggleStorico = (k) => setStoricoAperto(s => ({ ...s, [k]: !s[k] }));
+  const mostraAltriStorico = (k) => setStoricoVisibili(s => ({ ...s, [k]: s[k] + STORICO_PAGE }));
 
   // ── Picker squadra/giocatore (nuovo form trattativa) ──────────────────────
   const emptyForm = {
@@ -7551,8 +7559,12 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       {/* ══ TAB: STORICO ══ */}
       {tab === "storico" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em", marginBottom: 6 }}>📋 STORICO TRATTATIVE</div>
+          <div onClick={() => toggleStorico('trattative')} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", marginBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em" }}>📋 STORICO TRATTATIVE</div>
+            <span style={{ color: "#555", fontSize: 12 }}>{storicoAperto.trattative ? "▲ Nascondi" : "▼ Mostra"}</span>
+          </div>
 
+          {storicoAperto.trattative && (<>
           {/* ── Filtri ── */}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10, background: "#ffffff05", border: "1px solid #ffffff10", borderRadius: 10, padding: "10px 12px" }}>
             <input
@@ -7597,7 +7609,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
             if (loading) return <div style={{ fontSize: 12, color: "#555" }}>Caricamento...</div>;
             if (storicoFiltrato.length === 0) return <div style={{ fontSize: 12, color: "#555", fontStyle: "italic" }}>Nessuna trattativa trovata con questi filtri.</div>;
 
-            return storicoFiltrato.map(t => {
+            return <>
+            {storicoFiltrato.slice(0, storicoVisibili.trattative).map(t => {
               // Convenzione trattative: da_squadra = acquirente, a_squadra = cedente.
               // Il trasferimento va mostrato nel verso reale: cedente → acquirente.
               const daTeam = teams.find(x => x.name === t.a_squadra);
@@ -7679,15 +7692,26 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                   )}
                 </div>
               );
-            });
+            })}
+            {storicoFiltrato.length > storicoVisibili.trattative && (
+              <button onClick={() => mostraAltriStorico('trattative')}
+                style={{ padding: "10px", borderRadius: 10, border: "1px solid #ffffff15", background: "#ffffff05", color: "#888", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                ▾ Mostra altre {Math.min(STORICO_PAGE, storicoFiltrato.length - storicoVisibili.trattative)} trattative
+              </button>
+            )}
+            </>;
           })()}
-
+          </>)}
 
           {/* Aste presidenti concluse */}
           {asteChiuse.length > 0 && (
             <>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em", marginTop: 16, marginBottom: 6 }}>🏷️ ASTE TRA PRESIDENTI CONCLUSE</div>
-              {asteChiuse.map(a => (
+              <div onClick={() => toggleStorico('asteConcluse')} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", marginTop: 16, marginBottom: 6 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em" }}>🏷️ ASTE TRA PRESIDENTI CONCLUSE</div>
+                <span style={{ color: "#555", fontSize: 12 }}>{storicoAperto.asteConcluse ? "▲ Nascondi" : "▼ Mostra"}</span>
+              </div>
+              {storicoAperto.asteConcluse && (<>
+              {asteChiuse.slice(0, storicoVisibili.asteConcluse).map(a => (
                 <div key={a.id} style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: "10px 14px", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: "#ddd" }}>{a.giocatore} · {a.tipo_asta === 'rialzo' ? '📈' : '📉'}</div>
@@ -7697,12 +7721,23 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                   <Badge color={a.stato === 'aggiudicata' ? "#10b981" : "#555"}>{a.stato}</Badge>
                 </div>
               ))}
+              {asteChiuse.length > storicoVisibili.asteConcluse && (
+                <button onClick={() => mostraAltriStorico('asteConcluse')}
+                  style={{ padding: "10px", borderRadius: 10, border: "1px solid #ffffff15", background: "#ffffff05", color: "#888", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  ▾ Mostra altre {Math.min(STORICO_PAGE, asteChiuse.length - storicoVisibili.asteConcluse)} aste
+                </button>
+              )}
+              </>)}
             </>
           )}
 
           {/* Storico aste svincolati — sempre visibile, con filtri, per poterle controllare più avanti */}
           <div style={{ marginTop: 24 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em", marginBottom: 8 }}>📞 STORICO ASTE SVINCOLATI</div>
+            <div onClick={() => toggleStorico('asteSvinc')} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", marginBottom: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em" }}>📞 STORICO ASTE SVINCOLATI</div>
+              <span style={{ color: "#555", fontSize: 12 }}>{storicoAperto.asteSvinc ? "▲ Nascondi" : "▼ Mostra"}</span>
+            </div>
+            {storicoAperto.asteSvinc && (<>
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10, background: "#ffffff05", border: "1px solid #ffffff10", borderRadius: 10, padding: "10px 12px" }}>
               <input
@@ -7749,7 +7784,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
               if (!asteSvinc.length) return <div style={{ fontSize: 12, color: "#555" }}>Caricamento...</div>;
               if (!storSvinc.length) return <div style={{ fontSize: 12, color: "#555", fontStyle: "italic" }}>Nessuna asta svincolati trovata con questi filtri.</div>;
 
-              return storSvinc.map(a => {
+              return <>
+              {storSvinc.slice(0, storicoVisibili.asteSvinc).map(a => {
                 const statoCol = a.stato === 'assegnata' ? "#10b981" : a.stato === 'annullata' ? "#ef4444" : "#555";
                 const vincTeam = a.vincitore ? teams.find(t => t.name === a.vincitore) : null;
                 return (
@@ -7771,8 +7807,16 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                     <Badge color={statoCol}>{a.stato}</Badge>
                   </div>
                 );
-              });
+              })}
+              {storSvinc.length > storicoVisibili.asteSvinc && (
+                <button onClick={() => mostraAltriStorico('asteSvinc')}
+                  style={{ padding: "10px", borderRadius: 10, border: "1px solid #ffffff15", background: "#ffffff05", color: "#888", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  ▾ Mostra altre {Math.min(STORICO_PAGE, storSvinc.length - storicoVisibili.asteSvinc)} aste
+                </button>
+              )}
+              </>;
             })()}
+            </>)}
           </div>
         </div>
       )}
@@ -8097,6 +8141,8 @@ function SvincolatiTable({ filtered, chiamateAttive, mySquadra, isAdmin, setShow
     _stipNum:  Number(p.stip  || 0),
     _clausNum: Number(p.clausola || 0),
     _anniNum:  Number(p.anni  || 0),
+    _mvNum:    Number(p.media_voto || 0),
+    _mfvNum:   Number(p.media_fantavoto || 0),
   }));
   const { sorted, SortTh } = useSortableTable(rich, "_quotNum", "desc");
   const finestra = getFinestraChiamateEffettiva();
@@ -8111,15 +8157,18 @@ function SvincolatiTable({ filtered, chiamateAttive, mySquadra, isAdmin, setShow
         {isAdmin && !finestra.aperta && finestra.modalita !== 'chiuso' && <span style={{ fontSize: 9, color: "#6366f1" }}>Admin: puoi chiamare sempre</span>}
       </div>
 
-      <table style={{ width: "100%", minWidth: 480, borderCollapse: "collapse", fontSize: 12 }}>
+      <table style={{ width: "100%", minWidth: 720, borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
           <tr>
-            <SortTh col="ruolo"     label="Ruolo"  align="center" />
-            <SortTh col="_anniNum"  label="Età"    align="center" />
-            <SortTh col="nome"      label="Nome"   align="left"   />
-            <SortTh col="_quotNum"  label="Q"      align="center" />
-            <SortTh col="_stipNum"  label="Stip."  align="center" />
-            <SortTh col="_clausNum" label="Claus." align="center" />
+            <SortTh col="ruolo"          label="Ruolo"  align="center" />
+            <SortTh col="_anniNum"       label="Età"    align="center" />
+            <SortTh col="nome"           label="Nome"   align="left"   />
+            <SortTh col="squadra_serie_a" label="Squadra" align="left" />
+            <SortTh col="_quotNum"       label="Q"      align="center" />
+            <SortTh col="_stipNum"       label="Stip."  align="center" />
+            <SortTh col="_clausNum"      label="Claus." align="center" />
+            <SortTh col="_mvNum"         label="M.Voto"  align="center" />
+            <SortTh col="_mfvNum"        label="M.Fantav." align="center" />
             <th style={{ padding: "6px 8px", fontSize: 10, color: "#555", borderBottom: "1px solid #ffffff12" }}></th>
           </tr>
         </thead>
@@ -8146,9 +8195,12 @@ function SvincolatiTable({ filtered, chiamateAttive, mySquadra, isAdmin, setShow
                   {!fuori && p.anni <= 21 && !p.isVivaio && <span style={{ marginLeft: 5, fontSize: 9, background: "#8b5cf622", color: "#a78bfa", borderRadius: 4, padding: "1px 4px" }}>U21</span>}
                   {!fuori && p.anni >= 31 && <span style={{ marginLeft: 5, fontSize: 9, background: "#f9731622", color: "#fb923c", borderRadius: 4, padding: "1px 4px" }}>31+</span>}
                 </td>
+                <td style={{ padding: "7px 8px", color: "#888" }}>{p.squadra_serie_a || "—"}</td>
                 <td style={{ padding: "7px 8px", textAlign: "center", fontWeight: 800, color: p.quot >= 20 ? "#f59e0b" : "#ccc", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14 }}>{p.quot}</td>
                 <td style={{ padding: "7px 8px", textAlign: "center", color: "#aaa" }}>{p.stip}M</td>
                 <td style={{ padding: "7px 8px", textAlign: "center", color: "#666" }}>{Number(p.clausola || 0).toFixed(1)}M</td>
+                <td style={{ padding: "7px 8px", textAlign: "center", color: p.media_voto >= 6.5 ? "#10b981" : p.media_voto >= 6 ? "#f59e0b" : "#888" }}>{p.media_voto > 0 ? Number(p.media_voto).toFixed(2) : "—"}</td>
+                <td style={{ padding: "7px 8px", textAlign: "center", color: p.media_fantavoto >= 7 ? "#10b981" : p.media_fantavoto >= 6 ? "#f59e0b" : "#888" }}>{p.media_fantavoto > 0 ? Number(p.media_fantavoto).toFixed(2) : "—"}</td>
                 <td style={{ padding: "7px 8px", textAlign: "center" }}>
                   <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
                     <button
