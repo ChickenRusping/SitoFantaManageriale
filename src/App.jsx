@@ -7938,7 +7938,7 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
         {/* Azioni */}
         <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
           {/* Azioni presidente */}
-          {!astaAttiva && !astaAssegnata && !giaInteressato && !scadutaInteresse && mySquadra && !isAdmin && (
+          {!astaAttiva && !astaAssegnata && !giaInteressato && !scadutaInteresse && mySquadra && (
             <div style={{ display: "flex", gap: 6 }}>
               <button onClick={() => handleInteresse(false)} disabled={saving}
                 style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "#f59e0b", color: "#000", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
@@ -7952,7 +7952,7 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
               )}
             </div>
           )}
-          {giaInteressato && !astaAttiva && !astaAssegnata && !isAdmin && (
+          {giaInteressato && !astaAttiva && !astaAssegnata && (
             <span style={{ fontSize: 10, color: "#10b981", fontWeight: 600 }}>✅ Sei interessato</span>
           )}
           {/* Azioni admin */}
