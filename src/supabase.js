@@ -6002,7 +6002,7 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
         rosaAggiornati++;
       } else if (svinMap[nomeLower]) {
         await supabase.from('svincolati').update({
-          quot, stip, clausola, ruolo, squadra_serie_a: squadra_serie_a || null,
+          quot, stip, clausola, ruolo, anni, squadra_serie_a: squadra_serie_a || null,
           fuori_lista: fuoriListaRiga,
           ...statsSvin,
         }).eq('id', svinMap[nomeLower].id);
@@ -6014,7 +6014,7 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
         // unicità (nome,stagione) non esisteva davvero sul database.
         try {
           await upsertSvincolatoSafe({
-            nome, quot, stip, clausola, ruolo,
+            nome, quot, stip, clausola, ruolo, anni,
             squadra_serie_a: squadra_serie_a || null,
             fuori_lista: fuoriListaRiga,
             ...statsSvin,
