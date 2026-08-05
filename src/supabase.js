@@ -4120,6 +4120,30 @@ async function richiediDecisioneVivaio(player, now = new Date()) {
 
 async function svincolaVivaioAutomatico(player, motivo = 'Scadenza scelta vivaio superata') {
   const squadra = player.squadra;
+  // Come un normale svincolo: il giocatore deve tornare disponibile tra gli
+  // svincolati, non sparire del tutto dal database.
+  await upsertSvincolatoSafe({
+    nome: player.nome,
+    ruolo: player.ruolo,
+    anni: player.anni || 0,
+    quot: player.quot || 0,
+    stip: player.stip || 0,
+    clausola: parseFloat(((player.quot || 0) * 1.75).toFixed(2)),
+    fuori_lista: player.fuori_lista || false,
+    squadra_serie_a: player.squadra_serie_a || null,
+    partite: player.partite || 0,
+    media_voto: player.media_voto || 0,
+    media_fantavoto: player.media_fantavoto || 0,
+    gol: player.gol || 0,
+    assist: player.assist || 0,
+    ammonizioni: player.ammonizioni || 0,
+    espulsioni: player.espulsioni || 0,
+    autogol: player.autogol || 0,
+    rigori_parati: player.rigori_parati || 0,
+    rigori_segnati: player.rigori_segnati || 0,
+    rigori_sbagliati: player.rigori_sbagliati || 0,
+    gol_subiti: player.gol_subiti || 0,
+  }, stagioneDaData(new Date()));
   await supabase.from('rosa').delete().eq('id', player.id);
   await logAuditVivaio(
     squadra,
@@ -4277,6 +4301,29 @@ export async function promuoviDaVivaio(playerId, squadra) {
 export async function svincolaVivaio(playerId, squadra) {
   const { data: player } = await supabase.from('rosa').select('*').eq('id', playerId).single();
   if (!player) throw new Error('Giocatore non trovato');
+  // Come un normale svincolo: torna disponibile tra gli svincolati, non sparisce.
+  await upsertSvincolatoSafe({
+    nome: player.nome,
+    ruolo: player.ruolo,
+    anni: player.anni || 0,
+    quot: player.quot || 0,
+    stip: player.stip || 0,
+    clausola: parseFloat(((player.quot || 0) * 1.75).toFixed(2)),
+    fuori_lista: player.fuori_lista || false,
+    squadra_serie_a: player.squadra_serie_a || null,
+    partite: player.partite || 0,
+    media_voto: player.media_voto || 0,
+    media_fantavoto: player.media_fantavoto || 0,
+    gol: player.gol || 0,
+    assist: player.assist || 0,
+    ammonizioni: player.ammonizioni || 0,
+    espulsioni: player.espulsioni || 0,
+    autogol: player.autogol || 0,
+    rigori_parati: player.rigori_parati || 0,
+    rigori_segnati: player.rigori_segnati || 0,
+    rigori_sbagliati: player.rigori_sbagliati || 0,
+    gol_subiti: player.gol_subiti || 0,
+  }, stagioneDaData(new Date()));
   await supabase.from('rosa').delete().eq('id', playerId);
   await logAuditVivaio(squadra, 'rosa_rimuovi', `Vivaio: svincolato ${player.nome} (costo 0)`, { giocatore: player });
 }
