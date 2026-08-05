@@ -11287,7 +11287,7 @@ function AdminControlRoomPage({ teams }) {
                           <b>{c.squadra}</b>
                           <span style={{ fontSize: 10, color: '#666', marginLeft: 6 }}>
                             {c.tipo === 'prima' ? '📞 ha chiamato' : '✋ interessato'} · {c.stato}
-                            {c.created_at ? ` · ${new Date(c.created_at).toLocaleDateString('it-IT')}` : ''}
+                            {c.created_at ? ` · ${new Date(c.created_at).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : ''}
                           </span>
                         </div>
                         <button onClick={() => rimuoviInteresse(c)} disabled={rimuovendoInteresse === c.id}
