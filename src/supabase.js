@@ -1858,10 +1858,10 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
     movDesc = `Svincolo ordinario: ${player.nome} (penale ${costoPenale}M + ${mesiRimasti} mens. residue ${costoStipendi}M)`;
 
   } else if (tipo === 'straordinario' || tipo === 'straordinario_u21') {
-    // Indennizzo: ¼ quot (o ½ se estero) — art. 6.1
+    // Indennizzo: ½ quot (o ¾ se estero) — art. 6.1
     indennizzo = estero
-      ? parseFloat((quot / 2).toFixed(2))
-      : parseFloat((quot / 4).toFixed(2));
+      ? parseFloat((quot * 0.75).toFixed(2))
+      : parseFloat((quot * 0.5).toFixed(2));
 
     // Rimborso delle mensilità già pagate nella stagione: 01/07, 01/08, ..., fino alla data di svincolo.
     mesiRimborsati = _contaMensilitaGiaPagate(oggi);
@@ -1900,7 +1900,7 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
       quot: player.quot || 0,
       stip: player.stip || 0,
       clausola: parseFloat(((player.quot || 0) * 1.75).toFixed(2)),
-      fuori_lista: false,
+      fuori_lista: player.fuori_lista || false,
       squadra_serie_a: player.squadra_serie_a || null,
       partite: player.partite || 0,
       media_voto: player.media_voto || 0,
@@ -5489,7 +5489,7 @@ export async function aggiornaContrattiAnnuali() {
       await supabase.from('svincolati').upsert({
         nome: p.nome, ruolo: p.ruolo, anni: p.anni, quot: p.quot,
         stip: p.stip, clausola: _calcolaClausolaRegolamento(p.quot),
-        fuori_lista: false, squadra_serie_a: p.squadra_serie_a,
+        fuori_lista: p.fuori_lista || false, squadra_serie_a: p.squadra_serie_a,
         stagione: stagioneDaData(oggi), updated_at: new Date().toISOString(),
       }, { onConflict: 'nome,stagione' });
       svincolati.push({ nome: p.nome, squadra: p.squadra, motivo: 'contratto_biennale_non_rinnovato' });
