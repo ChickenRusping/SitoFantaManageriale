@@ -7910,15 +7910,23 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
             {astaAssegnata && <span style={{ fontSize: 9, background: "#10b98118", color: "#10b981", borderRadius: 10, padding: "1px 6px", fontWeight: 700 }}>✅ Assegnato a {astaAssegnata.vincitore}</span>}
           </div>
 
-          {/* Interessati */}
-          <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap", marginBottom: 6 }}>
-            <span style={{ fontSize: 10, color: "#555" }}>Interessati:</span>
-            {interessati.map((sq, i) => (
-              <span key={i} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, background: sq === mySquadra ? "#f59e0b20" : "#ffffff10", color: sq === mySquadra ? "#f59e0b" : "#aaa", fontWeight: sq === mySquadra ? 700 : 400 }}>
-                {sq}
-              </span>
-            ))}
+          {/* Chiamato da / Altri interessati */}
+          <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap", marginBottom: 4 }}>
+            <span style={{ fontSize: 10, color: "#555" }}>Chiamato da:</span>
+            <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, background: primaria.squadra === mySquadra ? "#f59e0b20" : "#ffffff10", color: primaria.squadra === mySquadra ? "#f59e0b" : "#aaa", fontWeight: 700 }}>
+              {primaria.squadra}
+            </span>
           </div>
+          {interessati.filter(sq => sq !== primaria.squadra).length > 0 && (
+            <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap", marginBottom: 6 }}>
+              <span style={{ fontSize: 10, color: "#555" }}>Altri interessati:</span>
+              {interessati.filter(sq => sq !== primaria.squadra).map((sq, i) => (
+                <span key={i} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, background: sq === mySquadra ? "#f59e0b20" : "#ffffff10", color: sq === mySquadra ? "#f59e0b" : "#aaa", fontWeight: sq === mySquadra ? 700 : 400 }}>
+                  {sq}
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Scadenze */}
           {!astaAttiva && !astaAssegnata && (
