@@ -65,6 +65,7 @@ const DEEP_LINK: Record<string, string> = {
   ds_masterclass_usato:  `${APP}/mercato`,
   svincolo:              `${APP}/mercato`,
   scelta_allenatore:     `${APP}/squadre`,
+  investimento_acquistato: `${APP}/squadre`,
   movimento_privato:     `${APP}/squadre`,
   tassa_applicata:       `${APP}/squadre`,
   stipendi_applicati:    `${APP}/squadre`,
@@ -93,6 +94,7 @@ const CATEGORY_BADGE: Record<string, string> = {
   asta_assegnata:        "━━━  🏛  ASTE TRA PRESIDENTI  🏛  ━━━",
   svincolo:              "━━━  🔓  MERCATO  🔓  ━━━",
   scelta_allenatore:     "━━━  🎓  ALLENATORE  🎓  ━━━",
+  investimento_acquistato: "━━━  📈  INVESTIMENTI  📈  ━━━",
   movimento_privato:     "━━━  💳  MOVIMENTO  💳  ━━━",
   tassa_applicata:       "━━━  📊  BILANCIO  📊  ━━━",
   stipendi_applicati:    "━━━  💰  STIPENDI  💰  ━━━",
@@ -125,6 +127,9 @@ function buildMessage(type: string, p: Record<string, unknown>): string | null {
 
     case "scelta_allenatore":
       return `${badge}🎓 <b>Nuova scelta allenatore!</b>\n\n🏟 <b>${p.squadra}</b>\n🎓 Allenatore: <b>${p.nomeAllenatore}</b>${link}`;
+
+    case "investimento_acquistato":
+      return `${badge}📈 <b>Nuovo investimento!</b>\n\n🏟 <b>${p.squadra}</b>\n💼 ${p.nome} · <b>${p.costo}M</b>${link}`;
 
     case "trattativa_ricevuta": {
       const bonus = Number(p.bonus || 0);
@@ -283,6 +288,7 @@ serve(async (req) => {
     "asta_assegnata",
     "svincolo",
     "scelta_allenatore",
+    "investimento_acquistato",
     "trattativa_accettata",
     "nuova_notizia",
     "scadenza_imminente",
@@ -299,11 +305,15 @@ serve(async (req) => {
   }
 
   if (targetSquadra) {
+    // ilike + trim: tollerante a differenze di maiuscole/spazi tra il nome
+    // squadra salvato in telegram_registrations (via /start) e quello passato
+    // dall'app (profilo/notizia/commento) — un mismatch qui fa fallire in
+    // silenzio l'invio privato senza che nessun errore sia visibile.
     const { data: reg } = await db
       .from("telegram_registrations")
       .select("chat_id")
-      .eq("squadra", targetSquadra)
-      .single();
+      .ilike("squadra", targetSquadra.trim())
+      .maybeSingle();
 
     if (reg?.chat_id) {
       const r = await sendMessage(reg.chat_id as number, text);
