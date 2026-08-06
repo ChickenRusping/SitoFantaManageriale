@@ -4925,11 +4925,12 @@ export async function calcolaScadenzaOfferteAttesa(primaria) {
 
   if (modalita === 'libero') {
     // Modalità libera: 12h "attive" dalla scadenza interesse (il freeze
-    // notturno 00:00-08:00 non conta, come per le aste a discesa), poi
-    // eventualmente spostata in avanti per garantire almeno 30 minuti di
-    // distacco dall'ultima asta libera ancora in raccolta offerte.
-    const naturale = calcolaScadenzaOfferteLibero(scadenzaInteresse);
-    return await _applicaIntervalloMinimoLibero(naturale);
+    // notturno 00:00-08:00 non conta, come per le aste a discesa), con
+    // distanziamento minimo di 30' rispetto a TUTTE le chiamate precedenti
+    // (già trasformate in asta oppure ancora in attesa) — vedi
+    // _calcolaScadenzaOfferteLiberoConCoda per il perché non basta guardare
+    // solo le aste già esistenti.
+    return await _calcolaScadenzaOfferteLiberoConCoda(primaria);
   }
   // Sempre: venerdì = giovedì + 1 giorno, slot base 13:00 UTC (14:00 Italia) + 30min per ogni chiamata precedente
   const ven = new Date(scadenzaInteresse);
@@ -5926,28 +5927,60 @@ export function calcolaScadenzaOfferteLibero(scadenzaInteresse) {
 }
 
 // Intervallo minimo di 30 minuti tra le scadenze offerte di due aste in
-// modalità libera: se la scadenza "naturale" (già calcolata con il freeze)
-// cade a meno di 30 minuti dall'ultima asta in modalità libera ancora in
-// raccolta offerte, viene spostata a quella scadenza + 30 minuti. Se invece
-// c'è già almeno mezz'ora di distacco, resta invariata.
-async function _applicaIntervalloMinimoLibero(scadenzaNaturale) {
+// modalità libera. IMPORTANTE: non basta guardare le aste GIÀ create (tabella
+// aste_svincolati) — se più chiamate sono ancora contemporaneamente in attesa
+// che scada il loro interesse (nessuna asta esiste ancora per nessuna di
+// loro), bisogna simulare l'intera coda delle chiamate con scadenza_interesse
+// precedente o uguale a quella data, applicando lo stesso distanziamento che
+// verrà realmente usato quando ciascuna, in ordine, diventerà un'asta vera.
+// Per le chiamate già trasformate in un'asta reale si usa la sua scadenza
+// effettiva (non viene ricalcolata), per le altre si simula.
+async function _calcolaScadenzaOfferteLiberoConCoda(primariaTarget) {
   try {
-    const { data: pendenti, error } = await supabase
-      .from('aste_svincolati')
-      .select('scadenza')
-      .eq('stato', 'raccolta_offerte')
+    const { data: coda } = await supabase
+      .from('chiamate')
+      .select('giocatore, scadenza_interesse, asta_id')
+      .eq('tipo', 'prima')
       .eq('modalita', 'libero')
-      .order('scadenza', { ascending: false })
-      .limit(1);
-    if (error) return scadenzaNaturale;
-    const ultima = pendenti?.[0]?.scadenza ? new Date(pendenti[0].scadenza) : null;
-    if (!ultima) return scadenzaNaturale;
-    const minimaSuccessiva = new Date(ultima.getTime() + 30 * 60000);
-    return scadenzaNaturale < minimaSuccessiva ? minimaSuccessiva : scadenzaNaturale;
+      .lte('scadenza_interesse', primariaTarget.scadenza_interesse)
+      .order('scadenza_interesse', { ascending: true });
+
+    let lista = coda || [];
+    if (!lista.some(c => c.giocatore === primariaTarget.giocatore)) {
+      lista = [...lista, {
+        giocatore: primariaTarget.giocatore,
+        scadenza_interesse: primariaTarget.scadenza_interesse,
+        asta_id: primariaTarget.asta_id || null,
+      }].sort((a, b) => new Date(a.scadenza_interesse) - new Date(b.scadenza_interesse));
+    }
+
+    // Scadenze reali delle chiamate già convertite in asta, in un'unica query.
+    const astaIds = [...new Set(lista.map(c => c.asta_id).filter(Boolean))];
+    const scadenzeReali = {};
+    if (astaIds.length) {
+      const { data: asteReali } = await supabase.from('aste_svincolati').select('id, scadenza').in('id', astaIds);
+      for (const a of (asteReali || [])) scadenzeReali[a.id] = new Date(a.scadenza);
+    }
+
+    let ultima = null;
+    for (const c of lista) {
+      let effettiva;
+      if (c.asta_id && scadenzeReali[c.asta_id]) {
+        effettiva = scadenzeReali[c.asta_id];
+      } else {
+        const naturale = calcolaScadenzaOfferteLibero(new Date(c.scadenza_interesse));
+        effettiva = ultima && naturale < new Date(ultima.getTime() + 30 * 60000)
+          ? new Date(ultima.getTime() + 30 * 60000)
+          : naturale;
+      }
+      if (c.giocatore === primariaTarget.giocatore) return effettiva;
+      ultima = effettiva;
+    }
+    return calcolaScadenzaOfferteLibero(new Date(primariaTarget.scadenza_interesse));
   } catch {
-    // Best-effort: se la colonna 'modalita' non esiste ancora su aste_svincolati
-    // (migrazione non applicata), non blocchiamo la creazione dell'asta.
-    return scadenzaNaturale;
+    // Best-effort: se qualche colonna non esiste ancora (migrazione non
+    // applicata), non blocchiamo comunque la creazione/anteprima dell'asta.
+    return calcolaScadenzaOfferteLibero(new Date(primariaTarget.scadenza_interesse));
   }
 }
 
