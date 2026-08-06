@@ -5942,9 +5942,13 @@ async function _calcolaScadenzaOfferteLiberoConCoda(primariaTarget) {
         effettiva = scadenzeReali[c.asta_id];
       } else {
         const naturale = calcolaScadenzaOfferteLibero(new Date(c.scadenza_interesse));
-        effettiva = ultima && naturale < new Date(ultima.getTime() + 30 * 60000)
-          ? new Date(ultima.getTime() + 30 * 60000)
-          : naturale;
+        // Anche lo spostamento per il distanziamento minimo deve rispettare il
+        // freeze notturno: "+30 minuti" da un orario vicino a mezzanotte non
+        // può ricadere dentro la finestra 00:00-08:00, va calcolato come 30
+        // minuti ATTIVI (esattamente come le 12h iniziali), altrimenti si
+        // ottengono scadenze tipo 00:18 o 00:48 dentro il freeze.
+        const minimaSuccessiva = ultima ? _scadenzaConFreeze(ultima, 30) : null;
+        effettiva = minimaSuccessiva && naturale < minimaSuccessiva ? minimaSuccessiva : naturale;
       }
       if (c.giocatore === primariaTarget.giocatore) return effettiva;
       ultima = effettiva;
