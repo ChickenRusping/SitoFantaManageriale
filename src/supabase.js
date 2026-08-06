@@ -4878,22 +4878,37 @@ export function calcolaScadenzaAsta(dataPrimaChiamata = new Date()) {
 }
 
 // ── Calcola slot scalare venerdì per una nuova asta ──────────────────────────
-// Prima asta del venerdì → 11:00 UTC (12:00 Italia); ogni asta successiva +30min
-export async function calcolaSlotVenerdì(venerdìUTC) {
-  // Cerca aste già programmate per quel venerdì UTC (da 00:00 a 23:59 UTC)
-  const inizioGiorno = new Date(venerdìUTC);
-  inizioGiorno.setUTCHours(0, 0, 0, 0);
-  const fineGiorno = new Date(venerdìUTC);
-  fineGiorno.setUTCHours(23, 59, 59, 999);
+// Prima asta del venerdì → 13:00 UTC (14:00 Italia); ogni asta successiva +30min.
+// Lo slot è determinato dall'ORDINE DI CHIAMATA (scadenza_interesse della
+// chiamata principale), non dall'ordine in cui le aste vengono create: contare
+// semplicemente le aste già create per quel venerdì è fragile, perché se
+// un admin crea le aste manualmente in un ordine diverso da quello delle
+// chiamate (o se automatico e manuale si mescolano), lo slot non rispecchia
+// più chi ha chiamato per primo. Qui invece si conta quante chiamate
+// principali di quello stesso venerdì hanno una scadenza_interesse precedente
+// alla chiamata corrente: è deterministico e indipendente da quando/come
+// viene creata l'asta.
+export async function calcolaSlotVenerdì(venerdìUTC, scadenzaInteresseChiamata) {
+  // Tutte le chiamate la cui scadenza_interesse cade nel giorno (giovedì) che
+  // porta a QUESTO venerdì di aste: stessa finestra di 24h usata per calcolare
+  // "ven" in creaAstaDaChiamate (scadenzaInteresse + 1 giorno).
+  const giornoChiamate = new Date(venerdìUTC);
+  giornoChiamate.setUTCDate(giornoChiamate.getUTCDate() - 1);
+  giornoChiamate.setUTCHours(0, 0, 0, 0);
+  const fineGiornoChiamate = new Date(giornoChiamate);
+  fineGiornoChiamate.setUTCHours(23, 59, 59, 999);
 
-  const { data: asteGia } = await supabase
-    .from('aste_svincolati')
-    .select('scadenza')
-    .gte('scadenza', inizioGiorno.toISOString())
-    .lte('scadenza', fineGiorno.toISOString())
-    .in('stato', ['raccolta_offerte', 'assegnata', 'rivelata']);
+  const { data: chiamateStessoVenerdi } = await supabase
+    .from('chiamate')
+    .select('scadenza_interesse')
+    .eq('tipo', 'prima')
+    .gte('scadenza_interesse', giornoChiamate.toISOString())
+    .lte('scadenza_interesse', fineGiornoChiamate.toISOString());
 
-  return (asteGia || []).length;
+  const targetISO = new Date(scadenzaInteresseChiamata).toISOString();
+  // Slot = quante chiamate di questo stesso venerdì sono state fatte prima
+  // (scadenza_interesse minore) della chiamata corrente.
+  return (chiamateStessoVenerdi || []).filter(c => c.scadenza_interesse < targetISO).length;
 }
 
 // ── Crea asta da chiamate esistenti ──────────────────────────────────────────
@@ -4919,7 +4934,7 @@ export async function creaAstaDaChiamate(nomeGiocatore) {
     const ven = new Date(scadenzaInteresse);
     ven.setUTCDate(scadenzaInteresse.getUTCDate() + 1);
     ven.setUTCHours(13, 0, 0, 0);
-    const slot = await calcolaSlotVenerdì(ven);
+    const slot = await calcolaSlotVenerdì(ven, primaria.scadenza_interesse);
     ven.setUTCMinutes(slot * 30);
     scadenzaOfferte = ven;
   }
@@ -5140,9 +5155,13 @@ export async function checkScadenzeAste() {
   const risultati = [];
 
   // 1. Chiamate con scadenza_interesse scaduta → crea asta o processa unico
+  // Ordine di elaborazione = ordine di scadenza (quindi di chiamata): niente
+  // di arbitrario, la prima chiamata in ordine di tempo viene sempre gestita
+  // prima delle successive.
   const { data: chiamateScadute } = await supabase.from('chiamate')
     .select('giocatore, quot, per_vivaio, scadenza_interesse, squadra, tipo')
-    .eq('stato', 'aperta').eq('tipo', 'prima').lte('scadenza_interesse', oraISO);
+    .eq('stato', 'aperta').eq('tipo', 'prima').lte('scadenza_interesse', oraISO)
+    .order('scadenza_interesse', { ascending: true });
 
   for (const c of chiamateScadute || []) {
     // Conta tutti gli interessati
@@ -5170,8 +5189,13 @@ export async function checkScadenzeAste() {
   }
 
   // 2. Aste con scadenza offerte scaduta → rivela e completa
+  // Stesso principio: elaborate in ordine di scadenza (= ordine di chiamata
+  // originale), non nell'ordine arbitrario in cui il database le restituisce.
+  // Importante per il bilancio: se una squadra vince più aste scadute insieme,
+  // ora "spende" prima su quella chiamata per prima, in modo prevedibile.
   const { data: asteScadute } = await supabase.from('aste_svincolati')
-    .select('id, giocatore').eq('stato', 'raccolta_offerte').lte('scadenza', oraISO);
+    .select('id, giocatore').eq('stato', 'raccolta_offerte').lte('scadenza', oraISO)
+    .order('scadenza', { ascending: true });
 
   for (const a of asteScadute || []) {
     try {
