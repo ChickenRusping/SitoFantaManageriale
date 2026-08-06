@@ -6170,7 +6170,7 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
   await importListoneDaExcel(rows);
 
   const { data: rosaAll } = await supabase.from('rosa').select('id, nome, anni, stip, fuori_lista').eq('in_vivaio', false);
-  const { data: svinAll }  = await supabase.from('svincolati').select('id, nome').eq('stagione', stagione);
+  const { data: svinAll }  = await supabase.from('svincolati').select('id, nome, fuori_lista').eq('stagione', stagione);
 
   // Normalizza accenti e spazi multipli (non la punteggiatura, per non fondere
   // per errore giocatori realmente diversi come "Castro" e "Castro S."): serve
@@ -6285,7 +6285,19 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
     ));
   }
 
-  return { rosaAggiornati, svinAggiornati, nuoviCreati, nonTrovati, fuoriListaSegnati: usciti.length, totale: validRows.length };
+  // Stessa cosa per gli svincolati: se un giocatore sparisce del tutto dal
+  // nuovo database (es. trasferito all'estero), va segnato fuori lista anche
+  // lì — prima questo controllo esisteva solo per la rosa, mai per gli
+  // svincolati, quindi restavano "in lista" per sempre anche se il file non
+  // li conteneva più.
+  const svinUsciti = (svinAll || []).filter(s => !nomiExcel.has(normPlayerName(s.nome)) && !s.fuori_lista);
+  for (let i = 0; i < svinUsciti.length; i += BATCH) {
+    await Promise.all(svinUsciti.slice(i, i + BATCH).map(s =>
+      supabase.from('svincolati').update({ fuori_lista: true }).eq('id', s.id)
+    ));
+  }
+
+  return { rosaAggiornati, svinAggiornati, nuoviCreati, nonTrovati, fuoriListaSegnati: usciti.length + svinUsciti.length, totale: validRows.length };
 }
 
 // Update Settimanale: come l'update di fine stagione/inizio stagione in
