@@ -310,7 +310,7 @@ function Badge({ children, color, style = {}, title }) {
 function DaCedereBadge({ compact = false }) {
   return (
     <span
-      title="Stipendio ridotto a gennaio: obbligo di cessione o svincolo entro il 15/09 dello stesso anno"
+      title="Stipendio ridotto a gennaio: obbligo di cessione o svincolo entro la prima giornata di Serie A"
       style={{
         marginLeft: compact ? 4 : 0,
         fontSize: compact ? 9 : 10,
@@ -323,7 +323,7 @@ function DaCedereBadge({ compact = false }) {
         whiteSpace: "nowrap",
       }}
     >
-      DA CEDERE 15/09
+      DA CEDERE 22/08
     </span>
   );
 }
@@ -2481,7 +2481,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
               </div>
               {(tipoSvincolo==='straordinario'||tipoSvincolo==='straordinario_u21')&&(
                 <label style={{ display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:11,color:"#ccc" }}>
-                  <input type="checkbox" checked={estero} onChange={e=>setEstero(e.target.checked)}/> Trasferito all'estero (rimb. ½)
+                  <input type="checkbox" checked={estero} onChange={e=>setEstero(e.target.checked)}/> Trasferito all'estero (rimb. ¾)
                 </label>
               )}
               {preview&&(
@@ -3300,7 +3300,7 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
     setSaving(p.id);
     try {
       const { deveCedere } = await applicaTop5Ribasso(p.id, team.name, ridurre, STAGIONE_CORRENTE);
-      if (deveCedere) alert(`⚠️ ${p.nome} (${p.anni}aa) deve essere ceduto/svincolato entro il 15/09 dello stesso anno, altrimenti penalità 5M + svincolo forzato.`);
+      if (deveCedere) alert(`⚠️ ${p.nome} (${p.anni}aa) deve essere ceduto/svincolato entro la prima giornata di Serie A (22/08), altrimenti penalità 5M + svincolo forzato.`);
       await caricaDati();
       if (onRefresh) onRefresh();
     } catch(e) { alert(e.message); }
@@ -3416,7 +3416,7 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
                         <div style={{ fontSize: 12, fontWeight: 700, color: gia ? "#10b981" : "#f0f0f0" }}>
                           {gia ? "✅ " : ""}{p.nome}
                           <span style={{ fontSize: 10, color: "#888", marginLeft: 6 }}>{p.anni}aa</span>
-                          {deveCedere && !gia && <Badge color="#f59e0b">22-30aa: cedere entro 15/09 se riduci</Badge>}
+                          {deveCedere && !gia && <Badge color="#f59e0b">22-30aa: cedere entro 22/08 se riduci</Badge>}
                           {isOver31 && <Badge color="#10b981">31+ — nessun obbligo</Badge>}
                         </div>
                         <div style={{ fontSize: 10, color: "#888" }}>
@@ -3478,7 +3478,7 @@ function AggiornamentoStipendiSection({ team, rosaPlayers, isAdmin, onRefresh })
               <div style={{ background: "#ffffff05", borderRadius: 9, padding: "8px 12px", fontSize: 10, color: "#444", lineHeight: 1.6 }}>
                 📋 <b>Art. 4.5:</b> Rialzi obbligatori — 5 per squadra, quotazione/stipendio/clausola aggiornati al valore reale.
                 Ribassi facoltativi — 5 per squadra: se non riduci la quotazione resta quella attuale fino al 01/06 (o fino a un
-                trasferimento); U21 esclusi · 22-30aa riducibili ma devono cedere entro 15/09 dello stesso anno (pena 5M + svincolo
+                trasferimento); U21 esclusi · 22-30aa riducibili ma devono cedere entro la prima giornata di Serie A (22/08, pena 5M + svincolo
                 forzato) · 31+aa riducibili senza penalità. In caso di pareggio sul confine del 5° posto, decide il presidente
                 entro la stessa finestra del ribasso (05/01 ore 20:00).
               </div>
@@ -4125,10 +4125,10 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
       {/* ── 7. AGGIORNAMENTO STIPENDI 01/01 (art. 4.5) ── */}
       <AggiornamentoStipendiSection team={team} rosaPlayers={rosaPlayers} isAdmin={isAdmin} onRefresh={onRefresh} />
 
-      {/* ── 8. DA CEDERE ENTRO 15/09 (rinnovati al ribasso 22-30aa) ── */}
+      {/* ── 8. DA CEDERE ENTRO LA PRIMA GIORNATA DI SERIE A (rinnovati al ribasso 22-30aa) ── */}
       {rosaPlayers.filter(p => p.da_cedere).length > 0 && (
         <div style={{ background: "#ef444408", border: "1.5px solid #ef444425", borderRadius: 14, padding: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", letterSpacing: "0.08em", marginBottom: 8 }}>🔴 DA CEDERE/SVINCOLARE ENTRO 15/09 (art. 4.5)</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", letterSpacing: "0.08em", marginBottom: 8 }}>🔴 DA CEDERE/SVINCOLARE ENTRO LA 1ª GIORNATA DI SERIE A · 22/08 (art. 4.5)</div>
           <div style={{ fontSize: 10, color: "#666", marginBottom: 10 }}>Giocatori 22-30aa rinnovati al ribasso — pena: 5M + svincolo ordinario forzato se non ceduti</div>
           {rosaPlayers.filter(p => p.da_cedere).map(p => (
             <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #ffffff08" }}>
@@ -4485,7 +4485,7 @@ Gli obiettivi verranno azzerati.`;
 
   const tipoInfo = {
     allenatore:{label:"🎯 Obiettivi Allenatore",color:"#6366f1",guadagno:2,desc:"2M + 1M SC a completamento"},
-    ds:{label:"🏃 Direttore Sportivo",color:"#10b981",guadagno:5,desc:"5M · −2M se fallito"},
+    ds:{label:"🏃 Direttore Sportivo",color:"#10b981",guadagno:5,desc:"5M al 31/05 · −2M se fallito"},
     dg:{label:"💼 Direttore Generale",color:"#f59e0b",guadagno:5,desc:"5M al 31/05 · −2M se fallito"},
   };
   const guadTot = obiettivi.reduce((s,o)=>s+(o.guadagno||0),0);
