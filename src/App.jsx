@@ -8845,32 +8845,10 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
                         onClick={async () => {
                           if (!window.confirm(`Rivelare le offerte e assegnare ${asta.giocatore}?`)) return;
                           try {
+                            // Notifiche Telegram (canale + privato vincitore/perdenti) partono
+                            // già da dentro rivelaAsta/rivelaECompletaAsta, centralizzate lì.
                             await rivelaAsta(asta.id);
                             await loadAll();
-                            // Notify channel + winner/losers
-                            sendTelegramNotification('asta_svincolati', {
-                              giocatore: asta.giocatore,
-                              quotazione: asta.quotazione,
-                              squadra: asta.vincitore || '—',
-                              ore: 0,
-                            });
-                            if (asta.vincitore) {
-                              sendTelegramNotification('asta_vinta', {
-                                giocatore: asta.giocatore,
-                                importo: asta.offerta_attuale,
-                              }, asta.vincitore);
-                            }
-                            // Notify losers
-                            const tutteOfferte = await getOfferteAsta(asta.id);
-                            for (const off of (tutteOfferte || [])) {
-                              if (off.squadra !== asta.vincitore) {
-                                sendTelegramNotification('asta_persa', {
-                                  giocatore: asta.giocatore,
-                                  vincitore: asta.vincitore || '—',
-                                  importo: asta.offerta_attuale,
-                                }, off.squadra);
-                              }
-                            }
                           }
                           catch(e) { alert(e.message); }
                         }}
