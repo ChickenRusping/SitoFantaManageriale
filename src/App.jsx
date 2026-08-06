@@ -8533,6 +8533,8 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
   const [editSvincolato, setEditSvincolato] = useState(null);
   const [importando, setImportando]   = useState(false);
   const [now, setNow]                 = useState(new Date());
+  const [chiamateAttiveAperto, setChiamateAttiveAperto] = useState(true);
+  const [asteAttiveAperto, setAsteAttiveAperto]         = useState(true);
   const mySquadra = profile?.squadra;
 
   // Tick ogni 30s per aggiornare countdown
@@ -8595,6 +8597,14 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
         return acc;
       }, {})
   );
+  const primariaDiGruppo = (gruppo) => gruppo.find(c => c.tipo === 'prima') || gruppo[0];
+  // Solo chi è ancora in fase di interesse (nessuna asta ancora creata): chi
+  // è già passato alla raccolta offerte si vede nella sezione "Aste in corso"
+  // qui sotto, non va duplicato anche qui. Ordinata dalla chiamata più
+  // vecchia alla più recente.
+  const chiamateInInteresse = chiamatePerGiocatore
+    .filter(g => !aste.some(a => a.giocatore === primariaDiGruppo(g).giocatore && a.stato === 'raccolta_offerte'))
+    .sort((a, b) => new Date(primariaDiGruppo(a).created_at || 0) - new Date(primariaDiGruppo(b).created_at || 0));
 
   // Giocatori chiamati
   const giocatoriChiamati = new Set(
@@ -8704,7 +8714,11 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
 
   // Aste concluse (storico)
   const asteConcluse = aste.filter(a => a.stato === 'assegnata');
-  const asteAttive   = aste.filter(a => a.stato === 'raccolta_offerte');
+  // Ordinate dalla chiamata più vecchia alla più recente (scadenza_interesse
+  // riflette il momento della chiamata originale, non quando l'asta stessa
+  // è stata creata).
+  const asteAttive   = aste.filter(a => a.stato === 'raccolta_offerte')
+    .sort((a, b) => new Date(a.scadenza_interesse || a.created_at || 0) - new Date(b.scadenza_interesse || b.created_at || 0));
 
   const dsMasterclass = investimenti.find(i => i.nome === 'DS Masterclass');
 
@@ -8723,13 +8737,16 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
         </div>
       </div>
 
-      {/* ── GIOCATORI CHIAMATI (in cima, visibili a tutti) ── */}
-      {chiamatePerGiocatore.length > 0 && (
+      {/* ── GIOCATORI CHIAMATI, in fase di interesse (in cima, visibili a tutti) ── */}
+      {chiamateInInteresse.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", letterSpacing: "0.08em" }}>
-            📞 CHIAMATE ATTIVE ({chiamatePerGiocatore.length})
+          <div onClick={() => setChiamateAttiveAperto(v => !v)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", letterSpacing: "0.08em" }}>
+              📞 CHIAMATE ATTIVE ({chiamateInInteresse.length})
+            </div>
+            <span style={{ color: "#555", fontSize: 12 }}>{chiamateAttiveAperto ? "▲ Nascondi" : "▼ Mostra"}</span>
           </div>
-          {chiamatePerGiocatore.map((gruppo, i) => {
+          {chiamateAttiveAperto && chiamateInInteresse.map((gruppo, i) => {
             try {
               return (
                 <ChiamataCard
@@ -8753,10 +8770,13 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
       {/* ── ASTE IN CORSO (busta chiusa) ── */}
       {asteAttive.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#6366f1", letterSpacing: "0.08em" }}>
-            🏷️ ASTE IN CORSO — OFFERTE BUSTA CHIUSA ({asteAttive.length})
+          <div onClick={() => setAsteAttiveAperto(v => !v)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#6366f1", letterSpacing: "0.08em" }}>
+              🏷️ ASTE IN CORSO — OFFERTE BUSTA CHIUSA ({asteAttive.length})
+            </div>
+            <span style={{ color: "#555", fontSize: 12 }}>{asteAttiveAperto ? "▲ Nascondi" : "▼ Mostra"}</span>
           </div>
-          {asteAttive.map(asta => {
+          {asteAttiveAperto && asteAttive.map(asta => {
             const scaduta = asta.scadenza ? new Date() > new Date(asta.scadenza) : false;
             const interessatiAsta = chiamate.filter(c => c.giocatore === asta.giocatore && c.stato === 'in_asta');
             const giaInteressato = interessatiAsta.some(c => c.squadra === mySquadra);
