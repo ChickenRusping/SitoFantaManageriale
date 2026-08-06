@@ -4898,10 +4898,20 @@ export async function getOfferteAsta(astaId) {
 
 export async function upsertOffertaAsta(astaId, squadra, importo, perVivaio = false) {
   const { data: asta } = await supabase.from('aste_svincolati')
-    .select('stato, quot, scadenza').eq('id', astaId).single();
+    .select('stato, quot, scadenza, masterclass_squadra_attiva, masterclass_scadenza_attiva').eq('id', astaId).single();
   if (!asta) throw new Error('Asta non trovata');
   if (asta.stato !== 'raccolta_offerte') throw new Error('Asta chiusa');
-  if (new Date() > new Date(asta.scadenza)) throw new Error('Scadenza offerte superata');
+
+  // DS Masterclass: durante la finestra extra di 10 minuti di una squadra,
+  // l'asta è congelata per tutte le altre (nessuna può inviare/modificare
+  // offerte), ma la squadra attiva può farlo anche oltre la scadenza normale.
+  const ora = new Date();
+  const finestraMasterclassMia = asta.masterclass_squadra_attiva === squadra
+    && asta.masterclass_scadenza_attiva && ora <= new Date(asta.masterclass_scadenza_attiva);
+  if (!finestraMasterclassMia) {
+    if (asta.masterclass_squadra_attiva) throw new Error('Asta congelata: in corso un utilizzo del DS Masterclass da parte di un altro presidente.');
+    if (ora > new Date(asta.scadenza)) throw new Error('Scadenza offerte superata');
+  }
   const minOfferta = parseFloat((Number(asta.quot) * 0.75).toFixed(2));
   const offerta = parseFloat(Number(importo || 0).toFixed(2));
   if (offerta < minOfferta) throw new Error(`Offerta minima: ${minOfferta}M (¾ quotazione)`);
@@ -4919,6 +4929,108 @@ export async function upsertOffertaAsta(astaId, squadra, importo, perVivaio = fa
     .select().single();
   if (error) throw error;
   return data;
+}
+
+// ─── DS MASTERCLASS ───────────────────────────────────────────────────────────
+// Attivazione silenziosa: nessuno (né gli altri presidenti né gli admin) deve
+// sapere che è stata usata finché non scade il termine per le offerte — a quel
+// punto checkScadenzeAste (vedi _avanzaMasterclass) la elabora automaticamente:
+// congela l'asta, rivela in privato al presidente l'offerta più alta del
+// momento, gli concede 10 minuti extra, e avvisa il canale pubblico.
+// Se più presidenti la attivano sulla stessa asta, vengono elaborati uno alla
+// volta nell'ordine in cui si erano dichiarati interessati al giocatore (non
+// nell'ordine in cui hanno cliccato il pulsante).
+export async function attivaMasterclass(astaId, squadra) {
+  const { data: asta } = await supabase.from('aste_svincolati').select('*').eq('id', astaId).single();
+  if (!asta) throw new Error('Asta non trovata');
+  if (asta.stato !== 'raccolta_offerte') throw new Error('Asta non in fase di raccolta offerte.');
+  const ora = new Date();
+  if (ora > new Date(asta.scadenza)) throw new Error('Il termine per mandare le offerte è già scaduto.');
+
+  const { data: chiamate } = await supabase.from('chiamate')
+    .select('squadra, created_at').eq('giocatore', asta.giocatore).order('created_at', { ascending: true });
+  const ordineInteresse = (chiamate || []).map(c => c.squadra);
+  if (ordineInteresse.length <= 1) throw new Error('Nessun utilizzo possibile: sei l\'unico interessato a questo giocatore.');
+  const ordine = ordineInteresse.indexOf(squadra);
+  if (ordine < 0) throw new Error('Non risulti tra gli interessati a questo giocatore.');
+
+  const { data: gia } = await supabase.from('masterclass_richieste')
+    .select('id').eq('asta_id', astaId).eq('squadra', squadra).maybeSingle();
+  if (gia) throw new Error('Hai già utilizzato il DS Masterclass per questa asta.');
+
+  const { data: inv } = await supabase.from('investimenti')
+    .select('*').eq('squadra', squadra).eq('nome', 'DS Masterclass').maybeSingle();
+  if (!inv) throw new Error('Non hai il DS Masterclass attivo.');
+  const usati = Number(inv.dati?.utilizzi_masterclass || 0);
+  if (usati >= 2) throw new Error('Utilizzi DS Masterclass esauriti (2/2).');
+
+  // L'utilizzo viene consumato subito, indipendentemente dal fatto che poi si
+  // riesca o meno a formulare un'offerta entro i 10 minuti extra.
+  await supabase.from('investimenti').update({
+    dati: { ...(inv.dati || {}), utilizzi_masterclass: usati + 1 },
+  }).eq('id', inv.id);
+
+  const { error } = await supabase.from('masterclass_richieste').insert({
+    asta_id: astaId, squadra, investimento_id: inv.id, ordine_interesse: ordine,
+  });
+  if (error) throw error;
+  return { ok: true, utilizziRimasti: 2 - (usati + 1) };
+}
+
+// Stato della mia eventuale richiesta per questa asta (per la UI: bottone
+// "attiva" vs "richiesta inviata, in coda" vs "finestra extra attiva").
+export async function getMasterclassRichiesta(astaId, squadra) {
+  const { data } = await supabase.from('masterclass_richieste')
+    .select('*').eq('asta_id', astaId).eq('squadra', squadra).maybeSingle();
+  return data || null;
+}
+
+// Elaborazione automatica, chiamata da checkScadenzeAste per ogni asta scaduta
+// PRIMA di rivelarla: gestisce l'avanzamento della coda dei Masterclass
+// attivati su quell'asta. Ritorna true quando non c'è più nulla da aspettare
+// (nessuna richiesta in coda) e si può quindi procedere con rivelaECompletaAsta.
+async function _avanzaMasterclass(asta) {
+  const ora = new Date();
+
+  // Una finestra extra è già in corso: se non è ancora scaduta, aspetta.
+  if (asta.masterclass_squadra_attiva) {
+    if (ora < new Date(asta.masterclass_scadenza_attiva)) return false;
+    // Scaduta: chiudila prima di valutare la prossima richiesta in coda.
+    await supabase.from('aste_svincolati').update({
+      masterclass_squadra_attiva: null, masterclass_scadenza_attiva: null,
+    }).eq('id', asta.id);
+  }
+
+  const { data: prossime } = await supabase.from('masterclass_richieste')
+    .select('*').eq('asta_id', asta.id).is('avviato_at', null)
+    .order('ordine_interesse', { ascending: true }).limit(1);
+  const prossima = prossime?.[0];
+  if (!prossima) return true; // nessun Masterclass in coda: pronta per il reveal finale
+
+  // Offerta più alta al momento (avversarie reali, non le auto-bid che
+  // vengono generate solo in fase di reveal finale).
+  const { data: offerte } = await supabase.from('offerte_asta')
+    .select('squadra, importo, assente').eq('asta_id', asta.id);
+  const avversarie = (offerte || []).filter(o => o.squadra !== prossima.squadra && !o.assente);
+  const maxOfferta = avversarie.length ? Math.max(...avversarie.map(o => Number(o.importo))) : 0;
+
+  const scadenzaExtra = new Date(ora.getTime() + 10 * 60000);
+  await supabase.from('aste_svincolati').update({
+    masterclass_squadra_attiva: prossima.squadra,
+    masterclass_scadenza_attiva: scadenzaExtra.toISOString(),
+  }).eq('id', asta.id);
+  await supabase.from('masterclass_richieste').update({
+    avviato_at: ora.toISOString(), offerta_rivelata: maxOfferta,
+  }).eq('id', prossima.id);
+
+  await sendTelegramNotification('ds_masterclass_usato', { giocatore: asta.giocatore, squadra: prossima.squadra });
+  await sendTelegramNotification('ds_masterclass_offerte', {
+    giocatore: asta.giocatore,
+    offertaRivelata: maxOfferta > 0 ? maxOfferta.toFixed(2) : null,
+    scadenza: scadenzaExtra.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+  }, prossima.squadra);
+
+  return false; // finestra appena avviata: non ancora pronta per il reveal finale
 }
 
 // ── calcolaScadenzaAsta (alias per calcolaScadenzaOfferte) ────────────────────
@@ -5049,6 +5161,19 @@ export async function rivelaECompletaAsta(astaId) {
     .select('*').eq('id', astaId).single();
   if (!asta) throw new Error('Asta non trovata');
   if (asta.per_vivaio && !isVivaioAcquistiAperti()) throw new Error('Le assegnazioni al vivaio sono consentite solo dal 01/09 al 31/05.');
+
+  // Guardia DS Masterclass: non si può rivelare/assegnare (nemmeno a mano da
+  // admin) finché c'è una finestra extra ancora attiva o richieste in coda
+  // non ancora avviate — altrimenti si scavalcherebbe la sequenza e si
+  // spenderebbe prima del previsto rispetto all'ordine di interesse.
+  if (asta.masterclass_squadra_attiva && new Date() < new Date(asta.masterclass_scadenza_attiva)) {
+    throw new Error('Impossibile rivelare ora: un presidente sta usando il DS Masterclass, attendi la sua finestra extra.');
+  }
+  const { data: masterclassInCoda } = await supabase.from('masterclass_richieste')
+    .select('id').eq('asta_id', astaId).is('avviato_at', null).limit(1);
+  if (masterclassInCoda?.length) {
+    throw new Error('Impossibile rivelare ora: ci sono utilizzi del DS Masterclass ancora in coda per questa asta.');
+  }
 
   // Ordine interesse dal timestamp chiamate
   const { data: chiamate } = await supabase.from('chiamate')
@@ -5227,11 +5352,17 @@ export async function checkScadenzeAste() {
   // Importante per il bilancio: se una squadra vince più aste scadute insieme,
   // ora "spende" prima su quella chiamata per prima, in modo prevedibile.
   const { data: asteScadute } = await supabase.from('aste_svincolati')
-    .select('id, giocatore').eq('stato', 'raccolta_offerte').lte('scadenza', oraISO)
+    .select('*').eq('stato', 'raccolta_offerte').lte('scadenza', oraISO)
     .order('scadenza', { ascending: true });
 
   for (const a of asteScadute || []) {
     try {
+      // Se qualcuno ha attivato il DS Masterclass su questa asta, l'asta resta
+      // "raccolta_offerte" oltre la scadenza finché la coda di attivazioni non
+      // si esaurisce (vedi _avanzaMasterclass): finché non è pronta, questo
+      // ciclo la rivede a ogni giro senza rivelarla.
+      const pronta = await _avanzaMasterclass(a);
+      if (!pronta) { risultati.push({ tipo: 'masterclass_in_corso', giocatore: a.giocatore }); continue; }
       const r = await rivelaECompletaAsta(a.id);
       risultati.push({ tipo: 'asta_completata', giocatore: a.giocatore, ...r });
     } catch(e) { risultati.push({ tipo: 'errore', id: a.id, error: e.message }); }
