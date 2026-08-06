@@ -262,10 +262,11 @@ async function assertRosaDopoAggiunta(squadra, nuovoGiocatore, { ignoreMinimi = 
 
   const blocchi = [];
 
-  // Art. 3.2: blocca se l'operazione crea/peggiora un problema di numero massimo rosa.
-  if (totaleDopo > 30 && totaleDopo > totalePrima) {
-    blocchi.push(`Rosa oltre il massimo: ${totaleDopo}/30 giocatori.`);
-  }
+  // Il tetto di 30 giocatori è sforabile (non blocca più il mercato): resta
+  // visibile come irregolarità nella compliance della rosa, ma un'operazione
+  // (trattativa, asta, unico interessato) non va più invalidata solo per
+  // questo. totaleDopo/totalePrima restano calcolati sopra perché servono
+  // comunque al controllo U21 qui sotto.
 
   // Art. 3.2: blocca se l'operazione crea/peggiora il requisito U21.
   // Esempio: passare da 27 a 28 senza U21 richiesti può creare una nuova irregolarità.
