@@ -4927,9 +4927,12 @@ export async function creaAstaDaChiamate(nomeGiocatore) {
 
   let scadenzaOfferte;
   if (modalita === 'libero') {
-    // Modalità libera: 12h fisse dalla scadenza interesse, nessun ancoraggio al
-    // venerdì e nessuno stagger — ogni asta è indipendente e asincrona.
-    scadenzaOfferte = calcolaScadenzaOfferteLibero(scadenzaInteresse);
+    // Modalità libera: 12h "attive" dalla scadenza interesse (il freeze
+    // notturno 00:00-08:00 non conta, come per le aste a discesa), poi
+    // eventualmente spostata in avanti per garantire almeno 30 minuti di
+    // distacco dall'ultima asta libera ancora in raccolta offerte.
+    const naturale = calcolaScadenzaOfferteLibero(scadenzaInteresse);
+    scadenzaOfferte = await _applicaIntervalloMinimoLibero(naturale);
   } else {
     // Sempre: venerdì = giovedì + 1 giorno, slot base 13:00 UTC (14:00 Italia) + 30min per ogni asta già presente
     const ven = new Date(scadenzaInteresse);
@@ -5871,8 +5874,71 @@ export async function setModalitaSvincolati(valore) {
 export function calcolaScadenzaInteresseLibero(dataChiamata = new Date()) {
   return new Date(new Date(dataChiamata).getTime() + 72 * 60 * 60 * 1000);
 }
+
+// Stesso freeze notturno delle aste a discesa (00:00-08:00, ora locale): i
+// minuti passati in quella finestra non contano ai fini della scadenza.
+const _FREEZE_INIZIO_H = 0;
+const _FREEZE_FINE_H = 8;
+function _isInFreezeOra(ora) { return ora >= _FREEZE_INIZIO_H && ora < _FREEZE_FINE_H; }
+
+// Calcola una scadenza a "minutiAttivi" minuti di distanza da fromTime,
+// saltando interamente la finestra di freeze 00:00-08:00 (se l'intervallo la
+// attraversa, quei minuti vengono "recuperati" dopo le 08:00).
+function _scadenzaConFreeze(fromTime, minutiAttivi) {
+  let rimasti = minutiAttivi;
+  let t = new Date(fromTime);
+  while (rimasti > 0) {
+    const ora = t.getHours();
+    if (_isInFreezeOra(ora)) {
+      const next08 = new Date(t);
+      next08.setHours(_FREEZE_FINE_H, 0, 0, 0);
+      if (next08 <= t) next08.setDate(next08.getDate() + 1);
+      t = next08;
+    } else {
+      const mezzanotte = new Date(t);
+      mezzanotte.setDate(mezzanotte.getDate() + 1);
+      mezzanotte.setHours(_FREEZE_INIZIO_H, 0, 0, 0);
+      const minutiFinestra = (mezzanotte.getTime() - t.getTime()) / 60000;
+      if (minutiFinestra >= rimasti) {
+        t = new Date(t.getTime() + rimasti * 60000);
+        rimasti = 0;
+      } else {
+        rimasti -= minutiFinestra;
+        t = mezzanotte;
+      }
+    }
+  }
+  return t;
+}
+
 export function calcolaScadenzaOfferteLibero(scadenzaInteresse) {
-  return new Date(new Date(scadenzaInteresse).getTime() + 12 * 60 * 60 * 1000);
+  return _scadenzaConFreeze(scadenzaInteresse, 12 * 60);
+}
+
+// Intervallo minimo di 30 minuti tra le scadenze offerte di due aste in
+// modalità libera: se la scadenza "naturale" (già calcolata con il freeze)
+// cade a meno di 30 minuti dall'ultima asta in modalità libera ancora in
+// raccolta offerte, viene spostata a quella scadenza + 30 minuti. Se invece
+// c'è già almeno mezz'ora di distacco, resta invariata.
+async function _applicaIntervalloMinimoLibero(scadenzaNaturale) {
+  try {
+    const { data: pendenti, error } = await supabase
+      .from('aste_svincolati')
+      .select('scadenza')
+      .eq('stato', 'raccolta_offerte')
+      .eq('modalita', 'libero')
+      .order('scadenza', { ascending: false })
+      .limit(1);
+    if (error) return scadenzaNaturale;
+    const ultima = pendenti?.[0]?.scadenza ? new Date(pendenti[0].scadenza) : null;
+    if (!ultima) return scadenzaNaturale;
+    const minimaSuccessiva = new Date(ultima.getTime() + 30 * 60000);
+    return scadenzaNaturale < minimaSuccessiva ? minimaSuccessiva : scadenzaNaturale;
+  } catch {
+    // Best-effort: se la colonna 'modalita' non esiste ancora su aste_svincolati
+    // (migrazione non applicata), non blocchiamo la creazione dell'asta.
+    return scadenzaNaturale;
+  }
 }
 
 // Trasferimenti differiti
