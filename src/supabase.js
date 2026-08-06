@@ -2984,6 +2984,8 @@ export async function acquistaInvestimento({ squadra, nome, categoria, costo, st
     await supabase.from('movimenti').insert({ squadra, descrizione: 'Ricapitalizzazione investimento — riduzione FPF', entrata: 3, data: oggi });
   }
 
+  await sendTelegramNotification('investimento_acquistato', { squadra, nome, costo: costoNum.toFixed(1) });
+
   return { inv, nuovoBilancio };
 }
 
