@@ -205,6 +205,16 @@ export async function getRosa(squadra) {
   return data;
 }
 
+// Riepilogo leggero di TUTTE le rose in un'unica query (niente side-effect
+// vivaio/prestiti per squadra): usato per pagine di overview multi-squadra
+// dove servono solo i campi necessari al calcolo del Salary Cap.
+export async function getRosaLeggeraTutte() {
+  const { data, error } = await supabase.from('rosa')
+    .select('squadra, quot, anni_contratto, anni, in_vivaio');
+  if (error) return [];
+  return data;
+}
+
 // ─── REGOLAMENTO ROSA (art. 3) ───────────────────────────────────────────────
 export function calcolaRosaCompliance(players = []) {
   const rosaAttiva = (players || []).filter(p => !p.in_vivaio);
