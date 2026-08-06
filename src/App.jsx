@@ -173,7 +173,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, updateInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
   getBonusTrattativa, getBonusTrattativeBatch, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -7886,7 +7886,6 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
   const astaAssegnata = aste?.find(a => a.giocatore === primaria.giocatore && a.stato === 'assegnata');
   const isCandidatoVivaio = primaria.anni <= 23 && primaria.quot <= 3;
   const vivaioAperto = isVivaioAcquistiAperti();
-  const isCaller = primaria.squadra === mySquadra;
 
   async function handleInteresse(perVivaio) {
     setSaving(true);
@@ -8018,41 +8017,54 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
       {/* Form offerta se asta attiva */}
       {astaAttiva && giaInteressato && mySquadra && (
         <OffertaInlineForm asta={astaAttiva} squadra={mySquadra} onRefresh={onRefresh}
-          isCaller={isCaller} dsMasterclass={dsMasterclass} />
+          dsMasterclass={dsMasterclass} />
       )}
     </div>
   );
 }
 
 // ── Form offerta busta chiusa ─────────────────────────────────────────────────
-function OffertaInlineForm({ asta, squadra, onRefresh, isCaller, dsMasterclass }) {
+function OffertaInlineForm({ asta, squadra, onRefresh, dsMasterclass }) {
   const [offerta, setOfferta] = useState([]);
   const [importo, setImporto] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [offertaRevelata, setOffertaRevelata] = useState(null);
-  const [revealingSaving, setRevealingSaving] = useState(false);
+  const [richiesta, setRichiesta] = useState(null); // la mia eventuale masterclass_richieste per questa asta
+  const [attivando, setAttivando] = useState(false);
 
   useEffect(() => {
     if (!asta?.id) { setLoading(false); return; }
-    getOfferteAsta(asta.id)
-      .then(offs => {
+    Promise.all([
+      getOfferteAsta(asta.id),
+      dsMasterclass ? getMasterclassRichiesta(asta.id, squadra) : Promise.resolve(null),
+    ])
+      .then(([offs, ric]) => {
         setOfferta(offs || []);
         const mia = (offs || []).find(o => o.squadra === squadra && !o.assente);
         if (mia) setImporto(String(mia.importo));
+        setRichiesta(ric);
       })
       .catch(() => setOfferta([]))
       .finally(() => setLoading(false));
-  }, [asta?.id, squadra]);
+  }, [asta?.id, squadra, dsMasterclass]);
 
   if (!asta) return null;
   const minOfferta = parseFloat((Number(asta.quot) * 0.75).toFixed(2));
   const miaOffertaInviata = offerta.find(o => o.squadra === squadra);
-  const scaduta = asta.scadenza ? new Date() > new Date(asta.scadenza) : false;
+  const ora = new Date();
+
+  // La mia finestra extra Masterclass: se attiva, posso ancora offrire anche
+  // oltre la scadenza normale dell'asta.
+  const mieFinestraExtraAttiva = asta.masterclass_squadra_attiva === squadra
+    && asta.masterclass_scadenza_attiva && ora <= new Date(asta.masterclass_scadenza_attiva);
+  const scaduta = asta.scadenza ? ora > new Date(asta.scadenza) && !mieFinestraExtraAttiva : false;
+  // Asta congelata per via del Masterclass di un ALTRO presidente.
+  const congelataDaAltri = !!asta.masterclass_squadra_attiva && asta.masterclass_squadra_attiva !== squadra;
 
   const utilizziUsati = dsMasterclass?.dati?.utilizzi_masterclass || 0;
   const utilizziRimasti = 2 - utilizziUsati;
-  const puoUsareMasterclass = isCaller && dsMasterclass && utilizziRimasti > 0 && !offertaRevelata;
+  const puoUsareMasterclass = dsMasterclass && utilizziRimasti > 0 && !richiesta
+    && !scaduta && ora <= new Date(asta.scadenza);
 
   async function invia() {
     const val = parseFloat(importo);
@@ -8069,28 +8081,30 @@ function OffertaInlineForm({ asta, squadra, onRefresh, isCaller, dsMasterclass }
   }
 
   async function usaMasterclass() {
-    if (!window.confirm(`Usare 1 utilizzo del DS Masterclass per vedere l'offerta più alta? Rimangono ${utilizziRimasti} utilizzi su 2.`)) return;
-    setRevealingSaving(true);
+    if (!window.confirm(`Usare 1 utilizzo del DS Masterclass su questa asta? Rimangono ${utilizziRimasti} utilizzi su 2. Nessuno saprà che l'hai attivato finché non scade il termine per le offerte.`)) return;
+    setAttivando(true);
     try {
-      const offs = await getOfferteAsta(asta.id);
-      const offerteAvversari = offs.filter(o => o.squadra !== squadra && !o.assente);
-      const maxOfferta = offerteAvversari.length
-        ? Math.max(...offerteAvversari.map(o => Number(o.importo)))
-        : null;
-      // Decrementa utilizzo
-      const nuoviDati = { ...(dsMasterclass.dati || {}), utilizzi_masterclass: utilizziUsati + 1 };
-      await updateInvestimento(dsMasterclass.id, { dati: nuoviDati });
-      setOffertaRevelata(maxOfferta !== null ? maxOfferta : 0);
+      await attivaMasterclass(asta.id, squadra);
+      const ric = await getMasterclassRichiesta(asta.id, squadra);
+      setRichiesta(ric);
       await onRefresh();
     } catch(e) { alert(e.message); }
-    finally { setRevealingSaving(false); }
+    finally { setAttivando(false); }
   }
 
   if (loading) return null;
+  if (congelataDaAltri) return <div style={{ fontSize: 11, color: "#f59e0b", marginTop: 8 }}>🔒 Asta in pausa: un presidente sta usando un utilizzo del DS Masterclass — riprenderà a breve.</div>;
   if (scaduta) return <div style={{ fontSize: 11, color: "#555", marginTop: 8 }}>Asta scaduta — elaborazione in corso...</div>;
 
   return (
     <div style={{ marginTop: 10, background: "#6366f108", borderRadius: 9, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+      {mieFinestraExtraAttiva && (
+        <div style={{ fontSize: 11, background: "#f59e0b18", color: "#f59e0b", border: "1px solid #f59e0b30", borderRadius: 7, padding: "6px 10px", fontWeight: 700 }}>
+          🔍 DS Masterclass attivo — offerta più alta avversari al momento:{" "}
+          {richiesta?.offerta_rivelata > 0 ? <b>{Number(richiesta.offerta_rivelata).toFixed(2)}M</b> : "nessuna offerta"}
+          {" · "}hai tempo fino alle {new Date(asta.masterclass_scadenza_attiva).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+        </div>
+      )}
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <span style={{ fontSize: 11, color: "#818cf8", fontWeight: 700 }}>🔒 Offerta segreta:</span>
         <input type="number" step="0.25" min={minOfferta} value={importo}
@@ -8108,16 +8122,16 @@ function OffertaInlineForm({ asta, squadra, onRefresh, isCaller, dsMasterclass }
       </div>
 
       {/* DS Masterclass */}
-      {isCaller && dsMasterclass && (
+      {dsMasterclass && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          {offertaRevelata !== null ? (
-            <span style={{ fontSize: 11, background: "#f59e0b18", color: "#f59e0b", border: "1px solid #f59e0b30", borderRadius: 7, padding: "4px 10px", fontWeight: 700 }}>
-              🔍 DS Masterclass: offerta più alta avversari = {offertaRevelata > 0 ? <b>{offertaRevelata.toFixed(2)}M</b> : "nessuna offerta"}
+          {richiesta ? (
+            <span style={{ fontSize: 10, color: "#555" }}>
+              🔍 DS Masterclass attivato{richiesta.avviato_at ? "" : " — in attesa della scadenza offerte"}
             </span>
           ) : puoUsareMasterclass ? (
-            <button onClick={usaMasterclass} disabled={revealingSaving}
+            <button onClick={usaMasterclass} disabled={attivando}
               style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid #f59e0b40", background: "#f59e0b12", color: "#f59e0b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-              {revealingSaving ? "..." : `🔍 DS Masterclass (${utilizziRimasti}/2 rimasti)`}
+              {attivando ? "..." : `🔍 DS Masterclass (${utilizziRimasti}/2 rimasti)`}
             </button>
           ) : utilizziRimasti <= 0 ? (
             <span style={{ fontSize: 10, color: "#555" }}>🔍 DS Masterclass esaurito (0/2 rimasti)</span>
@@ -8785,7 +8799,6 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
             const scaduta = asta.scadenza ? new Date() > new Date(asta.scadenza) : false;
             const interessatiAsta = chiamate.filter(c => c.giocatore === asta.giocatore && c.stato === 'in_asta');
             const giaInteressato = interessatiAsta.some(c => c.squadra === mySquadra);
-            const isPrimoChiamante = interessatiAsta.some(c => c.squadra === mySquadra && c.tipo === 'prima');
             return (
               <div key={asta.id} style={{ background: scaduta ? "#ef444408" : "#6366f108", border: `1.5px solid ${scaduta ? "#ef444430" : "#6366f130"}`, borderRadius: 14, padding: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
@@ -8802,45 +8815,9 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
                   {/* Admin: rivela o cancella */}
                   {isAdmin && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
-                      {/* DS Masterclass notification */}
-                      <button
-                        onClick={async () => {
-                          try {
-                            // Get all offers so far
-                            const offerte = await getOfferteAsta(asta.id);
-                            // Get all teams interested in this auction (from chiamate)
-                            const { data: chiamateAsta } = await supabase
-                              .from('chiamate').select('squadra').eq('giocatore', asta.giocatore);
-                            const squadreInteressate = (chiamateAsta || []).map(c => c.squadra);
-                            // Get all investments named 'DS Masterclass' for interested teams
-                            const { data: dsInvs } = await supabase
-                              .from('investimenti')
-                              .select('squadra, dati')
-                              .eq('nome', 'DS Masterclass')
-                              .in('squadra', squadreInteressate);
-                            const dsTeams = (dsInvs || []).filter(d => {
-                              const usati = d.dati?.utilizzi_masterclass || 0;
-                              return usati < 2;
-                            });
-                            if (!dsTeams.length) { alert('Nessun presidente con DS Masterclass attivo e utilizzi rimasti.'); return; }
-                            // Build offer summary (hide own offer, show others)
-                            for (const ds of dsTeams) {
-                              const altrui = offerte.filter(o => o.squadra !== ds.squadra && !o.assente);
-                              const riepilogo = altrui.length
-                                ? altrui.map(o => `• ${o.squadra}: ${Number(o.importo).toFixed(2)}M`).join('\n')
-                                : 'Nessuna offerta ancora presente.';
-                              sendTelegramNotification('ds_masterclass_offerte', {
-                                giocatore: asta.giocatore,
-                                riepilogo,
-                                scadenza: new Date(asta.scadenza).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
-                              }, ds.squadra);
-                            }
-                            alert(`✅ Notifica inviata a ${dsTeams.length} presidente/i DS Masterclass.`);
-                          } catch(e) { alert(e.message); }
-                        }}
-                        style={{ padding: "6px 14px", borderRadius: 8, border: "1.5px solid #f59e0b50", background: "#f59e0b10", color: "#f59e0b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                        📡 Notifica DS Masterclass
-                      </button>
+                      {/* Il DS Masterclass è ora interamente automatico e silenzioso (attivato
+                          dai presidenti stessi, elaborato da checkScadenzeAste alla scadenza):
+                          l'admin non deve poter vedere né innescare chi lo sta usando. */}
                       <button
                         onClick={async () => {
                           if (!window.confirm(`Rivelare le offerte e assegnare ${asta.giocatore}?`)) return;
@@ -8873,7 +8850,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
                 {/* Form offerta presidente interessato */}
                 {giaInteressato && !scaduta && (
                   <OffertaInlineForm asta={asta} squadra={mySquadra} onRefresh={loadAll}
-                    isCaller={isPrimoChiamante} dsMasterclass={dsMasterclass} />
+                    dsMasterclass={dsMasterclass} />
                 )}
                 {giaInteressato && scaduta && (
                   <div style={{ fontSize: 11, color: "#555", fontStyle: "italic", marginTop: 6 }}>Offerte chiuse — in attesa di rivelazione</div>
@@ -11257,28 +11234,6 @@ function AdminControlRoomPage({ teams }) {
                       <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 2 }}>
                         ⏰ Scade: {new Date(asta.scadenza).toLocaleString('it-IT', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                       </div>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
-                      <button
-                        onClick={async () => {
-                          try {
-                            const offerte = await getOfferteAsta(asta.id);
-                            const { data: chiamateAsta } = await supabase.from('chiamate').select('squadra').eq('giocatore', asta.giocatore);
-                            const squadreInteressate = (chiamateAsta || []).map(c => c.squadra);
-                            const { data: dsInvs } = await supabase.from('investimenti').select('squadra, dati').eq('nome', 'DS Masterclass').in('squadra', squadreInteressate);
-                            const dsTeams = (dsInvs || []).filter(d => (d.dati?.utilizzi_masterclass || 0) < 2);
-                            if (!dsTeams.length) { alert('Nessun presidente con DS Masterclass disponibile.'); return; }
-                            for (const ds of dsTeams) {
-                              const altrui = offerte.filter(o => o.squadra !== ds.squadra && !o.assente);
-                              const riepilogo = altrui.length ? altrui.map(o => `• ${o.squadra}: ${Number(o.importo).toFixed(2)}M`).join('\n') : 'Nessuna offerta ancora.';
-                              sendTelegramNotification('ds_masterclass_offerte', { giocatore: asta.giocatore, riepilogo, scadenza: new Date(asta.scadenza).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) }, ds.squadra);
-                            }
-                            alert(`✅ Notifica DS inviata a ${dsTeams.length} presidente/i.`);
-                          } catch(e) { alert(e.message); }
-                        }}
-                        style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid #f59e0b40', background: '#f59e0b10', color: '#f59e0b', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                        📡 DS Masterclass
-                      </button>
                     </div>
                   </div>
                 </div>
