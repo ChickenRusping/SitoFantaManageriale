@@ -443,6 +443,27 @@ export async function insertChiamata(chiamata) {
   if (chiamata?.squadra && chiamata?.giocatore) {
     await verificaRiacquistoConsentito(chiamata.squadra, chiamata.giocatore);
   }
+  // Cooldown di 30 minuti tra una chiamata e l'altra fatta dalla STESSA
+  // squadra (indipendente per ogni presidente: gli altri possono continuare
+  // a chiamare normalmente). Riguarda solo l'atto di chiamare per primo un
+  // nuovo svincolato, non il manifestare interesse su una chiamata altrui.
+  if (chiamata?.squadra) {
+    const { data: ultimaChiamata } = await supabase
+      .from('chiamate')
+      .select('created_at')
+      .eq('squadra', chiamata.squadra)
+      .eq('tipo', 'prima')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    const ultima = ultimaChiamata?.[0]?.created_at ? new Date(ultimaChiamata[0].created_at) : null;
+    if (ultima) {
+      const minutiTrascorsi = (now.getTime() - ultima.getTime()) / 60000;
+      if (minutiTrascorsi < 30) {
+        const minutiRimasti = Math.ceil(30 - minutiTrascorsi);
+        throw new Error(`Devi attendere ${minutiRimasti} minuti prima di poter chiamare un altro svincolato (cooldown di 30' dall'ultima chiamata).`);
+      }
+    }
+  }
   // In modalità libera: 72h fisse dalla chiamata, nessun vincolo di giorno/orario.
   // In modalità normale: le finestre di calendario restano quelle di sempre
   // (l'enforcement in UI resta invariato, qui si calcola solo la scadenza).
