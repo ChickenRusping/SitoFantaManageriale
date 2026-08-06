@@ -4743,7 +4743,7 @@ export async function applicaTop5Ribasso(playerId, squadra, ridurre, stagione = 
     delta: parseFloat((nuovaQuot - Number(p.quot)).toFixed(2)),
     tipo: 'ribasso', rinnovo_effettuato: true,
     nuovo_stip: nuovoStip, data_aggiornamento: oggi, stagione,
-    note: deveCedere ? 'Da cedere entro 15/09' : 'Over 31 - nessun obbligo',
+    note: deveCedere ? 'Da cedere entro la 1ª giornata di Serie A (22/08)' : 'Over 31 - nessun obbligo',
   }, { onConflict: 'stagione,giocatore_id' });
 
   await supabase.from('decisioni_top5').upsert({
