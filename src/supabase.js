@@ -5028,53 +5028,65 @@ export async function rivelaECompletaAsta(astaId) {
     .order('created_at', { ascending: true });
   const ordineInteresse = (chiamate || []).map(c => c.squadra);
 
-  // Offerte presenti
-  const { data: offerteEsistenti } = await supabase.from('offerte_asta')
-    .select('*').eq('asta_id', astaId);
-  const squadreConOfferta = new Set((offerteEsistenti || []).map(o => o.squadra));
+  let vincitore, prezzoFinale, tutteOfferte = [];
 
-  // Offerta automatica per assenti: di norma pari alla quotazione;
-  // resta però valido il limite massimo della liquidità disponibile (art. 6.4).
-  const minOffertaAsta = parseFloat((Number(asta.quot || 0) * 0.75).toFixed(2));
-  for (const sq of ordineInteresse) {
-    if (!squadreConOfferta.has(sq)) {
-      const { data: squadraOfferente } = await supabase.from('squadre')
-        .select('bilancio').eq('name', sq).single();
-      const bilancioDisp = Number(squadraOfferente?.bilancio || 0);
-      const offertaAutomatica = parseFloat(Math.min(Number(asta.quot || 0), bilancioDisp).toFixed(2));
+  if (ordineInteresse.length <= 1) {
+    // Unico interessato: nessuna vera competizione, quindi niente raccolta
+    // offerte — il prezzo resta fissato a ¾Q come sempre. L'asta viene
+    // comunque creata e messa in coda come tutte le altre (rispetta l'ordine
+    // di chiamata e il distanziamento minimo tra le scadenze): a differenziarla
+    // dalle altre è solo che qui il prezzo non dipende da nessuna offerta.
+    vincitore = ordineInteresse[0] || asta.aperta_da;
+    if (!vincitore) throw new Error('Nessun interessato trovato per questa asta.');
+    prezzoFinale = parseFloat((Number(asta.quot || 0) * 0.75).toFixed(2));
+  } else {
+    // Offerte presenti
+    const { data: offerteEsistenti } = await supabase.from('offerte_asta')
+      .select('*').eq('asta_id', astaId);
+    const squadreConOfferta = new Set((offerteEsistenti || []).map(o => o.squadra));
 
-      // Se non ha liquidità nemmeno per la base d'asta, resta registrato come assente
-      // ma non può essere considerato valido per l'aggiudicazione.
-      if (offertaAutomatica >= minOffertaAsta) {
-        await supabase.from('offerte_asta').upsert({
-          asta_id: astaId, squadra: sq,
-          importo: offertaAutomatica,
-          per_vivaio: asta.per_vivaio, assente: true,
-        }, { onConflict: 'asta_id,squadra' });
+    // Offerta automatica per assenti: di norma pari alla quotazione;
+    // resta però valido il limite massimo della liquidità disponibile (art. 6.4).
+    const minOffertaAsta = parseFloat((Number(asta.quot || 0) * 0.75).toFixed(2));
+    for (const sq of ordineInteresse) {
+      if (!squadreConOfferta.has(sq)) {
+        const { data: squadraOfferente } = await supabase.from('squadre')
+          .select('bilancio').eq('name', sq).single();
+        const bilancioDisp = Number(squadraOfferente?.bilancio || 0);
+        const offertaAutomatica = parseFloat(Math.min(Number(asta.quot || 0), bilancioDisp).toFixed(2));
+
+        // Se non ha liquidità nemmeno per la base d'asta, resta registrato come assente
+        // ma non può essere considerato valido per l'aggiudicazione.
+        if (offertaAutomatica >= minOffertaAsta) {
+          await supabase.from('offerte_asta').upsert({
+            asta_id: astaId, squadra: sq,
+            importo: offertaAutomatica,
+            per_vivaio: asta.per_vivaio, assente: true,
+          }, { onConflict: 'asta_id,squadra' });
+        }
       }
     }
+
+    // Tutte le offerte ordinate. Ricontrolliamo la liquidità al momento della rivelazione:
+    // un'offerta rimasta superiore al bilancio disponibile non può vincere.
+    const { data: offerteRaw } = await supabase.from('offerte_asta')
+      .select('*').eq('asta_id', astaId).order('importo', { ascending: false });
+    for (const off of (offerteRaw || [])) {
+      const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', off.squadra).single();
+      if (Number(off.importo || 0) <= Number(sq?.bilancio || 0) + 0.0001) tutteOfferte.push(off);
+    }
+    if (!tutteOfferte.length) throw new Error('Nessuna offerta valida: nessun interessato ha liquidità sufficiente.');
+
+    // Vincitore: max importo; parità → prima chiamata
+    const maxImporto = Number(tutteOfferte?.[0]?.importo || 0);
+    const pareggi = (tutteOfferte || []).filter(o => Number(o.importo) === maxImporto);
+    vincitore = pareggi.length === 1
+      ? pareggi[0].squadra
+      : ordineInteresse.find(sq => pareggi.some(p => p.squadra === sq)) || pareggi[0]?.squadra;
+    prezzoFinale = maxImporto;
+    if (!vincitore) throw new Error('Nessun offerente');
   }
 
-  // Tutte le offerte ordinate. Ricontrolliamo la liquidità al momento della rivelazione:
-  // un'offerta rimasta superiore al bilancio disponibile non può vincere.
-  const { data: offerteRaw } = await supabase.from('offerte_asta')
-    .select('*').eq('asta_id', astaId).order('importo', { ascending: false });
-  const tutteOfferte = [];
-  for (const off of (offerteRaw || [])) {
-    const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', off.squadra).single();
-    if (Number(off.importo || 0) <= Number(sq?.bilancio || 0) + 0.0001) tutteOfferte.push(off);
-  }
-  if (!tutteOfferte.length) throw new Error('Nessuna offerta valida: nessun interessato ha liquidità sufficiente.');
-
-  // Vincitore: max importo; parità → prima chiamata
-  const maxImporto = Number(tutteOfferte?.[0]?.importo || 0);
-  const pareggi = (tutteOfferte || []).filter(o => Number(o.importo) === maxImporto);
-  const vincitore = pareggi.length === 1
-    ? pareggi[0].squadra
-    : ordineInteresse.find(sq => pareggi.some(p => p.squadra === sq)) || pareggi[0]?.squadra;
-  const prezzoFinale = maxImporto;
-
-  if (!vincitore) throw new Error('Nessun offerente');
   await verificaRiacquistoConsentito(vincitore, asta.giocatore);
 
   // Trasferimento
@@ -5128,61 +5140,11 @@ export async function rivelaECompletaAsta(astaId) {
   return { vincitore, prezzoFinale, offerte: tutteOfferte };
 }
 
-// ── Trasferimento diretto per unico interessato (¾ Q — base d'asta) ──────────
-export async function completaUnicoInteressato(nomeGiocatore) {
-  const { data: chiamate } = await supabase.from('chiamate')
-    .select('*').eq('giocatore', nomeGiocatore)
-    .in('stato', ['aperta', 'in_asta'])
-    .order('created_at', { ascending: true });
-  if (!chiamate?.length) throw new Error('Nessuna chiamata trovata');
-
-  const primaria = chiamate[0];
-  if (primaria.per_vivaio && !isVivaioAcquistiAperti()) throw new Error('Le assegnazioni al vivaio sono consentite solo dal 01/09 al 31/05.');
-  const vincitore = primaria.squadra;
-  await verificaRiacquistoConsentito(vincitore, nomeGiocatore);
-  // Unico interessato → paga la base d'asta = ¾ della quotazione (art. 6.3)
-  const prezzoFinale = parseFloat((Number(primaria.quot) * 0.75).toFixed(2));
-  const oggi = new Date().toISOString().slice(0, 10);
-  const stip  = parseFloat((Number(primaria.quot) / 5).toFixed(2));
-  const claus = await _calcolaClausolaPerSquadra(vincitore, Number(primaria.quot), new Date());
-
-  if (primaria.per_vivaio) {
-    await assertVivaioDopoAggiunta(vincitore, { nome: nomeGiocatore, anni: primaria.anni || 0, quot: primaria.quot, presenze_voto: primaria.presenze_voto || 0 });
-    await supabase.from('rosa').insert({
-      squadra: vincitore, nome: nomeGiocatore, ruolo: primaria.ruolo,
-      anni: primaria.anni || 0, quot: primaria.quot, stip: 0, stip_originale: stip, clausola: claus,
-      squadra_serie_a: primaria.squadra_serie_a || '',
-      in_vivaio: true, vivaio_presenze: 0, quot_iniziale_vivaio: primaria.quot, vivaio_pagato: false,
-      anni_contratto: 1, data_acquisto: oggi,
-    });
-  } else {
-    await assertRosaDopoAggiunta(vincitore, { nome: nomeGiocatore, ruolo: primaria.ruolo, anni: primaria.anni || 0, quot: primaria.quot, squadra_serie_a: primaria.squadra_serie_a || '', in_vivaio: false });
-    await supabase.from('rosa').insert({
-      squadra: vincitore, nome: nomeGiocatore, ruolo: primaria.ruolo,
-      anni: primaria.anni || 0, quot: primaria.quot, stip, clausola: claus,
-      squadra_serie_a: primaria.squadra_serie_a || '',
-      in_vivaio: false, anni_contratto: 1, data_acquisto: oggi,
-    });
-    await supabase.from('svincolati').delete()
-      .eq('nome', nomeGiocatore);
-  }
-
-  const { data: sq } = await supabase.from('squadre')
-    .select('bilancio').eq('name', vincitore).single();
-  await supabase.from('squadre')
-    .update({ bilancio: parseFloat((Number(sq.bilancio) - prezzoFinale).toFixed(2)) })
-    .eq('name', vincitore);
-
-  await supabase.from('movimenti').insert({
-    squadra: vincitore,
-    descrizione: `Acquisto ${nomeGiocatore} da Svincolati${primaria.per_vivaio ? ' (Vivaio)' : ''} — unico interessato`,
-    uscita: prezzoFinale, data: oggi,
-  });
-
-  await supabase.from('chiamate').delete().eq('giocatore', nomeGiocatore);
-
-  return { vincitore, prezzoFinale };
-}
+// (La vecchia completaUnicoInteressato — assegnazione istantanea per unico
+// interessato, che saltava del tutto la coda e la scadenza a 12h/venerdì —
+// è stata rimossa: ora anche l'unico interessato passa da un'asta vera,
+// creata e messa in coda come tutte le altre, per rispettare sempre l'ordine
+// di chiamata. Il prezzo resta comunque fissato a ¾Q, vedi rivelaECompletaAsta.)
 
 // ── Check automatico: processa chiamate e aste scadute ───────────────────────
 export async function checkScadenzeAste() {
@@ -5190,7 +5152,11 @@ export async function checkScadenzeAste() {
   const oraISO = ora.toISOString();
   const risultati = [];
 
-  // 1. Chiamate con scadenza_interesse scaduta → crea asta o processa unico
+  // 1. Chiamate con scadenza_interesse scaduta → crea SEMPRE l'asta, anche con
+  // un solo interessato (il prezzo resta comunque fissato a ¾Q, vedi
+  // rivelaECompletaAsta). Prima un unico interessato veniva assegnato
+  // all'istante, saltando la coda: questo rompeva l'ordine di chiamata e il
+  // distanziamento minimo tra le scadenze per tutti quelli dopo di lui.
   // Ordine di elaborazione = ordine di scadenza (quindi di chiamata): niente
   // di arbitrario, la prima chiamata in ordine di tempo viene sempre gestita
   // prima delle successive.
@@ -5200,26 +5166,12 @@ export async function checkScadenzeAste() {
     .order('scadenza_interesse', { ascending: true });
 
   for (const c of chiamateScadute || []) {
-    // Conta tutti gli interessati
-    const { data: tutti } = await supabase.from('chiamate')
-      .select('id').eq('giocatore', c.giocatore).in('stato', ['aperta']);
-    const nInteressati = tutti?.length || 1;
-
-    if (nInteressati === 1) {
-      // Unico interessato → Q/2 automatico (venerdì stesso)
-      try {
-        const r = await completaUnicoInteressato(c.giocatore);
-        risultati.push({ tipo: 'unico', giocatore: c.giocatore, ...r });
-      } catch(e) { risultati.push({ tipo: 'errore', giocatore: c.giocatore, error: e.message }); }
-    } else {
-      // Più interessati → crea asta
-      try {
-        const asta = await creaAstaDaChiamate(c.giocatore);
-        risultati.push({ tipo: 'asta_creata', giocatore: c.giocatore, astaId: asta.id });
-      } catch(e) {
-        if (!e.message.includes('già esistente')) {
-          risultati.push({ tipo: 'errore', giocatore: c.giocatore, error: e.message });
-        }
+    try {
+      const asta = await creaAstaDaChiamate(c.giocatore);
+      risultati.push({ tipo: 'asta_creata', giocatore: c.giocatore, astaId: asta.id });
+    } catch(e) {
+      if (!e.message.includes('già esistente')) {
+        risultati.push({ tipo: 'errore', giocatore: c.giocatore, error: e.message });
       }
     }
   }
