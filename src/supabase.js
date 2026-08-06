@@ -5165,6 +5165,23 @@ export async function rivelaECompletaAsta(astaId) {
     stato: 'assegnata', vincitore, prezzo_finale: prezzoFinale,
   });
 
+  // Notifica Telegram: centralizzata qui così parte SEMPRE, sia che il reveal
+  // avvenga in automatico (checkScadenzeAste, ogni 3 minuti) sia che lo
+  // scateni un admin a mano — prima solo il secondo caso notificava.
+  // Canale pubblico: risultato completo con l'elenco di tutte le offerte
+  // ricevute. Privato: solo l'esito secco (vinta/persa) a chi era coinvolto.
+  const altreOfferte = (tutteOfferte || []).filter(o => o.squadra !== vincitore);
+  const elencoAltri = altreOfferte.length
+    ? altreOfferte.map(o => `${o.squadra}: ${Number(o.importo).toFixed(2)}M${o.assente ? ' (auto)' : ''}`).join('\n')
+    : null;
+  await sendTelegramNotification('asta_svincolati_conclusa', {
+    giocatore: asta.giocatore, vincitore, prezzo: prezzoFinale.toFixed(2), elencoAltri,
+  });
+  await sendTelegramNotification('asta_vinta', { giocatore: asta.giocatore, importo: prezzoFinale.toFixed(2) }, vincitore);
+  for (const perdente of ordineInteresse.filter(sq => sq !== vincitore)) {
+    await sendTelegramNotification('asta_persa', { giocatore: asta.giocatore, vincitore, importo: prezzoFinale.toFixed(2) }, perdente);
+  }
+
   return { vincitore, prezzoFinale, offerte: tutteOfferte };
 }
 
