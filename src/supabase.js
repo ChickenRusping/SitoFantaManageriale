@@ -738,7 +738,7 @@ export async function pagaStipendi(squadra, totalStip, bilancioAttuale) {
   return { rata, nuovoBilancio };
 }
 
-export async function aggiornaSCNegativo(squadra, scUsato, oggi) {
+export async function aggiornaSCNegativo(squadra, scUsato, oggi, limiteCap = SALARY_CAP) {
   // Art. 4.3.2: nei mesi di giugno e luglio il salary cap può essere negativo senza penalità/blocco.
   const dataRef = oggi ? new Date(`${oggi}T12:00:00`) : new Date();
   if (isMeseEsenteSalaryCap(dataRef)) {
@@ -746,7 +746,7 @@ export async function aggiornaSCNegativo(squadra, scUsato, oggi) {
     return { esente: true };
   }
 
-  if (scUsato > SALARY_CAP) {
+  if (scUsato > limiteCap) {
     const { data } = await supabase.from('squadre').select('sc_negativo_dal').eq('name', squadra).single();
     if (!data?.sc_negativo_dal) {
       await supabase.from('squadre').update({ sc_negativo_dal: oggi, mercato_bloccato: true }).eq('name', squadra);
@@ -2864,6 +2864,14 @@ async function _getU21RichiestiConDeroga(squadra, totale, date = new Date()) {
 async function _getSalaryCapInvestimenti(squadra, stagione = getStagioneQuota(new Date())) {
   const hasSuperClub = await _hasInvestimentoAttivo(squadra, 'SuperClub', { stagione });
   return hasSuperClub ? 3 : 0;
+}
+
+// Tutte le squadre con SuperClub attivo in una sola query, per le pagine di
+// overview multi-squadra (evita N query, una per squadra).
+export async function getSquadreConSuperClub(stagione = getStagioneQuota(new Date())) {
+  const { data } = await supabase.from('investimenti')
+    .select('squadra').eq('nome', 'SuperClub').eq('attivo', true).eq('stagione', stagione);
+  return new Set((data || []).map(r => r.squadra));
 }
 async function _calcolaClausolaPerSquadra(squadra, quot, date = new Date()) {
   const segreta = await _hasInvestimentoAttivo(squadra, 'Clausola Segreta', { stagione: getStagioneQuota(date), date });
