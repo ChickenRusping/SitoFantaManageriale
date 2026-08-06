@@ -62,6 +62,7 @@ const DEEP_LINK: Record<string, string> = {
   asta_vinta:            `${APP}/mercato`,
   asta_persa:            `${APP}/mercato`,
   ds_masterclass_offerte:`${APP}/mercato`,
+  ds_masterclass_usato:  `${APP}/mercato`,
   svincolo:              `${APP}/mercato`,
   scelta_allenatore:     `${APP}/squadre`,
   movimento_privato:     `${APP}/squadre`,
@@ -87,6 +88,7 @@ const CATEGORY_BADGE: Record<string, string> = {
   asta_vinta:            "━━━  🏆  ASTA VINTA  🏆  ━━━",
   asta_persa:            "━━━  😔  ASTE  😔  ━━━",
   ds_masterclass_offerte:"━━━  🔍  DS MASTERCLASS  🔍  ━━━",
+  ds_masterclass_usato:  "━━━  📡  DS MASTERCLASS  📡  ━━━",
   asta_tra_presidenti:   "━━━  🏛  ASTE TRA PRESIDENTI  🏛  ━━━",
   asta_assegnata:        "━━━  🏛  ASTE TRA PRESIDENTI  🏛  ━━━",
   svincolo:              "━━━  🔓  MERCATO  🔓  ━━━",
@@ -185,7 +187,10 @@ function buildMessage(type: string, p: Record<string, unknown>): string | null {
       return `${badge}${p.entrata ? `+${p.entrata}` : `-${p.uscita}`}M — ${p.descrizione}\n💰 Bilancio aggiornato: <b>${p.bilancio}M</b>${link}`;
 
     case "ds_masterclass_offerte":
-      return `${badge}⚽ <b>${p.giocatore}</b>\n\nOfferte avversari:\n${p.riepilogo}\n\n⏰ Hai tempo fino alle <b>${p.scadenza}</b> per formulare la tua offerta.${link}`;
+      return `${badge}🔍 <b>DS Masterclass attivato!</b>\n\n⚽ <b>${p.giocatore}</b>\n💰 Offerta più alta al momento: <b>${p.offertaRivelata ? p.offertaRivelata + "M" : "nessuna offerta"}</b>\n⏰ Hai tempo fino alle <b>${p.scadenza}</b> per formulare/aggiornare la tua offerta.${link}`;
+
+    case "ds_masterclass_usato":
+      return `${badge}📡 <b>DS Masterclass utilizzato!</b>\n\n🏟 <b>${p.squadra}</b> ha attivato un utilizzo del DS Masterclass per l'asta di <b>${p.giocatore}</b>.\n⏳ 10 minuti di tempo extra per la sua offerta.${link}`;
 
     default:
       return null;
@@ -273,6 +278,7 @@ serve(async (req) => {
     "chiamata_svincolati",
     "asta_svincolati",
     "asta_svincolati_conclusa",
+    "ds_masterclass_usato",
     "asta_tra_presidenti",
     "asta_assegnata",
     "svincolo",
