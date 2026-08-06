@@ -70,7 +70,12 @@ export async function compressImageFile(file, {
 
 async function compressForUpload(file, preset = 'news') {
   const presets = {
-    avatar: { maxWidth: 500, maxHeight: 500, quality: 0.74 },
+    // L'avatar profilo non è mai mostrato oltre i 72px in nessuna pagina
+    // dell'app (26-28px in sidebar/header, 72px nella pagina profilo): 500px
+    // era enormemente sovradimensionato ed era una delle fonti principali di
+    // cached egress, essendo caricato ad ogni prima visita di ogni utente.
+    // 160px copre anche schermi retina (72px x2).
+    avatar: { maxWidth: 160, maxHeight: 160, quality: 0.78 },
     stemma: { maxWidth: 500, maxHeight: 500, quality: 0.74 },
     stemma_thumb: { maxWidth: 120, maxHeight: 120, quality: 0.7 },
     maglia: { maxWidth: 1200, maxHeight: 1200, quality: 0.76 },
