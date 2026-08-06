@@ -7870,6 +7870,7 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
   const astaAttiva    = aste?.find(a => a.giocatore === primaria.giocatore && a.stato === 'raccolta_offerte');
   const astaAssegnata = aste?.find(a => a.giocatore === primaria.giocatore && a.stato === 'assegnata');
   const isCandidatoVivaio = primaria.anni <= 23 && primaria.quot <= 3;
+  const vivaioAperto = isVivaioAcquistiAperti();
   const isCaller = primaria.squadra === mySquadra;
 
   async function handleInteresse(perVivaio) {
@@ -7964,8 +7965,9 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
                 {saving ? "..." : "✋ Mi interesso"}
               </button>
               {isCandidatoVivaio && (
-                <button onClick={() => handleInteresse(true)} disabled={saving}
-                  style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #10b98140", background: "#10b98118", color: "#10b981", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                <button onClick={() => vivaioAperto && handleInteresse(true)} disabled={saving || !vivaioAperto}
+                  title={vivaioAperto ? "" : "Interessamenti per il vivaio consentiti solo dal 01/09 al 31/05"}
+                  style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #10b98140", background: vivaioAperto ? "#10b98118" : "#ffffff08", color: vivaioAperto ? "#10b981" : "#555", fontSize: 11, fontWeight: 700, cursor: vivaioAperto ? "pointer" : "not-allowed", opacity: vivaioAperto ? 1 : 0.5 }}>
                   🌱 Vivaio
                 </button>
               )}
