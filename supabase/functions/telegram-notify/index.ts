@@ -56,6 +56,7 @@ const DEEP_LINK: Record<string, string> = {
   trattativa_controfferta: `${APP}/mercato`,
   chiamata_svincolati:   `${APP}/mercato`,
   asta_svincolati:       `${APP}/mercato`,
+  asta_svincolati_conclusa: `${APP}/mercato`,
   asta_tra_presidenti:   `${APP}/mercato`,
   asta_assegnata:        `${APP}/mercato`,
   asta_vinta:            `${APP}/mercato`,
@@ -82,6 +83,7 @@ const CATEGORY_BADGE: Record<string, string> = {
   trattativa_controfferta: "━━━  🤝  MERCATO  🤝  ━━━",
   chiamata_svincolati:   "━━━  ⚽  SVINCOLATI  ⚽  ━━━",
   asta_svincolati:       "━━━  🔔  ASTE  🔔  ━━━",
+  asta_svincolati_conclusa: "━━━  🏁  ASTE  🏁  ━━━",
   asta_vinta:            "━━━  🏆  ASTA VINTA  🏆  ━━━",
   asta_persa:            "━━━  😔  ASTE  😔  ━━━",
   ds_masterclass_offerte:"━━━  🔍  DS MASTERCLASS  🔍  ━━━",
@@ -106,6 +108,9 @@ function buildMessage(type: string, p: Record<string, unknown>): string | null {
 
     case "asta_svincolati":
       return `${badge}🔔 <b>Asta svincolati aperta!</b>\n\n⚽ <b>${p.giocatore}</b> · Q${p.quotazione}\n📣 Chiamato da: <b>${p.squadra}</b>\n⏰ Scade tra <b>${p.ore ?? 24}h</b> — fate le vostre offerte!${link}`;
+
+    case "asta_svincolati_conclusa":
+      return `${badge}🏁 <b>Asta conclusa!</b>\n\n⚽ <b>${p.giocatore}</b>\n🏆 Vinta da: <b>${p.vincitore}</b> per <b>${p.prezzo}M</b>${p.elencoAltri ? `\n\n📋 Altri interessati:\n${p.elencoAltri}` : ""}${link}`;
 
     case "asta_tra_presidenti":
       return `${badge}🏛 <b>Nuova asta tra presidenti!</b>\n\n⚽ <b>${p.giocatore}</b> · Q${p.quotazione}\n🏟 Indetta da: <b>${p.proprietario}</b>\n📊 Tipo: <b>${p.tipo_asta === "rialzo" ? "Al rialzo 📈" : "Al ribasso 📉"}</b>\n💰 Prezzo base: <b>${p.prezzo_base}M</b>${p.note ? `\n📝 ${p.note}` : ""}${link}`;
@@ -267,6 +272,7 @@ serve(async (req) => {
   const publicTypes = [
     "chiamata_svincolati",
     "asta_svincolati",
+    "asta_svincolati_conclusa",
     "asta_tra_presidenti",
     "asta_assegnata",
     "svincolo",
