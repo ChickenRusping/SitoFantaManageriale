@@ -173,7 +173,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, getEffettiInvestimenti, getSquadreConSuperClub, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
   getBonusTrattativa, getBonusTrattativeBatch, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -405,15 +405,17 @@ function TeamAvatar({ team, size = 38 }) {
 }
 
 /* ─── TEAM CARD ─────────────────────────────────────────────────────────────── */
-function TeamCard({ team, onClick, scLive: scLiveProp, allenatore: allenatoreReale }) {
+function TeamCard({ team, onClick, scLive: scLiveProp, capLimite: capLimiteProp, allenatore: allenatoreReale }) {
   const scLive = scLiveProp ?? team.salaryUsed ?? 0;
+  // Limite effettivo: 75M base + eventuale bonus obiettivi allenatore + SuperClub (+3M).
+  const capLimite = capLimiteProp ?? (75 + Number(team.scBonusObiettivi || 0));
 
   // FPF = netto speso semestre corrente (uscite − entrate, escl. stipendi), passato da mergedTeams
   const fpf = team.fpf ?? null;
   const fpfDisplay = fpf !== null ? `${fpf.toFixed(1)}M` : "—";
   const fpfColor = fpf === null ? "#555" : fpf > 60 ? "#ef4444" : fpf > 55 ? "#f97316" : fpf > 50 ? "#f59e0b" : "#10b981";
-  const scColor = scLive > 75 ? "#ef4444" : scLive > 74 ? "#f97316" : scLive > 70 ? "#f59e0b" : scLive > 65 ? "#fbbf24" : scLive > 60 ? "#888" : "#10b981";
-  const scLibero = parseFloat((75 - scLive).toFixed(1));
+  const scColor = scLive > capLimite ? "#ef4444" : scLive > capLimite - 1 ? "#f97316" : scLive > capLimite - 5 ? "#f59e0b" : scLive > capLimite - 10 ? "#fbbf24" : scLive > capLimite - 15 ? "#888" : "#10b981";
+  const scLibero = parseFloat((capLimite - scLive).toFixed(1));
   const scLiberoColor = scLibero >= 10 ? "#10b981" : scLibero >= 3 ? "#6ee7b7" : scLibero >= 0 ? "#888" : scLibero >= -5 ? "#f59e0b" : scLibero >= -10 ? "#f97316" : "#ef4444";
   const scLiberoStr = scLibero > 0 ? `+${scLibero.toFixed(1)}M` : `${scLibero.toFixed(1)}M`;
   const giocatori = team.giocatori || 0;
@@ -422,7 +424,7 @@ function TeamCard({ team, onClick, scLive: scLiveProp, allenatore: allenatoreRea
   const u21Required = giocatori >= 30 ? 3 : giocatori >= 29 ? 2 : giocatori >= 28 ? 1 : 0;
   const u21Color = u21Required === 0 ? "#888" : u21 >= u21Required ? "#10b981" : u21 === u21Required - 1 ? "#f59e0b" : "#ef4444";
   const bilColor = team.bilancio >= 20 ? "#10b981" : team.bilancio >= 10 ? "#888" : team.bilancio >= 5 ? "#fbbf24" : team.bilancio >= 0 ? "#f97316" : "#ef4444";
-  const hasAlert = u21 < u21Required || team.bilancio < 5 || scLive > 75 || (fpf !== null && fpf > 50); // FPF warning from 50 (approaching limit)
+  const hasAlert = u21 < u21Required || team.bilancio < 5 || scLive > capLimite || (fpf !== null && fpf > 50); // FPF warning from 50 (approaching limit)
 
   return (
     <div onClick={onClick} style={{ background: "#ffffff08", border: "1.5px solid #ffffff12", borderRadius: 16, padding: "16px 18px", cursor: "pointer", position: "relative", overflow: "hidden", transition: "all 0.15s" }}
@@ -805,6 +807,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
   const [myAllenatore, setMyAllenatore] = useState(null);
   const [roseCountMap, setRoseCountMap] = useState({});
   const [scLiveMap, setScLiveMap] = useState({});
+  const [capLimiteMap, setCapLimiteMap] = useState({});
   const [allenatoriMap, setAllenatoriMap] = useState({});
   const [editMode, setEditMode] = useState(false);
   const [editRow, setEditRow] = useState(null); // { squadra, g, v, n, p, gf, gs, dr, pt, pt_totali }
@@ -856,7 +859,8 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
       // prefisso), quindi si affida a un refresh naturale entro 1 minuto.
       cachedFetch('rosa_leggera_tutte', () => getRosaLeggeraTutte(), 60000),
       getAllenatori(STAGIONE_CORRENTE),
-    ]).then(([rosaTutte, allCoaches]) => {
+      getSquadreConSuperClub(STAGIONE_CORRENTE),
+    ]).then(([rosaTutte, allCoaches, squadreSuperClub]) => {
       const scAllenatoreMap = {};
       const allMap = {};
       (allCoaches || []).forEach(a => {
@@ -865,8 +869,11 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
         scAllenatoreMap[a.squadra] = Number(a.stipendio_sc || 0);
       });
 
-      const counts = {}, scs = {};
-      teams.forEach(t => { counts[t.name] = 0; scs[t.name] = 0; });
+      const counts = {}, scs = {}, caps = {};
+      teams.forEach(t => {
+        counts[t.name] = 0; scs[t.name] = 0;
+        caps[t.name] = 75 + Number(t.scBonusObiettivi || 0) + (squadreSuperClub.has(t.name) ? 3 : 0);
+      });
       (rosaTutte || []).forEach(p => {
         if (p.in_vivaio || !(p.squadra in counts)) return;
         counts[p.squadra]++;
@@ -876,6 +883,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
 
       setRoseCountMap(counts);
       setScLiveMap(scs);
+      setCapLimiteMap(caps);
       setAllenatoriMap(allMap);
     });
   }, [teamNamesKey]);
@@ -923,6 +931,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
   // Riusa scLiveMap (rosa + staff allenatore) calcolato nel batch load, invece di
   // ricomputare qui solo la parte rosa (mancava il peso della carta allenatore).
   const scUsato = scLiveMap[mySquadra] ?? myRosa.filter(p=>!p.in_vivaio).reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
+  const scLimite = capLimiteMap[mySquadra] ?? (75 + Number(myTeam?.scBonusObiettivi || 0));
   // FPF = netto speso semestre corrente, calcolato centralmente e passato via myTeam.fpf
   const fpf = myTeam?.fpf ?? null;
   const fpfDisplay = fpf !== null ? `${fpf.toFixed(1)}M` : "—";
@@ -952,7 +961,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
               {[
                 { label: "BILANCIO", value: `${myTeam.bilancio?.toFixed(1)}M`, color: myTeam.bilancio < 10 ? "#f97316" : "#10b981" },
-                { label: "SALARY CAP", value: `${scUsato.toFixed(1)} / 75M`, color: scUsato > 75 ? "#ef4444" : scUsato > 65 ? "#f59e0b" : "#10b981" },
+                { label: "SALARY CAP", value: `${scUsato.toFixed(1)} / ${scLimite.toFixed(1)}M`, color: scUsato > scLimite ? "#ef4444" : scUsato > scLimite - 10 ? "#f59e0b" : "#10b981" },
                 { label: "FPF", value: fpfDisplay, color: fpfColor },
               ].map(s => (
                 <div key={s.label} style={{ textAlign: "right" }}>
@@ -1003,7 +1012,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
             .map(team => {
               const liveCount = roseCountMap[team.name];
               const teamLive = liveCount !== undefined ? { ...team, giocatori: liveCount } : team;
-              return <TeamCard key={team.id} team={teamLive} onClick={() => onSelectTeam(team)} scLive={scLiveMap[team.name]} allenatore={allenatoriMap[team.name] ?? null} />;
+              return <TeamCard key={team.id} team={teamLive} onClick={() => onSelectTeam(team)} scLive={scLiveMap[team.name]} capLimite={capLimiteMap[team.name]} allenatore={allenatoriMap[team.name] ?? null} />;
             })}
         </div>
       </div>
@@ -5176,8 +5185,13 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
 
   const [scAllenatore, setScAllenatore] = useState(0);
   const [allenatoreNome, setAllenatoreNome] = useState(null);
+  const [scBonusInvestimenti, setScBonusInvestimenti] = useState(0);
   const [bilancioLive, setBilancioLive] = useState(team.bilancio);
   useEffect(() => { setBilancioLive(team.bilancio); }, [team.bilancio]);
+  useEffect(() => {
+    cachedFetch('effetti_inv_' + team.name, () => getEffettiInvestimenti(team.name), 600000)
+      .then(e => setScBonusInvestimenti(Number(e?.scBonusInvestimenti || 0)));
+  }, [team.name]);
 
   const salaryDist = 75 - team.salaryUsed;
   const fpMax = Math.max(team.fairPlay1, team.fairPlay2);
@@ -5188,7 +5202,9 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
   // Salary cap: stipendi rosa + 5M staff allenatore (se carta scelta)
   const salaryCapRosa = rosaPlayers.reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
   const salaryCapUsato = parseFloat((salaryCapRosa + scAllenatore).toFixed(2));
-  const salaryCapLimite = 75 + Number(team.scBonusObiettivi || 0);
+  // Limite base 75M + eventuali bonus da obiettivi allenatore completati (art. 9.4)
+  // + SuperClub (investimento: +3M al Salary Cap per la stagione).
+  const salaryCapLimite = 75 + Number(team.scBonusObiettivi || 0) + scBonusInvestimenti;
   const salaryCapSforato = salaryCapUsato > salaryCapLimite;
   const oggi = new Date().toISOString().slice(0, 10);
   const mese = new Date().getMonth();
@@ -5206,12 +5222,23 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
 
   const loadRosaStipendi = useCallback(async ({ force = false } = {}) => {
     if (force) cacheInvalidate('rosa_' + team.name);
-    const data = await cachedFetch('rosa_' + team.name, () => getRosa(team.name), 600000);
+    // Ricalcolate qui (invece di leggere dallo state) per evitare una race con
+    // gli altri fetch in parallelo nell'useEffect di mount qui sotto: il
+    // controllo SC-negativo deve usare stipendio allenatore + bonus
+    // investimenti aggiornati, non valori di stato potenzialmente non ancora
+    // popolati al primo giro.
+    const [data, scAll, effetti] = await Promise.all([
+      cachedFetch('rosa_' + team.name, () => getRosa(team.name), 600000),
+      getSCAllenatore(team.name),
+      cachedFetch('effetti_inv_' + team.name, () => getEffettiInvestimenti(team.name), 600000),
+    ]);
     if (data) {
       const rosaAttiva = data.filter(p => !p.in_vivaio);
       setRosaPlayers(rosaAttiva);
-      const sc = rosaAttiva.reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
-      if (!scEsenteGiuLug) await aggiornaSCNegativo(team.name, sc, oggi);
+      const scRosa = rosaAttiva.reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
+      const scTotale = parseFloat((scRosa + Number(scAll || 0)).toFixed(2));
+      const limite = 75 + Number(team.scBonusObiettivi || 0) + Number(effetti?.scBonusInvestimenti || 0);
+      if (!scEsenteGiuLug) await aggiornaSCNegativo(team.name, scTotale, oggi, limite);
     }
   }, [team.name]);
 
@@ -6211,7 +6238,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     const currentSC = Number(buyer?.salaryUsed ?? buyer?.salary_used ?? 0);
     const newStip = stimaStipendioNuovo(trattativa);
     const newSC = parseFloat((currentSC + newStip).toFixed(2));
-    return { buyer, currentSC, newStip, newSC, freeAfter: parseFloat((75 - newSC).toFixed(2)) };
+    const capLimite = 75 + Number(buyer?.scBonusObiettivi || 0); // SuperClub non incluso qui: solo stima, l'enforcement reale è in aggiornaSCNegativo
+    return { buyer, currentSC, newStip, newSC, freeAfter: parseFloat((capLimite - newSC).toFixed(2)) };
   };
 
   // Per gli admin la squadra mittente predefinita è sempre quella del proprio profilo.
