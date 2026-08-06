@@ -4913,6 +4913,33 @@ export async function calcolaSlotVenerdì(venerdìUTC, scadenzaInteresseChiamata
 }
 
 // ── Crea asta da chiamate esistenti ──────────────────────────────────────────
+// Calcola quando scadrebbe/scade la raccolta offerte per una chiamata
+// principale, con la stessa identica logica usata da creaAstaDaChiamate
+// (freeze notturno + distacco minimo 30' in modalità libera, slot del
+// venerdì in modalità normale). Pura lettura, nessuna scrittura: usata sia
+// per creare davvero l'asta sia per mostrarne un'anteprima mentre l'interesse
+// è ancora aperto (l'asta non esiste ancora).
+export async function calcolaScadenzaOfferteAttesa(primaria) {
+  const scadenzaInteresse = new Date(primaria.scadenza_interesse);
+  const modalita = primaria.modalita || 'normale';
+
+  if (modalita === 'libero') {
+    // Modalità libera: 12h "attive" dalla scadenza interesse (il freeze
+    // notturno 00:00-08:00 non conta, come per le aste a discesa), poi
+    // eventualmente spostata in avanti per garantire almeno 30 minuti di
+    // distacco dall'ultima asta libera ancora in raccolta offerte.
+    const naturale = calcolaScadenzaOfferteLibero(scadenzaInteresse);
+    return await _applicaIntervalloMinimoLibero(naturale);
+  }
+  // Sempre: venerdì = giovedì + 1 giorno, slot base 13:00 UTC (14:00 Italia) + 30min per ogni chiamata precedente
+  const ven = new Date(scadenzaInteresse);
+  ven.setUTCDate(scadenzaInteresse.getUTCDate() + 1);
+  ven.setUTCHours(13, 0, 0, 0);
+  const slot = await calcolaSlotVenerdì(ven, primaria.scadenza_interesse);
+  ven.setUTCMinutes(slot * 30);
+  return ven;
+}
+
 export async function creaAstaDaChiamate(nomeGiocatore) {
   const { data: chiamate } = await supabase.from('chiamate')
     .select('*').eq('giocatore', nomeGiocatore).eq('stato', 'aperta')
@@ -4924,24 +4951,7 @@ export async function creaAstaDaChiamate(nomeGiocatore) {
 
   const scadenzaInteresse = new Date(primaria.scadenza_interesse);
   const modalita = primaria.modalita || 'normale';
-
-  let scadenzaOfferte;
-  if (modalita === 'libero') {
-    // Modalità libera: 12h "attive" dalla scadenza interesse (il freeze
-    // notturno 00:00-08:00 non conta, come per le aste a discesa), poi
-    // eventualmente spostata in avanti per garantire almeno 30 minuti di
-    // distacco dall'ultima asta libera ancora in raccolta offerte.
-    const naturale = calcolaScadenzaOfferteLibero(scadenzaInteresse);
-    scadenzaOfferte = await _applicaIntervalloMinimoLibero(naturale);
-  } else {
-    // Sempre: venerdì = giovedì + 1 giorno, slot base 13:00 UTC (14:00 Italia) + 30min per ogni asta già presente
-    const ven = new Date(scadenzaInteresse);
-    ven.setUTCDate(scadenzaInteresse.getUTCDate() + 1);
-    ven.setUTCHours(13, 0, 0, 0);
-    const slot = await calcolaSlotVenerdì(ven, primaria.scadenza_interesse);
-    ven.setUTCMinutes(slot * 30);
-    scadenzaOfferte = ven;
-  }
+  const scadenzaOfferte = await calcolaScadenzaOfferteAttesa(primaria);
 
   const payload = {
     giocatore: nomeGiocatore,
