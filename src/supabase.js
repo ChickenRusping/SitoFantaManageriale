@@ -1974,7 +1974,18 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
       : parseFloat((quot * 0.5).toFixed(2));
 
     // Rimborso delle mensilità già pagate nella stagione: 01/07, 01/08, ..., fino alla data di svincolo.
+    // Se il giocatore è stato acquisito a mercato aperto durante la stagione corrente
+    // (data_acquisto dopo l'01/06), vanno rimborsate SOLO le mensilità pagate da questa
+    // squadra da quando lo possiede — non quelle già pagate dal venditore prima della cessione.
     mesiRimborsati = _contaMensilitaGiaPagate(oggi);
+    if (player.data_acquisto) {
+      const acquistatoIl = new Date(`${player.data_acquisto}T00:00:00`);
+      const inizioStagione = new Date(stagioneStartYear(oggi), 5, 1);
+      if (acquistatoIl > inizioStagione) {
+        const mesiPagatiAllAcquisto = _contaMensilitaGiaPagate(acquistatoIl);
+        mesiRimborsati = Math.max(0, mesiRimborsati - mesiPagatiAllAcquisto);
+      }
+    }
     const rimborsoStipendi = parseFloat((mesiRimborsati * stip / 12).toFixed(2));
 
     // Netto: indennizzo + rimborso stipendi (entrate per la squadra)
