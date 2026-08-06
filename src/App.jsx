@@ -7888,6 +7888,10 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
   const vivaioAperto = isVivaioAcquistiAperti();
 
   async function handleInteresse(perVivaio) {
+    const messaggio = perVivaio
+      ? `Interessarti a ${primaria.giocatore} per il vivaio? È già stato chiamato da ${primaria.squadra}.`
+      : `Interessarti a ${primaria.giocatore}? È già stato chiamato da ${primaria.squadra}.`;
+    if (!window.confirm(messaggio)) return;
     setSaving(true);
     try { await aggiungiInteresse(primaria.giocatore, mySquadra, perVivaio); await onRefresh(); }
     catch(e) { alert(e.message); } finally { setSaving(false); }
