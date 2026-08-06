@@ -2740,11 +2740,13 @@ export async function scegliAllenatore(squadra, nomeAllenatore, bilancioAttuale)
   // 2. Scala 5M dal bilancio (costo carta)
   const nuovoBilancio = parseFloat((bilancioAttuale - 5).toFixed(2));
   await supabase.from('squadre').update({ bilancio: nuovoBilancio }).eq('name', squadra);
-  // 3. Movimento
+  // 3. Movimento (escluso dal FPF: la scelta della carta allenatore non deve
+  //    gravare sul netto speso del semestre, resta solo un costo a bilancio)
   await supabase.from('movimenti').insert({
-    squadra, descrizione: `Scelta carta allenatore: ${nomeAllenatore}`,
+    squadra, descrizione: `[~FPF] Scelta carta allenatore: ${nomeAllenatore}`,
     uscita: 5, data: new Date().toISOString().slice(0, 10),
   });
+  await sendTelegramNotification('scelta_allenatore', { squadra, nomeAllenatore });
   return nuovoBilancio;
 }
 
