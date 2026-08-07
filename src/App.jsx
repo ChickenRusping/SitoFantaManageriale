@@ -13979,8 +13979,15 @@ function NotificationBell({ mySquadra, navigate }) {
   function toggleOpen() {
     if (!open && ref.current) {
       const rect = ref.current.getBoundingClientRect();
-      const width = Math.min(320, window.innerWidth - 16);
-      const right = Math.max(8, window.innerWidth - rect.right);
+      const vw = window.innerWidth;
+      const width = Math.min(320, vw - 16);
+      // Allinea il bordo destro del pannello al bordo destro del bottone, ma
+      // senza mai far scappare il bordo sinistro oltre i confini dello
+      // schermo: il "right" naive non teneva conto della larghezza del
+      // pannello, quindi su schermi stretti con la campanella non proprio
+      // all'estremo destro il pannello sforava comunque a sinistra.
+      const rightNaive = vw - rect.right;
+      const right = Math.min(Math.max(rightNaive, 8), vw - width - 8);
       setPanelPos({ top: rect.bottom + 6, right, width });
     }
     setOpen(v => !v);
