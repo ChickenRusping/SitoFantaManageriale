@@ -5460,8 +5460,12 @@ export async function importListoneDaExcel(rows) {
     .map(r => {
       const nome = (r.Nome || r.nome || '').trim();
       const quot = parseFloat(String(r['QUOT.'] || r.quot || r.Quotazione || 0).replace('€', '').replace(',', '.')) || 0;
-      const salario = parseFloat(String(r['Salario'] || r.salario || 0).replace('€', '').replace(',', '.')) || parseFloat((quot / 5).toFixed(2));
-      const clausola = parseFloat(String(r['Clausola Rescissoria'] || r.clausola || 0).replace('€', '').replace(',', '.')) || parseFloat((quot * 1.75).toFixed(2));
+      // .toFixed(2) su ENTRAMBI i rami: se "Salario"/"Clausola Rescissoria" arrivano
+      // dal file Excel come numero (non stringa), SheetJS può portarsi dietro la
+      // precisione doppia grezza della cella (es. 6.800000000000001 invece di 6.8)
+      // — senza arrotondare qui quel valore veniva salvato e mostrato così com'è.
+      const salario = parseFloat((parseFloat(String(r['Salario'] || r.salario || 0).replace('€', '').replace(',', '.')) || (quot / 5)).toFixed(2));
+      const clausola = parseFloat((parseFloat(String(r['Clausola Rescissoria'] || r.clausola || 0).replace('€', '').replace(',', '.')) || (quot * 1.75)).toFixed(2));
       return {
         numero:           Number(r['#'] || r.numero || 0) || null,
         nome,
