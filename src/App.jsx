@@ -13968,7 +13968,23 @@ function NotificationBell({ mySquadra, navigate }) {
   const [notifiche, setNotifiche] = useState([]);
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState("private"); // 'private' | 'pubbliche'
+  const [panelPos, setPanelPos] = useState({ top: 0, right: 0, width: 320 });
   const ref = useRef(null);
+
+  // Posizione calcolata dalla posizione reale del bottone sullo schermo (non
+  // relativa al piccolo wrapper): su mobile, se la campanella non è l'ultima
+  // icona a destra, un pannello ancorato con right:0 al wrapper finiva fuori
+  // schermo a sinistra. position:fixed + coordinate calcolate evita il problema
+  // su qualunque larghezza di schermo.
+  function toggleOpen() {
+    if (!open && ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      const width = Math.min(320, window.innerWidth - 16);
+      const right = Math.max(8, window.innerWidth - rect.right);
+      setPanelPos({ top: rect.bottom + 6, right, width });
+    }
+    setOpen(v => !v);
+  }
 
   const load = useCallback(() => {
     if (!mySquadra) return;
@@ -14018,7 +14034,7 @@ function NotificationBell({ mySquadra, navigate }) {
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      <button onClick={() => setOpen(v => !v)} title="Notifiche"
+      <button onClick={toggleOpen} title="Notifiche"
         style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #ffffff12", background: "transparent", color: "#555", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
         🔔
         {nonLette.length > 0 && (
@@ -14028,7 +14044,7 @@ function NotificationBell({ mySquadra, navigate }) {
         )}
       </button>
       {open && (
-        <div style={{ position: "absolute", top: 34, right: 0, width: 320, maxWidth: "calc(100vw - 32px)", maxHeight: 460, overflowY: "auto", background: "#12141a", border: "1px solid #ffffff14", borderRadius: 12, boxShadow: "0 8px 30px #00000060", zIndex: 300 }}>
+        <div style={{ position: "fixed", top: panelPos.top, right: panelPos.right, width: panelPos.width, maxHeight: 460, overflowY: "auto", background: "#12141a", border: "1px solid #ffffff14", borderRadius: 12, boxShadow: "0 8px 30px #00000060", zIndex: 300 }}>
           <div style={{ position: "sticky", top: 0, background: "#12141a", zIndex: 1 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px 6px", borderBottom: "1px solid #ffffff0a" }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: "#f0f0f0" }}>🔔 Notifiche</span>
