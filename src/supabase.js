@@ -484,7 +484,7 @@ export async function insertChiamata(chiamata) {
       }
     }
   }
-  // In modalità libera: 72h fisse dalla chiamata, nessun vincolo di giorno/orario.
+  // In modalità libera: 48h fisse dalla chiamata, nessun vincolo di giorno/orario.
   // In modalità normale: le finestre di calendario restano quelle di sempre
   // (l'enforcement in UI resta invariato, qui si calcola solo la scadenza).
   const scadenzaInteresse = modalita === 'libero' ? calcolaScadenzaInteresseLibero(now) : calcolaScadenzaInteresse(now);
@@ -498,7 +498,7 @@ export async function insertChiamata(chiamata) {
   let { data, error } = await supabase.from('chiamate').insert(payload).select().single();
   if (error && isMissingColumnError(error)) {
     // Colonna 'modalita' non ancora migrata: riprova senza (la modalità libera
-    // funziona comunque grazie alla scadenza_interesse già calcolata a 72h,
+    // funziona comunque grazie alla scadenza_interesse già calcolata a 48h,
     // solo creaAstaDaChiamate non saprà distinguere in modo esplicito — vedi lì).
     const { modalita: _drop, ...fallbackPayload } = payload;
     ({ data, error } = await supabase.from('chiamate').insert(fallbackPayload).select().single());
@@ -6029,7 +6029,7 @@ export async function setMercatoOverride(valore) {
 // ─── MODALITÀ MERCATO SVINCOLATI ──────────────────────────────────────────────
 // 'chiuso'  → nessuna chiamata/offerta possibile
 // 'normale' → comportamento di sempre (chiamate mar-mer, aste il venerdì)
-// 'libero'  → chiamabili in ogni momento; 72h per manifestare interesse, poi
+// 'libero'  → chiamabili in ogni momento; 48h per manifestare interesse, poi
 //             12h a busta chiusa se c'è più di un interessato (altrimenti va
 //             subito all'unico interessato, come nel normale)
 // Default 'normale' se non è mai stata impostata (nessuna migrazione richiesta:
@@ -6044,10 +6044,13 @@ export async function setModalitaSvincolati(valore) {
   await supabase.from('impostazioni').upsert({ chiave: 'modalita_svincolati', valore }, { onConflict: 'chiave' });
 }
 
-// Modalità libera (art. 6.3-bis): 72h fisse dalla chiamata per l'interesse,
+// Modalità libera (art. 6.3-bis): 48h fisse dalla chiamata per l'interesse,
 // poi 12h fisse a busta chiusa — nessun ancoraggio al calendario settimanale.
+// La scadenza viene calcolata e salvata sulla singola chiamata nel momento in
+// cui viene effettuata: cambiare questa costante non è mai retroattivo,
+// riguarda solo le chiamate fatte da qui in avanti.
 export function calcolaScadenzaInteresseLibero(dataChiamata = new Date()) {
-  return new Date(new Date(dataChiamata).getTime() + 72 * 60 * 60 * 1000);
+  return new Date(new Date(dataChiamata).getTime() + 48 * 60 * 60 * 1000);
 }
 
 // Stesso freeze notturno delle aste a discesa (00:00-08:00, ora locale): i
