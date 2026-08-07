@@ -5928,14 +5928,14 @@ let _modalitaTassazione = 'auto'; // 'auto' | 'flat' | 'scaglioni' — caricato 
 
 // Combina la finestra di calendario (mar-mer interesse, ven aste — sempre valida
 // in modalità 'normale') con l'eventuale modalità impostata dall'admin in Control
-// Room. In 'chiuso' blocca tutto; in 'libero' è sempre aperta (72h dalla chiamata).
+// Room. In 'chiuso' blocca tutto; in 'libero' è sempre aperta (48h dalla chiamata).
 function getFinestraChiamateEffettiva() {
   const base = getFinestraChiamate();
   if (_modalitaSvincolati === 'chiuso') {
     return { ...base, aperta: false, modalita: 'chiuso', messaggio: '🔴 Mercato svincolati chiuso (Admin)' };
   }
   if (_modalitaSvincolati === 'libero') {
-    return { ...base, aperta: true, modalita: 'libero', messaggio: '🔓 Mercato libero — chiama quando vuoi (72h per gli interessati, poi asta a busta chiusa)' };
+    return { ...base, aperta: true, modalita: 'libero', messaggio: '🔓 Mercato libero — chiama quando vuoi (48h per gli interessati, poi asta a busta chiusa)' };
   }
   return { ...base, modalita: 'normale' };
 }
@@ -7908,7 +7908,7 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
 
   const scadInt = primaria.scadenza_interesse
     ? new Date(primaria.scadenza_interesse)
-    : new Date(new Date(primaria.created_at || Date.now()).getTime() + 72 * 60 * 60 * 1000);
+    : new Date(new Date(primaria.created_at || Date.now()).getTime() + 48 * 60 * 60 * 1000);
   const scadutaInteresse = new Date() > scadInt;
 
   const astaAttiva    = aste?.find(a => a.giocatore === primaria.giocatore && a.stato === 'raccolta_offerte');
@@ -11216,7 +11216,7 @@ function AdminControlRoomPage({ teams }) {
               <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>🧑‍🤝‍🧑 MERCATO SVINCOLATI</div>
               <div style={{ background: '#6366f108', border: '1px solid #6366f120', borderRadius: 12, padding: '14px 16px', fontSize: 12, color: '#aaa', lineHeight: 1.6 }}>
                 <b style={{ color: '#818cf8' }}>Normale</b>: chiamate mar-mer, aste il venerdì (comportamento di sempre).<br/>
-                <b style={{ color: '#10b981' }}>Senza Vincoli</b>: chiamabili in ogni momento — 72h per manifestare interesse, poi 12h a busta chiusa se c'è più di un interessato (altrimenti va subito all'unico interessato, come sempre).<br/>
+                <b style={{ color: '#10b981' }}>Senza Vincoli</b>: chiamabili in ogni momento — 48h per manifestare interesse, poi 12h a busta chiusa se c'è più di un interessato (altrimenti va subito all'unico interessato, come sempre).<br/>
                 <b style={{ color: '#ef4444' }}>Chiuso</b>: nessuna chiamata o offerta possibile, per nessuno (incluso admin). Le chiamate/aste già in corso restano valide e si concludono normalmente — il cambio modalità vale solo per le nuove.
               </div>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
