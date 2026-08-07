@@ -4225,18 +4225,17 @@ function AltroTab({ team, isAdmin, mySquadra }) {
     async function loadBonus() {
       setLoadingBonus(true);
       try {
+        // Solo trattative REALMENTE eseguite (giocatore e soldi già mossi): questa
+        // sezione è visibile a chiunque visiti la pagina "Altro" di una squadra
+        // (nessun controllo su chi sta guardando), quindi i bonus di un'offerta
+        // ancora in negoziazione — anche solo accettata ma differita a mercato
+        // chiuso — non devono comparire qui finché lo scambio non è concluso per
+        // davvero. Stessa convenzione già usata altrove per "trattativa conclusa"
+        // (vedi checkECompletaBonus/_liquidaBonusPendentiAllaRivendita).
         const { data: tratt, error: trattErr } = await supabase.from('trattative')
           .select('id,giocatore,da_squadra,a_squadra,stato')
           .or(`da_squadra.eq.${team.name},a_squadra.eq.${team.name}`)
-          .in('stato',[
-            'in attesa',
-            'in_attesa',
-            'controproposta',
-            'accettata_differita',
-            'completata',
-            'accettata',
-            'clausola_eseguita'
-          ]);
+          .in('stato', ['completata', 'accettata', 'clausola_eseguita']);
 
         if (trattErr) throw trattErr;
         if (!tratt?.length) {
