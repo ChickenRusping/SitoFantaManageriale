@@ -1248,8 +1248,12 @@ export async function eseguiTrasferimento(trattativa) {
 
   // ── 2c. Liquidazione bonus pendenti di un precedente acquisto di questo
   // giocatore da parte del cedente (vedi _liquidaBonusPendentiAllaRivendita).
-  // Solo cessioni definitive: un prestito non cambia davvero la proprietà.
-  if (!isPrestito) {
+  // Solo cessioni/scambi trattati tra presidenti: un prestito non cambia
+  // davvero la proprietà, e una clausola rescissoria è un acquisto unilaterale
+  // (non una trattativa negoziata) — in nessuno dei due casi va liquidato il
+  // bonus, così come non va mai liquidato in caso di svincolo (quella strada
+  // non passa da eseguiTrasferimento).
+  if (!isPrestito && tipo !== 'clausola') {
     try { await _liquidaBonusPendentiAllaRivendita(giocatore, squadraCedente); }
     catch (e) { console.warn('Liquidazione bonus alla rivendita fallita:', e.message); }
   }
