@@ -173,7 +173,8 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, getEffettiInvestimenti, getSquadreConSuperClub, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, getEffettiInvestimenti, getSquadreConSuperClub,
+  getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, subscribeNotificheApp, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
   getBonusTrattativa, getBonusTrattativeBatch, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -13901,12 +13902,15 @@ table{border-collapse:collapse;min-width:max-content}
             </div>
           </div>
           <div className="main-content-pad" style={{ marginLeft:SIDEBAR_W,flex:1,padding:"28px 32px",minWidth:0,position:"relative" }}>
-            <button onClick={() => window.location.reload()} title="Aggiorna pagina"
-              style={{ position:"absolute",top:18,right:24,zIndex:50,background:"#ffffff08",border:"1px solid #ffffff12",borderRadius:8,color:"#555",fontSize:14,width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"background 0.15s,color 0.15s" }}
-              onMouseEnter={e=>{e.currentTarget.style.background="#ffffff14";e.currentTarget.style.color="#aaa";}}
-              onMouseLeave={e=>{e.currentTarget.style.background="#ffffff08";e.currentTarget.style.color="#555";}}>
-              ↻
-            </button>
+            <div style={{ position:"absolute",top:18,right:24,zIndex:50,display:"flex",alignItems:"center",gap:8 }}>
+              <NotificationBell mySquadra={mySquadra} navigate={navigate} />
+              <button onClick={() => window.location.reload()} title="Aggiorna pagina"
+                style={{ background:"#ffffff08",border:"1px solid #ffffff12",borderRadius:8,color:"#555",fontSize:14,width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"background 0.15s,color 0.15s" }}
+                onMouseEnter={e=>{e.currentTarget.style.background="#ffffff14";e.currentTarget.style.color="#aaa";}}
+                onMouseLeave={e=>{e.currentTarget.style.background="#ffffff08";e.currentTarget.style.color="#555";}}>
+                ↻
+              </button>
+            </div>
             {pageContent}
           </div>
         </div>
@@ -13923,6 +13927,7 @@ table{border-collapse:collapse;min-width:max-content}
                   </div>
                 </div>
                 <div style={{ display:"flex",gap:6,alignItems:"center" }}>
+                  <NotificationBell mySquadra={mySquadra} navigate={navigate} />
                   <button onClick={()=>window.location.reload()} title="Aggiorna" style={{ width:28,height:28,borderRadius:7,border:"1px solid #ffffff12",background:"transparent",color:"#555",fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>↻</button>
                   {profile && (
                     <div onClick={()=>navigate('/profilo')} style={{ cursor:"pointer",display:"flex",alignItems:"center" }}>
@@ -13957,6 +13962,110 @@ table{border-collapse:collapse;min-width:max-content}
   );
 }
 
+
+// ── Centro notifiche (campanella in header, globale) ──────────────────────────
+function NotificationBell({ mySquadra, navigate }) {
+  const [notifiche, setNotifiche] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState("private"); // 'private' | 'pubbliche'
+  const ref = useRef(null);
+
+  const load = useCallback(() => {
+    if (!mySquadra) return;
+    getNotificheApp(mySquadra, 30).then(rows => { if (rows) setNotifiche(rows); });
+  }, [mySquadra]);
+
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (!mySquadra) return;
+    const sub = subscribeNotificheApp(payload => {
+      const row = payload.new;
+      if (row.squadra_destinataria === mySquadra || row.squadra_destinataria === null) load();
+    });
+    return () => supabase.removeChannel(sub);
+  }, [mySquadra, load]);
+
+  useEffect(() => {
+    function onDocClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
+
+  if (!mySquadra) return null;
+  const nonLette = notifiche.filter(n => !n.letta);
+  const notifichePrivate = notifiche.filter(n => n.squadra_destinataria != null);
+  const notifichePubbliche = notifiche.filter(n => n.squadra_destinataria == null);
+  const notificheTab = tab === "private" ? notifichePrivate : notifichePubbliche;
+  const nonLetteTab = notificheTab.filter(n => !n.letta);
+
+  async function handleClick(n) {
+    setOpen(false);
+    if (!n.letta) {
+      setNotifiche(v => v.map(x => x.id === n.id ? { ...x, letta: true } : x));
+      segnaNotificaLetta(n.id, mySquadra).catch(() => {});
+    }
+    if (n.link_pagina) navigate(n.link_pagina);
+  }
+
+  async function handleSegnaTutte(e) {
+    e.stopPropagation();
+    const ids = nonLetteTab.map(n => n.id);
+    if (!ids.length) return;
+    setNotifiche(v => v.map(x => ids.includes(x.id) ? { ...x, letta: true } : x));
+    segnaTutteNotificheLette(ids, mySquadra).catch(() => {});
+  }
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button onClick={() => setOpen(v => !v)} title="Notifiche"
+        style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #ffffff12", background: "transparent", color: "#555", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+        🔔
+        {nonLette.length > 0 && (
+          <span style={{ position: "absolute", top: -4, right: -4, background: "#ef4444", color: "#fff", borderRadius: "50%", minWidth: 15, height: 15, padding: "0 3px", fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {nonLette.length > 9 ? "9+" : nonLette.length}
+          </span>
+        )}
+      </button>
+      {open && (
+        <div style={{ position: "absolute", top: 34, right: 0, width: 320, maxWidth: "calc(100vw - 32px)", maxHeight: 460, overflowY: "auto", background: "#12141a", border: "1px solid #ffffff14", borderRadius: 12, boxShadow: "0 8px 30px #00000060", zIndex: 300 }}>
+          <div style={{ position: "sticky", top: 0, background: "#12141a", zIndex: 1 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px 6px", borderBottom: "1px solid #ffffff0a" }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: "#f0f0f0" }}>🔔 Notifiche</span>
+              {nonLetteTab.length > 0 && <button onClick={handleSegnaTutte} style={{ background: "none", border: "none", color: "#818cf8", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>Segna tutte lette</button>}
+            </div>
+            <div style={{ display: "flex", borderBottom: "1px solid #ffffff0a" }}>
+              {[["private", "Private", notifichePrivate], ["pubbliche", "Pubbliche", notifichePubbliche]].map(([key, label, rows]) => {
+                const nLetteTabBtn = rows.filter(n => !n.letta).length;
+                return (
+                  <button key={key} onClick={() => setTab(key)}
+                    style={{ flex: 1, padding: "8px 6px", background: "none", border: "none", borderBottom: tab === key ? "2px solid #6366f1" : "2px solid transparent", color: tab === key ? "#f0f0f0" : "#666", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                    {label}
+                    {nLetteTabBtn > 0 && <span style={{ background: "#ef4444", color: "#fff", borderRadius: "50%", minWidth: 14, height: 14, padding: "0 3px", fontSize: 8, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>{nLetteTabBtn > 9 ? "9+" : nLetteTabBtn}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {notificheTab.length === 0 && <div style={{ padding: 24, textAlign: "center", color: "#555", fontSize: 12 }}>Nessuna notifica {tab === "private" ? "privata" : "pubblica"}</div>}
+          {notificheTab.map(n => (
+            <div key={n.id} onClick={() => handleClick(n)}
+              style={{ padding: "10px 12px", borderBottom: "1px solid #ffffff08", cursor: "pointer", background: n.letta ? "transparent" : "#6366f110" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
+              onMouseLeave={e => e.currentTarget.style.background = n.letta ? "transparent" : "#6366f110"}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {!n.letta && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#6366f1", flexShrink: 0 }} />}
+                <span style={{ fontSize: 12, fontWeight: n.letta ? 600 : 800, color: n.letta ? "#aaa" : "#f0f0f0" }}>{n.titolo}</span>
+              </div>
+              {n.corpo && <div style={{ fontSize: 11, color: "#777", marginTop: 2, lineHeight: 1.4 }}>{n.corpo}</div>}
+              <div style={{ fontSize: 9, color: "#444", marginTop: 3 }}>{new Date(n.created_at).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function PresidentePageWrapper({ mergedTeams, isAdmin, mySquadra }) {
   const { teamId } = useParams();

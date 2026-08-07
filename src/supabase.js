@@ -6254,6 +6254,104 @@ export async function sendTelegramNotification(type, payload = {}, squadra = nul
   } catch (e) {
     console.warn('[Telegram] notification failed silently:', type, e);
   }
+  try {
+    await _insertNotificaApp(type, payload, squadra);
+  } catch (e) {
+    console.warn('[NotificheApp] insert failed silently:', type, e);
+  }
+}
+
+// ─── CENTRO NOTIFICHE IN-APP ──────────────────────────────────────────────────
+// Specchio (in italiano semplice, senza HTML) dei messaggi Telegram, salvato
+// nel DB per la campanella in header. squadra_destinataria = null → notifica
+// pubblica, visibile a tutte le squadre (letta/non letta è comunque per-utente,
+// vedi notifiche_lette). Un tipo non gestito qui non genera nessuna riga.
+function _formatNotificaApp(type, p = {}) {
+  const LINK = {
+    notizia_pinnata: '/news', nuova_notizia: '/news', commento_ricevuto: '/news',
+    risposta_commento: '/news', scadenza_imminente: '/news',
+    mercato_aperto: '/mercato', mercato_chiuso: '/mercato', trattativa_ricevuta: '/mercato',
+    trattativa_accettata: '/mercato', trattativa_rifiutata: '/mercato', trattativa_controfferta: '/mercato',
+    chiamata_svincolati: '/mercato', asta_svincolati: '/mercato', asta_svincolati_conclusa: '/mercato',
+    asta_tra_presidenti: '/mercato', asta_assegnata: '/mercato', asta_vinta: '/mercato', asta_persa: '/mercato',
+    ds_masterclass_offerte: '/mercato', ds_masterclass_usato: '/mercato', svincolo: '/mercato',
+    scelta_allenatore: '/squadre', investimento_acquistato: '/squadre', movimento_privato: '/squadre',
+    tassa_applicata: '/squadre', stipendi_applicati: '/squadre', stadio_applicato: '/squadre',
+  };
+  const link = LINK[type] || null;
+  switch (type) {
+    case 'chiamata_svincolati': return { titolo: 'Nuova chiamata', corpo: `${p.giocatore} · Q${p.quotazione} — ${p.squadra} ha manifestato interesse`, link };
+    case 'asta_svincolati': return { titolo: 'Asta svincolati aperta', corpo: `${p.giocatore} · Q${p.quotazione} — chiamato da ${p.squadra}`, link };
+    case 'asta_svincolati_conclusa': return { titolo: 'Asta conclusa', corpo: `${p.giocatore} vinta da ${p.vincitore} per ${p.prezzo}M`, link };
+    case 'asta_tra_presidenti': return { titolo: 'Nuova asta tra presidenti', corpo: `${p.giocatore} · Q${p.quotazione} — indetta da ${p.proprietario}`, link };
+    case 'asta_assegnata': return { titolo: 'Asta conclusa', corpo: p.vincitore ? `${p.giocatore} acquistato da ${p.vincitore} per ${p.importo}M` : `${p.giocatore} — asta chiusa senza vincitore`, link };
+    case 'asta_vinta': return { titolo: 'Asta vinta!', corpo: `${p.giocatore} è tuo per ${p.importo}M`, link };
+    case 'asta_persa': return { titolo: 'Asta persa', corpo: `${p.giocatore} — vincitore: ${p.vincitore} (${p.importo}M)`, link };
+    case 'ds_masterclass_offerte': return { titolo: 'DS Masterclass attivato', corpo: `${p.giocatore} — offerta più alta: ${p.offertaRivelata ? p.offertaRivelata + 'M' : 'nessuna offerta'}`, link };
+    case 'ds_masterclass_usato': return { titolo: 'DS Masterclass utilizzato', corpo: `${p.squadra} ha attivato un utilizzo per l'asta di ${p.giocatore}`, link };
+    case 'svincolo': return { titolo: 'Giocatore svincolato', corpo: `${p.giocatore} · Q${p.quotazione} — lascia ${p.squadra}`, link };
+    case 'scelta_allenatore': return { titolo: 'Nuova scelta allenatore', corpo: `${p.squadra} — ${p.nomeAllenatore}`, link };
+    case 'investimento_acquistato': return { titolo: 'Nuovo investimento', corpo: `${p.squadra} — ${p.nome} (${p.costo}M)`, link };
+    case 'trattativa_ricevuta': return { titolo: 'Nuova offerta ricevuta', corpo: `${p.giocatore} — ${p.importo}M da ${p.da_squadra}`, link };
+    case 'trattativa_accettata': return { titolo: 'Trasferimento completato', corpo: `${p.giocatore} per ${p.importo}M — da ${p.a_squadra} a ${p.da_squadra}`, link };
+    case 'trattativa_rifiutata': return { titolo: 'Offerta rifiutata', corpo: `${p.giocatore} (${p.importo}M) non accettata`, link };
+    case 'trattativa_controfferta': return { titolo: 'Controfferta ricevuta', corpo: `${p.giocatore} — nuova richiesta ${p.importo}M`, link };
+    case 'nuova_notizia': return { titolo: p.squadra || p.autore || 'Lega Admin', corpo: p.titolo, link };
+    case 'notizia_pinnata': return { titolo: 'Notizia pinnata', corpo: p.titolo, link };
+    case 'commento_ricevuto': return { titolo: 'Nuovo commento', corpo: `${p.autore_squadra || p.autore} ha commentato: ${p.titolo}`, link };
+    case 'risposta_commento': return { titolo: 'Nuova risposta', corpo: `${p.autore_squadra || p.autore} ti ha risposto: ${p.titolo}`, link };
+    case 'scadenza_imminente': return { titolo: `Scadenza tra ${p.giorni} giorn${Number(p.giorni) === 1 ? 'o' : 'i'}`, corpo: p.label, link };
+    case 'mercato_aperto': return { titolo: 'Mercato aperto', corpo: `Sessione ${p.periodo}`, link };
+    case 'mercato_chiuso': return { titolo: 'Mercato chiuso', corpo: 'La finestra di trasferimenti è terminata.', link };
+    case 'tassa_applicata': return { titolo: 'Tasse settimanali applicate', corpo: `Settimana del ${p.domenica}`, link };
+    case 'stipendi_applicati': return { titolo: 'Stipendi mensili addebitati', corpo: `Mese: ${p.mese}`, link };
+    case 'stadio_applicato': return { titolo: 'Entrate stadio accreditate', corpo: `Mese: ${p.mese}`, link };
+    case 'movimento_privato': return { titolo: 'Movimento', corpo: `${p.entrata ? '+' + p.entrata : '-' + p.uscita}M — ${p.descrizione}`, link };
+    default: return null;
+  }
+}
+
+async function _insertNotificaApp(type, payload, squadra) {
+  const f = _formatNotificaApp(type, payload);
+  if (!f) return; // tipo non mappato: nessuna notifica in-app
+  await supabase.from('notifiche_app').insert({
+    tipo: type, titolo: f.titolo, corpo: f.corpo || null, link_pagina: f.link,
+    squadra_destinataria: squadra || null,
+  });
+}
+
+// Notifiche visibili a `squadra` (private sue + pubbliche di tutti), più recenti prima.
+export async function getNotificheApp(squadra, limit = 30) {
+  const { data: notifiche } = await supabase.from('notifiche_app')
+    .select('*')
+    .or(`squadra_destinataria.eq.${squadra},squadra_destinataria.is.null`)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (!notifiche?.length) return [];
+  const ids = notifiche.map(n => n.id);
+  const { data: lette } = await supabase.from('notifiche_lette')
+    .select('notifica_id').eq('squadra', squadra).in('notifica_id', ids);
+  const letteSet = new Set((lette || []).map(l => l.notifica_id));
+  return notifiche.map(n => ({ ...n, letta: letteSet.has(n.id) }));
+}
+
+export async function segnaNotificaLetta(notificaId, squadra) {
+  await supabase.from('notifiche_lette').upsert(
+    { squadra, notifica_id: notificaId }, { onConflict: 'squadra,notifica_id' }
+  );
+}
+
+export async function segnaTutteNotificheLette(notificheIds, squadra) {
+  if (!notificheIds?.length) return;
+  await supabase.from('notifiche_lette').upsert(
+    notificheIds.map(id => ({ squadra, notifica_id: id })), { onConflict: 'squadra,notifica_id' }
+  );
+}
+
+export function subscribeNotificheApp(callback) {
+  return supabase.channel('notifiche-app-changes')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifiche_app' }, callback)
+    .subscribe();
 }
 
 // ─── TELEGRAM REGISTRATIONS (Admin) ──────────────────────────────────────────
