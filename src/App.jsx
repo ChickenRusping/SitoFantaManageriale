@@ -8537,8 +8537,8 @@ function ListonePage({ teams, profile }) {
                       : <span style={{ color: "#10b981", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#10b98155" }}>Svincolato</span>}
                   </td>
                   <td style={{ padding: "7px 10px", color: "#f59e0b", fontWeight: 700 }}>{p.quot ?? "—"}</td>
-                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.salario ?? "—"}</td>
-                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.clausola ?? "—"}</td>
+                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.salario != null ? Number(p.salario).toFixed(2) : "—"}</td>
+                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.clausola != null ? Number(p.clausola).toFixed(2) : "—"}</td>
                   <td style={{ padding: "7px 10px", color: "#888" }}>{p.partite_voto ?? 0}</td>
                   <td style={{ padding: "7px 10px", color: "#888" }}>{p.media_voto ?? 0}</td>
                   <td style={{ padding: "7px 10px", color: "#888" }}>{p.media_fantavoto ?? 0}</td>
