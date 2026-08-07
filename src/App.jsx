@@ -300,6 +300,30 @@ function contaMensilitaResidueDaPagare(date = new Date()) {
   return 12 - contaMensilitaGiaPagate(date);
 }
 
+function stagioneStartYearLocal(date = new Date()) {
+  const y = date.getFullYear(), m = date.getMonth() + 1, d = date.getDate();
+  return (m > 6 || (m === 6 && d >= 1)) ? y : y - 1;
+}
+
+// Mensilità da rimborsare in uno svincolo straordinario: solo quelle pagate
+// dalla squadra ATTUALE. Se il giocatore è stato acquisito a mercato aperto
+// durante la stagione corrente (data_acquisto dopo l'01/06), non contano le
+// mensilità già pagate dal venditore prima della cessione — mirror della
+// stessa logica lato server in eseguiSvincolo (supabase.js), qui usata solo
+// per l'anteprima mostrata nel popup prima di confermare.
+function contaMensilitaRimborsabili(player, oggi = new Date()) {
+  let mesi = contaMensilitaGiaPagate(oggi);
+  if (player?.data_acquisto) {
+    const acquistatoIl = new Date(`${player.data_acquisto}T00:00:00`);
+    const inizioStagione = new Date(stagioneStartYearLocal(oggi), 5, 1);
+    if (acquistatoIl > inizioStagione) {
+      const mesiPagatiAllAcquisto = contaMensilitaGiaPagate(acquistatoIl);
+      mesi = Math.max(0, mesi - mesiPagatiAllAcquisto);
+    }
+  }
+  return mesi;
+}
+
 function Badge({ children, color, style = {}, title }) {
   return (
     <span title={title} style={{ background: color + "22", color, border: `1px solid ${color}44`, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", ...style }}>
@@ -2193,7 +2217,7 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
     }
     if (tipo==='straordinario_u21_nc') return {label:"Costo/Guadagno",value:0,color:"#888",dettaglio:"U21 nc — costo e guadagno 0",positivo:true};
     const ind=estero?parseFloat((quot*0.75).toFixed(2)):parseFloat((quot*0.5).toFixed(2));
-    const mr=contaMensilitaGiaPagate(oggi);
+    const mr=contaMensilitaRimborsabili(player,oggi);
     const rimb=parseFloat((mr*stip/12).toFixed(2));
     return {label:"Indennizzo + rimborso",value:parseFloat((ind+rimb).toFixed(2)),color:"#10b981",dettaglio:`Ind. ${ind}M${estero?' (estero ¾)':' (½)'} + ${mr} mens. rimborsate (${rimb}M)`,positivo:true};
   }
@@ -2674,7 +2698,7 @@ function SvincoliTab({ team, isAdmin }) {
     }
     // Straordinario
     const ind = estero ? parseFloat((quot * 0.75).toFixed(2)) : parseFloat((quot * 0.5).toFixed(2));
-    const mesiRimb = contaMensilitaGiaPagate(oggi);
+    const mesiRimb = contaMensilitaRimborsabili(player, oggi);
     const rimb = parseFloat((mesiRimb * stip / 12).toFixed(2));
     const totale = parseFloat((ind + rimb).toFixed(2));
     return {
