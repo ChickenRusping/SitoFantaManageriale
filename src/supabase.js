@@ -6331,7 +6331,8 @@ async function _insertNotificaApp(type, payload, squadra) {
   });
 }
 
-// Notifiche visibili a `squadra` (private sue + pubbliche di tutti), più recenti prima.
+// Notifiche visibili a `squadra` (private sue + pubbliche di tutti), più recenti
+// prima, escluse quelle che questa squadra ha eliminato dalla propria vista.
 export async function getNotificheApp(squadra, limit = 30) {
   const { data: notifiche } = await supabase.from('notifiche_app')
     .select('*')
@@ -6340,10 +6341,13 @@ export async function getNotificheApp(squadra, limit = 30) {
     .limit(limit);
   if (!notifiche?.length) return [];
   const ids = notifiche.map(n => n.id);
-  const { data: lette } = await supabase.from('notifiche_lette')
-    .select('notifica_id').eq('squadra', squadra).in('notifica_id', ids);
-  const letteSet = new Set((lette || []).map(l => l.notifica_id));
-  return notifiche.map(n => ({ ...n, letta: letteSet.has(n.id) }));
+  const { data: stati } = await supabase.from('notifiche_lette')
+    .select('notifica_id, nascosta').eq('squadra', squadra).in('notifica_id', ids);
+  const letteSet = new Set((stati || []).map(l => l.notifica_id));
+  const nascosteSet = new Set((stati || []).filter(l => l.nascosta).map(l => l.notifica_id));
+  return notifiche
+    .filter(n => !nascosteSet.has(n.id))
+    .map(n => ({ ...n, letta: letteSet.has(n.id) }));
 }
 
 export async function segnaNotificaLetta(notificaId, squadra) {
@@ -6356,6 +6360,15 @@ export async function segnaTutteNotificheLette(notificheIds, squadra) {
   if (!notificheIds?.length) return;
   await supabase.from('notifiche_lette').upsert(
     notificheIds.map(id => ({ squadra, notifica_id: id })), { onConflict: 'squadra,notifica_id' }
+  );
+}
+
+// Elimina una notifica dalla propria visualizzazione (per-squadra): se è
+// pubblica resta visibile alle altre squadre, solo chi la elimina non la
+// vede più. Implicitamente la segna anche come letta.
+export async function nascondiNotifica(notificaId, squadra) {
+  await supabase.from('notifiche_lette').upsert(
+    { squadra, notifica_id: notificaId, nascosta: true }, { onConflict: 'squadra,notifica_id' }
   );
 }
 
