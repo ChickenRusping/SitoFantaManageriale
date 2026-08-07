@@ -80,8 +80,13 @@ async function compressForUpload(file, preset = 'news') {
     stemma_thumb: { maxWidth: 120, maxHeight: 120, quality: 0.7 },
     maglia: { maxWidth: 1200, maxHeight: 1200, quality: 0.76 },
     squadra: { maxWidth: 1400, maxHeight: 1400, quality: 0.78 },
-    news: { maxWidth: 1600, maxHeight: 1600, quality: 0.78 },
-    news_thumb: { maxWidth: 640, maxHeight: 640, quality: 0.68 },
+    // La thumb è di gran lunga la più scaricata (una per ogni immagine di ogni
+    // post visto nel feed, ad ogni visita — incluse quelle senza cache
+    // persistente, es. browser interni di app come Telegram, che riscaricano
+    // tutto da zero ignorando il cache-control). Va tenuta il più leggera
+    // possibile: nel feed è mostrata al massimo a poche centinaia di px.
+    news: { maxWidth: 1280, maxHeight: 1280, quality: 0.72 },
+    news_thumb: { maxWidth: 480, maxHeight: 480, quality: 0.6 },
   };
   return await compressImageFile(file, presets[preset] || presets.news);
 }

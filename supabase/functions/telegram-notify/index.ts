@@ -42,35 +42,10 @@ async function sendMessage(chatId: string | number, text: string) {
 
 const APP = "https://fanta-manageriale.vercel.app";
 
-const DEEP_LINK: Record<string, string> = {
-  notizia_pinnata:        `${APP}/news`,
-  nuova_notizia:          `${APP}/news`,
-  commento_ricevuto:     `${APP}/news`,
-  risposta_commento:     `${APP}/news`,
-  scadenza_imminente:    `${APP}/news`,
-  mercato_aperto:        `${APP}/mercato`,
-  mercato_chiuso:        `${APP}/mercato`,
-  trattativa_ricevuta:   `${APP}/mercato`,
-  trattativa_accettata:  `${APP}/mercato`,
-  trattativa_rifiutata:  `${APP}/mercato`,
-  trattativa_controfferta: `${APP}/mercato`,
-  chiamata_svincolati:   `${APP}/mercato`,
-  asta_svincolati:       `${APP}/mercato`,
-  asta_svincolati_conclusa: `${APP}/mercato`,
-  asta_tra_presidenti:   `${APP}/mercato`,
-  asta_assegnata:        `${APP}/mercato`,
-  asta_vinta:            `${APP}/mercato`,
-  asta_persa:            `${APP}/mercato`,
-  ds_masterclass_offerte:`${APP}/mercato`,
-  ds_masterclass_usato:  `${APP}/mercato`,
-  svincolo:              `${APP}/mercato`,
-  scelta_allenatore:     `${APP}/squadre`,
-  investimento_acquistato: `${APP}/squadre`,
-  movimento_privato:     `${APP}/squadre`,
-  tassa_applicata:       `${APP}/squadre`,
-  stipendi_applicati:    `${APP}/squadre`,
-  stadio_applicato:      `${APP}/squadre`,
-};
+// Nessun link cliccabile in nessun messaggio: portava i presidenti a navigare
+// nell'app tramite il browser interno di Telegram, che ignora il
+// cache-control e riscarica tutto da zero ad ogni apertura — causa di grossi
+// picchi di cached egress su Supabase Storage anche su pagine leggere.
 
 const CATEGORY_BADGE: Record<string, string> = {
   notizia_pinnata:        "━━━  📰  NEWS  📰  ━━━",

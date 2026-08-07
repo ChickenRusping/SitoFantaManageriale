@@ -13241,8 +13241,16 @@ function NewsComposer({ profile, teams, onPost, isAdmin, editingPost = null, onC
   }
 
   async function handleImgUpload(e) {
-    const files = Array.from(e.target.files);
+    let files = Array.from(e.target.files);
     if (!files.length) return;
+    // Il feed mostra al massimo le prime 4 immagini di un post: caricarne di
+    // più le farebbe solo occupare storage/banda senza che nessuno le veda mai.
+    const postoDisponibile = Math.max(0, 4 - immagini.length);
+    if (files.length > postoDisponibile) {
+      alert(`Massimo 4 immagini per post (${postoDisponibile} ancora disponibili) — nel feed non ne verrebbero mostrate di più.`);
+      files = files.slice(0, postoDisponibile);
+    }
+    if (!files.length) { e.target.value = ''; return; }
     setUploading(true);
     try {
       const imgs = await Promise.all(files.map(async file => {
