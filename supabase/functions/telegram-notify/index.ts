@@ -79,7 +79,7 @@ const CATEGORY_BADGE: Record<string, string> = {
 
 function buildMessage(type: string, p: Record<string, unknown>): string | null {
   const badge = CATEGORY_BADGE[type] ? `<b>${CATEGORY_BADGE[type]}</b>\n\n` : "";
-  const link  = DEEP_LINK[type] ? `\n\n🔗 <a href="${DEEP_LINK[type]}">Apri nell'app</a>` : "";
+  const link  = ""; // nessun link cliccabile in nessun messaggio (vedi nota sopra CATEGORY_BADGE)
 
   switch (type) {
     case "chiamata_svincolati":
