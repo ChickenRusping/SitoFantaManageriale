@@ -13940,7 +13940,7 @@ table{border-collapse:collapse;min-width:max-content}
       ) : (
         <div style={{ paddingBottom:"calc(68px + env(safe-area-inset-bottom,0px))" }}>
           {!pathname.startsWith('/presidente') && (
-            <div style={{ borderBottom:"1px solid #ffffff0e",background:"#0d0f14f0",backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:100,padding:"0 16px" }}>
+            <div style={{ borderBottom:"1px solid #ffffff0e",background:"#0d0f14f0",backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:100,padding:"env(safe-area-inset-top,0px) 16px 0" }}>
               <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",height:50 }}>
                 <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                   <img loading="lazy" decoding="async" src="/icon-192.png" alt="logo" style={{ width:28,height:28,borderRadius:8,objectFit:"cover",flexShrink:0 }} />
