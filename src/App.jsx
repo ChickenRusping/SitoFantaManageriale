@@ -6248,6 +6248,27 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const squadraMittente = isAdmin ? (form.squadraMittente || mySquadra) : mySquadra;
   const mercato = getMercatoStatus();
 
+  // Badge sulla tab "Svincolati": quante aste in fase offerte hanno tra gli
+  // interessati la mia squadra — stesso concetto delle "aste" pendenti sopra,
+  // giusto per farsi accorgere che è iniziato il momento per mandare l'offerta.
+  const [svincoliOffertePendenti, setSvincoliOffertePendenti] = useState(0);
+  useEffect(() => {
+    if (!mySquadra) return;
+    let cancelled = false;
+    async function loadBadgeSvincoli() {
+      const { data: asteAperte } = await supabase.from('aste_svincolati')
+        .select('id, giocatore').eq('stato', 'raccolta_offerte');
+      if (!asteAperte?.length) { if (!cancelled) setSvincoliOffertePendenti(0); return; }
+      const { data: mieChiamate } = await supabase.from('chiamate')
+        .select('giocatore').eq('squadra', mySquadra).eq('stato', 'in_asta');
+      const mieiGiocatori = new Set((mieChiamate || []).map(c => c.giocatore));
+      if (!cancelled) setSvincoliOffertePendenti(asteAperte.filter(a => mieiGiocatori.has(a.giocatore)).length);
+    }
+    loadBadgeSvincoli();
+    const sub = subscribeAsteSvincolati(loadBadgeSvincoli);
+    return () => { cancelled = true; supabase.removeChannel(sub); };
+  }, [mySquadra]);
+
   const getBonusRows = useCallback((trattativaId) => bonusByTrattativa[trattativaId] || [], [bonusByTrattativa]);
   const getBonusTotale = useCallback((trattativaId) => (getBonusRows(trattativaId) || [])
     .reduce((sum, b) => sum + (Number(b.valore_mln) || 0), 0), [getBonusRows]);
@@ -6892,6 +6913,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
           <button key={k} onClick={()=>setMercatoSection(k)}
             style={{ padding:"8px 20px",borderRadius:9,border:"none",background:mercatoSection===k?(k==="mercato"?"#6366f1":k==="svincolati"?"#10b981":"#f59e0b"):"transparent",color:mercatoSection===k?"#fff":"#666",fontSize:13,fontWeight:700,cursor:"pointer",transition:"all 0.15s" }}>
             {l}
+            {k==="svincolati" && svincoliOffertePendenti>0 && <span style={{ background:"#ef4444",color:"#fff",borderRadius:"50%",padding:"1px 6px",fontSize:9,marginLeft:5,fontWeight:900 }}>{svincoliOffertePendenti}</span>}
           </button>
         ))}
       </div>
