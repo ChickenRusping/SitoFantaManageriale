@@ -4112,7 +4112,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
               ))}
               {euroInput && <span style={{ fontSize: 11, color: "#10b981", fontWeight: 700 }}>→ +{(parseFloat(euroInput)*2.5).toFixed(1)}M</span>}
             </div>
-            {isAdmin && euroInput && (
+            {(isAdmin || mySquadra === team.name) && euroInput && (
               <button onClick={handleInvesti} disabled={savingQuote}
                 style={{ marginTop: 8, padding: "5px 12px", borderRadius: 7, border: "none", background: "#6366f122", color: "#818cf8", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                 {savingQuote ? "..." : `✓ Investi ${euroInput}€ → +${(parseFloat(euroInput)*2.5).toFixed(1)}M`}
