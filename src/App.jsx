@@ -8117,9 +8117,12 @@ function OffertaInlineForm({ asta, squadra, onRefresh, dsMasterclass }) {
   // Asta congelata per via del Masterclass di un ALTRO presidente.
   const congelataDaAltri = !!asta.masterclass_squadra_attiva && asta.masterclass_squadra_attiva !== squadra;
 
+  // Solo chi ha chiamato per primo questo giocatore può usare il Masterclass,
+  // non un semplice interessato successivo.
+  const isCaller = asta.aperta_da === squadra;
   const utilizziUsati = dsMasterclass?.dati?.utilizzi_masterclass || 0;
   const utilizziRimasti = 2 - utilizziUsati;
-  const puoUsareMasterclass = dsMasterclass && utilizziRimasti > 0 && !richiesta
+  const puoUsareMasterclass = isCaller && dsMasterclass && utilizziRimasti > 0 && !richiesta
     && !scaduta && ora <= new Date(asta.scadenza);
 
   async function invia() {
