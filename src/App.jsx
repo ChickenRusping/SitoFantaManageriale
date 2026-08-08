@@ -8197,7 +8197,7 @@ function OffertaInlineForm({ asta, squadra, onRefresh, dsMasterclass }) {
           {saving ? "..." : miaOffertaInviata ? "↻ Aggiorna" : "📨 Invia"}
         </button>
         {miaOffertaInviata && !miaOffertaInviata.assente && (
-          <span style={{ fontSize: 10, color: "#10b981" }}>✅ {Number(miaOffertaInviata.importo).toFixed(2)}M inviata</span>
+          <span style={{ fontSize: 10, color: "#10b981" }}>✅ Offerta attualmente registrata: {Number(miaOffertaInviata.importo).toFixed(2)}M</span>
         )}
         <span style={{ fontSize: 9, color: "#444" }}>Le altre offerte sono nascoste · max = tuo bilancio</span>
       </div>
