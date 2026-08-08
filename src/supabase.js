@@ -5177,6 +5177,14 @@ export async function creaAstaDaChiamate(nomeGiocatore) {
     .update({ stato: 'in_asta', asta_id: asta.id })
     .eq('giocatore', nomeGiocatore).eq('stato', 'aperta');
 
+  // Notifica privata a OGNI interessato (non sul canale pubblico): è iniziata
+  // la fase per mandare le offerte a busta chiusa. Copre sia Telegram sia il
+  // centro notifiche in-app (stessa chiamata, vedi sendTelegramNotification).
+  const oreResidue = Math.max(1, Math.round((scadenzaOfferte.getTime() - Date.now()) / 3600000));
+  await Promise.all((chiamate || []).map(c => sendTelegramNotification('asta_svincolati', {
+    giocatore: nomeGiocatore, quotazione: primaria.quot, squadra: primaria.squadra, ore: oreResidue,
+  }, c.squadra)));
+
   return asta;
 }
 
