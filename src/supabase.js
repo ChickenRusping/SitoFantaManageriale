@@ -5125,6 +5125,16 @@ export async function calcolaScadenzaOfferteAttesa(primaria) {
 }
 
 export async function creaAstaDaChiamate(nomeGiocatore) {
+  // Evita la doppia creazione se checkScadenzeAste parte quasi in contemporanea
+  // da due tab/presidenti diversi (race condition): senza questo controllo
+  // entrambe le chiamate potevano superare il check "chiamate aperte" prima
+  // che una delle due avesse già inserito l'asta, creandone due per lo stesso
+  // giocatore. Il messaggio esatto "già esistente" è quello che
+  // checkScadenzeAste si aspetta per ignorare l'errore in silenzio.
+  const { data: astaEsistente } = await supabase.from('aste_svincolati')
+    .select('id').eq('giocatore', nomeGiocatore).eq('stato', 'raccolta_offerte').maybeSingle();
+  if (astaEsistente) throw new Error('Asta già esistente per questo giocatore.');
+
   const { data: chiamate } = await supabase.from('chiamate')
     .select('*').eq('giocatore', nomeGiocatore).eq('stato', 'aperta')
     .order('created_at', { ascending: true });
@@ -5156,6 +5166,11 @@ export async function creaAstaDaChiamate(nomeGiocatore) {
     const { modalita: _drop, ...fallbackPayload } = payload;
     ({ data: asta, error } = await supabase.from('aste_svincolati').insert(fallbackPayload).select().single());
   }
+  // Backstop a livello DB (indice unico parziale, vedi migrazione SQL): se
+  // nonostante il controllo sopra due richieste sono passate quasi in
+  // contemporanea, il DB rifiuta il secondo insert — normalizziamo l'errore
+  // allo stesso messaggio così checkScadenzeAste lo ignora in silenzio.
+  if (error?.code === '23505') throw new Error('Asta già esistente per questo giocatore.');
   if (error) throw error;
 
   await supabase.from('chiamate')
