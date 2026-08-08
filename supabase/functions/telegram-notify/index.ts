@@ -256,7 +256,8 @@ serve(async (req) => {
 
   const publicTypes = [
     "chiamata_svincolati",
-    "asta_svincolati",
+    // "asta_svincolati" NON è pubblica: annuncia l'apertura della fase offerte
+    // privatamente solo agli interessati (vedi creaAstaDaChiamate).
     "asta_svincolati_conclusa",
     "ds_masterclass_usato",
     "asta_tra_presidenti",
