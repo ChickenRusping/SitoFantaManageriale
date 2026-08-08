@@ -4199,7 +4199,7 @@ const CATALOGO_INVESTIMENTI = [
   // Grandi (art. 10.4)
   { nome: "Ristrutturazione Stadio",  categoria: "grande",   costo: 10,   desc: "Dalla stagione successiva +1.5M/mese dallo stadio. Devono passare 3 anni tra investimenti." },
   { nome: "Branding Internazionale",  categoria: "grande",   costo: 10,   desc: "1°: +20M · 2°: +15M · 3°: +12M · 4°: +8M · Coppa: +5M · Finalista Coppa: +1M." },
-  { nome: "DS Masterclass",           categoria: "grande",   costo: 12,   desc: "Aste svincolati: 2 volte/stagione conosci l'offerta più alta prima di formalizzare la tua." },
+  { nome: "DS Masterclass",           categoria: "grande",   costo: 12,   desc: "Aste svincolati: 2 volte/stagione conosci l'offerta più alta prima di formalizzare la tua. Solo sui giocatori che hai chiamato tu." },
   { nome: "Centro Giovani U21",       categoria: "grande",   costo: 14,   desc: "1 giocatore U21 svincolato/stagione a ¼ Q. Scelta entro 15/08, in ordine di classifica precedente." },
   { nome: "Abbonamenti Premium",      categoria: "grande",   costo: 15,   desc: "Vittoria in casa: +1.5M (scarto ≥2 gol: +2M). Pareggio in casa: +1M. Valido 1 stagione." },
   // Invernali — 24/12–31/12, max 10M (art. 10.5)
