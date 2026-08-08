@@ -4965,6 +4965,9 @@ export async function attivaMasterclass(astaId, squadra) {
   if (asta.stato !== 'raccolta_offerte') throw new Error('Asta non in fase di raccolta offerte.');
   const ora = new Date();
   if (ora > new Date(asta.scadenza)) throw new Error('Il termine per mandare le offerte è già scaduto.');
+  // Utilizzabile SOLO da chi ha chiamato per primo questo giocatore (asta.aperta_da),
+  // non da un semplice interessato successivo.
+  if (asta.aperta_da !== squadra) throw new Error('Puoi usare il DS Masterclass solo sui giocatori che hai chiamato tu.');
 
   const { data: chiamate } = await supabase.from('chiamate')
     .select('squadra, created_at').eq('giocatore', asta.giocatore).order('created_at', { ascending: true });
