@@ -10149,6 +10149,7 @@ function AdminControlRoomPage({ teams }) {
   const [modalitaTassaz, setModalitaTassaz] = useState('auto'); // 'auto' | 'flat' | 'scaglioni'
   const [modalitaTassazLoading, setModalitaTassazLoading] = useState(false);
   const [asteAttive, setAsteAttive] = useState([]);
+  const [offerteCountMap, setOfferteCountMap] = useState({});
   const [chiamateAperte, setChiamateAperte] = useState(null); // null = non ancora caricate
   const [rimuovendoInteresse, setRimuovendoInteresse] = useState(null); // id chiamata in corso di rimozione
   const [fpfData, setFpfData] = useState(null);
@@ -10221,6 +10222,18 @@ function AdminControlRoomPage({ teams }) {
   async function loadAste() {
     const { data } = await supabase.from('aste_svincolati').select('*').eq('stato', 'raccolta_offerte').order('scadenza', { ascending: true });
     setAsteAttive(data || []);
+    // Solo il conteggio di quante offerte sono già arrivate, mai importo o
+    // squadra: finché l'asta è aperta nessuno (nemmeno l'admin) deve poter
+    // vedere chi ha offerto cosa, vedi OffertaInlineForm/RisultatoAstaCard.
+    const ids = (data || []).map(a => a.id);
+    if (ids.length) {
+      const { data: offerte } = await supabase.from('offerte_asta').select('asta_id').in('asta_id', ids);
+      const counts = {};
+      (offerte || []).forEach(o => { counts[o.asta_id] = (counts[o.asta_id] || 0) + 1; });
+      setOfferteCountMap(counts);
+    } else {
+      setOfferteCountMap({});
+    }
   }
 
   // Recap di tutti gli interessamenti aperti (chiamate non ancora concluse),
@@ -11292,6 +11305,9 @@ function AdminControlRoomPage({ teams }) {
                       </div>
                       <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 2 }}>
                         ⏰ Scade: {new Date(asta.scadenza).toLocaleString('it-IT', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      <div style={{ fontSize: 11, color: (offerteCountMap[asta.id] || 0) >= asta.n_interessati ? '#10b981' : '#818cf8', marginTop: 2 }}>
+                        📨 Offerte inviate: {offerteCountMap[asta.id] || 0}/{asta.n_interessati} (importi e squadre non visibili finché l'asta è aperta)
                       </div>
                     </div>
                   </div>
