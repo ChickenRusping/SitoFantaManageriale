@@ -2157,6 +2157,10 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
   const location = useLocation();
   const canEdit = isAdmin || mySquadra === teamName;
   const isOwn = mySquadra === teamName;
+  // Il popup si apre anche sui giocatori di un'altra squadra (per vedere lo
+  // storico quotazione e fare un'offerta, mode:'other') — non serve poter
+  // MODIFICARE quella rosa per aprirlo, basta essere un presidente loggato.
+  const canClickPlayer = canEdit || !!mySquadra;
 
   const [players, setPlayers] = useState([]);
   const [vivaio, setVivaio] = useState([]);
@@ -2422,7 +2426,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
       <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8 }}>
         <span style={{ fontSize:12,color:"#aaa" }}>{players.length} giocatori</span>
         <span style={{ fontSize:10,color:"#444",fontStyle:"italic" }}>
-          {canEdit?"Tocca un giocatore per azioni":"Click intestazione per ordinare"}
+          {canClickPlayer?"Tocca un giocatore per azioni":"Click intestazione per ordinare"}
         </span>
       </div>
 
@@ -2450,8 +2454,8 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
               const rc=getRoleColor(p.ruolo), fuori=p.fuori_lista, sel=popup?.player?.id===p.id;
               return (
                 <tr key={p.id}
-                  onClick={canEdit?(e)=>openPopup(e,p,isOwn?'own':'other'):undefined}
-                  style={{ borderBottom:"1px solid #ffffff06",background:sel?"#6366f118":fuori?"#ef444408":"transparent",cursor:canEdit?"pointer":"default",transition:"background 0.1s" }}
+                  onClick={canClickPlayer?(e)=>openPopup(e,p,isOwn?'own':'other'):undefined}
+                  style={{ borderBottom:"1px solid #ffffff06",background:sel?"#6366f118":fuori?"#ef444408":"transparent",cursor:canClickPlayer?"pointer":"default",transition:"background 0.1s" }}
                   onMouseEnter={e=>{if(!sel)e.currentTarget.style.background=fuori?"#ef444415":"#ffffff0c";}}
                   onMouseLeave={e=>{e.currentTarget.style.background=sel?"#6366f118":fuori?"#ef444408":"transparent";}}>
                   <td style={{ padding:"7px 6px",textAlign:"center" }}>
@@ -6152,13 +6156,14 @@ function valoreClausola(quot) { return parseFloat((quot * 1.75).toFixed(2)); }
 // si sceglie direttamente la data tra le prossime disponibili, niente più
 // "durata in mesi" da convertire (portava a risultati poco intuitivi a
 // seconda di quando veniva firmato l'accordo).
+function _ymd(y, m, day) { return `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`; }
 function prossimeScadenzePrestito(n = 6, dataInizio = new Date()) {
   const d = new Date(dataInizio);
   d.setHours(0, 0, 0, 0);
   const out = [];
   for (let y = d.getFullYear(); out.length < n; y++) {
     for (const date of [new Date(y, 0, 1), new Date(y, 5, 1)]) {
-      if (date > d) out.push(date.toISOString().slice(0, 10));
+      if (date > d) out.push(_ymd(date.getFullYear(), date.getMonth(), date.getDate()));
     }
   }
   return out.slice(0, n);
@@ -6408,8 +6413,11 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   }, [mySquadra]);
 
   const getBonusRows = useCallback((trattativaId) => bonusByTrattativa[trattativaId] || [], [bonusByTrattativa]);
+  // Netto per l'acquirente: i bonus che paga lui aumentano il totale
+  // potenziale, quelli pagati dal cedente lo riducono (sono soldi che riceve
+  // lui, non un costo aggiuntivo per l'acquirente).
   const getBonusTotale = useCallback((trattativaId) => (getBonusRows(trattativaId) || [])
-    .reduce((sum, b) => sum + (Number(b.valore_mln) || 0), 0), [getBonusRows]);
+    .reduce((sum, b) => sum + (b.direzione === 'cedente_paga' ? -1 : 1) * (Number(b.valore_mln) || 0), 0), [getBonusRows]);
   const getPrezzoPotenziale = useCallback((trattativa) => {
     const prezzoBase = Number(trattativa?.prezzo || 0);
     return parseFloat((prezzoBase + getBonusTotale(trattativa?.id)).toFixed(2));
@@ -6715,10 +6723,12 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     const bonusValidi = form.bonusRows
       .map(row => ({ ...row, soglia: Number(row.soglia), valore_mln: Number(row.valore_mln) }))
       .filter(row => row.soglia > 0 && row.valore_mln > 0);
-    const bonusTotale = bonusValidi.reduce((sum, row) => sum + row.valore_mln, 0);
+    // Netto per l'acquirente: bonus che paga lui = +, bonus pagati dal
+    // cedente (soldi che l'acquirente riceve, non un costo extra) = -.
+    const bonusTotale = bonusValidi.reduce((sum, row) => sum + (row.direzione === 'cedente_paga' ? -1 : 1) * row.valore_mln, 0);
     const prezzoPotenziale = parseFloat((prezzo + bonusTotale).toFixed(2));
     const bonusPreview = bonusValidi.length
-      ? `\nBonus: +${bonusTotale.toFixed(2)}M potenziali\nTotale potenziale: ${prezzoPotenziale.toFixed(2)}M`
+      ? `\nBonus netti: ${bonusTotale >= 0 ? '+' : ''}${bonusTotale.toFixed(2)}M\nTotale potenziale: ${prezzoPotenziale.toFixed(2)}M`
       : '';
     const onerosoConfermato = (form.tipo === 'prestito_diritto' || form.tipo === 'prestito_obbligo') ? (parseFloat(form.oneroso) || 0) : null;
     const onerosoPreview = onerosoConfermato != null ? `\nOneroso (subito): ${onerosoConfermato.toFixed(2)}M\nRiscatto (a scadenza, se esercitato): ${prezzo.toFixed(2)}M` : '';
@@ -7394,7 +7404,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                         <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>SCADENZA PRESTITO (art. 5.8: solo 01/01 o 01/06)</div>
                         <select style={sel} value={form.scadenza_prestito} onChange={e => setForm(f => ({ ...f, scadenza_prestito: e.target.value }))}>
                           {prossimeScadenzePrestito(6).map(d => (
-                            <option key={d} value={d}>{new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })}</option>
+                            <option key={d} value={d}>{d.slice(8,10)}/{d.slice(5,7)}/{d.slice(0,4)}</option>
                           ))}
                         </select>
                       </div>
@@ -7603,9 +7613,15 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                           <div style={{ background: "#0d0f1480", border: "1px solid #ffffff12", borderRadius: 10, padding: "10px 12px", marginBottom: 10 }}>
                             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 8, marginBottom: 10 }}>
                               <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
-                                <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>PARTE FISSA</div>
+                                <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>{t.tipo === 'prestito_secco' ? 'ONEROSO' : (t.tipo === 'prestito_diritto' || t.tipo === 'prestito_obbligo') ? 'RISCATTO (a scadenza)' : 'PARTE FISSA'}</div>
                                 <div style={{ fontSize: 18, color: "#10b981", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(prezzoBase)}</div>
                               </div>
+                              {(t.tipo === 'prestito_diritto' || t.tipo === 'prestito_obbligo') && (
+                                <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
+                                  <div style={{ fontSize: 9, color: "#f59e0b", fontWeight: 700, letterSpacing: "0.06em" }}>ONEROSO (subito)</div>
+                                  <div style={{ fontSize: 18, color: "#f59e0b", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(t.oneroso)}</div>
+                                </div>
+                              )}
                               <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
                                 <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>BONUS POTENZIALI</div>
                                 <div style={{ fontSize: 18, color: bonusTotale > 0 ? "#f59e0b" : "#555", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(bonusTotale)}</div>
@@ -7935,9 +7951,15 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8, marginBottom: bonusRows.length > 0 ? 10 : 0 }}>
                         <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
-                          <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>PARTE FISSA</div>
+                          <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>{t.tipo === 'prestito_secco' ? 'ONEROSO' : (t.tipo === 'prestito_diritto' || t.tipo === 'prestito_obbligo') ? 'RISCATTO (a scadenza)' : 'PARTE FISSA'}</div>
                           <div style={{ fontSize: 16, color: "#10b981", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(prezzoBase)}</div>
                         </div>
+                        {(t.tipo === 'prestito_diritto' || t.tipo === 'prestito_obbligo') && (
+                          <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
+                            <div style={{ fontSize: 9, color: "#f59e0b", fontWeight: 700, letterSpacing: "0.06em" }}>ONEROSO (subito)</div>
+                            <div style={{ fontSize: 16, color: "#f59e0b", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(t.oneroso)}</div>
+                          </div>
+                        )}
                         <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
                           <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>BONUS</div>
                           <div style={{ fontSize: 16, color: bonusTotale > 0 ? "#f59e0b" : "#555", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(bonusTotale)}</div>

@@ -1915,7 +1915,10 @@ function _prossimaScadenzaPrestitoValida(dataInizio = new Date()) {
     new Date(year, 0, 1), new Date(year, 5, 1),
     new Date(year + 1, 0, 1), new Date(year + 1, 5, 1),
   ].filter(x => x > d).sort((a, b) => a - b);
-  return candidates[0].toISOString().slice(0, 10);
+  const c = candidates[0];
+  // Niente toISOString(): convertirebbe a UTC e su un fuso avanti (Italia)
+  // farebbe slittare la data indietro di un giorno (es. 01/01 → 31/12).
+  return `${c.getFullYear()}-${String(c.getMonth() + 1).padStart(2, '0')}-${String(c.getDate()).padStart(2, '0')}`;
 }
 
 function _isScadenzaPrestitoValida(scadenza) {
