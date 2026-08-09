@@ -6601,6 +6601,7 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
 
   let rosaAggiornati = 0, svinAggiornati = 0, nuoviCreati = 0;
   const nonTrovati = [];
+  const nuoviCreatiNomi = [];
   const BATCH = 50;
 
   const validRows = rows.filter(r => (r['Nome'] || '').trim());
@@ -6673,6 +6674,7 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
             ...statsSvin,
           }, stagione);
           nuoviCreati++;
+          nuoviCreatiNomi.push({ nome, ruolo, quot });
         } catch (nuovoErr) {
           console.error('_importDatabaseCore: creazione svincolato fallita:', nome, nuovoErr);
           nonTrovati.push(`${nome} (errore creazione: ${nuovoErr.message || nuovoErr.code || 'sconosciuto'})`);
@@ -6721,7 +6723,7 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
     ...svinUsciti.map(s => ({ nome: s.nome, squadra: null })),
   ];
 
-  return { rosaAggiornati, svinAggiornati, nuoviCreati, nonTrovati, fuoriListaSegnati: usciti.length + svinUsciti.length, fuoriListaNomi, totale: validRows.length };
+  return { rosaAggiornati, svinAggiornati, nuoviCreati, nuoviCreatiNomi, nonTrovati, fuoriListaSegnati: usciti.length + svinUsciti.length, fuoriListaNomi, totale: validRows.length };
 }
 
 // Update Settimanale: come l'update di fine stagione/inizio stagione in
