@@ -6713,7 +6713,15 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
     ));
   }
 
-  return { rosaAggiornati, svinAggiornati, nuoviCreati, nonTrovati, fuoriListaSegnati: usciti.length + svinUsciti.length, totale: validRows.length };
+  // Nomi (non solo il conteggio) dei giocatori appena segnati fuori lista in
+  // QUESTO import, per poterli mostrare subito in Control Room invece di
+  // doverli scovare a mano tra tutti i fuori lista storici.
+  const fuoriListaNomi = [
+    ...usciti.map(p => ({ nome: p.nome, squadra: p.squadra })),
+    ...svinUsciti.map(s => ({ nome: s.nome, squadra: null })),
+  ];
+
+  return { rosaAggiornati, svinAggiornati, nuoviCreati, nonTrovati, fuoriListaSegnati: usciti.length + svinUsciti.length, fuoriListaNomi, totale: validRows.length };
 }
 
 // Update Settimanale: come l'update di fine stagione/inizio stagione in
