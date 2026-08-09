@@ -6148,19 +6148,20 @@ function prezzoMinimo(quot) { return parseFloat((quot / 2).toFixed(2)); }
 // Calcola clausola rescissoria (art. 5.5): quot × 1.75
 function valoreClausola(quot) { return parseFloat((quot * 1.75).toFixed(2)); }
 
-// Calcola scadenza prestito: prima scadenza fissa (01/01 o 01/06)
-// non precedente alla durata scelta, calcolata dalla data dell'accordo (art. 5.8).
-function scadenzaPrestito(mesi, dataInizio = new Date()) {
-  const targetMinimo = new Date(dataInizio);
-  targetMinimo.setHours(0, 0, 0, 0);
-  targetMinimo.setMonth(targetMinimo.getMonth() + Number(mesi || 0));
-
-  const candidates = [];
-  for (let y = targetMinimo.getFullYear(); y <= targetMinimo.getFullYear() + 2; y++) {
-    candidates.push(new Date(y, 0, 1), new Date(y, 5, 1));
+// Art. 5.8: le uniche scadenze ammesse per un prestito sono 01/01 o 01/06 —
+// si sceglie direttamente la data tra le prossime disponibili, niente più
+// "durata in mesi" da convertire (portava a risultati poco intuitivi a
+// seconda di quando veniva firmato l'accordo).
+function prossimeScadenzePrestito(n = 6, dataInizio = new Date()) {
+  const d = new Date(dataInizio);
+  d.setHours(0, 0, 0, 0);
+  const out = [];
+  for (let y = d.getFullYear(); out.length < n; y++) {
+    for (const date of [new Date(y, 0, 1), new Date(y, 5, 1)]) {
+      if (date > d) out.push(date.toISOString().slice(0, 10));
+    }
   }
-  const target = candidates.sort((a, b) => a - b).find(d => d >= targetMinimo);
-  return target.toISOString().slice(0, 10);
+  return out.slice(0, n);
 }
 
 // ── Freeze notte 00:00–08:00 (art. 5.11) ─────────────────────────────────────
@@ -6362,7 +6363,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     tipo: "cessione",
     prezzo: "",
     oneroso: "",
-    durata_mesi: "6",
+    scadenza_prestito: prossimeScadenzePrestito(1)[0],
     stipendio_a_chi: "ricevente",
     note: "",
     // bonus
@@ -6708,7 +6709,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     const da = squadraMittente;
     if (!da) { alert('Squadra mittente non disponibile'); return; }
     if (da === form.squadraTarget) { alert('La squadra mittente e la squadra cedente devono essere diverse'); return; }
-    const scad = form.tipo.startsWith('prestito') ? scadenzaPrestito(parseInt(form.durata_mesi)) : null;
+    const scad = form.tipo.startsWith('prestito') ? form.scadenza_prestito : null;
+    if (form.tipo.startsWith('prestito') && !scad) { alert('Seleziona la scadenza del prestito'); return; }
     const tipoLabel = { cessione:'Acquisto diretto', clausola:'Clausola rescissoria', prestito:'Prestito con riscatto', prestito_secco:'Prestito secco' }[form.tipo] || form.tipo;
     const bonusValidi = form.bonusRows
       .map(row => ({ ...row, soglia: Number(row.soglia), valore_mln: Number(row.valore_mln) }))
@@ -6732,7 +6734,6 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
         tipo: form.tipo,
         prezzo,
         oneroso: onerosoConfermato,
-        durata_mesi: form.tipo.startsWith('prestito') ? parseInt(form.durata_mesi) : null,
         scadenza_prestito: scad,
         stipendio_a_chi: form.tipo.startsWith('prestito') ? 'ricevente' : null,
         fuori_mercato: !mercato.aperto,
@@ -7390,9 +7391,11 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
                     {form.tipo.startsWith('prestito') && (
                       <div>
-                        <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>DURATA PRESTITO</div>
-                        <select style={sel} value={form.durata_mesi} onChange={e => setForm(f => ({ ...f, durata_mesi: e.target.value }))}>
-                          {[6,12,18,24].map(m => <option key={m} value={m}>{m} mesi → scad. {scadenzaPrestito(m)}</option>)}
+                        <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>SCADENZA PRESTITO (art. 5.8: solo 01/01 o 01/06)</div>
+                        <select style={sel} value={form.scadenza_prestito} onChange={e => setForm(f => ({ ...f, scadenza_prestito: e.target.value }))}>
+                          {prossimeScadenzePrestito(6).map(d => (
+                            <option key={d} value={d}>{new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })}</option>
+                          ))}
                         </select>
                       </div>
                     )}
