@@ -913,6 +913,17 @@ export async function getTrattative() {
 export async function insertTrattativa(t) {
   _validazioneEconomicaTrattativa(t);
 
+  // Un giocatore attualmente in prestito è "in limbo": non può essere oggetto
+  // di nessuna trattativa (né dal cedente né dal ricevente) finché non torna
+  // definitivamente in una delle due rose (rientro o riscatto).
+  if (t.giocatore && t.a_squadra) {
+    const { data: targetRows } = await supabase.from('rosa')
+      .select('in_prestito').eq('squadra', t.a_squadra).ilike('nome', `%${t.giocatore}%`).limit(1);
+    if (targetRows?.[0]?.in_prestito) {
+      throw new Error(`${t.giocatore} è attualmente in prestito: non può essere oggetto di trattative finché non rientra o viene riscattato.`);
+    }
+  }
+
   const payload = { ...t };
   if (String(payload.tipo || '').startsWith('prestito') && !payload.scadenza_prestito) {
     payload.scadenza_prestito = _scadenzaPrestitoRegolamento(payload.durata_mesi || 6);
@@ -1175,6 +1186,9 @@ export async function eseguiTrasferimento(trattativa) {
 
   const player = rosaRows?.[0];
   if (!player) throw new Error(`${giocatore} non risulta nella rosa di ${squadraCedente}`);
+  // Backstop (già controllato anche in insertTrattativa): un giocatore in
+  // prestito non può essere scambiato/ceduto finché non torna in una rosa.
+  if (player.in_prestito) throw new Error(`${giocatore} è attualmente in prestito: non può essere trasferito finché non rientra o viene riscattato.`);
 
   // Art. 3: il trasferimento non può portare la rosa acquirente oltre i limiti regolamentari.
   await assertRosaDopoAggiunta(squadraAcquirente, { ...player, squadra: squadraAcquirente, in_vivaio: false });
@@ -1182,6 +1196,7 @@ export async function eseguiTrasferimento(trattativa) {
   // Art. 5.6: blocco passaggi prima di muovere giocatore/soldi.
   await checkEAggiornaPassaggi(giocatore, squadraAcquirente, tipo, { soloControllo: true });
 
+  let nuovaQuot = null;
   if (player) {
     // ── 2. Calcola nuovo stipendio (art. 5.9): basato su quotazione attuale ──
     // Un trasferimento "scongela" la quotazione: il giocatore passa alla nuova
@@ -1189,7 +1204,7 @@ export async function eseguiTrasferimento(trattativa) {
     // congelata che aveva nella rosa di provenienza — coerente con la regola
     // per cui solo un cambio di proprietà (o le finestre 01/06/01/08/01/01)
     // possono far muovere la Q di un giocatore già in rosa.
-    const nuovaQuot = Number(player.quot_reale) > 0 ? Number(player.quot_reale) : (trattativa.quot_giocatore || player.quot);
+    nuovaQuot = Number(player.quot_reale) > 0 ? Number(player.quot_reale) : (trattativa.quot_giocatore || player.quot);
     const nuovoStip = parseFloat((nuovaQuot / 5).toFixed(2));
     const nuovaClausola = parseFloat((nuovaQuot * 1.75).toFixed(2));
 
@@ -1261,11 +1276,22 @@ export async function eseguiTrasferimento(trattativa) {
   // Se il giocatore non è trovato nella rosa (es. svincolato), non sposta nulla
   // ma registra comunque i movimenti finanziari
 
-  // ── 3. Calcola importi per clausola rescissoria (art. 5.5.2): 3/4 al venditore ──
-  const importoCedente = tipo === 'clausola'
-    ? parseFloat((prezzo * 3 / 4).toFixed(2))
+  // ── 3. Calcola importo da pagare SUBITO ──────────────────────────────────────
+  // Art. 5.7: nei prestiti con diritto/obbligo di riscatto si paga subito solo
+  // l'oneroso (10% Q, come nel prestito secco) — la cifra pattuita per il
+  // riscatto (50%-150% Q, già validata sopra) NON si paga ora: si paga solo
+  // alla scadenza, e solo se il riscatto viene davvero esercitato (obbligo:
+  // sempre; diritto: solo se il ricevente lo sceglie — vedi eseguiScadenzaPrestito).
+  const isPrestitoConRiscatto = tipo === 'prestito_diritto' || tipo === 'prestito_obbligo';
+  const baseOnorario = nuovaQuot ?? Number(quot_giocatore ?? quota_giocatore ?? 0);
+  const importoSubito = isPrestitoConRiscatto
+    ? parseFloat((baseOnorario * 0.10).toFixed(2))
     : prezzo;
-  const importoAcquirente = prezzo;
+  // Art. 5.5.2: nella clausola rescissoria 3/4 vanno al venditore, 1/4 trattenuto.
+  const importoCedente = tipo === 'clausola'
+    ? parseFloat((importoSubito * 3 / 4).toFixed(2))
+    : importoSubito;
+  const importoAcquirente = importoSubito;
 
   // ── 4. Aggiorna bilanci ─────────────────────────────────────────────────────
   // Leggi bilanci attuali
@@ -1285,17 +1311,18 @@ export async function eseguiTrasferimento(trattativa) {
 
   // ── 5. Registra movimenti ───────────────────────────────────────────────────
   const notaFuori = fuori_mercato ? " (trasf. differito)" : "";
+  const notaOneroso = isPrestitoConRiscatto ? ` — oneroso 10%Q (riscatto di ${prezzo}M da pagare solo se/quando esercitato)` : '';
   await supabase.from('movimenti').insert([
     {
       squadra: squadraCedente,
-      descrizione: `${descLabel}: ${giocatore} → ${squadraAcquirente}${notaFuori}`,
+      descrizione: `${descLabel}: ${giocatore} → ${squadraAcquirente}${notaFuori}${notaOneroso}`,
       entrata: importoCedente,
       uscita: null,
       data: oggi,
     },
     {
       squadra: squadraAcquirente,
-      descrizione: `${descLabelAcquirente}: ${giocatore} da ${squadraCedente}${notaFuori}`,
+      descrizione: `${descLabelAcquirente}: ${giocatore} da ${squadraCedente}${notaFuori}${notaOneroso}`,
       entrata: null,
       uscita: importoAcquirente,
       data: oggi,
@@ -1440,15 +1467,26 @@ export async function getPrestitiScaduti() {
   return results;
 }
 
-export async function eseguiScadenzaPrestito(item) {
+// azione: rilevante solo per 'prestito_diritto' — 'riscatto' | 'rientro'
+// (per 'prestito_obbligo' il riscatto è sempre forzato; per 'prestito_secco'
+// il rientro è sempre forzato: in entrambi i casi il parametro viene ignorato).
+export async function eseguiScadenzaPrestito(item, azione = null) {
   const { player, tipo, prezzo } = item;
   const oggi = new Date().toISOString().slice(0, 10);
 
-  if (tipo === 'prestito_obbligo') {
+  if (tipo === 'prestito_diritto' && !azione) {
+    throw new Error('Prestito con diritto di riscatto: specifica se il ricevente esercita il riscatto o se il giocatore rientra al cedente.');
+  }
+
+  const eseguiRiscatto = tipo === 'prestito_obbligo' || (tipo === 'prestito_diritto' && azione === 'riscatto');
+
+  if (eseguiRiscatto) {
     const squadraRicevente = player.squadra;
     const squadraCedente = player.squadra_originale;
     if (!squadraCedente) throw new Error('Squadra cedente del prestito non disponibile');
-    // Obbligo di riscatto: il giocatore passa definitivamente al ricevente
+    // Riscatto (obbligo sempre, diritto se esercitato): il giocatore passa
+    // definitivamente al ricevente, che paga ora la cifra pattuita (art. 5.7)
+    // — l'oneroso 10% era già stato pagato all'accettazione del prestito.
     const nuovoStip = parseFloat((Number(player.quot || 0) / 5).toFixed(2));
     await supabase.from('rosa').update({
       squadra: squadraRicevente, // rimane al ricevente
@@ -1456,22 +1494,44 @@ export async function eseguiScadenzaPrestito(item) {
       rescissione_prestito_attiva: false, rescissione_prestito_scadenza: null, rescissione_prestito_da: null,
       stip: nuovoStip, stip_originale: nuovoStip, anni_contratto: 1,
     }).eq('id', player.id);
-    // Pagamento riscatto
     if (prezzo > 0) {
       const { data: sqs } = await supabase.from('squadre').select('name,bilancio').in('name', [squadraRicevente, squadraCedente]);
       const bilRic = sqs?.find(s => s.name === squadraRicevente)?.bilancio || 0;
       const bilCed = sqs?.find(s => s.name === squadraCedente)?.bilancio || 0;
       await supabase.from('squadre').update({ bilancio: parseFloat((bilRic - prezzo).toFixed(2)) }).eq('name', squadraRicevente);
       await supabase.from('squadre').update({ bilancio: parseFloat((bilCed + prezzo).toFixed(2)) }).eq('name', squadraCedente);
+      const labelRiscatto = tipo === 'prestito_obbligo' ? 'Riscatto obbligo' : 'Riscatto diritto (esercitato)';
       await supabase.from('movimenti').insert([
-        { squadra: squadraRicevente, descrizione: `Riscatto obbligo ${player.nome}`, uscita: prezzo, data: oggi },
-        { squadra: squadraCedente, descrizione: `Riscatto obbligo ${player.nome} (incasso)`, entrata: prezzo, data: oggi },
+        { squadra: squadraRicevente, descrizione: `${labelRiscatto} ${player.nome}`, uscita: prezzo, data: oggi },
+        { squadra: squadraCedente, descrizione: `${labelRiscatto} ${player.nome} (incasso)`, entrata: prezzo, data: oggi },
       ]);
     }
   } else {
-    // Secco o diritto non esercitato: torna al cedente
+    // Secco, o diritto non esercitato: torna al cedente, nessun altro costo
+    // (l'oneroso 10% pagato all'inizio non viene restituito).
     await eseguiRientroPrestito(player.id, player.squadra_originale);
   }
+}
+
+// Riscatto ANTICIPATO di un prestito con diritto (art. 5.7): il ricevente può
+// esercitarlo in qualsiasi momento durante il prestito, non solo a scadenza —
+// riusa la stessa logica di eseguiScadenzaPrestito, recuperando la cifra
+// pattuita dalla trattativa originale (mai stata ancora addebitata, dato che
+// all'accettazione si paga solo l'oneroso 10%).
+export async function eseguiRiscattoAnticipatoDiritto(playerId) {
+  const { data: player } = await supabase.from('rosa').select('*').eq('id', playerId).single();
+  if (!player || !player.in_prestito || player.prestito_tipo !== 'prestito_diritto') {
+    throw new Error('Riscatto anticipato disponibile solo per un prestito con diritto di riscatto in corso.');
+  }
+  if (player.rescissione_prestito_attiva) {
+    throw new Error('Per questo giocatore è già stata attivata una rescissione anticipata: non è più possibile riscattarlo.');
+  }
+  const { data: tratt } = await supabase.from('trattative')
+    .select('prezzo').eq('giocatore', player.nome)
+    .eq('a_squadra', player.squadra_originale).eq('da_squadra', player.squadra)
+    .eq('tipo', 'prestito_diritto').order('created_at', { ascending: false }).limit(1);
+  const prezzo = Number(tratt?.[0]?.prezzo || 0);
+  return await eseguiScadenzaPrestito({ player, tipo: 'prestito_diritto', prezzo }, 'riscatto');
 }
 
 // ── Rescissione anticipata prestito (art. 5.8.1) ─────────────────────────────
@@ -1933,6 +1993,10 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
 
   if (!_isPeriodoSvincoliConsentito(oggi)) {
     throw new Error('Svincoli non consentiti a giugno/luglio: sono ammessi solo dal 01/08 al 31/05.');
+  }
+
+  if (player.in_prestito) {
+    throw new Error(`${player.nome} è attualmente in prestito: non può essere svincolato finché non rientra alla squadra originale o viene riscattato.`);
   }
 
   const periodoStraordinari = _getPeriodoStraordinariSvincoli(oggi);
