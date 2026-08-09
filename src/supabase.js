@@ -5006,7 +5006,11 @@ export async function upsertOffertaAsta(astaId, squadra, importo, perVivaio = fa
   }
   const minOfferta = parseFloat((Number(asta.quot) * 0.75).toFixed(2));
   const offerta = parseFloat(Number(importo || 0).toFixed(2));
-  if (offerta < minOfferta) throw new Error(`Offerta minima: ${minOfferta}M (¾ quotazione)`);
+  // Tolleranza per errori di arrotondamento in virgola mobile (come già fatto
+  // per il controllo del bilancio subito sotto): senza margine, un presidente
+  // che digita ESATTAMENTE il minimo poteva vedersi rifiutare l'offerta per
+  // colpa di un residuo tipo 6.749999999999999 invece di 6.75.
+  if (offerta < minOfferta - 0.0001) throw new Error(`Offerta minima: ${minOfferta}M (¾ quotazione)`);
 
   // Art. 6.4: non è mai possibile offrire più della liquidità disponibile.
   const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadra).single();
@@ -5461,6 +5465,36 @@ export async function checkScadenzeAste() {
       if (!e.message.includes('già esistente')) {
         risultati.push({ tipo: 'errore', giocatore: c.giocatore, error: e.message });
       }
+    }
+  }
+
+  // 1.5. Aste ancora in raccolta offerte ma che scadono entro 1 ora → avvisa
+  // (una sola volta, vedi flag promemoria_1h_inviato) chi non ha ancora
+  // mandato un'offerta: prima si notificava solo all'apertura, ma per aste
+  // lunghe (giorni) i presidenti se ne dimenticano.
+  const traUnOra = new Date(ora.getTime() + 60 * 60000).toISOString();
+  const { data: asteInScadenza } = await supabase.from('aste_svincolati')
+    .select('id, giocatore, quot, scadenza, promemoria_1h_inviato')
+    .eq('stato', 'raccolta_offerte').gt('scadenza', oraISO).lte('scadenza', traUnOra);
+
+  for (const a of asteInScadenza || []) {
+    if (a.promemoria_1h_inviato) continue;
+    try {
+      const [{ data: chiamate }, { data: offerte }] = await Promise.all([
+        supabase.from('chiamate').select('squadra').eq('asta_id', a.id),
+        supabase.from('offerte_asta').select('squadra').eq('asta_id', a.id),
+      ]);
+      const giaOfferto = new Set((offerte || []).map(o => o.squadra));
+      const daAvvisare = [...new Set((chiamate || []).map(c => c.squadra))].filter(s => !giaOfferto.has(s));
+      await Promise.all(daAvvisare.map(squadra => sendTelegramNotification('asta_svincolati_promemoria', {
+        giocatore: a.giocatore, quotazione: a.quot,
+      }, squadra)));
+      const { error: updErr } = await supabase.from('aste_svincolati')
+        .update({ promemoria_1h_inviato: true }).eq('id', a.id);
+      if (updErr && !isMissingColumnError(updErr)) throw updErr;
+      risultati.push({ tipo: 'promemoria_inviato', giocatore: a.giocatore, squadre: daAvvisare });
+    } catch(e) {
+      if (!isMissingColumnError(e)) risultati.push({ tipo: 'errore', giocatore: a.giocatore, error: e.message });
     }
   }
 
@@ -6382,7 +6416,7 @@ function _formatNotificaApp(type, p = {}) {
     risposta_commento: '/news', scadenza_imminente: '/news',
     mercato_aperto: '/mercato', mercato_chiuso: '/mercato', trattativa_ricevuta: '/mercato',
     trattativa_accettata: '/mercato', trattativa_rifiutata: '/mercato', trattativa_controfferta: '/mercato',
-    chiamata_svincolati: '/mercato', asta_svincolati: '/mercato', asta_svincolati_conclusa: '/mercato',
+    chiamata_svincolati: '/mercato', asta_svincolati: '/mercato', asta_svincolati_promemoria: '/mercato', asta_svincolati_conclusa: '/mercato',
     asta_tra_presidenti: '/mercato', asta_assegnata: '/mercato', asta_vinta: '/mercato', asta_persa: '/mercato',
     ds_masterclass_offerte: '/mercato', ds_masterclass_usato: '/mercato', svincolo: '/mercato',
     scelta_allenatore: '/squadre', investimento_acquistato: '/squadre', movimento_privato: '/squadre',
@@ -6392,6 +6426,7 @@ function _formatNotificaApp(type, p = {}) {
   switch (type) {
     case 'chiamata_svincolati': return { titolo: 'Nuova chiamata', corpo: `${p.giocatore} · Q${p.quotazione} — ${p.squadra} ha manifestato interesse`, link };
     case 'asta_svincolati': return { titolo: 'Asta svincolati aperta', corpo: `${p.giocatore} · Q${p.quotazione} — chiamato da ${p.squadra}`, link };
+    case 'asta_svincolati_promemoria': return { titolo: 'Ultima chiamata — manca 1 ora', corpo: `${p.giocatore} · Q${p.quotazione} — non hai ancora inviato un'offerta`, link };
     case 'asta_svincolati_conclusa': return { titolo: 'Asta conclusa', corpo: `${p.giocatore} vinta da ${p.vincitore} per ${p.prezzo}M`, link };
     case 'asta_tra_presidenti': return { titolo: 'Nuova asta tra presidenti', corpo: `${p.giocatore} · Q${p.quotazione} — indetta da ${p.proprietario}`, link };
     case 'asta_assegnata': return { titolo: 'Asta conclusa', corpo: p.vincitore ? `${p.giocatore} acquistato da ${p.vincitore} per ${p.importo}M` : `${p.giocatore} — asta chiusa senza vincitore`, link };

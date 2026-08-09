@@ -60,6 +60,7 @@ const CATEGORY_BADGE: Record<string, string> = {
   trattativa_controfferta: "━━━  🤝  MERCATO  🤝  ━━━",
   chiamata_svincolati:   "━━━  ⚽  SVINCOLATI  ⚽  ━━━",
   asta_svincolati:       "━━━  🔔  ASTE  🔔  ━━━",
+  asta_svincolati_promemoria: "━━━  ⏰  ASTE  ⏰  ━━━",
   asta_svincolati_conclusa: "━━━  🏁  ASTE  🏁  ━━━",
   asta_vinta:            "━━━  🏆  ASTA VINTA  🏆  ━━━",
   asta_persa:            "━━━  😔  ASTE  😔  ━━━",
@@ -87,6 +88,9 @@ function buildMessage(type: string, p: Record<string, unknown>): string | null {
 
     case "asta_svincolati":
       return `${badge}🔔 <b>Asta svincolati aperta!</b>\n\n⚽ <b>${p.giocatore}</b> · Q${p.quotazione}\n📣 Chiamato da: <b>${p.squadra}</b>\n⏰ Scade tra <b>${p.ore ?? 24}h</b> — fate le vostre offerte!${link}`;
+
+    case "asta_svincolati_promemoria":
+      return `${badge}⏰ <b>Ultima chiamata!</b>\n\n⚽ <b>${p.giocatore}</b> · Q${p.quotazione}\n⏳ Manca circa <b>1 ora</b> alla scadenza per mandare la tua offerta — non hai ancora inviato nulla!${link}`;
 
     case "asta_svincolati_conclusa":
       return `${badge}🏁 <b>Asta conclusa!</b>\n\n⚽ <b>${p.giocatore}</b>\n🏆 Vinta da: <b>${p.vincitore}</b> per <b>${p.prezzo}M</b>${p.elencoAltri ? `\n\n📋 Altri interessati:\n${p.elencoAltri}` : ""}${link}`;

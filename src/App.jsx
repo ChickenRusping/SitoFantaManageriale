@@ -8310,15 +8310,21 @@ function OffertaInlineForm({ asta, squadra, onRefresh, dsMasterclass }) {
 
   async function invia() {
     const val = parseFloat(importo);
-    if (!val || val < minOfferta) { alert(`Min ${minOfferta}M`); return; }
+    // Tolleranza per arrotondamenti in virgola mobile: digitare esattamente il
+    // minimo non deve mai essere rifiutato per un residuo tipo 6.749999999999999.
+    if (!val || val < minOfferta - 0.0001) { alert(`Min ${minOfferta}M`); return; }
     if (!window.confirm(`Confermare offerta di ${val.toFixed(2)}M per ${asta.giocatore}?`)) return;
     setSaving(true);
     try {
-      await upsertOffertaAsta(asta.id, squadra, val, asta.per_vivaio);
+      const salvata = await upsertOffertaAsta(asta.id, squadra, val, asta.per_vivaio);
       const offs = await getOfferteAsta(asta.id);
       setOfferta(offs);
       await onRefresh();
-    } catch(e) { alert(e.message); }
+      // Conferma esplicita e inequivocabile: non fidarsi solo dell'etichetta
+      // che si aggiorna in pagina, specie da PWA dove un mancato re-render
+      // può far sembrare che l'offerta non sia stata presa anche se lo è stata.
+      alert(`✅ Offerta registrata: ${Number(salvata.importo).toFixed(2)}M per ${asta.giocatore}.`);
+    } catch(e) { alert(`❌ Offerta NON salvata: ${e.message}`); }
     finally { setSaving(false); }
   }
 
@@ -8354,10 +8360,13 @@ function OffertaInlineForm({ asta, squadra, onRefresh, dsMasterclass }) {
           style={{ width: 90, padding: "4px 8px", borderRadius: 6, border: "1px solid #6366f130", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }} />
         <span style={{ fontSize: 10, color: "#555" }}>M</span>
         <button onClick={invia} disabled={saving}
-          style={{ padding: "4px 14px", borderRadius: 7, border: "none", background: "#6366f1", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-          {saving ? "..." : miaOffertaInviata ? "↻ Aggiorna" : "📨 Invia"}
+          style={{ padding: "4px 14px", borderRadius: 7, border: "none", background: saving ? "#4b4f80" : "#6366f1", color: "#fff", fontSize: 11, fontWeight: 700, cursor: saving ? "wait" : "pointer" }}>
+          {saving ? "⏳ Attendere..." : miaOffertaInviata ? "↻ Aggiorna" : "📨 Invia"}
         </button>
-        {miaOffertaInviata && !miaOffertaInviata.assente && (
+        {saving && (
+          <span style={{ fontSize: 10, color: "#f59e0b", fontWeight: 700 }}>⏳ Registrazione in corso, non chiudere la pagina...</span>
+        )}
+        {!saving && miaOffertaInviata && !miaOffertaInviata.assente && (
           <span style={{ fontSize: 10, color: "#10b981" }}>✅ Offerta attualmente registrata: {Number(miaOffertaInviata.importo).toFixed(2)}M</span>
         )}
         <span style={{ fontSize: 9, color: "#444" }}>Le altre offerte sono nascoste · max = tuo bilancio</span>
