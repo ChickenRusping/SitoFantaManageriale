@@ -937,7 +937,21 @@ export async function insertTrattativa(t) {
     }
   }
 
-  const { data, error } = await supabase.from('trattative').insert(payload).select().single();
+  // "oneroso" non serve a niente fuori dai prestiti con riscatto (diritto/
+  // obbligo): non includerlo per gli altri tipi, così una trattativa normale
+  // (cessione, clausola, prestito secco) non dipende dall'esistenza di quella
+  // colonna. Se anche così la colonna manca ancora (migrazione non applicata)
+  // e serve davvero (diritto/obbligo), ripieghiamo comunque sull'insert senza
+  // il campo piuttosto che bloccare del tutto l'offerta.
+  if (payload.tipo !== 'prestito_diritto' && payload.tipo !== 'prestito_obbligo') {
+    delete payload.oneroso;
+  }
+
+  let { data, error } = await supabase.from('trattative').insert(payload).select().single();
+  if (error && isMissingColumnError(error) && 'oneroso' in payload) {
+    const { oneroso: _drop, ...fallbackPayload } = payload;
+    ({ data, error } = await supabase.from('trattative').insert(fallbackPayload).select().single());
+  }
   if (error) throw error;
   return data;
 }
