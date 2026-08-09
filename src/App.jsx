@@ -4318,6 +4318,7 @@ function AltroTab({ team, isAdmin, mySquadra }) {
   const [bonusData, setBonusData] = useState([]);
   const [loadingBonus, setLoadingBonus] = useState(true);
   const [bonusSectionOpen, setBonusSectionOpen] = useState(true);
+  const [bonusGiocatoreAperto, setBonusGiocatoreAperto] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -4711,6 +4712,18 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
   const cats = ["tutti","piccolo","medio","grande","invernale"];
   const ccol = { piccolo:"#10b981",medio:"#6366f1",grande:"#f59e0b",invernale:"#06b6d4" };
 
+  // Raggruppa i bonus per giocatore: mostra solo il nome finché non ci si
+  // clicca sopra, invece di avere sempre tutte le card aperte.
+  const bonusPerGiocatore = useMemo(() => {
+    const map = {};
+    for (const item of bonusData) {
+      const g = item.trattativa.giocatore;
+      if (!map[g]) map[g] = [];
+      map[g].push(item);
+    }
+    return map;
+  }, [bonusData]);
+
   return (
     <div style={{ display:"flex",flexDirection:"column",gap:20 }}>
 
@@ -4729,36 +4742,54 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
         loadingBonus?<div style={{ fontSize:12,color:"#555" }}>Caricamento...</div>
         :bonusData.length===0?<div style={{ fontSize:12,color:"#555",fontStyle:"italic",background:"#ffffff06",border:"1px solid #ffffff10",borderRadius:10,padding:"14px" }}>Nessun bonus attivo nelle trattative.</div>
         :<div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-          {bonusData.map(({bonus,trattativa,valoreAttuale},i)=>{
-            const soglia=Number(bonus.soglia),val=valoreAttuale??0;
-            const pct=soglia>0?Math.min(100,Math.round((val/soglia)*100)):0;
-            const completato=bonus.completato||val>=soglia;
-            // Convenzione trattative: da_squadra = acquirente, a_squadra = cedente.
-            const ioPago =
-              (bonus.direzione === 'acquirente_paga' && trattativa.da_squadra === team.name) ||
-              (bonus.direzione === 'cedente_paga' && trattativa.a_squadra === team.name);
+          {Object.entries(bonusPerGiocatore).map(([giocatore,items])=>{
+            const aperto = bonusGiocatoreAperto === giocatore;
+            const tuttiCompletati = items.every(({bonus,valoreAttuale})=>bonus.completato||(valoreAttuale??0)>=Number(bonus.soglia));
+            const nCompletati = items.filter(({bonus,valoreAttuale})=>bonus.completato||(valoreAttuale??0)>=Number(bonus.soglia)).length;
             return (
-              <div key={bonus.id} style={{ background:completato?"#10b98110":"#ffffff08",border:`1.5px solid ${completato?"#10b98130":"#ffffff12"}`,borderRadius:12,padding:"12px 14px" }}>
-                <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8,gap:8,flexWrap:"wrap" }}>
-                  <div>
-                    <div style={{ fontSize:13,fontWeight:700,color:completato?"#10b981":"#e0e0e0" }}>
-                      {completato&&"✅ "}{trattativa.giocatore}
-                      <span style={{ fontSize:10,color:"#555",fontWeight:400,marginLeft:6 }}>({trattativa.a_squadra} → {trattativa.da_squadra})</span>
-                    </div>
-                    <div style={{ fontSize:11,color:"#888",marginTop:2 }}>{getLabelBonus(bonus.tipo_bonus)} ≥ {soglia} · {ioPago?"⬆️ Tu paghi":"⬇️ Tu ricevi"}</div>
+              <div key={giocatore} style={{ background:"#ffffff08",border:`1.5px solid ${tuttiCompletati?"#10b98130":"#ffffff12"}`,borderRadius:12,overflow:"hidden" }}>
+                <div onClick={()=>setBonusGiocatoreAperto(v=>v===giocatore?null:giocatore)}
+                  style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer" }}>
+                  <div style={{ fontSize:13,fontWeight:700,color:tuttiCompletati?"#10b981":"#e0e0e0" }}>
+                    {tuttiCompletati&&"✅ "}{giocatore}
+                    <span style={{ fontSize:10,color:"#555",fontWeight:400,marginLeft:6 }}>{items.length} bonus{nCompletati>0?` · ${nCompletati} completat${nCompletati===1?"o":"i"}`:""}</span>
                   </div>
-                  <div style={{ textAlign:"right",flexShrink:0 }}>
-                    <div style={{ fontSize:16,fontWeight:900,color:ioPago?"#ef4444":"#10b981",fontFamily:"'Bebas Neue',sans-serif" }}>{ioPago?"-":"+"}{Number(bonus.valore_mln).toFixed(1)}M</div>
-                    {valoreAttuale!==null&&<div style={{ fontSize:10,color:"#555" }}>{val}/{soglia}</div>}
-                  </div>
+                  <span style={{ fontSize:11,color:"#666" }}>{aperto?"▲":"▼"}</span>
                 </div>
-                {valoreAttuale!==null&&!completato&&(
-                  <div>
-                    <div style={{ display:"flex",justifyContent:"space-between",marginBottom:3 }}>
-                      <span style={{ fontSize:9,color:"#555" }}>Progressione</span>
-                      <span style={{ fontSize:9,color:pct>=80?"#10b981":pct>=50?"#f59e0b":"#555",fontWeight:700 }}>{pct}%</span>
-                    </div>
-                    <StatBar value={val} max={soglia} color={pct>=80?"#10b981":pct>=50?"#f59e0b":"#6366f1"} height={5}/>
+                {aperto && (
+                  <div style={{ padding:"0 14px 12px",display:"flex",flexDirection:"column",gap:8 }}>
+                    {items.map(({bonus,trattativa,valoreAttuale})=>{
+                      const soglia=Number(bonus.soglia),val=valoreAttuale??0;
+                      const pct=soglia>0?Math.min(100,Math.round((val/soglia)*100)):0;
+                      const completato=bonus.completato||val>=soglia;
+                      // Convenzione trattative: da_squadra = acquirente, a_squadra = cedente.
+                      const ioPago =
+                        (bonus.direzione === 'acquirente_paga' && trattativa.da_squadra === team.name) ||
+                        (bonus.direzione === 'cedente_paga' && trattativa.a_squadra === team.name);
+                      return (
+                        <div key={bonus.id} style={{ background:completato?"#10b98110":"#ffffff06",border:`1.5px solid ${completato?"#10b98130":"#ffffff12"}`,borderRadius:10,padding:"10px 12px" }}>
+                          <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8,gap:8,flexWrap:"wrap" }}>
+                            <div>
+                              <div style={{ fontSize:11,color:"#888" }}>{completato&&"✅ "}{getLabelBonus(bonus.tipo_bonus)} ≥ {soglia} · {ioPago?"⬆️ Tu paghi":"⬇️ Tu ricevi"}</div>
+                              <div style={{ fontSize:9,color:"#555",marginTop:2 }}>({trattativa.a_squadra} → {trattativa.da_squadra})</div>
+                            </div>
+                            <div style={{ textAlign:"right",flexShrink:0 }}>
+                              <div style={{ fontSize:16,fontWeight:900,color:ioPago?"#ef4444":"#10b981",fontFamily:"'Bebas Neue',sans-serif" }}>{ioPago?"-":"+"}{Number(bonus.valore_mln).toFixed(1)}M</div>
+                              {valoreAttuale!==null&&<div style={{ fontSize:10,color:"#555" }}>{val}/{soglia}</div>}
+                            </div>
+                          </div>
+                          {valoreAttuale!==null&&!completato&&(
+                            <div>
+                              <div style={{ display:"flex",justifyContent:"space-between",marginBottom:3 }}>
+                                <span style={{ fontSize:9,color:"#555" }}>Progressione</span>
+                                <span style={{ fontSize:9,color:pct>=80?"#10b981":pct>=50?"#f59e0b":"#555",fontWeight:700 }}>{pct}%</span>
+                              </div>
+                              <StatBar value={val} max={soglia} color={pct>=80?"#10b981":pct>=50?"#f59e0b":"#6366f1"} height={5}/>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
