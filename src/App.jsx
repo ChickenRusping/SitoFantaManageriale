@@ -7349,15 +7349,12 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                          form.tipo.startsWith('prestito') ? `PREZZO RISCATTO (${(form.quot*0.5).toFixed(1)}–${(form.quot*1.5).toFixed(1)}M)` :
                          `PREZZO (min ${prezzoMinimo(form.quot)}M)`}
                       </div>
-                      <input style={inp} type="number" step="0.1"
+                      <input style={inp} type="number" step="0.01"
                         min={form.tipo === 'clausola' ? valoreClausola(form.quot) : prezzoMinimo(form.quot)}
                         value={form.prezzo}
                         onChange={e => {
                           if (form.tipo === 'clausola') return;
-                          const val = parseFloat(e.target.value);
-                          const minimo = form.tipo === 'prestito_secco' ? form.quot * 0.1 : prezzoMinimo(form.quot);
-                          if (!isNaN(val) && val >= minimo) setForm(f => ({ ...f, prezzo: e.target.value }));
-                          else if (e.target.value === '') setForm(f => ({ ...f, prezzo: '' }));
+                          setForm(f => ({ ...f, prezzo: e.target.value }));
                         }}
                         readOnly={form.tipo === 'clausola'}
                       />
@@ -7380,15 +7377,10 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                       <div style={{ fontSize: 10, color: "#f59e0b", marginBottom: 4 }}>
                         ONEROSO — pagato subito alla firma (min {(form.quot * 0.1).toFixed(2)}M = 10%Q, pattuibile anche più alto)
                       </div>
-                      <input style={inp} type="number" step="0.1" min={form.quot * 0.1}
+                      <input style={inp} type="number" step="0.01" min={form.quot * 0.1}
                         placeholder={`min ${(form.quot * 0.1).toFixed(2)}M`}
                         value={form.oneroso}
-                        onChange={e => {
-                          const val = parseFloat(e.target.value);
-                          const minimo = form.quot * 0.1;
-                          if (!isNaN(val) && val >= minimo) setForm(f => ({ ...f, oneroso: e.target.value }));
-                          else if (e.target.value === '') setForm(f => ({ ...f, oneroso: '' }));
-                        }}
+                        onChange={e => setForm(f => ({ ...f, oneroso: e.target.value }))}
                       />
                       <div style={{ fontSize: 9, color: "#666", marginTop: 4 }}>
                         Il riscatto sopra ({(form.quot*0.5).toFixed(1)}–{(form.quot*1.5).toFixed(1)}M) si paga solo alla scadenza — se esercitato per il diritto, sempre per l'obbligo.
@@ -7434,7 +7426,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                         </div>
                         <div>
                           {idx === 0 && <div style={{ fontSize: 9, color: "#555", marginBottom: 3 }}>MLN</div>}
-                          <input style={{ ...inp, fontSize: 11 }} type="number" step="0.5" min="0.1" placeholder="es. 2"
+                          <input style={{ ...inp, fontSize: 11 }} type="number" step="0.1" min="0.1" placeholder="es. 2"
                             value={row.valore_mln}
                             onChange={e => setForm(f => ({ ...f, bonusRows: f.bonusRows.map((r, i) => i === idx ? { ...r, valore_mln: e.target.value } : r) }))} />
                         </div>
@@ -7639,7 +7631,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                                 <div style={{ background: "#f59e0b0a", border: "1px solid #f59e0b25", borderRadius: 9, padding: "10px 12px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                                   <span style={{ fontSize: 11, color: "#f59e0b", fontWeight: 700 }}>Proponi:</span>
                                   <input
-                                    type="number" step="0.5" placeholder={`min ${(t.quot_giocatore/2).toFixed(2)}M`}
+                                    type="number" step="0.01" placeholder={`min ${(t.quot_giocatore/2).toFixed(2)}M`}
                                     value={controffertaPrezzo}
                                     onChange={e => setControffertaPrezzo(e.target.value)}
                                     style={{ width: 80, padding: "4px 8px", borderRadius: 6, border: "1px solid #f59e0b33", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}
@@ -7698,7 +7690,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                 </div>
                 <div>
                   <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>QUOTAZIONE</div>
-                  <input style={inp} type="number" placeholder="es. 20" value={astaForm.quot} onChange={e => setAstaForm(f => ({ ...f, quot: e.target.value }))} />
+                  <input style={inp} type="number" step="0.5" placeholder="es. 20" value={astaForm.quot} onChange={e => setAstaForm(f => ({ ...f, quot: e.target.value }))} />
                 </div>
                 <div style={{ gridColumn: "1 / -1" }}>
                   <div style={{ fontSize: 10, color: "#666", marginBottom: 6 }}>TIPO ASTA</div>
