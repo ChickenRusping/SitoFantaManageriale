@@ -3058,7 +3058,10 @@ function ClausoleTab({ team, isAdmin }) {
 
   async function handleRescissione(player, chiPaga) {
     const pct = chiPaga === 'ricevente' ? 0.25 : 0.50;
-    const ind = parseFloat((Number(player.quot) * pct).toFixed(2));
+    // Art. 5.8.1: la base è la quotazione REALE aggiornata, non quella congelata
+    // in rosa — deve combaciare esattamente con eseguiRescissioneAnticipataPrestito.
+    const quotBase = Number(player.quot_reale ?? player.quot);
+    const ind = parseFloat((quotBase * pct).toFixed(2));
     const label = chiPaga === 'ricevente'
       ? `${team.name} paga ${ind}M a ${player.squadra_originale}`
       : `${player.squadra_originale} paga ${ind}M a ${team.name}`;
@@ -3140,11 +3143,11 @@ function ClausoleTab({ team, isAdmin }) {
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <button onClick={() => handleRescissione(p, 'ricevente')} disabled={rescindendo === p.id}
                         style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid #f97316aa", background: "#f9731618", color: "#f97316", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                        Pago io {parseFloat((p.quot * 0.25).toFixed(2))}M (25%Q)
+                        Pago io {parseFloat((Number(p.quot_reale ?? p.quot) * 0.25).toFixed(2))}M (25%Q reale)
                       </button>
                       <button onClick={() => handleRescissione(p, 'cedente')} disabled={rescindendo === p.id}
                         style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid #6366f1aa", background: "#6366f118", color: "#818cf8", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                        Paga {p.squadra_originale} {parseFloat((p.quot * 0.50).toFixed(2))}M (50%Q)
+                        Paga {p.squadra_originale} {parseFloat((Number(p.quot_reale ?? p.quot) * 0.50).toFixed(2))}M (50%Q reale)
                       </button>
                     </div>
                   </div>
@@ -3174,11 +3177,11 @@ function ClausoleTab({ team, isAdmin }) {
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <button onClick={() => handleRescissione(p, 'cedente')} disabled={rescindendo === p.id}
                         style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid #f97316aa", background: "#f9731618", color: "#f97316", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                        Pago io {parseFloat((p.quot * 0.50).toFixed(2))}M (50%Q)
+                        Pago io {parseFloat((Number(p.quot_reale ?? p.quot) * 0.50).toFixed(2))}M (50%Q reale)
                       </button>
                       <button onClick={() => handleRescissione(p, 'ricevente')} disabled={rescindendo === p.id}
                         style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid #6366f1aa", background: "#6366f118", color: "#818cf8", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                        Paga {p.squadra} {parseFloat((p.quot * 0.25).toFixed(2))}M (25%Q)
+                        Paga {p.squadra} {parseFloat((Number(p.quot_reale ?? p.quot) * 0.25).toFixed(2))}M (25%Q reale)
                       </button>
                     </div>
                   </div>
