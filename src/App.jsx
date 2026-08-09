@@ -6357,6 +6357,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     quot: 0,
     tipo: "cessione",
     prezzo: "",
+    oneroso: "",
     durata_mesi: "6",
     stipendio_a_chi: "ricevente",
     note: "",
@@ -6687,6 +6688,11 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
           alert(`Riscatto prestito: tra ${(quot*0.5).toFixed(1)}M e ${(quot*1.5).toFixed(1)}M`);
           return;
         }
+        const onerosoVal = parseFloat(form.oneroso) || 0;
+        if (onerosoVal < quot * 0.1) {
+          alert(`Oneroso: minimo ${(quot*0.1).toFixed(2)}M (10%Q) — pagato subito alla firma`);
+          return;
+        }
       }
       if (form.tipo === 'prestito_secco' && prezzo < quot * 0.1) {
         alert(`Prestito secco: minimo ${(quot*0.1).toFixed(2)}M`);
@@ -6707,7 +6713,9 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     const bonusPreview = bonusValidi.length
       ? `\nBonus: +${bonusTotale.toFixed(2)}M potenziali\nTotale potenziale: ${prezzoPotenziale.toFixed(2)}M`
       : '';
-    if (!window.confirm(`Inviare offerta?\n\n${tipoLabel}: ${form.giocatoreNome}\nDa: ${da} → ${form.squadraTarget}\nPrezzo fisso: ${prezzo.toFixed(2)}M${bonusPreview}`)) return;
+    const onerosoConfermato = (form.tipo === 'prestito_diritto' || form.tipo === 'prestito_obbligo') ? (parseFloat(form.oneroso) || 0) : null;
+    const onerosoPreview = onerosoConfermato != null ? `\nOneroso (subito): ${onerosoConfermato.toFixed(2)}M\nRiscatto (a scadenza, se esercitato): ${prezzo.toFixed(2)}M` : '';
+    if (!window.confirm(`Inviare offerta?\n\n${tipoLabel}: ${form.giocatoreNome}\nDa: ${da} → ${form.squadraTarget}\nPrezzo fisso: ${prezzo.toFixed(2)}M${onerosoPreview}${bonusPreview}`)) return;
 
     const trattativa = await insertTrattativa({
       da_squadra: da,
@@ -6716,6 +6724,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       quot_giocatore: quot,
       tipo: form.tipo,
       prezzo,
+      oneroso: onerosoConfermato,
       durata_mesi: form.tipo.startsWith('prestito') ? parseInt(form.durata_mesi) : null,
       scadenza_prestito: scad,
       stipendio_a_chi: form.tipo.startsWith('prestito') ? 'ricevente' : null,
@@ -7336,7 +7345,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                     <div>
                       <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>
                         {form.tipo === 'clausola' ? `PREZZO CLAUSOLA (=${valoreClausola(form.quot)}M)` :
-                         form.tipo === 'prestito_secco' ? `PREZZO PRESTITO (min ${(form.quot*0.1).toFixed(2)}M)` :
+                         form.tipo === 'prestito_secco' ? `ONEROSO — pagato subito alla firma (min ${(form.quot*0.1).toFixed(2)}M = 10%Q)` :
                          form.tipo.startsWith('prestito') ? `PREZZO RISCATTO (${(form.quot*0.5).toFixed(1)}–${(form.quot*1.5).toFixed(1)}M)` :
                          `PREZZO (min ${prezzoMinimo(form.quot)}M)`}
                       </div>
@@ -7367,8 +7376,23 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                   </div>
 
                   {(form.tipo === 'prestito_diritto' || form.tipo === 'prestito_obbligo') && (
-                    <div style={{ marginBottom: 12, fontSize: 10, color: "#f59e0b", background: "#f59e0b0c", border: "1px solid #f59e0b25", borderRadius: 8, padding: "6px 10px" }}>
-                      💸 Oltre al riscatto: alla firma si paga subito anche l'oneroso (10%Q = {(form.quot * 0.1).toFixed(2)}M), come nel prestito secco. Il riscatto sopra si paga solo alla scadenza — se esercitato per il diritto, sempre per l'obbligo.
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 10, color: "#f59e0b", marginBottom: 4 }}>
+                        ONEROSO — pagato subito alla firma (min {(form.quot * 0.1).toFixed(2)}M = 10%Q, pattuibile anche più alto)
+                      </div>
+                      <input style={inp} type="number" step="0.1" min={form.quot * 0.1}
+                        placeholder={`min ${(form.quot * 0.1).toFixed(2)}M`}
+                        value={form.oneroso}
+                        onChange={e => {
+                          const val = parseFloat(e.target.value);
+                          const minimo = form.quot * 0.1;
+                          if (!isNaN(val) && val >= minimo) setForm(f => ({ ...f, oneroso: e.target.value }));
+                          else if (e.target.value === '') setForm(f => ({ ...f, oneroso: '' }));
+                        }}
+                      />
+                      <div style={{ fontSize: 9, color: "#666", marginTop: 4 }}>
+                        Il riscatto sopra ({(form.quot*0.5).toFixed(1)}–{(form.quot*1.5).toFixed(1)}M) si paga solo alla scadenza — se esercitato per il diritto, sempre per l'obbligo.
+                      </div>
                     </div>
                   )}
 
