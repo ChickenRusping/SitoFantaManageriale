@@ -4889,16 +4889,20 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                           <div style={{ flex:1 }}>
                             <div style={{ fontSize:12,color:comp?"#10b981":fall?"#ef4444":"#ddd",fontWeight:600,lineHeight:1.4 }}>{comp?"✅ ":fall?"❌ ":""}{ob.testo}</div>
                             <div style={{ display:"flex",gap:8,alignItems:"center",marginTop:6,flexWrap:"wrap" }}>
-                              {editId===ob.id?(
+                              {canManageObiettivi && editId===ob.id?(
                                 <div style={{ display:"flex",gap:4 }}>
                                   <input style={{ padding:"2px 6px",borderRadius:5,border:"1px solid #ffffff18",background:"#0d0f14",color:"#f0f0f0",fontSize:11,width:60 }} type="number" value={editVal} onChange={e=>setEditVal(e.target.value)}/>
                                   <button onClick={()=>salvaProgrObj(ob.id)} style={{ padding:"2px 8px",borderRadius:5,border:"none",background:"#10b98122",color:"#10b981",fontSize:10,cursor:"pointer" }}>✓</button>
                                   <button onClick={()=>setEditId(null)} style={{ padding:"2px 6px",borderRadius:5,border:"none",background:"#ffffff10",color:"#888",fontSize:10,cursor:"pointer" }}>✕</button>
                                 </div>
-                              ):(
+                              ):canManageObiettivi?(
                                 <button onClick={()=>{setEditId(ob.id);setEditVal(pg?.valore_attuale||0);}} style={{ padding:"2px 8px",borderRadius:5,border:"1px solid #ffffff15",background:"transparent",color:"#666",fontSize:10,cursor:"pointer" }}>
                                   📊 {pg?.valore_attuale||0}{ob.soglia?`/${ob.soglia}`:""}
                                 </button>
+                              ):(
+                                <span style={{ padding:"2px 8px",fontSize:10,color:"#666" }}>
+                                  📊 {pg?.valore_attuale||0}{ob.soglia?`/${ob.soglia}`:""}
+                                </span>
                               )}
                               {ob.soglia>0&&!comp&&<div style={{ flex:1,minWidth:60 }}><StatBar value={pg?.valore_attuale||0} max={ob.soglia} color={info.color} height={4}/></div>}
                               <Badge color={info.color}>+{ob.guadagno}M</Badge>
