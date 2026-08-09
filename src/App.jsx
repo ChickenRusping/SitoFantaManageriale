@@ -6375,6 +6375,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const emptyAstaForm = { giocatore: "", quot: "", tipo_asta: "rialzo", note: "" };
   const [astaForm, setAstaForm] = useState(emptyAstaForm);
   const [myRosa, setMyRosa] = useState([]);
+  const [salvandoTrattativa, setSalvandoTrattativa] = useState(false);
 
   const mySquadra = profile?.squadra;
   const squadraMittente = isAdmin ? (form.squadraMittente || mySquadra) : mySquadra;
@@ -6717,41 +6718,48 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     const onerosoPreview = onerosoConfermato != null ? `\nOneroso (subito): ${onerosoConfermato.toFixed(2)}M\nRiscatto (a scadenza, se esercitato): ${prezzo.toFixed(2)}M` : '';
     if (!window.confirm(`Inviare offerta?\n\n${tipoLabel}: ${form.giocatoreNome}\nDa: ${da} → ${form.squadraTarget}\nPrezzo fisso: ${prezzo.toFixed(2)}M${onerosoPreview}${bonusPreview}`)) return;
 
-    const trattativa = await insertTrattativa({
-      da_squadra: da,
-      a_squadra: form.squadraTarget,
-      giocatore: form.giocatoreNome,
-      quot_giocatore: quot,
-      tipo: form.tipo,
-      prezzo,
-      oneroso: onerosoConfermato,
-      durata_mesi: form.tipo.startsWith('prestito') ? parseInt(form.durata_mesi) : null,
-      scadenza_prestito: scad,
-      stipendio_a_chi: form.tipo.startsWith('prestito') ? 'ricevente' : null,
-      fuori_mercato: !mercato.aperto,
-      note: form.note,
-      n_rifiuti: 0,
-      penalta_applicata: 0,
-      deadline_risposta: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-    });
+    setSalvandoTrattativa(true);
+    try {
+      const trattativa = await insertTrattativa({
+        da_squadra: da,
+        a_squadra: form.squadraTarget,
+        giocatore: form.giocatoreNome,
+        quot_giocatore: quot,
+        tipo: form.tipo,
+        prezzo,
+        oneroso: onerosoConfermato,
+        durata_mesi: form.tipo.startsWith('prestito') ? parseInt(form.durata_mesi) : null,
+        scadenza_prestito: scad,
+        stipendio_a_chi: form.tipo.startsWith('prestito') ? 'ricevente' : null,
+        fuori_mercato: !mercato.aperto,
+        note: form.note,
+        n_rifiuti: 0,
+        penalta_applicata: 0,
+        deadline_risposta: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+      });
 
-    // Inserisci i bonus già validati sopra.
-    for (const row of bonusValidi) {
-      await insertBonusTrattativa({ ...row, trattativa_id: trattativa.id });
+      // Inserisci i bonus già validati sopra.
+      for (const row of bonusValidi) {
+        await insertBonusTrattativa({ ...row, trattativa_id: trattativa.id });
+      }
+
+      // Notify the receiving team via Telegram DM
+      sendTelegramNotification('trattativa_ricevuta', {
+        giocatore: form.giocatoreNome,
+        importo: prezzo,
+        bonus: bonusTotale,
+        importo_potenziale: prezzoPotenziale,
+        da_squadra: da,
+      }, form.squadraTarget);
+
+      setShowForm(false);
+      setForm({ ...emptyForm, squadraMittente: isAdmin ? mySquadra : "" });
+      setRosaTarget([]);
+    } catch (e) {
+      alert(`❌ Offerta NON inviata: ${e.message}`);
+    } finally {
+      setSalvandoTrattativa(false);
     }
-
-    // Notify the receiving team via Telegram DM
-    sendTelegramNotification('trattativa_ricevuta', {
-      giocatore: form.giocatoreNome,
-      importo: prezzo,
-      bonus: bonusTotale,
-      importo_potenziale: prezzoPotenziale,
-      da_squadra: da,
-    }, form.squadraTarget);
-
-    setShowForm(false);
-    setForm({ ...emptyForm, squadraMittente: isAdmin ? mySquadra : "" });
-    setRosaTarget([]);
   }
 
   // ── Risposta trattativa ────────────────────────────────────────────────────
@@ -7465,8 +7473,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                     </div>
                   )}
 
-                  <button onClick={salvaTrattativa} style={{ width: "100%", padding: "11px", borderRadius: 10, border: "none", background: "#6366f1", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-                    Invia offerta →
+                  <button onClick={salvaTrattativa} disabled={salvandoTrattativa} style={{ width: "100%", padding: "11px", borderRadius: 10, border: "none", background: salvandoTrattativa ? "#4b4f80" : "#6366f1", color: "#fff", fontSize: 14, fontWeight: 700, cursor: salvandoTrattativa ? "wait" : "pointer" }}>
+                    {salvandoTrattativa ? "⏳ Attendere..." : "Invia offerta →"}
                   </button>
                 </>
               )}
