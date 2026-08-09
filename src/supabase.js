@@ -926,7 +926,7 @@ export async function insertTrattativa(t) {
 
   const payload = { ...t };
   if (String(payload.tipo || '').startsWith('prestito') && !payload.scadenza_prestito) {
-    payload.scadenza_prestito = _scadenzaPrestitoRegolamento(payload.durata_mesi || 6);
+    payload.scadenza_prestito = _prossimaScadenzaPrestitoValida();
   }
 
   if (payload.tipo === 'clausola') {
@@ -1234,7 +1234,7 @@ export async function eseguiTrasferimento(trattativa) {
         prestito_tipo: tipo,
         tag_rosa: tipo === 'prestito_secco' ? 'PRESTITO SECCO' : tipo === 'prestito_obbligo' ? 'PRESTITO OBBLIGO' : 'PRESTITO DIRITTO',
         squadra_originale: squadraCedente,
-        scadenza_prestito: scadenza_prestito || _scadenzaPrestitoRegolamento(trattativa.durata_mesi || 6),
+        scadenza_prestito: scadenza_prestito || _prossimaScadenzaPrestitoValida(),
         stip: stipendio_a_chi === 'cedente' ? 0 : nuovoStip, // cedente paga → 0 per ricevente
         stip_prestito_cedente: stipendio_a_chi === 'cedente' ? nuovoStip : 0,
       }).eq('id', player.id);
@@ -1904,17 +1904,17 @@ function _calcolaClausolaRegolamento(quot) {
   return parseFloat((_numero(quot) * 1.75).toFixed(2));
 }
 
-function _scadenzaPrestitoRegolamento(mesi, dataInizio = new Date()) {
-  const allowed = [6, 12, 18, 24];
-  const durata = Number(mesi);
-  if (!allowed.includes(durata)) throw new Error('Durata prestito non valida: sono ammessi solo 6, 12, 18 o 24 mesi.');
+// Art. 5.8: le uniche scadenze ammesse per un prestito sono 01/01 o 01/06,
+// scelte direttamente (niente più "durata in mesi" da convertire: portava a
+// risultati poco intuitivi/inconsistenti a seconda della data di firma).
+function _prossimaScadenzaPrestitoValida(dataInizio = new Date()) {
   const d = new Date(dataInizio);
-  d.setMonth(d.getMonth() + durata);
+  d.setHours(0, 0, 0, 0);
   const year = d.getFullYear();
-  const jan = new Date(year, 0, 1, 0, 0, 0, 0);
-  const jun = new Date(year, 5, 1, 0, 0, 0, 0);
-  const nextJan = new Date(year + 1, 0, 1, 0, 0, 0, 0);
-  const candidates = [jan, jun, nextJan].filter(x => x >= d).sort((a,b) => a - b);
+  const candidates = [
+    new Date(year, 0, 1), new Date(year, 5, 1),
+    new Date(year + 1, 0, 1), new Date(year + 1, 5, 1),
+  ].filter(x => x > d).sort((a, b) => a - b);
   return candidates[0].toISOString().slice(0, 10);
 }
 
@@ -1959,9 +1959,6 @@ function _validazioneEconomicaTrattativa(t = {}) {
   }
 
   if (isPrestito) {
-    if (t.durata_mesi && ![6,12,18,24].includes(Number(t.durata_mesi))) {
-      throw new Error('Durata prestito non valida: sono ammessi solo 6, 12, 18 o 24 mesi.');
-    }
     if (t.scadenza_prestito && !_isScadenzaPrestitoValida(t.scadenza_prestito)) {
       throw new Error('Scadenza prestito non valida: deve essere 01/01 o 01/06.');
     }
