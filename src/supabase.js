@@ -918,7 +918,7 @@ export async function insertTrattativa(t) {
   // definitivamente in una delle due rose (rientro o riscatto).
   if (t.giocatore && t.a_squadra) {
     const { data: targetRows } = await supabase.from('rosa')
-      .select('in_prestito').eq('squadra', t.a_squadra).ilike('nome', `%${t.giocatore}%`).limit(1);
+      .select('in_prestito').eq('squadra', t.a_squadra).ilike('nome', t.giocatore).limit(1);
     if (targetRows?.[0]?.in_prestito) {
       throw new Error(`${t.giocatore} è attualmente in prestito: non può essere oggetto di trattative finché non rientra o viene riscattato.`);
     }
