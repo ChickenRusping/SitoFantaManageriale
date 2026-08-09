@@ -173,7 +173,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, getEffettiInvestimenti, getSquadreConSuperClub,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, getEffettiInvestimenti, getSquadreConSuperClub,
   getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
@@ -2166,20 +2166,27 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
   const [popup, setPopup] = useState(null); // { player, mode:'own'|'other', anchorRef }
   const [saving, setSaving] = useState(false);
   const [tipoSvincolo, setTipoSvincolo] = useState('ordinario');
+  const [prestitiCeduti, setPrestitiCeduti] = useState([]);
+  const [prestitoCedutoAperto, setPrestitoCedutoAperto] = useState(null);
   const [estero, setEstero] = useState(false);
   const [offerMode, setOfferMode] = useState('cessione');
 
   const loadAll = useCallback(async () => {
-    const [r, v, s, ct] = await Promise.all([
+    const [r, v, s, ct, pa] = await Promise.all([
       cachedFetch('rosa_' + teamName, () => getRosa(teamName), 600000),
       cachedFetch('vivaio_' + teamName, () => getVivaio(teamName), 600000),
       getSvincoli(teamName),
       getStagioneSvincoli(teamName),
+      getPrestitiAttivi(teamName),
     ]);
     setPlayers((r||[]).filter(p => !p.in_vivaio));
     setVivaio(v||[]);
     setSvincoli(s||[]);
     setContatori(ct);
+    // Giocatori ceduti in prestito da questa squadra: nella loro riga rosa lo
+    // squadra attuale è quella del ricevente, quindi non compaiono in "players"
+    // (filtrato su squadra===teamName) — vanno recuperati a parte.
+    setPrestitiCeduti((pa||[]).filter(p => p.squadra_originale === teamName));
     setLoading(false);
   }, [teamName]);
 
@@ -2345,6 +2352,41 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
     catch(e){alert(e.message);}finally{setSaving(false);}
   }
 
+  // ── Prestiti (art. 5.7/5.8) ──────────────────────────────────────────────
+  async function handleRescissioneRicevente(p) {
+    const quotBase = Number(p.quot_reale ?? p.quot);
+    const ind = parseFloat((quotBase * 0.25).toFixed(2));
+    if (!window.confirm(`Rimandare ${p.nome} a ${p.squadra_originale}?\n\nPaghi ${ind}M (25% Q reale) di indennizzo. Il trasferimento avverrà tra 7 giorni se il mercato è aperto, altrimenti al primo giorno di mercato disponibile (art. 5.8.2).`)) return;
+    setSaving(true);
+    try { await eseguiRescissioneAnticipataPrestito(p.id, 'ricevente'); await loadAll(); setPopup(null); }
+    catch(e) { alert(`Errore: ${e.message}`); }
+    finally { setSaving(false); }
+  }
+
+  async function handleRiscattoAnticipato(p) {
+    setSaving(true);
+    try {
+      const { data: tratt } = await supabase.from('trattative').select('prezzo')
+        .eq('giocatore', p.nome).eq('a_squadra', p.squadra_originale).eq('da_squadra', p.squadra)
+        .eq('tipo', 'prestito_diritto').order('created_at', { ascending: false }).limit(1);
+      const prezzo = Number(tratt?.[0]?.prezzo || 0);
+      if (!window.confirm(`Riscattare subito ${p.nome}?\n\nPagherai ${prezzo}M a ${p.squadra_originale} e resterà definitivamente nella tua rosa, da subito.`)) { setSaving(false); return; }
+      await eseguiRiscattoAnticipatoDiritto(p.id);
+      await loadAll(); setPopup(null);
+    } catch(e) { alert(`Errore: ${e.message}`); }
+    finally { setSaving(false); }
+  }
+
+  async function handleRichiamaCedente(p) {
+    const quotBase = Number(p.quot_reale ?? p.quot);
+    const ind = parseFloat((quotBase * 0.5).toFixed(2));
+    if (!window.confirm(`Richiamare ${p.nome} da ${p.squadra}?\n\nPaghi ${ind}M (50% Q reale) di indennizzo. Rientrerà tra 7 giorni se il mercato è aperto, altrimenti al primo giorno di mercato disponibile (art. 5.8.2).`)) return;
+    setSaving(true);
+    try { await eseguiRescissioneAnticipataPrestito(p.id, 'cedente'); await loadAll(); }
+    catch(e) { alert(`Errore: ${e.message}`); }
+    finally { setSaving(false); }
+  }
+
   const maxVivaio=2;
   const needsDecisioneVivaio = (p) => Boolean(p.vivaio_decisione_richiesta) || (p.vivaio_presenze||0)>=2 || (Number(p.quot_iniziale_vivaio || p.quot || 0) > 0 && Number(p.quot || 0) - Number(p.quot_iniziale_vivaio || p.quot || 0) >= 2);
   const decisioneScadenzaLabel = (p) => p.vivaio_decisione_scadenza ? new Date(p.vivaio_decisione_scadenza).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : 'entro 3 giorni';
@@ -2490,7 +2532,32 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
 
           <GraficoQuotazione nome={popup.player.nome} />
 
-          {popup.mode==='own'?(
+          {popup.player.in_prestito ? (
+            <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+              <div style={{ background:"#6366f112",border:"1px solid #6366f130",borderRadius:9,padding:"9px 12px",fontSize:11,color:"#a5b4fc",lineHeight:1.5 }}>
+                🔄 In prestito da <b>{popup.player.squadra_originale}</b>{popup.player.scadenza_prestito?<> · scad. <b>{popup.player.scadenza_prestito}</b></>:null}
+                <br/>Finché è in prestito non può essere oggetto di trattative né svincolato (art. 5.7/5.8).
+              </div>
+              {popup.mode!=='own' ? (
+                <div style={{ fontSize:11,color:"#555",fontStyle:"italic" }}>Nessuna azione disponibile: solo {popup.player.squadra} può decidere su questo prestito.</div>
+              ) : popup.player.rescissione_prestito_attiva ? (
+                <div style={{ fontSize:11,color:"#f59e0b" }}>⏳ Rientro/riscatto già programmato per il {popup.player.rescissione_prestito_scadenza || "—"}.</div>
+              ) : (
+                <>
+                  <button onClick={()=>handleRescissioneRicevente(popup.player)} disabled={saving}
+                    style={{ padding:"9px",borderRadius:9,border:"1px solid #f97316aa",background:"#f9731618",color:"#f97316",fontSize:12,fontWeight:700,cursor:"pointer" }}>
+                    ↩ Rimanda a {popup.player.squadra_originale} (paga {parseFloat((Number(popup.player.quot_reale ?? popup.player.quot)*0.25).toFixed(2))}M — 25%Q reale)
+                  </button>
+                  {popup.player.prestito_tipo==='prestito_diritto' && (
+                    <button onClick={()=>handleRiscattoAnticipato(popup.player)} disabled={saving}
+                      style={{ padding:"9px",borderRadius:9,border:"none",background:"#10b981",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer" }}>
+                      ✓ Riscatta ora (paga la cifra di riscatto pattuita)
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          ) : popup.mode==='own'?(
             <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
               {/* Contatori */}
               <div style={{ display:"flex",gap:6 }}>
@@ -2626,6 +2693,36 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ── Prestiti ceduti (recap per il cedente, art. 5.7/5.8) ── */}
+      {canEdit && prestitiCeduti.length>0 && (
+        <div style={{ marginTop:24 }}>
+          <div style={{ fontSize:11,fontWeight:700,color:"#818cf8",letterSpacing:"0.08em",marginBottom:12 }}>🔄 CEDUTI IN PRESTITO ({prestitiCeduti.length})</div>
+          {prestitiCeduti.map(p=>(
+            <div key={p.id} style={{ background:"#ffffff08",border:"1px solid #ffffff10",borderRadius:10,marginBottom:6,overflow:"hidden" }}>
+              <div onClick={()=>setPrestitoCedutoAperto(v=>v===p.id?null:p.id)} style={{ display:"flex",alignItems:"center",gap:10,padding:"9px 12px",cursor:"pointer" }}>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:12,fontWeight:700,color:"#e0e0e0" }}>{p.nome} <span style={{ fontSize:9,fontWeight:800,color:"#a5b4fc",background:"#6366f122",border:"1px solid #6366f144",borderRadius:4,padding:"1px 4px",marginLeft:4 }}>{p.prestito_tipo==='prestito_obbligo'?'OBBLIGO':p.prestito_tipo==='prestito_secco'?'SECCO':'DIRITTO'}</span></div>
+                  <div style={{ fontSize:10,color:"#666" }}>a {p.squadra} · scad. {p.scadenza_prestito||"—"}</div>
+                </div>
+                <span style={{ fontSize:11,color:"#555" }}>{prestitoCedutoAperto===p.id?"▲":"▼"}</span>
+              </div>
+              {prestitoCedutoAperto===p.id&&(
+                <div style={{ padding:"0 12px 10px" }}>
+                  {p.rescissione_prestito_attiva ? (
+                    <div style={{ fontSize:11,color:"#f59e0b" }}>⏳ Rientro già programmato per il {p.rescissione_prestito_scadenza||"—"}.</div>
+                  ) : (
+                    <button onClick={()=>handleRichiamaCedente(p)} disabled={saving}
+                      style={{ width:"100%",padding:"8px",borderRadius:8,border:"1px solid #f97316aa",background:"#f9731618",color:"#f97316",fontSize:11,fontWeight:700,cursor:"pointer" }}>
+                      ↩ Richiama in rosa ora (paga {parseFloat((Number(p.quot_reale ?? p.quot)*0.5).toFixed(2))}M — 50%Q reale)
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
@@ -7238,6 +7335,12 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                     {/* stipendio_a_chi rimosso — sempre a carico del ricevente */}
                   </div>
 
+                  {(form.tipo === 'prestito_diritto' || form.tipo === 'prestito_obbligo') && (
+                    <div style={{ marginBottom: 12, fontSize: 10, color: "#f59e0b", background: "#f59e0b0c", border: "1px solid #f59e0b25", borderRadius: 8, padding: "6px 10px" }}>
+                      💸 Oltre al riscatto: alla firma si paga subito anche l'oneroso (10%Q = {(form.quot * 0.1).toFixed(2)}M), come nel prestito secco. Il riscatto sopra si paga solo alla scadenza — se esercitato per il diritto, sempre per l'obbligo.
+                    </div>
+                  )}
+
                   {/* Note */}
                   <div style={{ marginBottom: 14 }}>
                     <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>NOTE</div>
@@ -10204,6 +10307,8 @@ function AdminControlRoomPage({ teams }) {
   const [obiettiviAdmin, setObiettiviAdmin] = useState(null);
   const [vivaioAdmin, setVivaioAdmin] = useState(null);
   const [prestitiAdmin, setPrestitiAdmin] = useState(null);
+  const [prestitiDirittoScaduti, setPrestitiDirittoScaduti] = useState(null);
+  const [gestendoDiritto, setGestendoDiritto] = useState(null);
   const [auditAdmin, setAuditAdmin] = useState(null);
   const [adminTabBusy, setAdminTabBusy] = useState(null);
 
@@ -10431,8 +10536,26 @@ function AdminControlRoomPage({ teams }) {
       const { data, error } = await supabase.from('rosa').select('*').or('in_prestito.eq.true,rescissione_prestito_attiva.eq.true').order('squadra').order('nome');
       if (error) throw error;
       setPrestitiAdmin(data || []);
+      // I prestiti con diritto di riscatto scaduti richiedono una scelta manuale
+      // (riscatto o rientro) — non possono essere processati in blocco insieme
+      // a secco/obbligo, che invece sono deterministici (vedi bottone sotto).
+      const scaduti = await getPrestitiScaduti();
+      setPrestitiDirittoScaduti((scaduti || []).filter(r => r.tipo === 'prestito_diritto'));
     } catch(e) { alert(`Errore prestiti: ${e.message}`); }
     finally { setAdminTabBusy(null); }
+  }
+
+  async function gestisciDirittoScaduto(item, azione) {
+    const label = azione === 'riscatto'
+      ? `Esercitare il riscatto: ${item.player.squadra} paga ${item.prezzo}M a ${item.player.squadra_originale} e tiene ${item.player.nome} definitivamente?`
+      : `Far rientrare ${item.player.nome} a ${item.player.squadra_originale} (nessun altro costo)?`;
+    if (!window.confirm(label)) return;
+    setGestendoDiritto(item.player.id);
+    try {
+      await eseguiScadenzaPrestito(item, azione);
+      await loadPrestitiAdmin();
+    } catch(e) { alert(`Errore: ${e.message}`); }
+    finally { setGestendoDiritto(null); }
   }
 
   async function loadAuditAdmin() {
@@ -11231,8 +11354,44 @@ function AdminControlRoomPage({ teams }) {
               <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em' }}>🔁 PRESTITI / RIENTRI / RESCISSIONI</div>
               <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                 <button onClick={loadPrestitiAdmin} style={{ padding:'7px 16px', borderRadius:9, border:'1px solid #6366f130', background:'#6366f110', color:'#818cf8', fontSize:12, fontWeight:700 }}>📋 Carica prestiti</button>
-                <button onClick={() => runBulk(async()=>{ const rows = await getPrestitiScaduti(); const out=[]; for (const p of rows||[]) out.push(await eseguiScadenzaPrestito(p)); return out; }, 'Processa prestiti scaduti')} disabled={isBusy} style={{ padding:'7px 16px', borderRadius:9, border:'1px solid #f59e0b30', background:'#f59e0b10', color:'#f59e0b', fontSize:12, fontWeight:700 }}>⏱ Processa scaduti</button>
+                <button onClick={() => runBulk(async()=>{
+                    const rows = await getPrestitiScaduti();
+                    const out=[];
+                    for (const p of rows||[]) {
+                      // I "diritto" richiedono una scelta manuale (riscatto o rientro) —
+                      // vedi la lista dedicata sotto, non vanno mai processati in blocco.
+                      if (p.tipo === 'prestito_diritto') { out.push({ skip: true }); continue; }
+                      await eseguiScadenzaPrestito(p);
+                      out.push({ ok: true });
+                    }
+                    return out;
+                  }, 'Processa prestiti scaduti (secco/obbligo)')} disabled={isBusy} style={{ padding:'7px 16px', borderRadius:9, border:'1px solid #f59e0b30', background:'#f59e0b10', color:'#f59e0b', fontSize:12, fontWeight:700 }}>⏱ Processa scaduti (secco/obbligo)</button>
               </div>
+
+              {prestitiDirittoScaduti && prestitiDirittoScaduti.length > 0 && (
+                <div style={{ background:'#f59e0b08', border:'1px solid #f59e0b30', borderRadius:12, padding:14, display:'flex', flexDirection:'column', gap:8 }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:'#f59e0b', letterSpacing:'0.08em' }}>⚡ PRESTITI CON DIRITTO SCADUTI — RICHIEDONO UNA SCELTA</div>
+                  {prestitiDirittoScaduti.map(item => (
+                    <div key={item.player.id} style={{ background:'#ffffff06', border:'1px solid #ffffff12', borderRadius:10, padding:'9px 12px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+                      <div>
+                        <b style={{ color:'#f0f0f0' }}>{item.player.nome}</b>
+                        <div style={{ fontSize:11, color:'#888' }}>{item.player.squadra_originale} → {item.player.squadra} · riscatto pattuito {item.prezzo}M</div>
+                      </div>
+                      <div style={{ display:'flex', gap:6 }}>
+                        <button onClick={() => gestisciDirittoScaduto(item, 'riscatto')} disabled={gestendoDiritto === item.player.id}
+                          style={{ padding:'6px 12px', borderRadius:8, border:'none', background:'#10b981', color:'#fff', fontSize:11, fontWeight:700, cursor:'pointer' }}>
+                          {gestendoDiritto === item.player.id ? '...' : `✓ Riscatta (${item.prezzo}M)`}
+                        </button>
+                        <button onClick={() => gestisciDirittoScaduto(item, 'rientro')} disabled={gestendoDiritto === item.player.id}
+                          style={{ padding:'6px 12px', borderRadius:8, border:'1px solid #6366f1aa', background:'#6366f118', color:'#818cf8', fontSize:11, fontWeight:700, cursor:'pointer' }}>
+                          {gestendoDiritto === item.player.id ? '...' : '↩ Fai rientrare'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {prestitiAdmin && <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                 {prestitiAdmin.length === 0 ? <div style={{ color:'#666', fontSize:12 }}>Nessun prestito attivo.</div> : prestitiAdmin.map(p => <div key={p.id} style={{ background:'#ffffff06', border:'1px solid #ffffff12', borderRadius:10, padding:'9px 12px', display:'flex', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
                   <div><b style={{ color:'#f0f0f0' }}>{p.nome}</b> <span style={{ color:'#666' }}>· in {p.squadra}</span><div style={{ fontSize:11, color:'#888' }}>{p.tag_rosa || p.prestito_tipo || 'PRESTITO'} · da {p.squadra_origine || p.proprietario || '—'} · scad. {p.scadenza_prestito || '—'}</div></div>
