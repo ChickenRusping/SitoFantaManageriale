@@ -11983,11 +11983,11 @@ function AdminControlRoomPage({ teams }) {
                         } else if (dbTipo === '01/06') {
                           const rSett = await importDatabaseFanta(dbImportPreview.rows, STAGIONE_CR);
                           const { aggiornati, totale } = await applica01GiugnoAgosto(STAGIONE_CR);
-                          result = { rosaAggiornati: aggiornati, svinAggiornati: rSett.svinAggiornati, nuoviCreati: rSett.nuoviCreati, nonTrovati: rSett.nonTrovati, fuoriListaSegnati: rSett.fuoriListaSegnati, fuoriListaNomi: rSett.fuoriListaNomi, totale, note: `Quotazioni aggiornate per tutti i giocatori in rosa. ${rSett.svinAggiornati} svincolati aggiornati, ${rSett.nuoviCreati} nuovi creati, ${rSett.fuoriListaSegnati} segnati fuori lista.` };
+                          result = { rosaAggiornati: aggiornati, svinAggiornati: rSett.svinAggiornati, nuoviCreati: rSett.nuoviCreati, nuoviCreatiNomi: rSett.nuoviCreatiNomi, nonTrovati: rSett.nonTrovati, fuoriListaSegnati: rSett.fuoriListaSegnati, fuoriListaNomi: rSett.fuoriListaNomi, totale, note: `Quotazioni aggiornate per tutti i giocatori in rosa. ${rSett.svinAggiornati} svincolati aggiornati, ${rSett.nuoviCreati} nuovi creati, ${rSett.fuoriListaSegnati} segnati fuori lista.` };
                         } else {
                           // 01/08: full import con creazione nuovi giocatori
                           const r = await importa01Agosto(dbImportPreview.rows, STAGIONE_CR);
-                          result = { rosaAggiornati: r.rosaAggiornati, svinAggiornati: r.svinAggiornati, nuoviCreati: r.nuoviCreati, nonTrovati: r.nonTrovati, fuoriListaSegnati: r.fuoriListaSegnati, fuoriListaNomi: r.fuoriListaNomi, totale: r.totale, note: `Aggiornamento completo: ${r.rosaAggiornati} in rosa, ${r.svinAggiornati} svincolati aggiornati, ${r.nuoviCreati} nuovi creati, ${r.fuoriListaSegnati} segnati fuori lista.` };
+                          result = { rosaAggiornati: r.rosaAggiornati, svinAggiornati: r.svinAggiornati, nuoviCreati: r.nuoviCreati, nuoviCreatiNomi: r.nuoviCreatiNomi, nonTrovati: r.nonTrovati, fuoriListaSegnati: r.fuoriListaSegnati, fuoriListaNomi: r.fuoriListaNomi, totale: r.totale, note: `Aggiornamento completo: ${r.rosaAggiornati} in rosa, ${r.svinAggiornati} svincolati aggiornati, ${r.nuoviCreati} nuovi creati, ${r.fuoriListaSegnati} segnati fuori lista.` };
                         }
                         // Ogni ramo sopra scrive su "listone", "svincolati" e (tranne
                         // "settimanale" per quot/stip) anche "rosa": invalida tutte e tre
@@ -12038,6 +12038,17 @@ function AdminControlRoomPage({ teams }) {
                       <summary style={{ cursor: 'pointer' }}>📤 {dbImportDone.fuoriListaNomi.length} segnati fuori lista in questo import — chi sono</summary>
                       <div style={{ marginTop: 8, background: '#f9731608', borderRadius: 8, padding: '8px 12px', maxHeight: 160, overflowY: 'auto', lineHeight: 1.7, color: '#fb923c', fontSize: 11 }}>
                         {dbImportDone.fuoriListaNomi.map(p => p.squadra ? `${p.nome} (${p.squadra})` : `${p.nome} (svincolato)`).join(' · ')}
+                      </div>
+                    </details>
+                  )}
+                  {(dbImportDone.nuoviCreatiNomi?.length || 0) > 0 && (
+                    <details style={{ fontSize: 11, color: '#10b981' }}>
+                      <summary style={{ cursor: 'pointer' }}>🆕 {dbImportDone.nuoviCreatiNomi.length} nuovi giocatori creati in questo import — chi sono</summary>
+                      <div style={{ marginTop: 8, background: '#10b98108', borderRadius: 8, padding: '8px 12px', maxHeight: 160, overflowY: 'auto', lineHeight: 1.7, color: '#6ee7b7', fontSize: 11 }}>
+                        {dbImportDone.nuoviCreatiNomi.map(p => {
+                          const dettagli = [p.ruolo, p.quot ? `Q${p.quot}` : null].filter(Boolean).join(' · ');
+                          return dettagli ? `${p.nome} (${dettagli})` : p.nome;
+                        }).join(' · ')}
                       </div>
                     </details>
                   )}
