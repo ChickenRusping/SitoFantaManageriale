@@ -2545,13 +2545,13 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
               ) : (
                 <>
                   <button onClick={()=>handleRescissioneRicevente(popup.player)} disabled={saving}
-                    style={{ padding:"9px",borderRadius:9,border:"1px solid #f97316aa",background:"#f9731618",color:"#f97316",fontSize:12,fontWeight:700,cursor:"pointer" }}>
-                    ↩ Rimanda a {popup.player.squadra_originale} (paga {parseFloat((Number(popup.player.quot_reale ?? popup.player.quot)*0.25).toFixed(2))}M — 25%Q reale)
+                    style={{ padding:"9px",borderRadius:9,border:"1px solid #f97316aa",background:"#f9731618",color:"#f97316",fontSize:12,fontWeight:700,cursor:saving?"wait":"pointer" }}>
+                    {saving ? "⏳ Attendere..." : `↩ Rimanda a ${popup.player.squadra_originale} (paga ${parseFloat((Number(popup.player.quot_reale ?? popup.player.quot)*0.25).toFixed(2))}M — 25%Q reale)`}
                   </button>
                   {popup.player.prestito_tipo==='prestito_diritto' && (
                     <button onClick={()=>handleRiscattoAnticipato(popup.player)} disabled={saving}
-                      style={{ padding:"9px",borderRadius:9,border:"none",background:"#10b981",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer" }}>
-                      ✓ Riscatta ora (paga la cifra di riscatto pattuita)
+                      style={{ padding:"9px",borderRadius:9,border:"none",background:saving?"#0d6b4c":"#10b981",color:"#fff",fontSize:12,fontWeight:700,cursor:saving?"wait":"pointer" }}>
+                      {saving ? "⏳ Attendere..." : "✓ Riscatta ora (paga la cifra di riscatto pattuita)"}
                     </button>
                   )}
                 </>
@@ -2715,8 +2715,8 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                     <div style={{ fontSize:11,color:"#f59e0b" }}>⏳ Rientro già programmato per il {p.rescissione_prestito_scadenza||"—"}.</div>
                   ) : (
                     <button onClick={()=>handleRichiamaCedente(p)} disabled={saving}
-                      style={{ width:"100%",padding:"8px",borderRadius:8,border:"1px solid #f97316aa",background:"#f9731618",color:"#f97316",fontSize:11,fontWeight:700,cursor:"pointer" }}>
-                      ↩ Richiama in rosa ora (paga {parseFloat((Number(p.quot_reale ?? p.quot)*0.5).toFixed(2))}M — 50%Q reale)
+                      style={{ width:"100%",padding:"8px",borderRadius:8,border:"1px solid #f97316aa",background:"#f9731618",color:"#f97316",fontSize:11,fontWeight:700,cursor:saving?"wait":"pointer" }}>
+                      {saving ? "⏳ Attendere..." : `↩ Richiama in rosa ora (paga ${parseFloat((Number(p.quot_reale ?? p.quot)*0.5).toFixed(2))}M — 50%Q reale)`}
                     </button>
                   )}
                 </div>
@@ -4214,8 +4214,8 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
             </div>
             {(isAdmin || mySquadra === team.name) && euroInput && (
               <button onClick={handleInvesti} disabled={savingQuote}
-                style={{ marginTop: 8, padding: "5px 12px", borderRadius: 7, border: "none", background: "#6366f122", color: "#818cf8", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                {savingQuote ? "..." : `✓ Investi ${euroInput}€ → +${(parseFloat(euroInput)*2.5).toFixed(1)}M`}
+                style={{ marginTop: 8, padding: "5px 12px", borderRadius: 7, border: "none", background: "#6366f122", color: "#818cf8", fontSize: 11, fontWeight: 700, cursor: savingQuote ? "wait" : "pointer" }}>
+                {savingQuote ? "⏳ Attendere..." : `✓ Investi ${euroInput}€ → +${(parseFloat(euroInput)*2.5).toFixed(1)}M`}
               </button>
             )}
           </div>
@@ -6924,37 +6924,51 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     const quot = parseFloat(astaForm.quot) || 0;
     const prezzoBase = parseFloat((quot / 2).toFixed(2));
     if (!window.confirm(`Indire asta per ${astaForm.giocatore} (Q${quot})?\nTipo: ${astaForm.tipo_asta === 'rialzo' ? 'Al rialzo' : 'Al ribasso'} · Prezzo base: ${prezzoBase}M`)) return;
-    await insertAsta({
-      proprietario: mySquadra || TEAMS[0].name,
-      giocatore: astaForm.giocatore,
-      quot_giocatore: quot,
-      tipo_asta: astaForm.tipo_asta,
-      prezzo_base: prezzoBase,
-      offerta_attuale: astaForm.tipo_asta === 'rialzo' ? prezzoBase : quot,
-      prezzo_corrente: astaForm.tipo_asta === 'discesa' ? quot : null,
-      avviata_at: new Date().toISOString(),
-      scadenza_asta: astaForm.tipo_asta === 'rialzo' ? calcolaScadenzaRialzoConFreeze() : null,
-      note: astaForm.note,
-    });
-    setShowAstaForm(false);
-    setAstaForm(emptyAstaForm);
-    sendTelegramNotification('asta_tra_presidenti', {
-      giocatore: astaForm.giocatore,
-      quotazione: quot,
-      proprietario: mySquadra || TEAMS[0].name,
-      tipo_asta: astaForm.tipo_asta,
-      prezzo_base: prezzoBase,
-      note: astaForm.note || null,
-    });
-    cacheInvalidate('aste');
-    await loadAll();
+    setLoading(true);
+    try {
+      await insertAsta({
+        proprietario: mySquadra || TEAMS[0].name,
+        giocatore: astaForm.giocatore,
+        quot_giocatore: quot,
+        tipo_asta: astaForm.tipo_asta,
+        prezzo_base: prezzoBase,
+        offerta_attuale: astaForm.tipo_asta === 'rialzo' ? prezzoBase : quot,
+        prezzo_corrente: astaForm.tipo_asta === 'discesa' ? quot : null,
+        avviata_at: new Date().toISOString(),
+        scadenza_asta: astaForm.tipo_asta === 'rialzo' ? calcolaScadenzaRialzoConFreeze() : null,
+        note: astaForm.note,
+      });
+      setShowAstaForm(false);
+      setAstaForm(emptyAstaForm);
+      sendTelegramNotification('asta_tra_presidenti', {
+        giocatore: astaForm.giocatore,
+        quotazione: quot,
+        proprietario: mySquadra || TEAMS[0].name,
+        tipo_asta: astaForm.tipo_asta,
+        prezzo_base: prezzoBase,
+        note: astaForm.note || null,
+      });
+      cacheInvalidate('aste');
+      await loadAll();
+    } catch (e) {
+      alert(`❌ Asta NON creata: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function annullaAsta(asta) {
     if (!window.confirm(`Annullare l'asta per ${asta.giocatore}?`)) return;
-    await updateAsta(asta.id, { stato: 'annullata' });
-    cacheInvalidate('aste');
-    await loadAll();
+    setLoading(true);
+    try {
+      await updateAsta(asta.id, { stato: 'annullata' });
+      cacheInvalidate('aste');
+      await loadAll();
+    } catch (e) {
+      alert(`❌ Operazione fallita: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
   }
 
   // ── Offerta su asta a rialzo ───────────────────────────────────────────────
@@ -6966,11 +6980,13 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       return;
     }
     const nuovaScadenza = calcolaScadenzaRialzoConFreeze(); // 2h attivi, freeze 00-08
+    setLoading(true);
     try {
       await piazzaOffertaRialzo(asta.id, mySquadra, { nuovaScadenza });
       cacheInvalidate('aste');
       await loadAll();
     } catch(e) { alert(`⚠️ ${e.message}`); await loadAll(); }
+    finally { setLoading(false); }
   }
 
   // ── Acquisto asta a discesa ────────────────────────────────────────────────
@@ -7626,13 +7642,13 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                           {canRispondi && (
                             <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 6 }}>
                               <div className="trattativa-actions">
-                                <button className="trattativa-action-btn" disabled={!!rispostaInCorso[t.id]} onClick={() => rispondi(t, 'accettata')} style={{ border: "none", background: "#10b98120", color: "#10b981" }}>✓ Accetta</button>
-                                <button className="trattativa-action-btn" disabled={!!rispostaInCorso[t.id]} onClick={() => rispondi(t, 'rifiutata')} style={{ border: "none", background: "#ef444420", color: "#ef4444" }}>✕ Rifiuta</button>
-                                <button className="trattativa-action-btn" onClick={() => { setControffertaId(t.id); setControffertaPrezzo(String(t.prezzo || "")); }}
+                                <button className="trattativa-action-btn" disabled={!!rispostaInCorso[t.id]} onClick={() => rispondi(t, 'accettata')} style={{ border: "none", background: "#10b98120", color: "#10b981", cursor: rispostaInCorso[t.id] ? "wait" : "pointer" }}>{rispostaInCorso[t.id] ? "⏳ Attendere..." : "✓ Accetta"}</button>
+                                <button className="trattativa-action-btn" disabled={!!rispostaInCorso[t.id]} onClick={() => rispondi(t, 'rifiutata')} style={{ border: "none", background: "#ef444420", color: "#ef4444", cursor: rispostaInCorso[t.id] ? "wait" : "pointer" }}>{rispostaInCorso[t.id] ? "⏳ Attendere..." : "✕ Rifiuta"}</button>
+                                <button className="trattativa-action-btn" disabled={!!rispostaInCorso[t.id]} onClick={() => { setControffertaId(t.id); setControffertaPrezzo(String(t.prezzo || "")); }}
                                   style={{ border: "1px solid #f59e0b33", background: "#f59e0b12", color: "#f59e0b" }}>
                                   ↩ Controfferta
                                 </button>
-                                {isAdmin && <button className="trattativa-action-btn" disabled={!!rispostaInCorso[t.id]} onClick={() => rispondi(t, 'completata')} style={{ border: "none", background: "#6366f120", color: "#818cf8" }}>✅ Completata</button>}
+                                {isAdmin && <button className="trattativa-action-btn" disabled={!!rispostaInCorso[t.id]} onClick={() => rispondi(t, 'completata')} style={{ border: "none", background: "#6366f120", color: "#818cf8", cursor: rispostaInCorso[t.id] ? "wait" : "pointer" }}>{rispostaInCorso[t.id] ? "⏳ Attendere..." : "✅ Completata"}</button>}
                               </div>
                               {/* Form controfferta inline */}
                               {controffertaId === t.id && (
@@ -7645,8 +7661,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                                     style={{ width: 80, padding: "4px 8px", borderRadius: 6, border: "1px solid #f59e0b33", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}
                                   />
                                   <span style={{ fontSize: 11, color: "#888" }}>M</span>
-                                  <button disabled={!!rispostaInCorso[t.id]} onClick={() => inviaControfferta(t)} style={{ padding: "4px 12px", borderRadius: 7, border: "none", background: "#f59e0b", color: "#000", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>
-                                    Invia
+                                  <button disabled={!!rispostaInCorso[t.id]} onClick={() => inviaControfferta(t)} style={{ padding: "4px 12px", borderRadius: 7, border: "none", background: rispostaInCorso[t.id] ? "#8a670f" : "#f59e0b", color: "#000", fontSize: 11, fontWeight: 800, cursor: rispostaInCorso[t.id] ? "wait" : "pointer" }}>
+                                    {rispostaInCorso[t.id] ? "⏳ Attendere..." : "Invia"}
                                   </button>
                                   <button onClick={() => { setControffertaId(null); setControffertaPrezzo(""); }} style={{ padding: "4px 8px", borderRadius: 7, border: "none", background: "#ffffff10", color: "#888", fontSize: 11, cursor: "pointer" }}>
                                     ✕
@@ -7716,7 +7732,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                   </div>
                 )}
               </div>
-              <button onClick={salvaAsta} style={{ width: "100%", padding: "11px", borderRadius: 10, border: "none", background: "#f59e0b", color: "#000", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Avvia asta →</button>
+              <button onClick={salvaAsta} disabled={loading} style={{ width: "100%", padding: "11px", borderRadius: 10, border: "none", background: loading ? "#8a670f" : "#f59e0b", color: "#000", fontSize: 14, fontWeight: 700, cursor: loading ? "wait" : "pointer" }}>{loading ? "⏳ Attendere..." : "Avvia asta →"}</button>
             </div>
           )}
 
@@ -7754,14 +7770,14 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                       {scadFra !== null && <div style={{ fontSize: 11, color: scadFra === 0 ? "#ef4444" : scadFra < 30 ? "#f97316" : "#888", marginBottom: 6 }}>⏱ {scadFra === 0 ? "⏰ SCADUTA — in attesa di chiusura" : `Scade in ${scadFra < 60 ? `${scadFra} min` : `${Math.floor(scadFra/60)}h ${scadFra%60}min`}`}{horaCongelata ? " (CONGELATO)" : ""}</div>}
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                         {a.proprietario !== mySquadra && !!mySquadra && !horaCongelata && scadFra !== 0 && (
-                          <button onClick={() => faiOffertaRialzo(a)} style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: "#f59e0b", color: "#000", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
-                            📈 Offri {minRilancio}M
+                          <button onClick={() => faiOffertaRialzo(a)} disabled={loading} style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: loading ? "#8a670f" : "#f59e0b", color: "#000", fontSize: 12, fontWeight: 800, cursor: loading ? "wait" : "pointer" }}>
+                            {loading ? "⏳ Attendere..." : `📈 Offri ${minRilancio}M`}
                           </button>
                         )}
                         {isAdmin && (scadFra === 0 || scadFra === null) && (
                           <button onClick={() => chiudiAstaRialzo(a)} disabled={loading}
-                            style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: "#10b981", color: "#fff", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
-                            🏁 Chiudi asta e assegna
+                            style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: loading ? "#0d6b4c" : "#10b981", color: "#fff", fontSize: 12, fontWeight: 800, cursor: loading ? "wait" : "pointer" }}>
+                            {loading ? "⏳ Attendere..." : "🏁 Chiudi asta e assegna"}
                           </button>
                         )}
                       </div>
@@ -7782,8 +7798,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                       {horaCongelata
                         ? <div style={{ fontSize: 11, color: "#555" }}>🌙 Acquisti sospesi (00:00–08:00)</div>
                         : a.proprietario !== mySquadra && !!mySquadra && (
-                          <button onClick={() => acquistaDiscesa(a)} style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: "#f59e0b", color: "#000", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
-                            🛒 Acquista ora a {prezzoLive.toFixed(2)}M
+                          <button onClick={() => acquistaDiscesa(a)} disabled={loading} style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: loading ? "#8a670f" : "#f59e0b", color: "#000", fontSize: 12, fontWeight: 800, cursor: loading ? "wait" : "pointer" }}>
+                            {loading ? "⏳ Attendere..." : `🛒 Acquista ora a ${prezzoLive.toFixed(2)}M`}
                           </button>
                         )
                       }
@@ -7794,8 +7810,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
                   {(a.proprietario === mySquadra || isAdmin) && (isAdmin || !a.miglior_offerente) && a.stato === 'attiva' && (
                     <div style={{ borderTop: "1px solid #ffffff0a", paddingTop: 8, marginTop: 8 }}>
-                      <button onClick={() => annullaAsta(a)} style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid #ef444440", background: "#ef444410", color: "#ef4444", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                        ✕ Annulla asta
+                      <button onClick={() => annullaAsta(a)} disabled={loading} style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid #ef444440", background: "#ef444410", color: "#ef4444", fontSize: 10, fontWeight: 700, cursor: loading ? "wait" : "pointer" }}>
+                        {loading ? "⏳ Attendere..." : "✕ Annulla asta"}
                       </button>
                     </div>
                   )}
