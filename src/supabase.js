@@ -1130,7 +1130,7 @@ async function _liquidaBonusPendentiAllaRivendita(giocatoreNome, squadraCedente)
 
 export async function eseguiTrasferimento(trattativa) {
   const { da_squadra, a_squadra, giocatore, prezzo, tipo, quota_giocatore, quot_giocatore,
-          scadenza_prestito, stipendio_a_chi, fuori_mercato, id,
+          scadenza_prestito, stipendio_a_chi, fuori_mercato, id, oneroso,
           giocatore_scambio } = trattativa;
 
   const oggi = new Date().toISOString().slice(0, 10);
@@ -1278,14 +1278,15 @@ export async function eseguiTrasferimento(trattativa) {
 
   // ── 3. Calcola importo da pagare SUBITO ──────────────────────────────────────
   // Art. 5.7: nei prestiti con diritto/obbligo di riscatto si paga subito solo
-  // l'oneroso (10% Q, come nel prestito secco) — la cifra pattuita per il
-  // riscatto (50%-150% Q, già validata sopra) NON si paga ora: si paga solo
-  // alla scadenza, e solo se il riscatto viene davvero esercitato (obbligo:
-  // sempre; diritto: solo se il ricevente lo sceglie — vedi eseguiScadenzaPrestito).
+  // l'oneroso (minimo 10% Q, ma pattuibile più alto tra le parti — già
+  // validato in _validazioneEconomicaTrattativa) — la cifra per il riscatto
+  // (50%-150% Q) NON si paga ora: si paga solo alla scadenza, e solo se
+  // viene davvero esercitato (obbligo: sempre; diritto: solo se il ricevente
+  // lo sceglie — vedi eseguiScadenzaPrestito).
   const isPrestitoConRiscatto = tipo === 'prestito_diritto' || tipo === 'prestito_obbligo';
   const baseOnorario = nuovaQuot ?? Number(quot_giocatore ?? quota_giocatore ?? 0);
   const importoSubito = isPrestitoConRiscatto
-    ? parseFloat((baseOnorario * 0.10).toFixed(2))
+    ? parseFloat((Number(oneroso ?? baseOnorario * 0.10)).toFixed(2))
     : prezzo;
   // Art. 5.5.2: nella clausola rescissoria 3/4 vanno al venditore, 1/4 trattenuto.
   const importoCedente = tipo === 'clausola'
@@ -1311,7 +1312,7 @@ export async function eseguiTrasferimento(trattativa) {
 
   // ── 5. Registra movimenti ───────────────────────────────────────────────────
   const notaFuori = fuori_mercato ? " (trasf. differito)" : "";
-  const notaOneroso = isPrestitoConRiscatto ? ` — oneroso 10%Q (riscatto di ${prezzo}M da pagare solo se/quando esercitato)` : '';
+  const notaOneroso = isPrestitoConRiscatto ? ` — oneroso ${importoSubito}M (riscatto di ${prezzo}M da pagare solo se/quando esercitato)` : '';
   await supabase.from('movimenti').insert([
     {
       squadra: squadraCedente,
@@ -1933,6 +1934,14 @@ function _validazioneEconomicaTrattativa(t = {}) {
       throw new Error(`Prestito con riscatto non valido: costo tra ${min.toFixed(2)}M e ${max.toFixed(2)}M.`);
     }
     if (prezzo <= 0) throw new Error('Non sono ammessi prestiti gratuiti.');
+    // Art. 5.7: l'oneroso pagato subito alla firma è ALMENO il 10% della
+    // quotazione (come il prestito secco), ma non è fisso: le due parti
+    // possono pattuirne uno più alto.
+    const oneroso = _numero(t.oneroso, 0);
+    const minOneroso = quot * 0.10;
+    if (quot > 0 && oneroso < minOneroso) {
+      throw new Error(`Oneroso non valido: minimo 10% della quotazione (${minOneroso.toFixed(2)}M).`);
+    }
   }
 
   if (isPrestito) {
