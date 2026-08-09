@@ -8355,7 +8355,7 @@ function OffertaInlineForm({ asta, squadra, onRefresh, dsMasterclass }) {
       )}
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <span style={{ fontSize: 11, color: "#818cf8", fontWeight: 700 }}>🔒 Offerta segreta:</span>
-        <input type="number" step="0.25" min={minOfferta} value={importo}
+        <input type="number" step="0.01" min={minOfferta} value={importo}
           onChange={e => setImporto(e.target.value)} placeholder={`min ${minOfferta}M`}
           style={{ width: 90, padding: "4px 8px", borderRadius: 6, border: "1px solid #6366f130", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }} />
         <span style={{ fontSize: 10, color: "#555" }}>M</span>
