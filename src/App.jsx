@@ -8266,8 +8266,8 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
           {!astaAttiva && !astaAssegnata && !giaInteressato && !scadutaInteresse && mySquadra && (
             <div style={{ display: "flex", gap: 6 }}>
               <button onClick={() => handleInteresse(false)} disabled={saving}
-                style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "#f59e0b", color: "#000", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                {saving ? "..." : "✋ Mi interesso"}
+                style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: saving ? "#8a670f" : "#f59e0b", color: "#000", fontSize: 11, fontWeight: 700, cursor: saving ? "wait" : "pointer" }}>
+                {saving ? "⏳ Attendere..." : "✋ Mi interesso"}
               </button>
               {isCandidatoVivaio && (
                 <button onClick={() => vivaioAperto && handleInteresse(true)} disabled={saving || !vivaioAperto}
@@ -8854,6 +8854,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
   const [investimenti, setInvestimenti] = useState([]);
   const [editSvincolato, setEditSvincolato] = useState(null);
   const [importando, setImportando]   = useState(false);
+  const [chiamando, setChiamando]     = useState(false);
   const [now, setNow]                 = useState(new Date());
   const [chiamateAttiveAperto, setChiamateAttiveAperto] = useState(true);
   const [asteAttiveAperto, setAsteAttiveAperto]         = useState(true);
@@ -8949,20 +8950,27 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
     if (giaChiamato) { alert("Hai già manifestato interesse per questo giocatore"); return; }
     if (!window.confirm(`Manifestare interesse per ${player.nome} (Q${player.quot})${perVivaio ? ' per il vivaio' : ''}?`)) return;
 
-    await insertChiamata({
-      giocatore: player.nome, ruolo: player.ruolo, quot: player.quot,
-      anni: player.anni || 0, squadra_serie_a: player.squadra_serie_a || '',
-      squadra, per_vivaio: perVivaio,
-    });
-    // Notify channel about the chiamata
-    sendTelegramNotification('chiamata_svincolati', {
-      giocatore: player.nome,
-      quotazione: player.quot,
-      squadra,
-    });
-    setShowCallForm(null);
-    setCallVivaio(false);
-    await loadAll();
+    setChiamando(true);
+    try {
+      await insertChiamata({
+        giocatore: player.nome, ruolo: player.ruolo, quot: player.quot,
+        anni: player.anni || 0, squadra_serie_a: player.squadra_serie_a || '',
+        squadra, per_vivaio: perVivaio,
+      });
+      // Notify channel about the chiamata
+      sendTelegramNotification('chiamata_svincolati', {
+        giocatore: player.nome,
+        quotazione: player.quot,
+        squadra,
+      });
+      setShowCallForm(null);
+      setCallVivaio(false);
+      await loadAll();
+    } catch (e) {
+      alert(`❌ Chiamata NON registrata: ${e.message}`);
+    } finally {
+      setChiamando(false);
+    }
   }
 
   // Import Excel svincolati
@@ -9283,12 +9291,12 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
             </div>
             {/* Azioni */}
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => chiamaGiocatore(showCallForm, callVivaio)}
-                style={{ flex: 1, padding: "11px", borderRadius: 10, border: "none", background: "#f59e0b", color: "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                ✓ Manifesta interesse
+              <button onClick={() => chiamaGiocatore(showCallForm, callVivaio)} disabled={chiamando}
+                style={{ flex: 1, padding: "11px", borderRadius: 10, border: "none", background: chiamando ? "#8a670f" : "#f59e0b", color: "#000", fontSize: 13, fontWeight: 700, cursor: chiamando ? "wait" : "pointer" }}>
+                {chiamando ? "⏳ Attendere..." : "✓ Manifesta interesse"}
               </button>
-              <button onClick={() => { setShowCallForm(null); setCallVivaio(false); }}
-                style={{ padding: "11px 16px", borderRadius: 10, border: "none", background: "#ffffff10", color: "#888", fontSize: 13, cursor: "pointer" }}>✕</button>
+              <button onClick={() => { setShowCallForm(null); setCallVivaio(false); }} disabled={chiamando}
+                style={{ padding: "11px 16px", borderRadius: 10, border: "none", background: "#ffffff10", color: "#888", fontSize: 13, cursor: chiamando ? "wait" : "pointer" }}>✕</button>
             </div>
           </div>
         </div>
