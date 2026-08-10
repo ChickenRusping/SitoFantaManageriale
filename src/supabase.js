@@ -586,7 +586,15 @@ export function subscribeChiamate(callback) {
 // ─── MOVIMENTI ────────────────────────────────────────────────────────────────
 
 export async function getMovimenti(squadra) {
-  const { data, error } = await supabase.from('movimenti').select('*').eq('squadra', squadra).order('data', { ascending: false });
+  // Ordina per data e, a parità di giorno, per l'istante esatto di
+  // creazione: prima ordinava solo per data (senza orario), quindi più
+  // movimenti nello stesso giorno restavano nell'ordine casuale in cui li
+  // restituiva il DB, non dal più recente al meno recente.
+  let { data, error } = await supabase.from('movimenti').select('*').eq('squadra', squadra)
+    .order('data', { ascending: false }).order('created_at', { ascending: false });
+  if (error && isMissingColumnError(error)) {
+    ({ data, error } = await supabase.from('movimenti').select('*').eq('squadra', squadra).order('data', { ascending: false }));
+  }
   if (error) throw error;
   return data;
 }
