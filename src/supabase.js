@@ -5064,22 +5064,32 @@ export async function attivaMasterclass(astaId, squadra) {
     .select('id').eq('asta_id', astaId).eq('squadra', squadra).maybeSingle();
   if (gia) throw new Error('Hai già utilizzato il DS Masterclass per questa asta.');
 
-  const { data: inv } = await supabase.from('investimenti')
-    .select('*').eq('squadra', squadra).eq('nome', 'DS Masterclass').maybeSingle();
+  // Filtrato per stagione corrente, come fa già getInvestimenti (usato in UI
+  // per mostrare "X/2 rimasti"): senza questo filtro, una squadra che ha
+  // comprato DS Masterclass anche in una stagione passata rischiava di far
+  // leggere qui la riga sbagliata (es. una vecchia già esaurita), risultando
+  // in "esauriti" anche con utilizzi realmente ancora disponibili.
+  const { data: investimentiDS } = await supabase.from('investimenti')
+    .select('*').eq('squadra', squadra).eq('nome', 'DS Masterclass').eq('stagione', getStagioneQuota(ora));
+  const inv = investimentiDS?.[0];
   if (!inv) throw new Error('Non hai il DS Masterclass attivo.');
   const usati = Number(inv.dati?.utilizzi_masterclass || 0);
   if (usati >= 2) throw new Error('Utilizzi DS Masterclass esauriti (2/2).');
 
-  // L'utilizzo viene consumato subito, indipendentemente dal fatto che poi si
-  // riesca o meno a formulare un'offerta entro i 10 minuti extra.
-  await supabase.from('investimenti').update({
-    dati: { ...(inv.dati || {}), utilizzi_masterclass: usati + 1 },
-  }).eq('id', inv.id);
-
+  // Prima la richiesta vera e propria, POI il contatore: se l'insert
+  // fallisse (rete, retry, errore transitorio) col contatore incrementato
+  // per primo, l'utilizzo restava "consumato" senza che nessuna richiesta
+  // fosse mai stata registrata — orfano, invisibile, non recuperabile dal
+  // presidente (visto in produzione: contatore a 2/2 con zero richieste
+  // reali per nessuna asta).
   const { error } = await supabase.from('masterclass_richieste').insert({
     asta_id: astaId, squadra, investimento_id: inv.id, ordine_interesse: ordine,
   });
   if (error) throw error;
+
+  await supabase.from('investimenti').update({
+    dati: { ...(inv.dati || {}), utilizzi_masterclass: usati + 1 },
+  }).eq('id', inv.id);
   return { ok: true, utilizziRimasti: 2 - (usati + 1) };
 }
 
