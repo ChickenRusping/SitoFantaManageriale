@@ -306,6 +306,16 @@ async function creaAstaDaChiamate(nomeGiocatore: string) {
 // ── Stagione / investimenti (per limite vivaio, clausola segreta, ecc.) ────
 // Porting minimale di getStagioneQuota / _hasInvestimentoAttivo /
 // _getVivaioLimit / _calcolaClausolaPerSquadra da src/supabase.js.
+// Etichetta stagione usata per il tracking dei passaggi sessione (art. 5.6) —
+// porting di stagioneDaData in src/supabase.js (boundary 01/06, non 01/07
+// come stagioneStartYear qui sotto: sono due calcoli distinti nel codice
+// originale, non unificarli).
+function stagioneDaData(date = new Date()): string {
+  const { y, mo, d } = italyWallClockParts(date);
+  const start = (mo > 6 || (mo === 6 && d >= 1)) ? y : y - 1;
+  return `${start}-${String(start + 1).slice(2)}`;
+}
+
 function stagioneStartYear(date = new Date()): number {
   const { y, mo, d } = italyWallClockParts(date);
   return (mo > 6 || (mo === 6 && d >= 1)) ? y : y - 1;
@@ -515,11 +525,14 @@ async function rivelaECompletaAsta(astaId: number) {
       // Nessun assertRosaDopoAggiunta qui: i paletti di forma della rosa
       // (U21, tetto 30, max 5 stesso club) non bloccano più un'assegnazione
       // d'asta — vedi assertRosaDopoAggiunta in src/supabase.js.
+      // Art. 5.6: essere svincolato conta come una squadra nella catena dei
+      // passaggi — l'acquisto da svincolati È il primo passaggio.
       await supabase.from("rosa").insert({
         squadra: vincitore, nome: asta.giocatore, ruolo: asta.ruolo,
         anni: asta.anni, quot: asta.quot, stip, clausola: claus,
         squadra_serie_a: asta.squadra_serie_a,
         in_vivaio: false, anni_contratto: 1, data_acquisto: oggi,
+        passaggi_sessione: 1, ultima_sessione_mercato: stagioneDaData(new Date()),
       });
       await supabase.from("svincolati").delete().eq("nome", asta.giocatore);
     }
