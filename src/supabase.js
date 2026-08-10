@@ -5419,11 +5419,16 @@ export async function rivelaECompletaAsta(astaId) {
     });
   } else {
     await assertRosaDopoAggiunta(vincitore, { nome: asta.giocatore, ruolo: asta.ruolo, anni: asta.anni, quot: asta.quot, squadra_serie_a: asta.squadra_serie_a, in_vivaio: false });
+    // Art. 5.6: essere svincolato conta come una squadra nella catena dei
+    // passaggi — quindi l'acquisto da svincolati È il primo passaggio (non
+    // uno stato "zero" da cui il ricevente potrebbe ancora fare altri 2
+    // passaggi pieni, che violerebbe il limite di 3 squadre totali).
     await supabase.from('rosa').insert({
       squadra: vincitore, nome: asta.giocatore, ruolo: asta.ruolo,
       anni: asta.anni, quot: asta.quot, stip, clausola: claus,
       squadra_serie_a: asta.squadra_serie_a,
       in_vivaio: false, anni_contratto: 1, data_acquisto: oggi,
+      passaggi_sessione: 1, ultima_sessione_mercato: stagioneDaData(new Date()),
     });
     await supabase.from('svincolati').delete()
       .eq('nome', asta.giocatore);
