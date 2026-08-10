@@ -3395,6 +3395,7 @@ export async function investiEuroExtra(squadra, euroAggiuntivi, opts = {}) {
     entrata: mlnGuadagnati,
     data: oggi,
   });
+  await sendTelegramNotification('euro_extra_investiti', { squadra, euro, mln: mlnGuadagnati });
   return mlnGuadagnati;
 }
 
@@ -6474,7 +6475,7 @@ function _formatNotificaApp(type, p = {}) {
     chiamata_svincolati: '/mercato', asta_svincolati: '/mercato', asta_svincolati_promemoria: '/mercato', asta_svincolati_conclusa: '/mercato',
     asta_tra_presidenti: '/mercato', asta_assegnata: '/mercato', asta_vinta: '/mercato', asta_persa: '/mercato',
     ds_masterclass_offerte: '/mercato', ds_masterclass_usato: '/mercato', svincolo: '/mercato',
-    scelta_allenatore: '/squadre', investimento_acquistato: '/squadre', movimento_privato: '/squadre',
+    scelta_allenatore: '/squadre', investimento_acquistato: '/squadre', euro_extra_investiti: '/squadre', movimento_privato: '/squadre',
     tassa_applicata: '/squadre', stipendi_applicati: '/squadre', stadio_applicato: '/squadre',
   };
   const link = LINK[type] || null;
@@ -6492,6 +6493,7 @@ function _formatNotificaApp(type, p = {}) {
     case 'svincolo': return { titolo: 'Giocatore svincolato', corpo: `${p.giocatore} · Q${p.quotazione} — lascia ${p.squadra}`, link };
     case 'scelta_allenatore': return { titolo: 'Nuova scelta allenatore', corpo: `${p.squadra} — ${p.nomeAllenatore}`, link };
     case 'investimento_acquistato': return { titolo: 'Nuovo investimento', corpo: `${p.squadra} — ${p.nome} (${p.costo}M)`, link };
+    case 'euro_extra_investiti': return { titolo: 'Budget extra investito', corpo: `${p.squadra} — ${p.euro}€ → +${p.mln}M`, link };
     case 'trattativa_ricevuta': return { titolo: 'Nuova offerta ricevuta', corpo: `${p.giocatore} — ${p.importo}M da ${p.da_squadra}`, link };
     case 'trattativa_accettata': return { titolo: 'Trasferimento completato', corpo: `${p.giocatore} per ${p.importo}M — da ${p.a_squadra} a ${p.da_squadra}`, link };
     case 'trattativa_rifiutata': return { titolo: 'Offerta rifiutata', corpo: `${p.giocatore} (${p.importo}M) non accettata`, link };
