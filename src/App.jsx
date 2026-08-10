@@ -174,7 +174,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
 import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, getEffettiInvestimenti, getSquadreConSuperClub,
-  getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, aggiornaTrackerInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
+  getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, usaContatoreInvestimento, registraEventoInvestimento, annullaEventoInvestimento, toggleTraguardoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
   getBonusTrattativa, getBonusTrattativeBatch, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -4290,31 +4290,38 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
 
 
 /* ─── CATALOGO INVESTIMENTI (art. 10) ──────────────────────────────────────── */
+// ── Meccaniche tracker (vedi blocchi UI in RosaVivaiTab/AltroTab investimenti) ──
+// passivo            → nessuna interazione, regola già applicata nei calcoli esistenti
+// contatore_utilizzo → contatore X/max con bottone "Usa" (nessun movimento di denaro)
+// contatore_economico→ bottone "+1 evento" che incrementa e accredita un importo fisso
+// selezione_giocatore→ giocatore/i scelto/i (da note d'acquisto) + toggle traguardo raggiunto
+// one_off_stagione   → un solo inserimento manuale (importo libero) a fine stagione/evento
+// automatico         → gestito altrove nel codice, qui solo lettura (DS Masterclass)
 const CATALOGO_INVESTIMENTI = [
   // Piccoli (art. 10.2)
-  { nome: "Scouting Estero",         categoria: "piccolo",   costo: 2,    desc: "Diritto esclusivo su 1 giocatore estero se arriva in Serie A entro 2 anni. Periodo 01/09–20/09.", richiedeNote: true, notePlaceholder: "Nome del giocatore estero selezionato:" },
-  { nome: "Scommessa Rendimento",     categoria: "piccolo",   costo: 2,    desc: "Seleziona 2 giocatori della tua rosa: se uno migliora Q di ≥7, ottieni +2.5M per ognuno.", richiedeNote: true, notePlaceholder: "Nomi dei 2 giocatori puntati (es. Barella, Vlahovic):" },
-  { nome: "Avvocato",                 categoria: "piccolo",   costo: 3,    desc: "Ogni 5 ammonizioni dei tuoi giocatori titolari o subentrati → +0.5M. Doppio giallo = 1 ammonizione." },
-  { nome: "Vice Allenatore Premium",  categoria: "piccolo",   costo: 5,    desc: "3 volte/stagione puoi modificare un giocatore dopo il fischio d'inizio (il sostituto non deve aver giocato)." },
-  { nome: "Ricapitalizzazione",       categoria: "piccolo",   costo: 5,    desc: "Abbassa il Fair Play Finanziario di 3M. Attivabile solo entro il 05/09." },
+  { nome: "Scouting Estero",         categoria: "piccolo",   costo: 2,    desc: "Diritto esclusivo su 1 giocatore estero se arriva in Serie A entro 2 anni. Periodo 01/09–20/09.", richiedeNote: true, notePlaceholder: "Nome del giocatore estero selezionato:", meccanica: "selezione_giocatore", nGiocatori: 1, valorePerGiocatore: 0 },
+  { nome: "Scommessa Rendimento",     categoria: "piccolo",   costo: 2,    desc: "Seleziona 2 giocatori della tua rosa: se uno migliora Q di ≥7, ottieni +2.5M per ognuno.", richiedeNote: true, notePlaceholder: "Nomi dei 2 giocatori puntati (es. Barella, Vlahovic):", meccanica: "selezione_giocatore", nGiocatori: 2, valorePerGiocatore: 2.5 },
+  { nome: "Avvocato",                 categoria: "piccolo",   costo: 3,    desc: "Ogni 5 ammonizioni dei tuoi giocatori titolari o subentrati → +0.5M. Doppio giallo = 1 ammonizione.", meccanica: "contatore_economico", valorePerEvento: 0.5, ogniNEventi: 5, etichettaEvento: "ammonizione" },
+  { nome: "Vice Allenatore Premium",  categoria: "piccolo",   costo: 5,    desc: "3 volte/stagione puoi modificare un giocatore dopo il fischio d'inizio (il sostituto non deve aver giocato).", meccanica: "contatore_utilizzo", max: 3 },
+  { nome: "Ricapitalizzazione",       categoria: "piccolo",   costo: 5,    desc: "Abbassa il Fair Play Finanziario di 3M. Attivabile solo entro il 05/09.", meccanica: "passivo" },
   // Medi (art. 10.3)
-  { nome: "Settore Giovanile Avanzato", categoria: "medio",  costo: 6,    desc: "Alza il limite vivaio da 2 a 4 giocatori per l'anno seguente e il successivo." },
-  { nome: "SuperClub",                categoria: "medio",    costo: 7,    desc: "+3M al tuo Salary Cap per la stagione." },
-  { nome: "Accordi TV",               categoria: "medio",    costo: 8,    desc: "Ogni qualvolta segni almeno 2 gol in una partita → +0.5M extra." },
-  { nome: "Clean Sheet",              categoria: "medio",    costo: 9,    desc: "+1.5M per ogni giornata in cui la squadra avversaria totalizza <66 punti fantacalcistici." },
-  { nome: "The MVP",                  categoria: "medio",    costo: 9,    desc: "Ogni qualvolta un tuo giocatore titolare o subentrato prende l'MVP → +0.5M." },
+  { nome: "Settore Giovanile Avanzato", categoria: "medio",  costo: 6,    desc: "Alza il limite vivaio da 2 a 4 giocatori per l'anno seguente e il successivo.", meccanica: "passivo" },
+  { nome: "SuperClub",                categoria: "medio",    costo: 7,    desc: "+3M al tuo Salary Cap per la stagione.", meccanica: "passivo" },
+  { nome: "Accordi TV",               categoria: "medio",    costo: 8,    desc: "Ogni qualvolta segni almeno 2 gol in una partita → +0.5M extra.", meccanica: "contatore_economico", valorePerEvento: 0.5, etichettaEvento: "partita ≥2 gol" },
+  { nome: "Clean Sheet",              categoria: "medio",    costo: 9,    desc: "+1.5M per ogni giornata in cui la squadra avversaria totalizza <66 punti fantacalcistici.", meccanica: "contatore_economico", valorePerEvento: 1.5, etichettaEvento: "giornata avversario <66pt" },
+  { nome: "The MVP",                  categoria: "medio",    costo: 9,    desc: "Ogni qualvolta un tuo giocatore titolare o subentrato prende l'MVP → +0.5M.", meccanica: "contatore_economico", valorePerEvento: 0.5, etichettaEvento: "MVP" },
   // Grandi (art. 10.4)
-  { nome: "Ristrutturazione Stadio",  categoria: "grande",   costo: 10,   desc: "Dalla stagione successiva +1.5M/mese dallo stadio. Devono passare 3 anni tra investimenti." },
-  { nome: "Branding Internazionale",  categoria: "grande",   costo: 10,   desc: "1°: +20M · 2°: +15M · 3°: +12M · 4°: +8M · Coppa: +5M · Finalista Coppa: +1M." },
-  { nome: "DS Masterclass",           categoria: "grande",   costo: 12,   desc: "Aste svincolati: 2 volte/stagione conosci l'offerta più alta prima di formalizzare la tua. Solo sui giocatori che hai chiamato tu." },
-  { nome: "Centro Giovani U21",       categoria: "grande",   costo: 14,   desc: "1 giocatore U21 svincolato/stagione a ¼ Q. Scelta entro 15/08, in ordine di classifica precedente." },
-  { nome: "Abbonamenti Premium",      categoria: "grande",   costo: 15,   desc: "Vittoria in casa: +1.5M (scarto ≥2 gol: +2M). Pareggio in casa: +1M. Valido 1 stagione." },
+  { nome: "Ristrutturazione Stadio",  categoria: "grande",   costo: 10,   desc: "Dalla stagione successiva +1.5M/mese dallo stadio. Devono passare 3 anni tra investimenti.", meccanica: "passivo" },
+  { nome: "Branding Internazionale",  categoria: "grande",   costo: 10,   desc: "1°: +20M · 2°: +15M · 3°: +12M · 4°: +8M · Coppa: +5M · Finalista Coppa: +1M.", meccanica: "one_off_stagione" },
+  { nome: "DS Masterclass",           categoria: "grande",   costo: 12,   desc: "Aste svincolati: 2 volte/stagione conosci l'offerta più alta prima di formalizzare la tua. Solo sui giocatori che hai chiamato tu.", meccanica: "automatico" },
+  { nome: "Centro Giovani U21",       categoria: "grande",   costo: 14,   desc: "1 giocatore U21 svincolato/stagione a ¼ Q. Scelta entro 15/08, in ordine di classifica precedente.", richiedeNote: true, notePlaceholder: "Nome del giocatore U21 scelto (l'acquisto a ¼Q resta un'operazione manuale separata):", meccanica: "selezione_giocatore", nGiocatori: 1, valorePerGiocatore: 0 },
+  { nome: "Abbonamenti Premium",      categoria: "grande",   costo: 15,   desc: "Vittoria in casa: +1.5M (scarto ≥2 gol: +2M). Pareggio in casa: +1M. Valido 1 stagione.", meccanica: "contatore_economico", varianti: [{ chiave: "vittoria", label: "+1 Vittoria casa", valorePerEvento: 1.5 }, { chiave: "vittoria_larga", label: "+1 Vittoria casa (≥2 gol scarto)", valorePerEvento: 2 }, { chiave: "pareggio", label: "+1 Pareggio casa", valorePerEvento: 1 }] },
   // Invernali — 24/12–31/12, max 10M (art. 10.5)
-  { nome: "Rientro in Grande",        categoria: "invernale", costo: 3,   desc: "1 infortunato: se nelle 5 giornate dal rientro prende voto ≥6 → +1.2M extra.", richiedeNote: true, notePlaceholder: "Nome del giocatore infortunato selezionato:" },
-  { nome: "Deroga U-21",              categoria: "invernale", costo: 4,   desc: "Fino al 01/06: puoi avere 30 giocatori in rosa con solo 1 Under-21." },
-  { nome: "Clausola Segreta",         categoria: "invernale", costo: 4,   desc: "Clausola rescissoria dei tuoi giocatori: da 1.75× a 2.0× la quotazione fino al 31/05." },
-  { nome: "Re del Girone di Ritorno", categoria: "invernale", costo: 7,   desc: "Dalla 19ª giornata: se ottieni ≥8 punti in più rispetto alla prima metà → +10M a fine anno." },
-  { nome: "Corso Analisi Video",      categoria: "invernale", costo: 10,  desc: "1 sostituzione extra rispetto alla formazione originaria. Non nelle ultime 5 giornate né in finale/semifinale Coppa. Usabile una volta." },
+  { nome: "Rientro in Grande",        categoria: "invernale", costo: 3,   desc: "1 infortunato: se nelle 5 giornate dal rientro prende voto ≥6 → +1.2M extra.", richiedeNote: true, notePlaceholder: "Nome del giocatore infortunato selezionato:", meccanica: "selezione_giocatore", nGiocatori: 1, valorePerGiocatore: 1.2 },
+  { nome: "Deroga U-21",              categoria: "invernale", costo: 4,   desc: "Fino al 01/06: puoi avere 30 giocatori in rosa con solo 1 Under-21.", meccanica: "passivo" },
+  { nome: "Clausola Segreta",         categoria: "invernale", costo: 4,   desc: "Clausola rescissoria dei tuoi giocatori: da 1.75× a 2.0× la quotazione fino al 31/05.", meccanica: "passivo" },
+  { nome: "Re del Girone di Ritorno", categoria: "invernale", costo: 7,   desc: "Dalla 19ª giornata: se ottieni ≥8 punti in più rispetto alla prima metà → +10M a fine anno.", meccanica: "one_off_stagione" },
+  { nome: "Corso Analisi Video",      categoria: "invernale", costo: 10,  desc: "1 sostituzione extra rispetto alla formazione originaria. Non nelle ultime 5 giornate né in finale/semifinale Coppa. Usabile una volta.", meccanica: "contatore_utilizzo", max: 1 },
 ];
 
 /* ─── ALLENATORE TAB ─────────────────────────────────────────────────────────── */
@@ -4673,15 +4680,30 @@ Gli obiettivi verranno azzerati.`;
     catch(e){alert(e.message);}finally{setSavingInv(false);}
   }
 
-  async function handleTrackerInv(inv) {
-    const testo = window.prompt(`Aggiorna tracker per ${inv.nome}:
-
-Inserisci evento, conteggio o nota utile al controllo manuale:`);
-    if (testo === null) return;
-    const nota = testo.trim();
-    if (!nota) return;
+  // ── Tracker per meccanica (vedi CATALOGO_INVESTIMENTI) ──────────────────────
+  async function handleUsaContatore(inv, max) {
+    if (!window.confirm(`Registrare un utilizzo di "${inv.nome}"?`)) return;
     setSavingInv(true);
-    try { await aggiornaTrackerInvestimento(inv.id, { nota, squadra: team.name, autore: mySquadra || 'admin' }); cacheInvalidate('investimenti_'+team.name); await loadInv(); }
+    try { await usaContatoreInvestimento(inv.id, max); cacheInvalidate('investimenti_'+team.name); await loadInv(); }
+    catch(e){ alert(e.message); }
+    finally { setSavingInv(false); }
+  }
+  async function handleRegistraEvento(inv, valorePerEvento, etichetta, opts) {
+    setSavingInv(true);
+    try { await registraEventoInvestimento(inv.id, team.name, valorePerEvento, etichetta, opts); cacheInvalidate('investimenti_'+team.name); await loadInv(); }
+    catch(e){ alert(e.message); }
+    finally { setSavingInv(false); }
+  }
+  async function handleAnnullaEvento(inv, valorePerEvento, etichetta, opts) {
+    if (!window.confirm(`Annullare l'ultimo evento registrato (${etichetta})?`)) return;
+    setSavingInv(true);
+    try { await annullaEventoInvestimento(inv.id, team.name, valorePerEvento, etichetta, opts); cacheInvalidate('investimenti_'+team.name); await loadInv(); }
+    catch(e){ alert(e.message); }
+    finally { setSavingInv(false); }
+  }
+  async function handleToggleTraguardo(inv, chiave, etichetta, raggiunto, valore) {
+    setSavingInv(true);
+    try { await toggleTraguardoInvestimento(inv.id, team.name, chiave, etichetta, raggiunto, valore); cacheInvalidate('investimenti_'+team.name); await loadInv(); }
     catch(e){ alert(e.message); }
     finally { setSavingInv(false); }
   }
@@ -5036,35 +5058,147 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
         {invAttivi.length>0&&(
           <div style={{ marginTop:12 }}>
             <div style={{ fontSize:10,fontWeight:700,color:"#888",marginBottom:8 }}>✅ ATTIVI</div>
-            {invAttivi.map(inv=>(
-              <div key={inv.id} style={{ display:"flex",gap:10,alignItems:"center",padding:"8px 0",borderBottom:"1px solid #ffffff08",flexWrap:"wrap" }}>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:12,fontWeight:700,color:"#e0e0e0" }}>{inv.nome}</div>
-                  <div style={{ fontSize:9,color:"#555" }}><span style={{ color:ccol[inv.categoria]||"#888" }}>{inv.categoria}</span> · {inv.data_acquisto}</div>
-                  {inv.note&&<div style={{ fontSize:10,color:"#818cf8",marginTop:2 }}>📝 {inv.note}</div>}
-                  {Array.isArray(inv.dati?.tracker)&&inv.dati.tracker.length>0&&(
-                    <div style={{ marginTop:4,display:"flex",flexDirection:"column",gap:2 }}>
-                      {inv.dati.tracker.slice(-3).map((t,idx)=><div key={idx} style={{ fontSize:9,color:"#9ca3af" }}>📌 {t.nota}</div>)}
+            {invAttivi.map(inv=>{
+              const catInfo = CATALOGO_INVESTIMENTI.find(c=>c.nome===inv.nome);
+              const meccanica = catInfo?.meccanica || 'passivo';
+              const dati = inv.dati || {};
+              return (
+              <div key={inv.id} style={{ display:"flex",flexDirection:"column",gap:8,padding:"10px 0",borderBottom:"1px solid #ffffff08" }}>
+                <div style={{ display:"flex",gap:10,alignItems:"center",flexWrap:"wrap" }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:12,fontWeight:700,color:"#e0e0e0" }}>{inv.nome}</div>
+                    <div style={{ fontSize:9,color:"#555" }}><span style={{ color:ccol[inv.categoria]||"#888" }}>{inv.categoria}</span> · {inv.data_acquisto}</div>
+                    {inv.note&&<div style={{ fontSize:10,color:"#818cf8",marginTop:2 }}>📝 {inv.note}</div>}
+                  </div>
+                  <Badge color="#ef4444">−{inv.costo}M</Badge>
+                  {inv.valore_accumulato>0&&<Badge color="#10b981">+{Number(inv.valore_accumulato).toFixed(1)}M</Badge>}
+                  {isAdmin&&(editGuad?.id===inv.id?(
+                    <div style={{ display:"flex",gap:4 }}>
+                      <input style={{ padding:"3px 6px",borderRadius:5,border:"1px solid #ffffff18",background:"#0d0f14",color:"#f0f0f0",fontSize:11,width:56 }} type="number" step="0.1" value={editGuad.val} onChange={e=>setEditGuad(g=>({...g,val:e.target.value}))}/>
+                      <button onClick={()=>handleGuadagno(inv.id)} style={{ padding:"3px 8px",borderRadius:5,border:"none",background:"#10b98122",color:"#10b981",fontSize:10,cursor:"pointer" }}>+M</button>
+                      <button onClick={()=>setEditGuad(null)} style={{ padding:"3px 6px",borderRadius:5,border:"none",background:"#ffffff10",color:"#888",fontSize:10,cursor:"pointer" }}>✕</button>
                     </div>
-                  )}
+                  ):(
+                    <div style={{ display:"flex",gap:4 }}>
+                      <button onClick={()=>setEditGuad({id:inv.id,val:""})} style={{ padding:"3px 8px",borderRadius:5,border:"1px solid #ffffff15",background:"transparent",color:"#666",fontSize:10,cursor:"pointer" }}>+M</button>
+                      <button onClick={()=>handleEliminaInv(inv)} style={{ padding:"3px 8px",borderRadius:5,border:"1px solid #ef444430",background:"#ef444410",color:"#ef4444",fontSize:10,cursor:"pointer" }}>🗑</button>
+                    </div>
+                  ))}
                 </div>
-                <Badge color="#ef4444">−{inv.costo}M</Badge>
-                {inv.valore_accumulato>0&&<Badge color="#10b981">+{Number(inv.valore_accumulato).toFixed(1)}M</Badge>}
-                {canManageInv&&<button onClick={()=>handleTrackerInv(inv)} disabled={savingInv} style={{ padding:"3px 8px",borderRadius:5,border:"1px solid #ffffff15",background:"#ffffff08",color:"#aaa",fontSize:10,cursor:"pointer" }}>Tracker</button>}
-                {isAdmin&&(editGuad?.id===inv.id?(
-                  <div style={{ display:"flex",gap:4 }}>
-                    <input style={{ padding:"3px 6px",borderRadius:5,border:"1px solid #ffffff18",background:"#0d0f14",color:"#f0f0f0",fontSize:11,width:56 }} type="number" step="0.1" value={editGuad.val} onChange={e=>setEditGuad(g=>({...g,val:e.target.value}))}/>
-                    <button onClick={()=>handleGuadagno(inv.id)} style={{ padding:"3px 8px",borderRadius:5,border:"none",background:"#10b98122",color:"#10b981",fontSize:10,cursor:"pointer" }}>+M</button>
-                    <button onClick={()=>setEditGuad(null)} style={{ padding:"3px 6px",borderRadius:5,border:"none",background:"#ffffff10",color:"#888",fontSize:10,cursor:"pointer" }}>✕</button>
+
+                {/* Blocco tracker specifico per meccanica (vedi CATALOGO_INVESTIMENTI) */}
+                {meccanica==='passivo' && (
+                  <div style={{ fontSize:10,color:"#10b981" }}>✓ Regola attiva automaticamente, nessuna azione richiesta.</div>
+                )}
+
+                {meccanica==='automatico' && (
+                  <div style={{ fontSize:10,color:"#888" }}>🔍 Utilizzi DS Masterclass: <b style={{ color:"#f59e0b" }}>{Number(dati.utilizzi_masterclass||0)}/2</b> (gestito automaticamente dalle aste svincolati)</div>
+                )}
+
+                {meccanica==='contatore_utilizzo' && (() => {
+                  const usati = Number(dati.utilizzi||0);
+                  return (
+                    <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                      <span style={{ fontSize:10,color:"#888" }}>Utilizzi: <b style={{ color: usati>=catInfo.max?"#ef4444":"#f59e0b" }}>{usati}/{catInfo.max}</b></span>
+                      {canManageInv && usati<catInfo.max && (
+                        <button onClick={()=>handleUsaContatore(inv, catInfo.max)} disabled={savingInv}
+                          style={{ padding:"3px 10px",borderRadius:6,border:"1px solid #f59e0b40",background:savingInv?"#7a5a0f":"#f59e0b12",color:"#f59e0b",fontSize:10,fontWeight:700,cursor:savingInv?"wait":"pointer" }}>
+                          {savingInv?"⏳ Attendere...":"▶ Registra utilizzo"}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {meccanica==='contatore_economico' && !catInfo.varianti && (() => {
+                  const eventi = Number(dati.contatori?.default||0);
+                  return (
+                    <div style={{ display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
+                      <span style={{ fontSize:10,color:"#888" }}>{catInfo.etichettaEvento}: <b style={{ color:"#818cf8" }}>{eventi}</b>{catInfo.ogniNEventi>1?` (paga ogni ${catInfo.ogniNEventi})`:""}</span>
+                      {canManageInv && (
+                        <>
+                          <button onClick={()=>handleRegistraEvento(inv, catInfo.valorePerEvento, catInfo.etichettaEvento, { ogniNEventi: catInfo.ogniNEventi||1 })} disabled={savingInv}
+                            style={{ padding:"3px 10px",borderRadius:6,border:"1px solid #10b98140",background:savingInv?"#0d6b4c":"#10b98112",color:"#10b981",fontSize:10,fontWeight:700,cursor:savingInv?"wait":"pointer" }}>
+                            {savingInv?"⏳...":`+1 ${catInfo.etichettaEvento}`}
+                          </button>
+                          {eventi>0 && (
+                            <button onClick={()=>handleAnnullaEvento(inv, catInfo.valorePerEvento, catInfo.etichettaEvento, { ogniNEventi: catInfo.ogniNEventi||1 })} disabled={savingInv}
+                              style={{ padding:"3px 8px",borderRadius:6,border:"1px solid #ffffff15",background:"transparent",color:"#666",fontSize:10,cursor:savingInv?"wait":"pointer" }}>
+                              ↩ Annulla ultimo
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {meccanica==='contatore_economico' && catInfo.varianti && (
+                  <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                    {catInfo.varianti.map(v=>{
+                      const eventi = Number(dati.contatori?.[v.chiave]||0);
+                      return (
+                        <div key={v.chiave} style={{ display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
+                          <span style={{ fontSize:10,color:"#888",minWidth:170 }}>{v.label}: <b style={{ color:"#818cf8" }}>{eventi}</b></span>
+                          {canManageInv && (
+                            <>
+                              <button onClick={()=>handleRegistraEvento(inv, v.valorePerEvento, v.label, { chiave: v.chiave })} disabled={savingInv}
+                                style={{ padding:"3px 10px",borderRadius:6,border:"1px solid #10b98140",background:savingInv?"#0d6b4c":"#10b98112",color:"#10b981",fontSize:10,fontWeight:700,cursor:savingInv?"wait":"pointer" }}>
+                                {savingInv?"⏳":"+1"}
+                              </button>
+                              {eventi>0 && (
+                                <button onClick={()=>handleAnnullaEvento(inv, v.valorePerEvento, v.label, { chiave: v.chiave })} disabled={savingInv}
+                                  style={{ padding:"3px 8px",borderRadius:6,border:"1px solid #ffffff15",background:"transparent",color:"#666",fontSize:10,cursor:savingInv?"wait":"pointer" }}>
+                                  ↩
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                ):(
-                  <div style={{ display:"flex",gap:4 }}>
-                    <button onClick={()=>setEditGuad({id:inv.id,val:""})} style={{ padding:"3px 8px",borderRadius:5,border:"1px solid #ffffff15",background:"transparent",color:"#666",fontSize:10,cursor:"pointer" }}>+M</button>
-                    <button onClick={()=>handleEliminaInv(inv)} style={{ padding:"3px 8px",borderRadius:5,border:"1px solid #ef444430",background:"#ef444410",color:"#ef4444",fontSize:10,cursor:"pointer" }}>🗑</button>
+                )}
+
+                {meccanica==='selezione_giocatore' && (() => {
+                  const nomi = (inv.note||'').split(',').map(s=>s.trim()).filter(Boolean);
+                  const giocatori = nomi.length ? nomi.slice(0, catInfo.nGiocatori) : Array.from({length: catInfo.nGiocatori}, (_,i)=>`Giocatore ${i+1}`);
+                  const traguardi = dati.traguardi || {};
+                  return (
+                    <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                      {giocatori.map((nome, idx) => {
+                        const chiave = `g${idx}`;
+                        const raggiunto = !!traguardi[chiave];
+                        return (
+                          <div key={chiave} style={{ display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
+                            <span style={{ fontSize:10,color: raggiunto?"#10b981":"#888",minWidth:120 }}>{raggiunto?"✅ ":"⏳ "}{nome}{catInfo.valorePerGiocatore>0?` (+${catInfo.valorePerGiocatore}M)`:""}</span>
+                            {canManageInv && (
+                              <button onClick={()=>handleToggleTraguardo(inv, chiave, `${inv.nome}: ${nome}`, !raggiunto, catInfo.valorePerGiocatore||0)} disabled={savingInv}
+                                style={{ padding:"3px 10px",borderRadius:6,border:`1px solid ${raggiunto?"#ef444430":"#10b98140"}`,background:savingInv?"#333":raggiunto?"#ef444410":"#10b98112",color:raggiunto?"#ef4444":"#10b981",fontSize:10,fontWeight:700,cursor:savingInv?"wait":"pointer" }}>
+                                {savingInv?"⏳...":raggiunto?"✕ Annulla":"✓ Traguardo raggiunto"}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+                {meccanica==='one_off_stagione' && (
+                  inv.valore_accumulato>0
+                    ? <div style={{ fontSize:10,color:"#10b981" }}>✓ Premio assegnato: +{Number(inv.valore_accumulato).toFixed(1)}M</div>
+                    : <div style={{ fontSize:10,color:"#888" }}>⏳ In attesa dell'esito di fine stagione — l'admin assegnerà l'importo con "+M" qui sopra quando disponibile.</div>
+                )}
+
+                {Array.isArray(dati.tracker)&&dati.tracker.length>0&&(
+                  <div style={{ display:"flex",flexDirection:"column",gap:2 }}>
+                    {dati.tracker.slice(-3).map((t,idx)=><div key={idx} style={{ fontSize:9,color:"#666" }}>📌 {t.nota}</div>)}
                   </div>
-                ))}
+                )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
         {canManageInv&&(
@@ -9167,13 +9301,16 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
                     </div>
                   )}
                 </div>
-                {/* Form offerta presidente interessato */}
-                {giaInteressato && !scaduta && (
+                {/* Form offerta presidente interessato — la decisione se mostrare il
+                    form, il messaggio "scaduta" o la finestra extra Masterclass
+                    spetta SOLO a OffertaInlineForm (unica fonte di verità: tiene
+                    conto di mieFinestraExtraAttiva). Il vecchio "scaduta" qui sopra
+                    ignorava la finestra extra e nascondeva il form anche a chi
+                    stava usando il DS Masterclass, impedendogli di vedere
+                    l'offerta rivelata e di rilanciare. */}
+                {giaInteressato && (
                   <OffertaInlineForm asta={asta} squadra={mySquadra} onRefresh={loadAll}
                     dsMasterclass={dsMasterclass} />
-                )}
-                {giaInteressato && scaduta && (
-                  <div style={{ fontSize: 11, color: "#555", fontStyle: "italic", marginTop: 6 }}>Offerte chiuse — in attesa di rivelazione</div>
                 )}
               </div>
             );

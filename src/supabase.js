@@ -639,6 +639,8 @@ function isFPFEscluso(descrizione) {
     d.includes('obiettivo') ||        // guadagno/penale obiettivo allenatore, ds, dg
     d.startsWith('riscossione invest') || // Riscossione investimento
     d.startsWith('guadagno invest') ||    // Guadagno investimento
+    d.startsWith('investimento:') ||      // Nuovi tracker per meccanica (contatore economico, traguardo giocatore)
+    d.startsWith('storno:') ||            // Storni/correzioni manuali (annulla evento, correzioni admin) — mai operazioni di mercato
     // Iscrizione campionato (quota obbligatoria di lega, non un'operazione di mercato)
     d.startsWith('iscrizione campionato') ||
     d.startsWith('iscrizione al campionato')
@@ -3115,6 +3117,102 @@ export async function aggiornaTrackerInvestimento(id, voce) {
   const { error: updErr } = await supabase.from('investimenti').update({ dati: { ...dati, tracker } }).eq('id', id);
   if (updErr) throw updErr;
   return tracker;
+}
+
+// ─── Tracker per meccanica (vedi CATALOGO_INVESTIMENTI in App.jsx) ────────────
+// Contatore d'uso semplice (es. Vice Allenatore Premium 3/stagione, Corso
+// Analisi Video 1/stagione): nessun movimento di denaro, solo un contatore
+// che blocca oltre il massimo consentito.
+export async function usaContatoreInvestimento(id, max, nota = '') {
+  const { data: inv, error } = await supabase.from('investimenti').select('dati').eq('id', id).single();
+  if (error) throw error;
+  const dati = inv?.dati || {};
+  const utilizzi = Number(dati.utilizzi || 0);
+  if (utilizzi >= max) throw new Error(`Utilizzi esauriti (${max}/${max}).`);
+  const tracker = Array.isArray(dati.tracker) ? dati.tracker : [];
+  tracker.push({ tipo: 'utilizzo', nota: nota || `Utilizzo ${utilizzi + 1}/${max}`, data: new Date().toISOString() });
+  const { error: updErr } = await supabase.from('investimenti')
+    .update({ dati: { ...dati, utilizzi: utilizzi + 1, tracker } }).eq('id', id);
+  if (updErr) throw updErr;
+  return utilizzi + 1;
+}
+
+// Contatore economico "+1 evento" (es. Accordi TV, Clean Sheet, MVP, Avvocato,
+// Abbonamenti Premium): ogni click incrementa un contatore namespaced su
+// `chiave` (default 'default', usato per le varianti di Abbonamenti Premium)
+// e — se scatta il pagamento (ogniNEventi, es. 5 per l'Avvocato) — accredita
+// l'importo fisso invece di farlo digitare a mano.
+export async function registraEventoInvestimento(id, squadra, valorePerEvento, etichetta, { ogniNEventi = 1, chiave = 'default' } = {}) {
+  const { data: inv, error } = await supabase.from('investimenti').select('dati, valore_accumulato').eq('id', id).single();
+  if (error) throw error;
+  const dati = inv?.dati || {};
+  const contatori = dati.contatori || {};
+  const eventi = Number(contatori[chiave] || 0) + 1;
+  const scatta = eventi % ogniNEventi === 0;
+  const importo = scatta ? valorePerEvento : 0;
+  const tracker = Array.isArray(dati.tracker) ? dati.tracker : [];
+  tracker.push({ tipo: 'evento', nota: `${etichetta} (#${eventi})${importo > 0 ? ` → +${importo}M` : ''}`, data: new Date().toISOString() });
+  const update = { dati: { ...dati, contatori: { ...contatori, [chiave]: eventi }, tracker } };
+  if (importo > 0) {
+    update.valore_accumulato = parseFloat((Number(inv.valore_accumulato || 0) + importo).toFixed(2));
+    const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadra).single();
+    await supabase.from('squadre').update({ bilancio: parseFloat((Number(sq?.bilancio || 0) + importo).toFixed(2)) }).eq('name', squadra);
+    await supabase.from('movimenti').insert({ squadra, descrizione: `Investimento: ${etichetta}`, entrata: importo, data: new Date().toISOString().slice(0, 10) });
+  }
+  const { error: updErr } = await supabase.from('investimenti').update(update).eq('id', id);
+  if (updErr) throw updErr;
+  return { eventi, importo };
+}
+
+// Annulla l'ultimo evento registrato per una data chiave (correzione errori):
+// storna il movimento se quell'evento aveva scatenato un pagamento.
+export async function annullaEventoInvestimento(id, squadra, valorePerEvento, etichetta, { ogniNEventi = 1, chiave = 'default' } = {}) {
+  const { data: inv, error } = await supabase.from('investimenti').select('dati, valore_accumulato').eq('id', id).single();
+  if (error) throw error;
+  const dati = inv?.dati || {};
+  const contatori = dati.contatori || {};
+  const eventi = Number(contatori[chiave] || 0);
+  if (eventi <= 0) throw new Error('Nessun evento da annullare.');
+  const eraPagante = eventi % ogniNEventi === 0;
+  const importo = eraPagante ? valorePerEvento : 0;
+  const tracker = Array.isArray(dati.tracker) ? dati.tracker.slice(0, -1) : [];
+  const update = { dati: { ...dati, contatori: { ...contatori, [chiave]: eventi - 1 }, tracker } };
+  if (importo > 0) {
+    update.valore_accumulato = parseFloat((Number(inv.valore_accumulato || 0) - importo).toFixed(2));
+    const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadra).single();
+    await supabase.from('squadre').update({ bilancio: parseFloat((Number(sq?.bilancio || 0) - importo).toFixed(2)) }).eq('name', squadra);
+    await supabase.from('movimenti').insert({ squadra, descrizione: `Storno: ${etichetta} (annullato)`, uscita: importo, data: new Date().toISOString().slice(0, 10) });
+  }
+  const { error: updErr } = await supabase.from('investimenti').update(update).eq('id', id);
+  if (updErr) throw updErr;
+  return { eventi: eventi - 1 };
+}
+
+// Traguardo per giocatore selezionato (es. Scommessa Rendimento, Rientro in
+// Grande, Scouting Estero): toggle raggiunto/non raggiunto, con eventuale
+// importo fisso accreditato/stornato di conseguenza.
+export async function toggleTraguardoInvestimento(id, squadra, chiave, etichetta, raggiunto, valore = 0) {
+  const { data: inv, error } = await supabase.from('investimenti').select('dati, valore_accumulato').eq('id', id).single();
+  if (error) throw error;
+  const dati = inv?.dati || {};
+  const traguardi = dati.traguardi || {};
+  if (!!traguardi[chiave] === raggiunto) return; // già in quello stato, nessuna azione
+  const tracker = Array.isArray(dati.tracker) ? dati.tracker : [];
+  tracker.push({ tipo: 'traguardo', nota: `${etichetta}: ${raggiunto ? 'raggiunto ✓' : 'annullato'}${valore > 0 ? ` (${raggiunto ? '+' : '-'}${valore}M)` : ''}`, data: new Date().toISOString() });
+  const update = { dati: { ...dati, traguardi: { ...traguardi, [chiave]: raggiunto }, tracker } };
+  if (valore > 0) {
+    const delta = raggiunto ? valore : -valore;
+    update.valore_accumulato = parseFloat((Number(inv.valore_accumulato || 0) + delta).toFixed(2));
+    const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadra).single();
+    await supabase.from('squadre').update({ bilancio: parseFloat((Number(sq?.bilancio || 0) + delta).toFixed(2)) }).eq('name', squadra);
+    await supabase.from('movimenti').insert(
+      delta >= 0
+        ? { squadra, descrizione: `Investimento: ${etichetta}`, entrata: Math.abs(delta), data: new Date().toISOString().slice(0, 10) }
+        : { squadra, descrizione: `Storno: ${etichetta}`, uscita: Math.abs(delta), data: new Date().toISOString().slice(0, 10) }
+    );
+  }
+  const { error: updErr } = await supabase.from('investimenti').update(update).eq('id', id);
+  if (updErr) throw updErr;
 }
 
 // ─── SPONSOR ─────────────────────────────────────────────────────────────────
