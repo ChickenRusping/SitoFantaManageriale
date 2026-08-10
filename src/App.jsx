@@ -935,6 +935,8 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
       await logAzione({ utente: 'admin', squadra: editRow.squadra, azione: 'classifica_modifica', entita: 'classifica', descrizione: `Classifica aggiornata: ${editRow.squadra} → Pt:${editRow.pt} PtTot:${editRow.pt_totali}`, dataPrima: { riga: rigaPrima }, dataDopo: { riga: { ...rigaPrima, ...aggiornamenti } }, rollbackPossibile: true });
       setEditRow(null);
       setEditMode(false);
+    } catch(e) {
+      alert(`Errore: ${e.message}`);
     } finally {
       setSaving(false);
     }
@@ -1421,7 +1423,8 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
         await logAzione({ utente: 'admin', squadra, azione: 'classifica_modifica', entita: 'classifica', descrizione: `Classifica: ${squadra}`, dataPrima: { riga: prima }, dataDopo: { riga: { ...prima, ...ag } }, rollbackPossibile: true });
       }
       setShowEditModal(false);
-    } finally { setSaving(false); }
+    } catch(e) { alert(`Errore: ${e.message}`); }
+    finally { setSaving(false); }
   }
   // ── Rose non regolari ────────────────────────────────────────────────────────
   const [roseMap, setRoseMap] = useState({});
@@ -5172,9 +5175,11 @@ function VivaiTab({ team, isAdmin }) {
   async function salvaPresenze(p) {
     const nuove = Math.max(0, parseInt(editPresenze.val, 10) || 0);
     if (isNaN(parseInt(editPresenze.val, 10))) { alert('Inserisci un numero valido.'); return; }
-    await aggiornaPresenzeVivaio(p.id, nuove);
-    setEditPresenze(null);
-    await loadAll();
+    try {
+      await aggiornaPresenzeVivaio(p.id, nuove);
+      setEditPresenze(null);
+      await loadAll();
+    } catch(e) { alert(`Errore: ${e.message}`); }
   }
 
   async function handlePagaVivaio() {
@@ -5568,11 +5573,13 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
     if (!window.confirm(`Eliminare il movimento?\n\n"${mov?.descrizione || ''}"`)) return;
     const rimanenti = movimenti.filter(m => m.id !== id);
     const nuovoBilancio = parseFloat(rimanenti.reduce((s, m) => s + (m.entrata || 0) - (m.uscita || 0), 0).toFixed(2));
-    await updateSquadra(team.name, { bilancio: nuovoBilancio });
-    await deleteMovimento(id);
-    setBilancioLive(nuovoBilancio);
-    cacheInvalidate('movimenti_' + team.name);
-    await loadMovimenti();
+    try {
+      await updateSquadra(team.name, { bilancio: nuovoBilancio });
+      await deleteMovimento(id);
+      setBilancioLive(nuovoBilancio);
+      cacheInvalidate('movimenti_' + team.name);
+      await loadMovimenti();
+    } catch(e) { alert(`Errore: ${e.message}`); }
   }
 
   const tabs = [
@@ -8994,18 +9001,20 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
 
   async function salvaEditSvincol() {
     if (!editSvincolato) return;
-    await updateSvincolatoStats(editSvincolato.id, {
-      partite: Number(editSvincolato.partite||0),
-      media_voto: Number(editSvincolato.media_voto||0),
-      media_fantavoto: Number(editSvincolato.media_fantavoto||0),
-      gol: Number(editSvincolato.gol||0),
-      assist: Number(editSvincolato.assist||0),
-      quot: Number(editSvincolato.quot||0),
-      fuori_lista: Boolean(editSvincolato.fuori_lista),
-    });
-    cacheInvalidate('svincolati_');
-    setEditSvincolato(null);
-    await loadAll();
+    try {
+      await updateSvincolatoStats(editSvincolato.id, {
+        partite: Number(editSvincolato.partite||0),
+        media_voto: Number(editSvincolato.media_voto||0),
+        media_fantavoto: Number(editSvincolato.media_fantavoto||0),
+        gol: Number(editSvincolato.gol||0),
+        assist: Number(editSvincolato.assist||0),
+        quot: Number(editSvincolato.quot||0),
+        fuori_lista: Boolean(editSvincolato.fuori_lista),
+      });
+      cacheInvalidate('svincolati_');
+      setEditSvincolato(null);
+      await loadAll();
+    } catch(e) { alert(`Errore: ${e.message}`); }
   }
 
   // Filtri lista
@@ -9636,34 +9645,38 @@ function ModificaRosePage({ teams, onRefresh, isAdmin = true }) {
 
   async function salvaSquadra() {
     setSaving(true);
-    await updateSquadra(squadraSelezionata, editSquadra);
-    await onRefresh();
-    setSaving(false);
+    try { await updateSquadra(squadraSelezionata, editSquadra); await onRefresh(); }
+    catch(e) { alert(`Errore: ${e.message}`); }
+    finally { setSaving(false); }
   }
 
   async function salvaGiocatore() {
     if (!editGiocatore) return;
-    await updateGiocatore(editGiocatore.id, {
-      nome: editGiocatore.nome, ruolo: editGiocatore.ruolo, anni: editGiocatore.anni,
-      quot: editGiocatore.quot, stip: editGiocatore.stip, clausola: editGiocatore.clausola,
-      squadra_serie_a: editGiocatore.squadra_serie_a,
-    });
-    setEditGiocatore(null);
-    await loadRosa();
+    try {
+      await updateGiocatore(editGiocatore.id, {
+        nome: editGiocatore.nome, ruolo: editGiocatore.ruolo, anni: editGiocatore.anni,
+        quot: editGiocatore.quot, stip: editGiocatore.stip, clausola: editGiocatore.clausola,
+        squadra_serie_a: editGiocatore.squadra_serie_a,
+      });
+      setEditGiocatore(null);
+      await loadRosa();
+    } catch(e) { alert(`Errore: ${e.message}`); }
   }
 
   async function eliminaGiocatore(id) {
     if (!window.confirm("Rimuovere giocatore dalla rosa?")) return;
-    await deleteGiocatore(id);
-    await loadRosa();
+    try { await deleteGiocatore(id); await loadRosa(); }
+    catch(e) { alert(`Errore: ${e.message}`); }
   }
 
   async function aggiungiGiocatore() {
     if (!newPlayer.nome || !newPlayer.ruolo) return;
-    await insertGiocatore({ ...newPlayer, squadra: squadraSelezionata, anni: Number(newPlayer.anni), quot: Number(newPlayer.quot), stip: Number(newPlayer.stip), clausola: Number(newPlayer.clausola) });
-    setShowAddPlayer(false);
-    setNewPlayer({ nome: "", ruolo: "A", anni: "", quot: "", stip: "", clausola: "", squadra_serie_a: "" });
-    await loadRosa();
+    try {
+      await insertGiocatore({ ...newPlayer, squadra: squadraSelezionata, anni: Number(newPlayer.anni), quot: Number(newPlayer.quot), stip: Number(newPlayer.stip), clausola: Number(newPlayer.clausola) });
+      setShowAddPlayer(false);
+      setNewPlayer({ nome: "", ruolo: "A", anni: "", quot: "", stip: "", clausola: "", squadra_serie_a: "" });
+      await loadRosa();
+    } catch(e) { alert(`Errore: ${e.message}`); }
   }
 
   const inp = { padding: "7px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12, width: "100%" };
@@ -9916,8 +9929,8 @@ function PenalitaPage({ isAdmin, teams = [] }) {
 
   async function handleDelete(id) {
     if (!window.confirm("Rimuovere questa penalità?")) return;
-    await deletePenalita(id);
-    await loadAll();
+    try { await deletePenalita(id); await loadAll(); }
+    catch(e) { alert(`Errore: ${e.message}`); }
   }
 
   // Raggruppa per squadra
