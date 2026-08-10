@@ -71,6 +71,7 @@ const CATEGORY_BADGE: Record<string, string> = {
   svincolo:              "━━━  🔓  MERCATO  🔓  ━━━",
   scelta_allenatore:     "━━━  🎓  ALLENATORE  🎓  ━━━",
   investimento_acquistato: "━━━  📈  INVESTIMENTI  📈  ━━━",
+  euro_extra_investiti:  "━━━  💶  BUDGET EXTRA  💶  ━━━",
   movimento_privato:     "━━━  💳  MOVIMENTO  💳  ━━━",
   tassa_applicata:       "━━━  📊  BILANCIO  📊  ━━━",
   stipendi_applicati:    "━━━  💰  STIPENDI  💰  ━━━",
@@ -109,6 +110,9 @@ function buildMessage(type: string, p: Record<string, unknown>): string | null {
 
     case "investimento_acquistato":
       return `${badge}📈 <b>Nuovo investimento!</b>\n\n🏟 <b>${p.squadra}</b>\n💼 ${p.nome} · <b>${p.costo}M</b>${link}`;
+
+    case "euro_extra_investiti":
+      return `${badge}💶 <b>Budget extra investito!</b>\n\n🏟 <b>${p.squadra}</b>\n💰 ${p.euro}€ → <b>+${p.mln}M</b> al bilancio${link}`;
 
     case "trattativa_ricevuta": {
       const bonus = Number(p.bonus || 0);
@@ -269,6 +273,7 @@ serve(async (req) => {
     "svincolo",
     "scelta_allenatore",
     "investimento_acquistato",
+    "euro_extra_investiti",
     "trattativa_accettata",
     "nuova_notizia",
     "scadenza_imminente",
