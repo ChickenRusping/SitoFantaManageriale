@@ -274,27 +274,20 @@ async function assertRosaDopoAggiunta(squadra, nuovoGiocatore, { ignoreMinimi = 
   const totalePrima = rosaAttuale.length;
   const totaleDopo = futura.length;
 
-  const u21Prima = rosaAttuale.filter(p => Number(p.anni || 0) > 0 && Number(p.anni || 0) <= 21).length;
-  const u21Dopo = futura.filter(p => Number(p.anni || 0) > 0 && Number(p.anni || 0) <= 21).length;
-
-  const u21RichiestiPrima = await _getU21RichiestiConDeroga(squadra, totalePrima, new Date());
-  const u21RichiestiDopo = await _getU21RichiestiConDeroga(squadra, totaleDopo, new Date());
-
   const blocchi = [];
 
   // Il tetto di 30 giocatori è sforabile (non blocca più il mercato): resta
   // visibile come irregolarità nella compliance della rosa, ma un'operazione
   // (trattativa, asta, unico interessato) non va più invalidata solo per
   // questo. totaleDopo/totalePrima restano calcolati sopra perché servono
-  // comunque al controllo U21 qui sotto.
+  // comunque al calcolo compliance mostrato altrove.
 
-  // Art. 3.2: blocca se l'operazione crea/peggiora il requisito U21.
-  // Esempio: passare da 27 a 28 senza U21 richiesti può creare una nuova irregolarità.
-  const u21IrregolarePrima = u21Prima < u21RichiestiPrima;
-  const u21IrregolareDopo = u21Dopo < u21RichiestiDopo;
-  if (u21IrregolareDopo && (!u21IrregolarePrima || u21RichiestiDopo > u21RichiestiPrima)) {
-    blocchi.push(`Con ${totaleDopo} giocatori servono almeno ${u21RichiestiDopo} Under-21: presenti ${u21Dopo}.`);
-  }
+  // Art. 3.2 (requisito U21): NON blocca più il mercato/le aste — i paletti
+  // di composizione rosa sono solo un'irregolarità mostrata nella compliance
+  // (vedi calcolaRosaCompliance), mai un impedimento a comprare/vincere un
+  // giocatore. Prima questo controllo scattava a prescindere da ignoreMinimi,
+  // bloccando anche assegnazioni forzate come la rivelazione di un'asta
+  // svincolati, dove non ha senso che l'esito dipenda dai limiti di rosa.
 
   // Art. 3.3: più di 5 giocatori della stessa squadra reale.
   // Questo limite NON blocca il mercato: serve come irregolarità di rosa/formazione,
@@ -5311,6 +5304,28 @@ export async function rivelaECompletaAsta(astaId) {
     throw new Error('Impossibile rivelare ora: ci sono utilizzi del DS Masterclass ancora in coda per questa asta.');
   }
 
+  // Lock atomico: nelle notti con tante aste in scadenza, più tab/presidenti
+  // aperti contemporaneamente facevano scattare checkScadenzeAste quasi nello
+  // stesso istante, ed entrambe le esecuzioni superavano i controlli sopra
+  // prima che una delle due avesse già segnato l'asta come assegnata —
+  // risultato: il giocatore veniva inserito due volte in rosa (e il bilancio
+  // scalato due volte). Questo update riesce per una sola esecuzione: le
+  // altre lo trovano già "preso in carico" e si fermano subito.
+  const { data: lockRows, error: lockErr } = await supabase.from('aste_svincolati')
+    .update({ elaborazione_lock: new Date().toISOString() })
+    .eq('id', astaId).eq('stato', 'raccolta_offerte').is('elaborazione_lock', null)
+    .select('id');
+  // Se la colonna non esiste ancora (migrazione non applicata) o l'update
+  // fallisce per un altro motivo, non blocchiamo: si procede senza lock,
+  // come si faceva prima (nessuna regressione), solo senza la protezione
+  // extra dalla doppia esecuzione.
+  const lockDisponibile = !lockErr;
+  if (lockDisponibile && !lockRows?.length) {
+    throw new Error('Asta già in elaborazione da un altro processo (o già completata).');
+  }
+
+  try {
+
   // Ordine interesse dal timestamp chiamate
   const { data: chiamate } = await supabase.from('chiamate')
     .select('squadra, created_at').eq('giocatore', asta.giocatore)
@@ -5444,6 +5459,17 @@ export async function rivelaECompletaAsta(astaId) {
   }
 
   return { vincitore, prezzoFinale, offerte: tutteOfferte };
+  } catch (e) {
+    // Se qualcosa fallisce dopo aver preso il lock (es. "nessuna offerta
+    // valida", riacquisto non consentito, ecc.) rilascialo: altrimenti
+    // l'asta resterebbe bloccata per sempre e nessun ciclo successivo
+    // potrebbe più riprovare.
+    if (lockDisponibile) {
+      await supabase.from('aste_svincolati').update({ elaborazione_lock: null })
+        .eq('id', astaId).eq('stato', 'raccolta_offerte');
+    }
+    throw e;
+  }
 }
 
 // (La vecchia completaUnicoInteressato — assegnazione istantanea per unico
