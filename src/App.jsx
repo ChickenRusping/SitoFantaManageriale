@@ -4759,6 +4759,24 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
     return map;
   }, [bonusData]);
 
+  // Recap potenziale: solo bonus ancora pendenti (non già completati/predetti
+  // dal valore live), sommati per direzione rispetto a QUESTA squadra —
+  // "acquirente_paga" paga chi ha comprato (trattativa.da_squadra), altrimenti
+  // paga il cedente (trattativa.a_squadra), stessa convenzione usata in
+  // eseguiTrasferimento (src/supabase.js).
+  const bonusRecap = useMemo(() => {
+    let entrata = 0, uscita = 0;
+    for (const { bonus, trattativa, valoreAttuale } of bonusData) {
+      const completato = bonus.completato || (valoreAttuale ?? 0) >= Number(bonus.soglia);
+      if (completato) continue;
+      const squadraPaga = bonus.direzione === 'acquirente_paga' ? trattativa.da_squadra : trattativa.a_squadra;
+      const valore = Number(bonus.valore_mln || 0);
+      if (squadraPaga === team.name) uscita += valore;
+      else entrata += valore;
+    }
+    return { entrata: parseFloat(entrata.toFixed(2)), uscita: parseFloat(uscita.toFixed(2)) };
+  }, [bonusData, team.name]);
+
   return (
     <div style={{ display:"flex",flexDirection:"column",gap:20 }}>
 
@@ -4777,6 +4795,18 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
         loadingBonus?<div style={{ fontSize:12,color:"#555" }}>Caricamento...</div>
         :bonusData.length===0?<div style={{ fontSize:12,color:"#555",fontStyle:"italic",background:"#ffffff06",border:"1px solid #ffffff10",borderRadius:10,padding:"14px" }}>Nessun bonus attivo nelle trattative.</div>
         :<div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+          {(bonusRecap.entrata>0||bonusRecap.uscita>0) && (
+            <div style={{ display:"flex",gap:8,marginBottom:2 }}>
+              <div style={{ flex:1,background:"#10b98110",border:"1px solid #10b98130",borderRadius:10,padding:"8px 12px",textAlign:"center" }}>
+                <div style={{ fontSize:9,color:"#666",letterSpacing:"0.06em" }}>POTENZIALI IN ENTRATA</div>
+                <div style={{ fontSize:15,fontWeight:900,color:"#10b981",fontFamily:"'Bebas Neue',sans-serif" }}>+{bonusRecap.entrata.toFixed(2)}M</div>
+              </div>
+              <div style={{ flex:1,background:"#ef444410",border:"1px solid #ef444430",borderRadius:10,padding:"8px 12px",textAlign:"center" }}>
+                <div style={{ fontSize:9,color:"#666",letterSpacing:"0.06em" }}>POTENZIALI IN USCITA</div>
+                <div style={{ fontSize:15,fontWeight:900,color:"#ef4444",fontFamily:"'Bebas Neue',sans-serif" }}>−{bonusRecap.uscita.toFixed(2)}M</div>
+              </div>
+            </div>
+          )}
           {Object.entries(bonusPerGiocatore).map(([giocatore,items])=>{
             const aperto = bonusGiocatoreAperto === giocatore;
             const tuttiCompletati = items.every(({bonus,valoreAttuale})=>bonus.completato||(valoreAttuale??0)>=Number(bonus.soglia));
