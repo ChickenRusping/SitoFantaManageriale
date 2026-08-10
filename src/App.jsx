@@ -2345,7 +2345,7 @@ Passa all'anno 3.`))return;
     if(!window.confirm(`Promuovere ${p.nome} in rosa?
 Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
     setSaving(true);
-    try{cacheInvalidate('rosa_'+teamName);cacheInvalidate('vivaio_'+teamName);await promuoviDaVivaio(p.id,teamName);await loadAll();}
+    try{cacheInvalidate('rosa_'+teamName);cacheInvalidate('vivaio_'+teamName);await promuoviDaVivaio(p.id,teamName);await loadAll();setPopup(null);}
     catch(e){alert(e.message);}finally{setSaving(false);}
   }
 
@@ -2600,8 +2600,8 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
               )}
               {validazioni.map((v,i)=><div key={i} style={{ fontSize:11,color:v.tipo==='error'?"#ef4444":"#f59e0b" }}>{v.tipo==='error'?"⛔":"⚠️"} {v.testo}</div>)}
               <button onClick={confermaVincolo} disabled={!canConf||saving}
-                style={{ padding:"9px",borderRadius:9,border:"none",background:canConf?"#ef4444":"#333",color:canConf?"#fff":"#555",fontSize:12,fontWeight:700,cursor:canConf?"pointer":"not-allowed" }}>
-                {saving?"...":"✂️ Svincola "+popup.player.nome}
+                style={{ padding:"9px",borderRadius:9,border:"none",background:saving?"#5a1414":canConf?"#ef4444":"#333",color:canConf?"#fff":"#555",fontSize:12,fontWeight:700,cursor:saving?"wait":canConf?"pointer":"not-allowed" }}>
+                {saving?"⏳ Attendere...":"✂️ Svincola "+popup.player.nome}
               </button>
               {(popup.player.anni_contratto||0)===2&&(
                 <div style={{ borderTop:"1px solid #ffffff10",paddingTop:10 }}>
@@ -2610,8 +2610,8 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                     {popup.player.anni<=21?"U21 — nessun aumento":`+20% → ${parseFloat((calcolaStipCorretto(Number(popup.player.quot||0),Number(popup.player.anni_contratto||0),Number(popup.player.anni||0))*1.2).toFixed(2))}M`}
                   </div>
                   <button onClick={()=>handleRinnovo(popup.player)} disabled={saving}
-                    style={{ width:"100%",padding:"8px",borderRadius:8,border:"none",background:"#10b98122",color:"#10b981",fontSize:12,fontWeight:700,cursor:"pointer" }}>
-                    ✓ Rinnova contratto
+                    style={{ width:"100%",padding:"8px",borderRadius:8,border:"none",background:saving?"#0d6b4c":"#10b98122",color:"#10b981",fontSize:12,fontWeight:700,cursor:saving?"wait":"pointer" }}>
+                    {saving ? "⏳ Attendere..." : "✓ Rinnova contratto"}
                   </button>
                 </div>
               )}
@@ -2621,9 +2621,9 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                 if (p.in_vivaio) return (
                   <div style={{ borderTop:"1px solid #ffffff10",paddingTop:10 }}>
                     <div style={{ fontSize:9,color:"#10b981",marginBottom:5 }}>VIVAIO → ROSA</div>
-                    <button onClick={()=>{ handlePromuoviVivaio(p); setPopup(null); }} disabled={saving}
-                      style={{ width:"100%",padding:"8px",borderRadius:8,border:"none",background:"#10b98122",color:"#10b981",fontSize:12,fontWeight:700,cursor:"pointer" }}>
-                      ↑ Promuovi in Rosa
+                    <button onClick={()=>handlePromuoviVivaio(p)} disabled={saving}
+                      style={{ width:"100%",padding:"8px",borderRadius:8,border:"none",background:saving?"#0d6b4c":"#10b98122",color:"#10b981",fontSize:12,fontWeight:700,cursor:saving?"wait":"pointer" }}>
+                      {saving ? "⏳ Attendere..." : "↑ Promuovi in Rosa"}
                     </button>
                   </div>
                 );
@@ -2634,8 +2634,8 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                     <div style={{ fontSize:9,color:"#6366f1",marginBottom:5 }}>ROSA → VIVAIO</div>
                     <div style={{ fontSize:10,color:"#555",marginBottom:6 }}>Under-23 · Q≤3 · 0 presenze · slot vivaio: {vivaio.length}/{maxVivaio}</div>
                     <button onClick={()=>handleDemoteToVivaio(p)} disabled={saving}
-                      style={{ width:"100%",padding:"8px",borderRadius:8,border:"none",background:"#6366f115",color:"#818cf8",fontSize:12,fontWeight:700,cursor:"pointer" }}>
-                      ↓ Sposta al Vivaio
+                      style={{ width:"100%",padding:"8px",borderRadius:8,border:"none",background:saving?"#2a2f6b":"#6366f115",color:"#818cf8",fontSize:12,fontWeight:700,cursor:saving?"wait":"pointer" }}>
+                      {saving ? "⏳ Attendere..." : "↓ Sposta al Vivaio"}
                     </button>
                   </div>
                 );
@@ -2691,7 +2691,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                 {canEdit&&(
                   <div style={{ display:"flex",gap:5 }}>
                     <button onClick={()=>handlePromuoviVivaio(p)} disabled={saving} style={{ padding:"4px 10px",borderRadius:6,border:"none",background:"#10b98122",color:"#10b981",fontSize:10,fontWeight:700,cursor:"pointer" }}>↑ Promuovi</button>
-                    <button onClick={()=>handleSvincolaVivaio(p)} disabled={saving} style={{ padding:"4px 10px",borderRadius:6,border:"none",background:"#ffffff10",color:"#888",fontSize:10,cursor:"pointer" }}>Svincola</button>
+                    <button onClick={()=>handleSvincolaVivaio(p)} disabled={saving} style={{ padding:"4px 10px",borderRadius:6,border:"none",background:"#ffffff10",color:"#888",fontSize:10,cursor:saving?"wait":"pointer" }}>{saving?"⏳...":"Svincola"}</button>
                   </div>
                 )}
               </div>
@@ -4548,7 +4548,7 @@ function AltroTab({ team, isAdmin, mySquadra }) {
   async function handleScegli(nome) {
     if (!window.confirm(`Scegli ${nome}? Costo: 5M`)) return;
     setSavingAll(true);
-    try { const {data:sq}=await supabase.from('squadre').select('bilancio').eq('name',team.name).single(); await scegliAllenatore(team.name,nome,sq?.bilancio||0); await loadAll(); }
+    try { const {data:sq}=await supabase.from('squadre').select('bilancio').eq('name',team.name).single(); await scegliAllenatore(team.name,nome,sq?.bilancio||0); await loadAll(); setCoachPreview(null); }
     catch(e){alert(e.message);} finally{setSavingAll(false);}
   }
 
@@ -4604,7 +4604,13 @@ Gli obiettivi verranno azzerati.`;
     catch(e){ alert(e.message); }
     finally { setSavingAll(false); }
   }
-  async function salvaProgrObj(obId) { if (!canManageObiettivi) return; await upsertProgresso(team.name,obId,{valore_attuale:parseFloat(editVal)||0},STAGIONE_CORRENTE); setEditId(null); await loadAll(); }
+  async function salvaProgrObj(obId) {
+    if (!canManageObiettivi) return;
+    setSavingAll(true);
+    try { await upsertProgresso(team.name,obId,{valore_attuale:parseFloat(editVal)||0},STAGIONE_CORRENTE); setEditId(null); await loadAll(); }
+    catch(e){ alert(`Errore: ${e.message}`); }
+    finally { setSavingAll(false); }
+  }
   async function salvaModuloTracker() {
     if (!canManageObiettivi) return;
     if (!giornataModulo || !moduloScelto) return;
@@ -4896,8 +4902,8 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                               {canManageObiettivi && editId===ob.id?(
                                 <div style={{ display:"flex",gap:4 }}>
                                   <input style={{ padding:"2px 6px",borderRadius:5,border:"1px solid #ffffff18",background:"#0d0f14",color:"#f0f0f0",fontSize:11,width:60 }} type="number" value={editVal} onChange={e=>setEditVal(e.target.value)}/>
-                                  <button onClick={()=>salvaProgrObj(ob.id)} style={{ padding:"2px 8px",borderRadius:5,border:"none",background:"#10b98122",color:"#10b981",fontSize:10,cursor:"pointer" }}>✓</button>
-                                  <button onClick={()=>setEditId(null)} style={{ padding:"2px 6px",borderRadius:5,border:"none",background:"#ffffff10",color:"#888",fontSize:10,cursor:"pointer" }}>✕</button>
+                                  <button onClick={()=>salvaProgrObj(ob.id)} disabled={savingAll} style={{ padding:"2px 8px",borderRadius:5,border:"none",background:savingAll?"#0d6b4c":"#10b98122",color:"#10b981",fontSize:10,cursor:savingAll?"wait":"pointer" }}>{savingAll?"⏳":"✓"}</button>
+                                  <button onClick={()=>setEditId(null)} disabled={savingAll} style={{ padding:"2px 6px",borderRadius:5,border:"none",background:"#ffffff10",color:"#888",fontSize:10,cursor:"pointer" }}>✕</button>
                                 </div>
                               ):canManageObiettivi?(
                                 <button onClick={()=>{setEditId(ob.id);setEditVal(pg?.valore_attuale||0);}} style={{ padding:"2px 8px",borderRadius:5,border:"1px solid #ffffff15",background:"transparent",color:"#666",fontSize:10,cursor:"pointer" }}>
@@ -4978,9 +4984,9 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                       <div style={{ color:"#555",fontSize:12 }}>Obiettivi non disponibili.</div>
                     )}
                     {canManageObiettivi && disp && (
-                      <button onClick={()=>{ setCoachPreview(null); handleScegli(coachPreview); }} disabled={savingAll}
-                        style={{ width:"100%",padding:"10px",borderRadius:10,border:"1.5px solid #6366f150",background:"#6366f120",color:"#818cf8",fontSize:13,fontWeight:800,cursor:"pointer" }}>
-                        Scegli {coachPreview} — 5M
+                      <button onClick={()=>handleScegli(coachPreview)} disabled={savingAll}
+                        style={{ width:"100%",padding:"10px",borderRadius:10,border:"1.5px solid #6366f150",background:savingAll?"#2a2f6b":"#6366f120",color:"#818cf8",fontSize:13,fontWeight:800,cursor:savingAll?"wait":"pointer" }}>
+                        {savingAll ? "⏳ Attendere..." : `Scegli ${coachPreview} — 5M`}
                       </button>
                     )}
                   </div>
@@ -5001,7 +5007,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                     </div>
                     <div style={{ display:"flex",gap:6,alignItems:"center" }}>
                       <span style={{ fontSize:10,color:"#555" }}>📋 Dettagli</span>
-                      {canManageObiettivi&&disp&&<button onClick={e=>{e.stopPropagation();handleScegli(all.nome);}} disabled={savingAll} style={{ padding:"5px 12px",borderRadius:7,border:"none",background:"#6366f122",color:"#818cf8",fontSize:11,fontWeight:700,cursor:"pointer" }}>Scegli −5M</button>}
+                      {canManageObiettivi&&disp&&<button onClick={e=>{e.stopPropagation();handleScegli(all.nome);}} disabled={savingAll} style={{ padding:"5px 12px",borderRadius:7,border:"none",background:savingAll?"#2a2f6b":"#6366f122",color:"#818cf8",fontSize:11,fontWeight:700,cursor:savingAll?"wait":"pointer" }}>{savingAll?"⏳...":"Scegli −5M"}</button>}
                     </div>
                   </div>
                 </div>
@@ -5078,7 +5084,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                       </div>
                       <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                         <Badge color={ccol[item.categoria]||"#888"}>−{item.costo}M</Badge>
-                        {!già&&<button onClick={()=>handleAcquista(item)} disabled={savingInv||totInv+item.costo>30} style={{ padding:"4px 10px",borderRadius:7,border:"none",background:"#6366f122",color:"#818cf8",fontSize:10,fontWeight:700,cursor:"pointer" }}>Acquista</button>}
+                        {!già&&<button onClick={()=>handleAcquista(item)} disabled={savingInv||totInv+item.costo>30} style={{ padding:"4px 10px",borderRadius:7,border:"none",background:savingInv?"#2a2f6b":"#6366f122",color:"#818cf8",fontSize:10,fontWeight:700,cursor:savingInv?"wait":"pointer" }}>{savingInv?"⏳ Attendere...":"Acquista"}</button>}
                       </div>
                     </div>
                   );
@@ -7190,8 +7196,9 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                   <span style={{ fontSize: 12, color: "#ddd" }}>{t.giocatore} · {t.a_squadra} → {t.da_squadra} · {t.prezzo}M</span>
                   {isAdmin && getMercatoStatus().aperto && (
                     <button onClick={async () => { setLoading(true); try { await eseguiTrasferimento(t); await aggiornaFantaSquadraListone(t.giocatore, t.da_squadra); await aggiornaStipendioDopoTrasferimento(t.giocatore, t.da_squadra); await loadAll(); } catch(e){alert(e.message);} finally{setLoading(false);} }}
-                      style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "#f9731622", color: "#f97316", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                      ▶ Esegui
+                      disabled={loading}
+                      style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: loading ? "#7a3b0f" : "#f9731622", color: "#f97316", fontSize: 10, fontWeight: 700, cursor: loading ? "wait" : "pointer" }}>
+                      {loading ? "⏳ Attendere..." : "▶ Esegui"}
                     </button>
                   )}
                 </div>
@@ -8426,8 +8433,8 @@ function OffertaInlineForm({ asta, squadra, onRefresh, dsMasterclass }) {
             </span>
           ) : puoUsareMasterclass ? (
             <button onClick={usaMasterclass} disabled={attivando}
-              style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid #f59e0b40", background: "#f59e0b12", color: "#f59e0b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-              {attivando ? "..." : `🔍 DS Masterclass (${utilizziRimasti}/2 rimasti)`}
+              style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid #f59e0b40", background: attivando ? "#7a5a0f" : "#f59e0b12", color: "#f59e0b", fontSize: 11, fontWeight: 700, cursor: attivando ? "wait" : "pointer" }}>
+              {attivando ? "⏳ Attendere..." : `🔍 DS Masterclass (${utilizziRimasti}/2 rimasti)`}
             </button>
           ) : utilizziRimasti <= 0 ? (
             <span style={{ fontSize: 10, color: "#555" }}>🔍 DS Masterclass esaurito (0/2 rimasti)</span>
@@ -11488,12 +11495,12 @@ function AdminControlRoomPage({ teams }) {
                       </div>
                       <div style={{ display:'flex', gap:6 }}>
                         <button onClick={() => gestisciDirittoScaduto(item, 'riscatto')} disabled={gestendoDiritto === item.player.id}
-                          style={{ padding:'6px 12px', borderRadius:8, border:'none', background:'#10b981', color:'#fff', fontSize:11, fontWeight:700, cursor:'pointer' }}>
-                          {gestendoDiritto === item.player.id ? '...' : `✓ Riscatta (${item.prezzo}M)`}
+                          style={{ padding:'6px 12px', borderRadius:8, border:'none', background: gestendoDiritto === item.player.id ? '#0d6b4c' : '#10b981', color:'#fff', fontSize:11, fontWeight:700, cursor: gestendoDiritto === item.player.id ? 'wait' : 'pointer' }}>
+                          {gestendoDiritto === item.player.id ? '⏳ Attendere...' : `✓ Riscatta (${item.prezzo}M)`}
                         </button>
                         <button onClick={() => gestisciDirittoScaduto(item, 'rientro')} disabled={gestendoDiritto === item.player.id}
-                          style={{ padding:'6px 12px', borderRadius:8, border:'1px solid #6366f1aa', background:'#6366f118', color:'#818cf8', fontSize:11, fontWeight:700, cursor:'pointer' }}>
-                          {gestendoDiritto === item.player.id ? '...' : '↩ Fai rientrare'}
+                          style={{ padding:'6px 12px', borderRadius:8, border:'1px solid #6366f1aa', background: gestendoDiritto === item.player.id ? '#2a2f6b' : '#6366f118', color:'#818cf8', fontSize:11, fontWeight:700, cursor: gestendoDiritto === item.player.id ? 'wait' : 'pointer' }}>
+                          {gestendoDiritto === item.player.id ? '⏳ Attendere...' : '↩ Fai rientrare'}
                         </button>
                       </div>
                     </div>
