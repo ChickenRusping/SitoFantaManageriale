@@ -349,7 +349,7 @@ export async function impostaCedibile(giocatoreId, stato, richiesta = null) {
 
 export async function getGiocatoriCedibili() {
   const { data, error } = await supabase.from('rosa')
-    .select('id, nome, squadra, ruolo, anni, quot, cedibile_stato, cedibile_richiesta')
+    .select('id, nome, squadra, ruolo, anni, quot, stip, clausola, squadra_serie_a, cedibile_stato, cedibile_richiesta')
     .not('cedibile_stato', 'is', null).eq('in_vivaio', false)
     .order('squadra', { ascending: true }).order('nome', { ascending: true });
   if (error) return [];

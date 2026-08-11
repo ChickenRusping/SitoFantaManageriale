@@ -2397,7 +2397,16 @@ Passa all'anno 3.`))return;
 
   async function handleSalvaCedibile(player) {
     setSaving(true);
-    try { await impostaCedibile(player.id, cedibileStato || null, cedibileRichiesta); await loadAll(); setPopup(null); }
+    try {
+      await impostaCedibile(player.id, cedibileStato || null, cedibileRichiesta);
+      // Senza invalidare la cache, loadAll() rileggerebbe la rosa dalla cache
+      // (fino a 10 minuti) e il badge non comparirebbe finché non scade da
+      // sola — stesso pattern già usato altrove per rendere immediati i
+      // cambi di rosa (vedi handlePromuoviVivaio ecc.).
+      cacheInvalidate('rosa_' + teamName);
+      await loadAll();
+      setPopup(null);
+    }
     catch(e){ alert(`Errore: ${e.message}`); }
     finally { setSaving(false); }
   }
@@ -6679,6 +6688,31 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     setLoadingCedibili(false);
   }, []);
   useEffect(() => { loadCedibili(); }, [loadCedibili]);
+  const [cedSearch, setCedSearch] = useState("");
+  const [cedFilterSquadra, setCedFilterSquadra] = useState("tutte");
+  const [cedFilterRuolo, setCedFilterRuolo] = useState("tutti");
+  const [cedFilterTipo, setCedFilterTipo] = useState("tutti");
+  const [cedSort, setCedSort] = useState({ key: "squadra", dir: 1 });
+  const cedSquadreDisponibili = useMemo(() => [...new Set(cedibili.map(p => p.squadra))].sort(), [cedibili]);
+  const cedRuoliDisponibili = useMemo(() => [...new Set(cedibili.map(p => p.ruolo))].sort(), [cedibili]);
+  function toggleCedSort(key) {
+    setCedSort(s => s.key === key ? { key, dir: -s.dir } : { key, dir: 1 });
+  }
+  const cedibiliFiltrati = useMemo(() => {
+    let list = cedibili.filter(p =>
+      (cedFilterSquadra === "tutte" || p.squadra === cedFilterSquadra) &&
+      (cedFilterRuolo === "tutti" || p.ruolo === cedFilterRuolo) &&
+      (cedFilterTipo === "tutti" || p.cedibile_stato === cedFilterTipo) &&
+      (!cedSearch || p.nome.toLowerCase().includes(cedSearch.toLowerCase()))
+    );
+    const { key, dir } = cedSort;
+    list = [...list].sort((a, b) => {
+      const va = a[key], vb = b[key];
+      if (typeof va === "number" || typeof vb === "number") return (Number(va || 0) - Number(vb || 0)) * dir;
+      return String(va || "").localeCompare(String(vb || "")) * dir;
+    });
+    return list;
+  }, [cedibili, cedSearch, cedFilterSquadra, cedFilterRuolo, cedFilterTipo, cedSort]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showAstaForm, setShowAstaForm] = useState(false);
@@ -7440,7 +7474,6 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
             style={{ padding:"8px 20px",borderRadius:9,border:"none",background:mercatoSection===k?kcolor:"transparent",color:mercatoSection===k?"#fff":"#666",fontSize:13,fontWeight:700,cursor:"pointer",transition:"all 0.15s" }}>
             {l}
             {k==="svincolati" && svincoliOffertePendenti>0 && <span style={{ background:"#ef4444",color:"#fff",borderRadius:"50%",padding:"1px 6px",fontSize:9,marginLeft:5,fontWeight:900 }}>{svincoliOffertePendenti}</span>}
-            {k==="trasferimenti" && cedibili.length>0 && <span style={{ background:"#f59e0b",color:"#000",borderRadius:"50%",padding:"1px 6px",fontSize:9,marginLeft:5,fontWeight:900 }}>{cedibili.length}</span>}
           </button>
           );
         })}
@@ -7449,7 +7482,13 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       {mercatoSection === "svincolati" && <SvincolatiPage profile={profile} isAdmin={isAdmin} teams={teams} />}
       {mercatoSection === "listone" && <ListonePage teams={teams} profile={profile} />}
 
-      {mercatoSection === "trasferimenti" && (
+      {mercatoSection === "trasferimenti" && (() => {
+        const TH = ({ col, label }) => (
+          <th onClick={() => toggleCedSort(col)} style={{ padding:"8px 6px", textAlign:"left", cursor:"pointer", userSelect:"none", color: cedSort.key===col?"#f59e0b":"#888", fontSize:10, letterSpacing:"0.05em", whiteSpace:"nowrap" }}>
+            {label} {cedSort.key===col ? (cedSort.dir===1?"▲":"▼") : ""}
+          </th>
+        );
+        return (
         <div>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8, marginBottom:14 }}>
             <div>
@@ -7458,27 +7497,74 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
             </div>
             <button onClick={loadCedibili} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #f59e0b30", background: "#f59e0b10", color: "#f59e0b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>🔄 Aggiorna</button>
           </div>
+
+          {/* Filtri */}
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:14 }}>
+            <input type="text" placeholder="🔍 Cerca giocatore..." value={cedSearch} onChange={e=>setCedSearch(e.target.value)} style={{ ...inp, width:180 }} />
+            <select value={cedFilterSquadra} onChange={e=>setCedFilterSquadra(e.target.value)} style={{ ...sel, width:170 }}>
+              <option value="tutte">Tutte le squadre</option>
+              {cedSquadreDisponibili.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <select value={cedFilterRuolo} onChange={e=>setCedFilterRuolo(e.target.value)} style={{ ...sel, width:110 }}>
+              <option value="tutti">Tutti i ruoli</option>
+              {cedRuoliDisponibili.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+            <select value={cedFilterTipo} onChange={e=>setCedFilterTipo(e.target.value)} style={{ ...sel, width:220 }}>
+              <option value="tutti">Tutti i tipi</option>
+              <option value="cedibile">Cedibile</option>
+              <option value="cedibile_prestito">Cedibile (solo in prestito)</option>
+              <option value="cedibile_definitivo">Cedibile (solo a titolo definitivo)</option>
+            </select>
+          </div>
+
           {loadingCedibili ? <div style={{ fontSize: 12, color: "#555" }}>Caricamento...</div>
           : cedibili.length === 0 ? <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", background:"#ffffff06", border:"1px solid #ffffff10", borderRadius:10, padding:"14px" }}>Nessun giocatore in lista trasferimenti al momento.</div>
-          : <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {cedibili.map(p => {
-              const team = teams.find(t => t.name === p.squadra);
-              return (
-                <div key={p.id} onClick={() => navigate(`/mercato?player=${encodeURIComponent(p.nome)}&squadra=${encodeURIComponent(p.squadra)}&tipo=cessione&quot=${p.quot}`)}
-                  style={{ display: "flex", alignItems: "center", gap: 10, background: "#ffffff08", border:"1px solid #ffffff10", borderRadius: 12, padding: "10px 14px", cursor: "pointer", flexWrap: "wrap" }}>
-                  {team && <TeamAvatar team={team} size={26} />}
-                  <div style={{ flex: 1, minWidth: 140 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#818cf8", textDecoration: "underline" }}>{p.nome}</span>
-                    <span style={{ fontSize: 10, color: "#666", marginLeft: 6 }}>{p.ruolo} · {p.anni}aa · Q{p.quot} · {p.squadra}</span>
-                  </div>
-                  <CedibileBadge stato={p.cedibile_stato} />
-                  {p.cedibile_richiesta && <span style={{ fontSize: 10, color: "#aaa", fontStyle: "italic" }}>💬 {p.cedibile_richiesta}</span>}
-                </div>
-              );
-            })}
+          : cedibiliFiltrati.length === 0 ? <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", background:"#ffffff06", border:"1px solid #ffffff10", borderRadius:10, padding:"14px" }}>Nessun giocatore corrisponde ai filtri.</div>
+          : <div style={{ overflowX:"auto" }}>
+            <table style={{ width:"100%", borderCollapse:"collapse" }}>
+              <thead>
+                <tr style={{ borderBottom:"1px solid #ffffff15" }}>
+                  <TH col="squadra" label="SQUADRA" />
+                  <TH col="nome" label="GIOCATORE" />
+                  <TH col="ruolo" label="R" />
+                  <TH col="anni" label="ETÀ" />
+                  <TH col="quot" label="QUOT." />
+                  <TH col="stip" label="STIP." />
+                  <TH col="clausola" label="CLAUSOLA" />
+                  <th style={{ padding:"8px 6px", textAlign:"left", fontSize:10, color:"#888" }}>TIPO</th>
+                  <th style={{ padding:"8px 6px", textAlign:"left", fontSize:10, color:"#888" }}>RICHIESTA</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cedibiliFiltrati.map(p => {
+                  const team = teams.find(t => t.name === p.squadra);
+                  return (
+                    <tr key={p.id} onClick={() => navigate(`/mercato?player=${encodeURIComponent(p.nome)}&squadra=${encodeURIComponent(p.squadra)}&tipo=cessione&quot=${p.quot}`)}
+                      style={{ borderBottom:"1px solid #ffffff08", cursor:"pointer" }}
+                      onMouseEnter={e=>e.currentTarget.style.background="#ffffff08"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                      <td style={{ padding:"8px 6px" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                          {team && <TeamAvatar team={team} size={20} />}
+                          <span style={{ fontSize:11, color:"#aaa" }}>{p.squadra}</span>
+                        </div>
+                      </td>
+                      <td style={{ padding:"8px 6px", fontSize:12, fontWeight:700, color:"#818cf8", textDecoration:"underline" }}>{p.nome}</td>
+                      <td style={{ padding:"8px 6px", fontSize:11, color:"#888" }}>{p.ruolo}</td>
+                      <td style={{ padding:"8px 6px", fontSize:11, color:"#888" }}>{p.anni}</td>
+                      <td style={{ padding:"8px 6px", fontSize:11, color:"#f59e0b", fontWeight:700 }}>{p.quot}</td>
+                      <td style={{ padding:"8px 6px", fontSize:11, color:"#888" }}>{Number(p.stip||0).toFixed(2)}M</td>
+                      <td style={{ padding:"8px 6px", fontSize:11, color:"#888" }}>{Number(p.clausola||0).toFixed(2)}M</td>
+                      <td style={{ padding:"8px 6px" }}><CedibileBadge stato={p.cedibile_stato} /></td>
+                      <td style={{ padding:"8px 6px", fontSize:10, color:"#aaa", fontStyle:"italic" }}>{p.cedibile_richiesta ? `💬 ${p.cedibile_richiesta}` : "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>}
         </div>
-      )}
+        );
+      })()}
 
       {mercatoSection === "mercato" && <>
 
