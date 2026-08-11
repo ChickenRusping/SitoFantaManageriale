@@ -260,6 +260,28 @@ function useSortableTable(data, defaultKey, defaultDir = "asc") {
 
 /* ─── SHARED UI ─────────────────────────────────────────────────────────────── */
 // Calcola lo stipendio corretto in base a quotazione, anno contratto ed età (art. 4.8 + 4.8.1)
+// Genera e scarica un CSV a partire da un array di oggetti {colonna: valore}.
+// BOM iniziale per aprire correttamente accenti/euro in Excel.
+function scaricaSnapshotCSV(righe) {
+  const headers = ['data','presidente','bilancio','salary_cap_usato','salary_cap_libero','fpf','rosa_totale','under21','over31','violazioni'];
+  const escape = (v) => {
+    const s = String(v ?? '');
+    return /[",\n;]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+  };
+  const lines = [headers.join(',')];
+  for (const r of righe) lines.push(headers.map(h => escape(r[h])).join(','));
+  const csv = '\uFEFF' + lines.join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `snapshot_squadre_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function calcolaStipCorretto(quot, anniContratto, anni) {
   const base = parseFloat((Number(quot || 0) / 5).toFixed(2));
   const isU21 = anni > 0 && anni <= 21;
@@ -1450,6 +1472,54 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
   const complianceMap = {};
   Object.entries(roseMap).forEach(([name, players]) => { complianceMap[name] = checkRosaCompliance(players); });
   const roseIrregolari = Object.entries(complianceMap).filter(([, c]) => !c.regolare);
+
+  // ── Export CSV snapshot squadre (bilancio/SC/FPF/rosa/violazioni) ──────────
+  // Riusa esattamente le stesse funzioni/formule già mostrate in app (stessa
+  // fonte di verità di FinanzeTab per il salary cap, stessa getFpfTutteSquadre
+  // per l'FPF, stesso checkRosaCompliance per le violazioni) invece di
+  // ricalcolare la logica altrove: numeri garantiti identici a quelli visibili
+  // nell'app.
+  const [exportingCSV, setExportingCSV] = useState(false);
+  async function handleExportCSV() {
+    setExportingCSV(true);
+    try {
+      const oggi = new Date().toISOString().slice(0,10);
+      const righe = [];
+      for (const t of teams) {
+        const players = roseMap[t.name] || [];
+        const rosaAttiva = players.filter(p => !p.in_vivaio);
+        const rosaTotale = rosaAttiva.length;
+        const under21 = rosaAttiva.filter(p => Number(p.anni||0) > 0 && Number(p.anni||0) <= 21).length;
+        const over31 = rosaAttiva.filter(p => Number(p.anni||0) >= 31).length;
+
+        const scRosa = rosaAttiva.reduce((s,p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
+        const [scAllenatore, effetti] = await Promise.all([
+          getSCAllenatore(t.name),
+          getEffettiInvestimenti(t.name),
+        ]);
+        const salaryCapUsato = parseFloat((scRosa + Number(scAllenatore||0)).toFixed(2));
+        const salaryCapLimite = 75 + Number(t.scBonusObiettivi||0) + Number(effetti?.scBonusInvestimenti||0);
+        const salaryCapLibero = parseFloat((salaryCapLimite - salaryCapUsato).toFixed(2));
+
+        const compliance = checkRosaCompliance(players);
+        const violazioni = compliance.issues.map(i => i.testo).join(' | ');
+
+        righe.push({
+          data: oggi,
+          presidente: t.name,
+          bilancio: Number(t.bilancio||0).toFixed(2),
+          salary_cap_usato: salaryCapUsato.toFixed(2),
+          salary_cap_libero: salaryCapLibero.toFixed(2),
+          fpf: Number(t.fpf ?? 0).toFixed(2),
+          rosa_totale: rosaTotale,
+          under21,
+          violazioni,
+        });
+      }
+      scaricaSnapshotCSV(righe);
+    } catch(e) { alert(`Errore export: ${e.message}`); }
+    finally { setExportingCSV(false); }
+  }
   // ── Deadline ─────────────────────────────────────────────────────────────────
   const [nowD, setNowD] = useState(new Date());
   useEffect(() => { const t = setInterval(() => setNowD(new Date()), 600000); return () => clearInterval(t); }, []);
@@ -1700,8 +1770,16 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
 
       {/* ── 4. ROSE NON REGOLARI ── */}
       <div style={{ background: roseIrregolari.length>0?"#ef444408":"#ffffff06", border:`1.5px solid ${roseIrregolari.length>0?"#ef444430":"#ffffff12"}`, borderRadius:16, padding:18 }}>
-        <div style={{ fontSize:11, fontWeight:700, color:roseIrregolari.length>0?"#ef4444":"#10b981", letterSpacing:"0.1em", marginBottom:roseIrregolari.length>0?14:0 }}>
-          {roseIrregolari.length>0?"❌ ROSE NON REGOLARI":"✅ TUTTE LE ROSE REGOLARI"}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8, marginBottom:roseIrregolari.length>0?14:(isAdmin?10:0) }}>
+          <div style={{ fontSize:11, fontWeight:700, color:roseIrregolari.length>0?"#ef4444":"#10b981", letterSpacing:"0.1em" }}>
+            {roseIrregolari.length>0?"❌ ROSE NON REGOLARI":"✅ TUTTE LE ROSE REGOLARI"}
+          </div>
+          {isAdmin && (
+            <button onClick={handleExportCSV} disabled={exportingCSV}
+              style={{ padding:"6px 14px", borderRadius:8, border:"1px solid #6366f140", background:exportingCSV?"#2a2f6b":"#6366f118", color:"#818cf8", fontSize:11, fontWeight:700, cursor:exportingCSV?"wait":"pointer" }}>
+              {exportingCSV?"⏳ Attendere...":"📥 Esporta CSV squadre"}
+            </button>
+          )}
         </div>
         {roseIrregolari.map(([name, comp]) => {
           const team = teams.find(t=>t.name===name);
