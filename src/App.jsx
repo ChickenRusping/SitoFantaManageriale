@@ -6664,7 +6664,6 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const [aste, setAste] = useState([]);
   const [asteSvinc, setAsteSvinc] = useState([]);
   const [cedibili, setCedibili] = useState([]);
-  const [cedibiliOpen, setCedibiliOpen] = useState(true);
   const [loadingCedibili, setLoadingCedibili] = useState(true);
   const loadCedibili = useCallback(async () => {
     setLoadingCedibili(true);
@@ -7427,17 +7426,53 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
       {/* ── Switcher Mercato / Svincolati ── */}
       <div style={{ display:"flex",gap:0,background:"#ffffff08",borderRadius:12,padding:4,alignSelf:"flex-start" }}>
-        {[["mercato","🤝 Mercato"],["svincolati","🔍 Svincolati"],["listone","📋 Listone"]].map(([k,l])=>(
+        {[["mercato","🤝 Mercato"],["trasferimenti","🏷️ Lista Trasferimenti"],["svincolati","🔍 Svincolati"],["listone","📋 Listone"]].map(([k,l])=>{
+          const kcolor = k==="mercato"?"#6366f1":k==="trasferimenti"?"#f59e0b":k==="svincolati"?"#10b981":"#f59e0b";
+          return (
           <button key={k} onClick={()=>setMercatoSection(k)}
-            style={{ padding:"8px 20px",borderRadius:9,border:"none",background:mercatoSection===k?(k==="mercato"?"#6366f1":k==="svincolati"?"#10b981":"#f59e0b"):"transparent",color:mercatoSection===k?"#fff":"#666",fontSize:13,fontWeight:700,cursor:"pointer",transition:"all 0.15s" }}>
+            style={{ padding:"8px 20px",borderRadius:9,border:"none",background:mercatoSection===k?kcolor:"transparent",color:mercatoSection===k?"#fff":"#666",fontSize:13,fontWeight:700,cursor:"pointer",transition:"all 0.15s" }}>
             {l}
             {k==="svincolati" && svincoliOffertePendenti>0 && <span style={{ background:"#ef4444",color:"#fff",borderRadius:"50%",padding:"1px 6px",fontSize:9,marginLeft:5,fontWeight:900 }}>{svincoliOffertePendenti}</span>}
+            {k==="trasferimenti" && cedibili.length>0 && <span style={{ background:"#f59e0b",color:"#000",borderRadius:"50%",padding:"1px 6px",fontSize:9,marginLeft:5,fontWeight:900 }}>{cedibili.length}</span>}
           </button>
-        ))}
+          );
+        })}
       </div>
 
       {mercatoSection === "svincolati" && <SvincolatiPage profile={profile} isAdmin={isAdmin} teams={teams} />}
       {mercatoSection === "listone" && <ListonePage teams={teams} profile={profile} />}
+
+      {mercatoSection === "trasferimenti" && (
+        <div>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8, marginBottom:14 }}>
+            <div>
+              <h1 style={{ fontSize: 20, fontWeight: 900, color: "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "1px" }}>🏷️ LISTA TRASFERIMENTI</h1>
+              <p style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Giocatori dichiarati cedibili dai presidenti — puramente informativo, nessuna regola collegata.</p>
+            </div>
+            <button onClick={loadCedibili} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #f59e0b30", background: "#f59e0b10", color: "#f59e0b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>🔄 Aggiorna</button>
+          </div>
+          {loadingCedibili ? <div style={{ fontSize: 12, color: "#555" }}>Caricamento...</div>
+          : cedibili.length === 0 ? <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", background:"#ffffff06", border:"1px solid #ffffff10", borderRadius:10, padding:"14px" }}>Nessun giocatore in lista trasferimenti al momento.</div>
+          : <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {cedibili.map(p => {
+              const team = teams.find(t => t.name === p.squadra);
+              return (
+                <div key={p.id} onClick={() => navigate(`/mercato?player=${encodeURIComponent(p.nome)}&squadra=${encodeURIComponent(p.squadra)}&tipo=cessione&quot=${p.quot}`)}
+                  style={{ display: "flex", alignItems: "center", gap: 10, background: "#ffffff08", border:"1px solid #ffffff10", borderRadius: 12, padding: "10px 14px", cursor: "pointer", flexWrap: "wrap" }}>
+                  {team && <TeamAvatar team={team} size={26} />}
+                  <div style={{ flex: 1, minWidth: 140 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#818cf8", textDecoration: "underline" }}>{p.nome}</span>
+                    <span style={{ fontSize: 10, color: "#666", marginLeft: 6 }}>{p.ruolo} · {p.anni}aa · Q{p.quot} · {p.squadra}</span>
+                  </div>
+                  <CedibileBadge stato={p.cedibile_stato} />
+                  {p.cedibile_richiesta && <span style={{ fontSize: 10, color: "#aaa", fontStyle: "italic" }}>💬 {p.cedibile_richiesta}</span>}
+                </div>
+              );
+            })}
+          </div>}
+        </div>
+      )}
+
       {mercatoSection === "mercato" && <>
 
       {/* Banner notifiche offerte in attesa */}
@@ -7468,41 +7503,6 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
           <div style={{ fontSize: 9, color: "#555", marginTop: 2 }}>Penalità art. 5.3: 1M dopo 24h · 3M dopo 48h · 5M dopo 72h · acquisto forzato a ½Q dopo 96h</div>
         </div>
       )}
-
-      {/* ── LISTA TRASFERIMENTI (badge "cedibile", puramente informativo) ── */}
-      <div style={{ background: "#f59e0b08", border: "1.5px solid #f59e0b25", borderRadius: 16, padding: 18 }}>
-        <div onClick={() => setCedibiliOpen(v => !v)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", marginBottom: cedibiliOpen ? 12 : 0, userSelect: "none" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", letterSpacing: "0.1em", display: "flex", alignItems: "center", gap: 8 }}>
-            🏷️ LISTA TRASFERIMENTI
-            {cedibili.length > 0 && <span style={{ fontSize: 9, color: "#f59e0b", background: "#f59e0b18", border: "1px solid #f59e0b30", borderRadius: 999, padding: "1px 7px" }}>{cedibili.length}</span>}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button onClick={e => { e.stopPropagation(); loadCedibili(); }} style={{ padding: "3px 10px", borderRadius: 7, border: "1px solid #f59e0b30", background: "#f59e0b10", color: "#f59e0b", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>🔄 Aggiorna</button>
-            <span style={{ fontSize: 11, color: "#666" }}>{cedibiliOpen ? "▴ Chiudi" : "▾ Apri"}</span>
-          </div>
-        </div>
-        {cedibiliOpen && (
-          loadingCedibili ? <div style={{ fontSize: 12, color: "#555" }}>Caricamento...</div>
-          : cedibili.length === 0 ? <div style={{ fontSize: 12, color: "#555", fontStyle: "italic" }}>Nessun giocatore in lista trasferimenti al momento.</div>
-          : <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {cedibili.map(p => {
-              const team = teams.find(t => t.name === p.squadra);
-              return (
-                <div key={p.id} onClick={() => navigate(`/mercato?player=${encodeURIComponent(p.nome)}&squadra=${encodeURIComponent(p.squadra)}&tipo=cessione&quot=${p.quot}`)}
-                  style={{ display: "flex", alignItems: "center", gap: 10, background: "#ffffff08", borderRadius: 10, padding: "8px 12px", cursor: "pointer", flexWrap: "wrap" }}>
-                  {team && <TeamAvatar team={team} size={22} />}
-                  <div style={{ flex: 1, minWidth: 120 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "#818cf8", textDecoration: "underline" }}>{p.nome}</span>
-                    <span style={{ fontSize: 10, color: "#666", marginLeft: 6 }}>{p.ruolo} · {p.anni}aa · Q{p.quot} · {p.squadra}</span>
-                  </div>
-                  <CedibileBadge stato={p.cedibile_stato} />
-                  {p.cedibile_richiesta && <span style={{ fontSize: 10, color: "#aaa", fontStyle: "italic" }}>💬 {p.cedibile_richiesta}</span>}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
 
       {/* Header + stato mercato */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
