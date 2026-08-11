@@ -7539,7 +7539,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                 {cedibiliFiltrati.map(p => {
                   const team = teams.find(t => t.name === p.squadra);
                   return (
-                    <tr key={p.id} onClick={() => navigate(`/mercato?player=${encodeURIComponent(p.nome)}&squadra=${encodeURIComponent(p.squadra)}&tipo=cessione&quot=${p.quot}`)}
+                    <tr key={p.id} onClick={() => navigate(`/mercato?section=mercato&player=${encodeURIComponent(p.nome)}&squadra=${encodeURIComponent(p.squadra)}&tipo=cessione&quot=${p.quot}`)}
                       style={{ borderBottom:"1px solid #ffffff08", cursor:"pointer" }}
                       onMouseEnter={e=>e.currentTarget.style.background="#ffffff08"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                       <td style={{ padding:"8px 6px" }}>
