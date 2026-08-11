@@ -1513,6 +1513,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
           fpf: Number(t.fpf ?? 0).toFixed(2),
           rosa_totale: rosaTotale,
           under21,
+          over31,
           violazioni,
         });
       }
@@ -5299,7 +5300,11 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                     : <div style={{ fontSize:10,color:"#888" }}>⏳ In attesa dell'esito di fine stagione — l'admin assegnerà l'importo con "+M" qui sopra quando disponibile.</div>
                 )}
 
-                {Array.isArray(dati.tracker)&&dati.tracker.length>0&&(
+                {/* DS Masterclass è escluso qui: nulla scrive più nel suo dati.tracker
+                    (il vero contatore è dati.utilizzi_masterclass, mostrato sopra),
+                    quindi eventuali voci residue sono solo refusi del vecchio
+                    prompt generico pre-redesign — mostrarle sarebbe solo confusione. */}
+                {meccanica!=='automatico' && Array.isArray(dati.tracker)&&dati.tracker.length>0&&(
                   <div style={{ display:"flex",flexDirection:"column",gap:2 }}>
                     {dati.tracker.slice(-3).map((t,idx)=><div key={idx} style={{ fontSize:9,color:"#666" }}>📌 {t.nota}</div>)}
                   </div>
