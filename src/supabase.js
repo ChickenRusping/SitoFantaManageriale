@@ -334,6 +334,28 @@ export async function updateGiocatore(id, fields) {
   }
 }
 
+// ─── Badge "cedibile" (puramente informativo, nessuna validazione di
+// regolamento: comunica agli altri presidenti che un giocatore è sul
+// mercato, come già facevano a voce/su WhatsApp) ────────────────────────────
+const CEDIBILE_STATI_VALIDI = ['cedibile', 'cedibile_prestito', 'cedibile_definitivo'];
+export async function impostaCedibile(giocatoreId, stato, richiesta = null) {
+  if (stato && !CEDIBILE_STATI_VALIDI.includes(stato)) throw new Error('Stato cedibile non valido.');
+  const { error } = await supabase.from('rosa').update({
+    cedibile_stato: stato || null,
+    cedibile_richiesta: stato ? (richiesta || null) : null,
+  }).eq('id', giocatoreId);
+  if (error) throw error;
+}
+
+export async function getGiocatoriCedibili() {
+  const { data, error } = await supabase.from('rosa')
+    .select('id, nome, squadra, ruolo, anni, quot, cedibile_stato, cedibile_richiesta')
+    .not('cedibile_stato', 'is', null).eq('in_vivaio', false)
+    .order('squadra', { ascending: true }).order('nome', { ascending: true });
+  if (error) return [];
+  return data;
+}
+
 export async function insertGiocatore(giocatore) {
   if (giocatore?.in_vivaio) await assertVivaioDopoAggiunta(giocatore.squadra, giocatore);
   else await assertRosaDopoAggiunta(giocatore.squadra, giocatore);

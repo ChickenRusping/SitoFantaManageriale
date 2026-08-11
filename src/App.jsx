@@ -173,7 +173,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, getEffettiInvestimenti, getSquadreConSuperClub,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, getEffettiInvestimenti, getSquadreConSuperClub,
   getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, usaContatoreInvestimento, registraEventoInvestimento, annullaEventoInvestimento, toggleTraguardoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
@@ -371,6 +371,36 @@ function DaCedereBadge({ compact = false }) {
       }}
     >
       DA CEDERE 22/08
+    </span>
+  );
+}
+
+// Badge puramente informativo: comunica agli altri presidenti che un
+// giocatore è stato messo in lista trasferimenti (nessuna logica/regola
+// legata a questo, vedi impostaCedibile in supabase.js).
+const CEDIBILE_LABELS = {
+  cedibile: { label: "CEDIBILE", color: "#f59e0b" },
+  cedibile_prestito: { label: "CEDIBILE (PRESTITO)", color: "#818cf8" },
+  cedibile_definitivo: { label: "CEDIBILE (DEFINITIVO)", color: "#10b981" },
+};
+function CedibileBadge({ stato, compact = false }) {
+  const info = CEDIBILE_LABELS[stato];
+  if (!info) return null;
+  return (
+    <span
+      style={{
+        marginLeft: compact ? 4 : 0,
+        fontSize: compact ? 9 : 10,
+        background: `${info.color}22`,
+        color: info.color,
+        border: `1px solid ${info.color}66`,
+        borderRadius: 4,
+        padding: compact ? "1px 4px" : "2px 6px",
+        fontWeight: 800,
+        whiteSpace: "nowrap",
+      }}
+    >
+      🏷️ {info.label}
     </span>
   );
 }
@@ -2256,6 +2286,8 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
   const [prestitoCedutoAperto, setPrestitoCedutoAperto] = useState(null);
   const [estero, setEstero] = useState(false);
   const [offerMode, setOfferMode] = useState('cessione');
+  const [cedibileStato, setCedibileStato] = useState('');
+  const [cedibileRichiesta, setCedibileRichiesta] = useState('');
 
   const loadAll = useCallback(async () => {
     const [r, v, s, ct, pa] = await Promise.all([
@@ -2363,9 +2395,17 @@ Passa all'anno 3.`))return;
     catch(e){alert(e.message);} finally{setSaving(false);}
   }
 
+  async function handleSalvaCedibile(player) {
+    setSaving(true);
+    try { await impostaCedibile(player.id, cedibileStato || null, cedibileRichiesta); await loadAll(); setPopup(null); }
+    catch(e){ alert(`Errore: ${e.message}`); }
+    finally { setSaving(false); }
+  }
+
   // ── apre popup: su desktop onClick, su mobile onClick (stesso gesto tap) ──
   function openPopupAtRect(rect, player, mode) {
     setTipoSvincolo('ordinario'); setEstero(false); setOfferMode('cessione');
+    setCedibileStato(player.cedibile_stato || ''); setCedibileRichiesta(player.cedibile_richiesta || '');
     const popupW = Math.min(310, window.innerWidth - 16);
     const popupEstH = 420;
     const x = Math.max(8, Math.min(rect.left, window.innerWidth - popupW - 8));
@@ -2548,6 +2588,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                     {p.nome}
                     {fuori&&<span style={{ marginLeft:4,fontSize:9,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444455",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>FUORI</span>}
                     {p.da_cedere&&<DaCedereBadge compact />}
+                    {p.cedibile_stato&&<CedibileBadge stato={p.cedibile_stato} compact />}
                     {!fuori&&p.anni>0&&p.anni<=21&&<span style={{ marginLeft:4,fontSize:9,background:"#8b5cf622",color:"#a78bfa",border:"1px solid #8b5cf644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>U21</span>}
                     {!fuori&&p.anni>=31&&<span style={{ marginLeft:4,fontSize:9,background:"#f9731622",color:"#fb923c",border:"1px solid #f9731644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>31+</span>}
                     {p.in_prestito&&<span title={`Prestito${p.squadra_originale ? ` da ${p.squadra_originale}` : ""}${p.scadenza_prestito ? ` · scad. ${p.scadenza_prestito}` : ""}`} style={{ marginLeft:4,fontSize:9,background:"#6366f122",color:"#a5b4fc",border:"1px solid #6366f144",borderRadius:4,padding:"1px 4px",fontWeight:800 }}>{p.tag_rosa || (p.prestito_tipo === 'prestito_obbligo' ? 'PREST. OBBL.' : p.prestito_tipo === 'prestito_secco' ? 'PREST. SECCO' : 'PREST. DIR.')}</span>}
@@ -2722,6 +2763,33 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                   </div>
                 );
               })()}
+              {/* ── Lista trasferimenti (puramente informativo) ── */}
+              {canEdit && (
+                <div style={{ borderTop:"1px solid #ffffff10",paddingTop:10 }}>
+                  <div style={{ fontSize:9,color:"#f59e0b",marginBottom:5 }}>🏷️ LISTA TRASFERIMENTI</div>
+                  <div style={{ fontSize:9,color:"#555",marginBottom:6 }}>Solo comunicazione agli altri presidenti — nessuna regola collegata.</div>
+                  {[
+                    { val:'', label:'Nessun badge' },
+                    { val:'cedibile', label:'🏷️ Cedibile' },
+                    { val:'cedibile_prestito', label:'🏷️ Cedibile (solo in prestito)' },
+                    { val:'cedibile_definitivo', label:'🏷️ Cedibile (solo a titolo definitivo)' },
+                  ].map(o=>(
+                    <button key={o.val} onClick={()=>setCedibileStato(o.val)}
+                      style={{ display:"block",width:"100%",textAlign:"left",padding:"6px 10px",marginBottom:4,borderRadius:8,border:`1px solid ${cedibileStato===o.val?"#f59e0b":"#ffffff15"}`,background:cedibileStato===o.val?"#f59e0b15":"transparent",color:cedibileStato===o.val?"#fbbf24":"#888",fontSize:11,fontWeight:600,cursor:"pointer" }}>
+                      {o.label}
+                    </button>
+                  ))}
+                  {cedibileStato && (
+                    <input type="text" value={cedibileRichiesta} onChange={e=>setCedibileRichiesta(e.target.value)}
+                      placeholder="Richiesta iniziale (opzionale, es. 20M totali bonus incluso)"
+                      style={{ width:"100%",padding:"7px 10px",borderRadius:8,border:"1px solid #ffffff18",background:"#0d0f14",color:"#f0f0f0",fontSize:11,marginBottom:6,boxSizing:"border-box" }} />
+                  )}
+                  <button onClick={()=>handleSalvaCedibile(popup.player)} disabled={saving}
+                    style={{ width:"100%",padding:"8px",borderRadius:8,border:"none",background:saving?"#7a5a0f":"#f59e0b18",color:"#f59e0b",fontSize:12,fontWeight:700,cursor:saving?"wait":"pointer" }}>
+                    {saving ? "⏳ Attendere..." : "✓ Salva"}
+                  </button>
+                </div>
+              )}
             </div>
           ):(
             <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
@@ -6581,6 +6649,7 @@ const URGENZA_COLORS_MERCATO = {
 
 function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMercato }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [tab, setTab] = useState("trattative");
   const [mercatoSection, setMercatoSection] = useState(() => new URLSearchParams(location.search).get("section") || "mercato");
   // Se si arriva da un link tipo "/mercato?section=svincolati" mentre la pagina
@@ -6594,6 +6663,16 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const [trattative, setTrattative] = useState([]);
   const [aste, setAste] = useState([]);
   const [asteSvinc, setAsteSvinc] = useState([]);
+  const [cedibili, setCedibili] = useState([]);
+  const [cedibiliOpen, setCedibiliOpen] = useState(true);
+  const [loadingCedibili, setLoadingCedibili] = useState(true);
+  const loadCedibili = useCallback(async () => {
+    setLoadingCedibili(true);
+    const data = await getGiocatoriCedibili();
+    setCedibili(data || []);
+    setLoadingCedibili(false);
+  }, []);
+  useEffect(() => { loadCedibili(); }, [loadCedibili]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showAstaForm, setShowAstaForm] = useState(false);
@@ -7389,6 +7468,41 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
           <div style={{ fontSize: 9, color: "#555", marginTop: 2 }}>Penalità art. 5.3: 1M dopo 24h · 3M dopo 48h · 5M dopo 72h · acquisto forzato a ½Q dopo 96h</div>
         </div>
       )}
+
+      {/* ── LISTA TRASFERIMENTI (badge "cedibile", puramente informativo) ── */}
+      <div style={{ background: "#f59e0b08", border: "1.5px solid #f59e0b25", borderRadius: 16, padding: 18 }}>
+        <div onClick={() => setCedibiliOpen(v => !v)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", marginBottom: cedibiliOpen ? 12 : 0, userSelect: "none" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", letterSpacing: "0.1em", display: "flex", alignItems: "center", gap: 8 }}>
+            🏷️ LISTA TRASFERIMENTI
+            {cedibili.length > 0 && <span style={{ fontSize: 9, color: "#f59e0b", background: "#f59e0b18", border: "1px solid #f59e0b30", borderRadius: 999, padding: "1px 7px" }}>{cedibili.length}</span>}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button onClick={e => { e.stopPropagation(); loadCedibili(); }} style={{ padding: "3px 10px", borderRadius: 7, border: "1px solid #f59e0b30", background: "#f59e0b10", color: "#f59e0b", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>🔄 Aggiorna</button>
+            <span style={{ fontSize: 11, color: "#666" }}>{cedibiliOpen ? "▴ Chiudi" : "▾ Apri"}</span>
+          </div>
+        </div>
+        {cedibiliOpen && (
+          loadingCedibili ? <div style={{ fontSize: 12, color: "#555" }}>Caricamento...</div>
+          : cedibili.length === 0 ? <div style={{ fontSize: 12, color: "#555", fontStyle: "italic" }}>Nessun giocatore in lista trasferimenti al momento.</div>
+          : <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {cedibili.map(p => {
+              const team = teams.find(t => t.name === p.squadra);
+              return (
+                <div key={p.id} onClick={() => navigate(`/mercato?player=${encodeURIComponent(p.nome)}&squadra=${encodeURIComponent(p.squadra)}&tipo=cessione&quot=${p.quot}`)}
+                  style={{ display: "flex", alignItems: "center", gap: 10, background: "#ffffff08", borderRadius: 10, padding: "8px 12px", cursor: "pointer", flexWrap: "wrap" }}>
+                  {team && <TeamAvatar team={team} size={22} />}
+                  <div style={{ flex: 1, minWidth: 120 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#818cf8", textDecoration: "underline" }}>{p.nome}</span>
+                    <span style={{ fontSize: 10, color: "#666", marginLeft: 6 }}>{p.ruolo} · {p.anni}aa · Q{p.quot} · {p.squadra}</span>
+                  </div>
+                  <CedibileBadge stato={p.cedibile_stato} />
+                  {p.cedibile_richiesta && <span style={{ fontSize: 10, color: "#aaa", fontStyle: "italic" }}>💬 {p.cedibile_richiesta}</span>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Header + stato mercato */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
