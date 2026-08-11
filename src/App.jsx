@@ -2407,12 +2407,19 @@ Passa all'anno 3.`))return;
     setTipoSvincolo('ordinario'); setEstero(false); setOfferMode('cessione');
     setCedibileStato(player.cedibile_stato || ''); setCedibileRichiesta(player.cedibile_richiesta || '');
     const popupW = Math.min(310, window.innerWidth - 16);
+    // Stima solo per SCEGLIERE se aprire sotto o sopra il click: il contenuto
+    // reale varia molto (svincolo/rinnovo/vivaio/lista trasferimenti insieme
+    // possono superare abbondantemente questa stima) — per questo il
+    // maxHeight qui sotto NON è un valore fisso ma ricalcolato in base alla
+    // posizione finale, così il popup resta sempre scrollabile ENTRO lo
+    // schermo invece di continuare oltre il bordo inferiore, irraggiungibile.
     const popupEstH = 420;
     const x = Math.max(8, Math.min(rect.left, window.innerWidth - popupW - 8));
     const belowY = rect.bottom + 4;
     const aboveY = rect.top - popupEstH - 4;
-    const y = belowY + popupEstH < window.innerHeight ? belowY : Math.max(8, aboveY);
-    setPopup({ player, mode, x, y, w: popupW });
+    const y = Math.max(8, belowY + popupEstH < window.innerHeight ? belowY : aboveY);
+    const maxH = Math.max(160, window.innerHeight - y - 8);
+    setPopup({ player, mode, x, y, w: popupW, maxH });
   }
   function openPopup(e, player, mode) {
     e.preventDefault();
@@ -2642,7 +2649,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
         <div
           onClick={e=>e.stopPropagation()}
           onTouchEnd={e=>e.stopPropagation()}
-          style={{ position:"fixed",zIndex:9999,left:popup.x,top:popup.y,width:popup.w||310,background:"#1a1d26",border:"1.5px solid #ffffff18",borderRadius:14,boxShadow:"0 8px 32px #00000099",padding:16,maxHeight:"90vh",overflowY:"auto" }}>
+          style={{ position:"fixed",zIndex:9999,left:popup.x,top:popup.y,width:popup.w||310,background:"#1a1d26",border:"1.5px solid #ffffff18",borderRadius:14,boxShadow:"0 8px 32px #00000099",padding:16,maxHeight:popup.maxH?`${popup.maxH}px`:"90vh",overflowY:"auto" }}>
           {/* Header */}
           <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14 }}>
             <div>
