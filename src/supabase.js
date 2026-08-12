@@ -1204,6 +1204,21 @@ export async function eseguiTrasferimento(trattativa) {
 
   _validazioneEconomicaTrattativa(trattativa);
 
+  // Salary cap negativo: nessun acquisto può completarsi finché la squadra
+  // che riceve il giocatore non è tornata in positivo — le sole cessioni pure
+  // in uscita restano sempre permesse (non controllate qui). In uno scambio
+  // entrambe le squadre ricevono un giocatore, quindi vanno controllate entrambe.
+  const scAcquirente = await _calcolaSalaryCapSquadra(squadraAcquirente);
+  if (scAcquirente.negativo) {
+    throw new Error(`Operazione annullata: ${squadraAcquirente} ha il salary cap negativo (${scAcquirente.usato.toFixed(2)}/${scAcquirente.limite.toFixed(2)}M) e non può completare acquisti finché non rientra in positivo.`);
+  }
+  if (tipo === 'scambio') {
+    const scCedente = await _calcolaSalaryCapSquadra(squadraCedente);
+    if (scCedente.negativo) {
+      throw new Error(`Operazione annullata: ${squadraCedente} ha il salary cap negativo (${scCedente.usato.toFixed(2)}/${scCedente.limite.toFixed(2)}M) e non può completare acquisti finché non rientra in positivo.`);
+    }
+  }
+
   // Art. 5.5: clausola = 1,75×Q e solo dopo due rifiuti/controfferte o 48h.
   if (tipo === 'clausola') {
     const quotClausola = _numero(quot_giocatore ?? quota_giocatore, 0);
@@ -1892,6 +1907,24 @@ export const SALARY_CAP = 75;
 export function isMeseEsenteSalaryCap(date = new Date()) {
   const m = date.getMonth(); // 5=giugno, 6=luglio
   return m === 5 || m === 6;
+}
+
+// Salary cap fresco al momento della chiamata (non si fida di mercato_bloccato,
+// che è aggiornato solo quando un client apre la tab Finanze e può essere
+// stale proprio nel momento in cui serve controllarlo per bloccare un acquisto).
+async function _calcolaSalaryCapSquadra(squadra, date = new Date()) {
+  if (isMeseEsenteSalaryCap(date)) return { usato: 0, limite: Infinity, negativo: false };
+  const [{ data: rosa }, { data: all }, { data: sq }, effetti] = await Promise.all([
+    supabase.from('rosa').select('quot, anni_contratto, anni').eq('squadra', squadra).eq('in_vivaio', false),
+    supabase.from('allenatori_carte').select('stipendio_sc').eq('squadra', squadra).limit(1),
+    supabase.from('squadre').select('sc_bonus_obiettivi').eq('name', squadra).single(),
+    getEffettiInvestimenti(squadra, getStagioneQuota(date)),
+  ]);
+  const scRosa = (rosa || []).reduce((s, p) => s + _calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
+  const scAllenatore = Number(all?.[0]?.stipendio_sc || 0);
+  const usato = parseFloat((scRosa + scAllenatore).toFixed(2));
+  const limite = SALARY_CAP + Number(sq?.sc_bonus_obiettivi || 0) + Number(effetti?.scBonusInvestimenti || 0);
+  return { usato, limite, negativo: usato > limite };
 }
 
 export function getStatoMercatoRegolamento(date = new Date()) {
@@ -5481,6 +5514,9 @@ export async function rivelaECompletaAsta(astaId) {
     // dalle altre è solo che qui il prezzo non dipende da nessuna offerta.
     vincitore = ordineInteresse[0] || asta.aperta_da;
     if (!vincitore) throw new Error('Nessun interessato trovato per questa asta.');
+    // Salary cap negativo: unico interessato ma senza margine per acquistare.
+    const scUnico = await _calcolaSalaryCapSquadra(vincitore);
+    if (scUnico.negativo) throw new Error(`Impossibile assegnare: ${vincitore} ha il salary cap negativo (${scUnico.usato.toFixed(2)}/${scUnico.limite.toFixed(2)}M).`);
     prezzoFinale = parseFloat((Number(asta.quot || 0) * 0.75).toFixed(2));
   } else {
     // Offerte presenti
@@ -5516,9 +5552,10 @@ export async function rivelaECompletaAsta(astaId) {
       .select('*').eq('asta_id', astaId).order('importo', { ascending: false });
     for (const off of (offerteRaw || [])) {
       const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', off.squadra).single();
-      if (Number(off.importo || 0) <= Number(sq?.bilancio || 0) + 0.0001) tutteOfferte.push(off);
+      const scOfferente = await _calcolaSalaryCapSquadra(off.squadra);
+      if (Number(off.importo || 0) <= Number(sq?.bilancio || 0) + 0.0001 && !scOfferente.negativo) tutteOfferte.push(off);
     }
-    if (!tutteOfferte.length) throw new Error('Nessuna offerta valida: nessun interessato ha liquidità sufficiente.');
+    if (!tutteOfferte.length) throw new Error('Nessuna offerta valida: nessun interessato ha liquidità o salary cap sufficiente.');
 
     // Vincitore: max importo; parità → prima chiamata
     const maxImporto = Number(tutteOfferte?.[0]?.importo || 0);

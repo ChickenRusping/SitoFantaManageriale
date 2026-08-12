@@ -7466,12 +7466,12 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       )}
 
       {/* ── Switcher Mercato / Svincolati ── */}
-      <div style={{ display:"flex",gap:0,background:"#ffffff08",borderRadius:12,padding:4,alignSelf:"flex-start" }}>
+      <div style={{ display:"flex",gap:0,background:"#ffffff08",borderRadius:12,padding:4,alignSelf:"flex-start",maxWidth:"100%",overflowX:"auto",WebkitOverflowScrolling:"touch" }}>
         {[["mercato","🤝 Mercato"],["trasferimenti","🏷️ Lista Trasferimenti"],["svincolati","🔍 Svincolati"],["listone","📋 Listone"]].map(([k,l])=>{
           const kcolor = k==="mercato"?"#6366f1":k==="trasferimenti"?"#f59e0b":k==="svincolati"?"#10b981":"#f59e0b";
           return (
           <button key={k} onClick={()=>setMercatoSection(k)}
-            style={{ padding:"8px 20px",borderRadius:9,border:"none",background:mercatoSection===k?kcolor:"transparent",color:mercatoSection===k?"#fff":"#666",fontSize:13,fontWeight:700,cursor:"pointer",transition:"all 0.15s" }}>
+            style={{ padding:"8px 20px",borderRadius:9,border:"none",background:mercatoSection===k?kcolor:"transparent",color:mercatoSection===k?"#fff":"#666",fontSize:13,fontWeight:700,cursor:"pointer",transition:"all 0.15s",whiteSpace:"nowrap",flexShrink:0 }}>
             {l}
             {k==="svincolati" && svincoliOffertePendenti>0 && <span style={{ background:"#ef4444",color:"#fff",borderRadius:"50%",padding:"1px 6px",fontSize:9,marginLeft:5,fontWeight:900 }}>{svincoliOffertePendenti}</span>}
           </button>
