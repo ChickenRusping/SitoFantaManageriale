@@ -357,36 +357,6 @@ async function calcolaClausolaPerSquadra(squadra: string, quot: number, date = n
   return parseFloat((Number(quot || 0) * moltiplicatore).toFixed(2));
 }
 
-// ─── SALARY CAP (porting da src/supabase.js — vedi quel file per i commenti) ──
-const SALARY_CAP = 75;
-function isMeseEsenteSalaryCap(date = new Date()): boolean {
-  const { mo } = italyWallClockParts(date);
-  return mo === 6 || mo === 7; // giugno/luglio
-}
-function calcolaStipCorretto(quot: number, anniContratto: number, anni: number): number {
-  const base = parseFloat((Number(quot || 0) / 5).toFixed(2));
-  const isU21 = anni > 0 && anni <= 21;
-  const ac = anniContratto || 0;
-  if (isU21 || ac <= 1) return base;
-  if (ac === 2) return parseFloat((base * 1.1).toFixed(2));
-  if (ac === 3) return parseFloat((base * 1.2).toFixed(2));
-  return parseFloat((base * 0.9).toFixed(2)); // anno 4+: Bonus Fedeltà
-}
-async function calcolaSalaryCapSquadra(squadra: string, date = new Date()): Promise<{ usato: number; limite: number; negativo: boolean }> {
-  if (isMeseEsenteSalaryCap(date)) return { usato: 0, limite: Infinity, negativo: false };
-  const [{ data: rosa }, { data: all }, { data: sq }, hasSuperClub] = await Promise.all([
-    supabase.from("rosa").select("quot, anni_contratto, anni").eq("squadra", squadra).eq("in_vivaio", false),
-    supabase.from("allenatori_carte").select("stipendio_sc").eq("squadra", squadra).limit(1),
-    supabase.from("squadre").select("sc_bonus_obiettivi").eq("name", squadra).single(),
-    hasInvestimentoAttivo(squadra, "SuperClub", date),
-  ]);
-  const scRosa = (rosa || []).reduce((s: number, p: any) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
-  const scAllenatore = Number(all?.[0]?.stipendio_sc || 0);
-  const usato = parseFloat((scRosa + scAllenatore).toFixed(2));
-  const limite = SALARY_CAP + Number(sq?.sc_bonus_obiettivi || 0) + (hasSuperClub ? 3 : 0);
-  return { usato, limite, negativo: usato > limite };
-}
-
 // Eleggibilità vivaio (età/quotazione/presenze + slot disponibili). A
 // differenza dei paletti di composizione rosa (U21, tetto 30, max 5 stesso
 // club) — non più bloccanti da nessuna parte, vedi assertRosaDopoAggiunta in
@@ -499,8 +469,6 @@ async function rivelaECompletaAsta(astaId: number) {
     if (ordineInteresse.length <= 1) {
       vincitore = ordineInteresse[0] || asta.aperta_da;
       if (!vincitore) throw new Error("Nessun interessato trovato per questa asta.");
-      const scUnico = await calcolaSalaryCapSquadra(vincitore);
-      if (scUnico.negativo) throw new Error(`Impossibile assegnare: ${vincitore} ha il salary cap negativo (${scUnico.usato.toFixed(2)}/${scUnico.limite.toFixed(2)}M).`);
       prezzoFinale = parseFloat((Number(asta.quot || 0) * 0.75).toFixed(2));
     } else {
       const { data: offerteEsistenti } = await supabase.from("offerte_asta").select("*").eq("asta_id", astaId);
@@ -525,10 +493,9 @@ async function rivelaECompletaAsta(astaId: number) {
         .select("*").eq("asta_id", astaId).order("importo", { ascending: false });
       for (const off of (offerteRaw || [])) {
         const { data: sq } = await supabase.from("squadre").select("bilancio").eq("name", off.squadra).single();
-        const scOfferente = await calcolaSalaryCapSquadra(off.squadra);
-        if (Number(off.importo || 0) <= Number(sq?.bilancio || 0) + 0.0001 && !scOfferente.negativo) tutteOfferte.push(off);
+        if (Number(off.importo || 0) <= Number(sq?.bilancio || 0) + 0.0001) tutteOfferte.push(off);
       }
-      if (!tutteOfferte.length) throw new Error("Nessuna offerta valida: nessun interessato ha liquidità o salary cap sufficiente.");
+      if (!tutteOfferte.length) throw new Error("Nessuna offerta valida: nessun interessato ha liquidità sufficiente.");
 
       const maxImporto = Number(tutteOfferte?.[0]?.importo || 0);
       const pareggi = tutteOfferte.filter((o: any) => Number(o.importo) === maxImporto);

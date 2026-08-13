@@ -478,6 +478,16 @@ export async function insertChiamata(chiamata) {
   if (chiamata?.squadra && chiamata?.giocatore) {
     await verificaRiacquistoConsentito(chiamata.squadra, chiamata.giocatore);
   }
+  // Salary cap negativo: non ci si può interessare a un nuovo giocatore finché
+  // non si rientra in positivo — ma un'asta già "agganciata" prima che lo SC
+  // diventasse negativo può comunque completarsi liberamente (nessun controllo
+  // in rivelaECompletaAsta): è la sola liquidità a poter fermare l'assegnazione.
+  if (chiamata?.squadra) {
+    const scChiamante = await _calcolaSalaryCapSquadra(chiamata.squadra);
+    if (scChiamante.negativo) {
+      throw new Error(`Salary cap negativo (${scChiamante.usato.toFixed(2)}/${scChiamante.limite.toFixed(2)}M): non puoi chiamare nuovi svincolati finché non rientri in positivo.`);
+    }
+  }
   // Cooldown di 30 minuti tra una chiamata e l'altra fatta dalla STESSA
   // squadra (indipendente per ogni presidente: gli altri possono continuare
   // a chiamare normalmente). Riguarda solo l'atto di chiamare per primo un
@@ -542,6 +552,11 @@ export async function aggiungiInteresse(nomeGiocatore, squadra, perVivaio = fals
   await verificaRiacquistoConsentito(squadra, nomeGiocatore);
   if (new Date() > new Date(primaria.scadenza_interesse))
     throw new Error('Scadenza interesse superata');
+  // Salary cap negativo: stesso vincolo della chiamata principale (vedi insertChiamata).
+  const scInteressato = await _calcolaSalaryCapSquadra(squadra);
+  if (scInteressato.negativo) {
+    throw new Error(`Salary cap negativo (${scInteressato.usato.toFixed(2)}/${scInteressato.limite.toFixed(2)}M): non puoi interessarti a nuovi svincolati finché non rientri in positivo.`);
+  }
 
   // Controlla duplicati
   const { data: gia } = await supabase.from('chiamate')
@@ -5514,9 +5529,6 @@ export async function rivelaECompletaAsta(astaId) {
     // dalle altre è solo che qui il prezzo non dipende da nessuna offerta.
     vincitore = ordineInteresse[0] || asta.aperta_da;
     if (!vincitore) throw new Error('Nessun interessato trovato per questa asta.');
-    // Salary cap negativo: unico interessato ma senza margine per acquistare.
-    const scUnico = await _calcolaSalaryCapSquadra(vincitore);
-    if (scUnico.negativo) throw new Error(`Impossibile assegnare: ${vincitore} ha il salary cap negativo (${scUnico.usato.toFixed(2)}/${scUnico.limite.toFixed(2)}M).`);
     prezzoFinale = parseFloat((Number(asta.quot || 0) * 0.75).toFixed(2));
   } else {
     // Offerte presenti
@@ -5552,10 +5564,9 @@ export async function rivelaECompletaAsta(astaId) {
       .select('*').eq('asta_id', astaId).order('importo', { ascending: false });
     for (const off of (offerteRaw || [])) {
       const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', off.squadra).single();
-      const scOfferente = await _calcolaSalaryCapSquadra(off.squadra);
-      if (Number(off.importo || 0) <= Number(sq?.bilancio || 0) + 0.0001 && !scOfferente.negativo) tutteOfferte.push(off);
+      if (Number(off.importo || 0) <= Number(sq?.bilancio || 0) + 0.0001) tutteOfferte.push(off);
     }
-    if (!tutteOfferte.length) throw new Error('Nessuna offerta valida: nessun interessato ha liquidità o salary cap sufficiente.');
+    if (!tutteOfferte.length) throw new Error('Nessuna offerta valida: nessun interessato ha liquidità sufficiente.');
 
     // Vincitore: max importo; parità → prima chiamata
     const maxImporto = Number(tutteOfferte?.[0]?.importo || 0);
