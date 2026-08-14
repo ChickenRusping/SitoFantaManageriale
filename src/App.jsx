@@ -2355,10 +2355,10 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
     if (!isPeriodoSvincoliConsentito(oggi)) w.push({tipo:'error',testo:'Svincoli non consentiti a giugno/luglio: ammessi solo dal 01/08 al 31/05'});
     if (tipo==='straordinario'||tipo==='straordinario_u21') {
       if (!periodoStraord) w.push({tipo:'error',testo:'Straordinari consentiti solo nel mercato estivo (01/06-15/09) o invernale (01/01-15/02)'});
-      if (periodoStraord==='estivo'&&contatori.count_straord_estivi>=6) w.push({tipo:'error',testo:'Esauriti straord. estivi (6/6)'});
-      if (periodoStraord==='invernale'&&contatori.count_straord_invernali>=4) w.push({tipo:'error',testo:'Esauriti straord. invernali (4/4)'});
+      if (!estero&&periodoStraord==='estivo'&&contatori.count_straord_estivi>=5) w.push({tipo:'error',testo:'Esauriti straord. estivi (5/5)'});
+      if (!estero&&periodoStraord==='invernale'&&contatori.count_straord_invernali>=4) w.push({tipo:'error',testo:'Esauriti straord. invernali (4/4)'});
     }
-    if (tipo!=='straordinario_u21_nc'&&contatori.count_totale>=14) w.push({tipo:'warning',testo:'⚠️ Oltre 14 svincoli: penale +2M'});
+    if (!estero&&tipo!=='straordinario_u21_nc'&&contatori.count_totale>=14) w.push({tipo:'warning',testo:'⚠️ Oltre 14 svincoli: penale +2M'});
     return w;
   }
 
@@ -2467,7 +2467,7 @@ Passa all'anno 3.`))return;
   const periodoStraordCorrente = getPeriodoStraordinariSvincoli(oggi);
   const isEstate = periodoStraordCorrente === 'estivo';
   const usatiStraord = isEstate?(contatori?.count_straord_estivi||0):(contatori?.count_straord_invernali||0);
-  const maxStraord = isEstate?6:4;
+  const maxStraord = isEstate?5:4;
   const isU21P = popup?.player?.anni>0&&popup?.player?.anni<=21;
   const tipoOptions = [
     {val:'ordinario',label:'Ordinario',desc:'Penale + mesi fino a giu'},
@@ -2998,16 +2998,16 @@ function SvincoliTab({ team, isAdmin }) {
     if (tipo === 'straordinario' || tipo === 'straordinario_u21') {
       if (!periodoStraord)
         warnings.push({ tipo: 'error', testo: 'Straordinari consentiti solo nel mercato estivo (01/06-15/09) o invernale (01/01-15/02)' });
-      if (periodoStraord === 'estivo' && contatori.count_straord_estivi >= 6)
-        warnings.push({ tipo: 'error', testo: `Esauriti svincoli straordinari estivi (6/6)` });
-      if (periodoStraord === 'invernale' && contatori.count_straord_invernali >= 4)
+      if (!estero && periodoStraord === 'estivo' && contatori.count_straord_estivi >= 5)
+        warnings.push({ tipo: 'error', testo: `Esauriti svincoli straordinari estivi (5/5)` });
+      if (!estero && periodoStraord === 'invernale' && contatori.count_straord_invernali >= 4)
         warnings.push({ tipo: 'error', testo: `Esauriti svincoli straordinari invernali (4/4)` });
     }
 
-    // Max 14 totali (art. 6.4)
-    if (tipo !== 'straordinario_u21_nc' && contatori.count_totale >= 14)
+    // Max 14 totali (art. 6.5) — gli svincoli esteri non contano più (scorporati dal conteggio)
+    if (!estero && tipo !== 'straordinario_u21_nc' && contatori.count_totale >= 14)
       warnings.push({ tipo: 'warning', testo: `Oltre 14 svincoli stagione: penale +2M aggiuntivi` });
-    if (tipo !== 'straordinario_u21_nc' && contatori.count_totale === 13)
+    if (!estero && tipo !== 'straordinario_u21_nc' && contatori.count_totale === 13)
       warnings.push({ tipo: 'warning', testo: `Attenzione: questo sarà il 14° svincolo stagionale` });
 
     return warnings;
@@ -3069,7 +3069,7 @@ function SvincoliTab({ team, isAdmin }) {
   const oggi = new Date();
   const periodoStraordCorrente = getPeriodoStraordinariSvincoli(oggi);
   const isEstate = periodoStraordCorrente === 'estivo';
-  const maxStraord = isEstate ? 6 : 4;
+  const maxStraord = isEstate ? 5 : 4;
   const usatiStraord = isEstate ? (contatori?.count_straord_estivi || 0) : (contatori?.count_straord_invernali || 0);
 
   const tipoOptions = [
