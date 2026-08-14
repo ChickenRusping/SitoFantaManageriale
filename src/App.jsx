@@ -1559,19 +1559,19 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
     { label: "Chiusura mercato estivo",             month: 9,  day: 15, section: "Mercato", type: "annual",  note: "Ore 24:00" },
     { label: "Apertura mercato invernale",          month: 1,  day: 1,  section: "Mercato", type: "annual",  note: "Ore 09:00" },
     { label: "Chiusura mercato invernale",          month: 2,  day: 15, section: "Mercato", type: "annual",  note: "Ore 24:00" },
-    { label: "Quota iscrizione campionato (30M)",   month: 7,  day: 31, section: "Quote",   type: "annual",  note: "Detratta automaticamente" },
+    { label: "Quota iscrizione campionato (30M)",   month: 7,  day: 31, section: "Quote",   type: "annual",  note: "Detratta automaticamente — entro le 24:00" },
     { label: "Decisione investimento extra (0–10€)",month: 8,  day: 14, section: "Quote",   type: "annual",  note: "Entro le 23:59" },
-    { label: "Pagamento quota (30€) al tesoriere",  month: 8,  day: 31, section: "Quote",   type: "annual",  note: "" },
-    { label: "Inizio finestra ritiro budget extra",  month: 1,  day: 5,  section: "Quote",   type: "annual",  note: "Costo: 2× i milioni ottenuti" },
-    { label: "Pagamento costo vivaio (4M)",          month: 8,  day: 15, section: "Rosa",    type: "annual",  note: "Obbligatorio per tutti" },
-    { label: "Acquisto giocatori vivaio",            month: 9,  day: 1,  section: "Rosa",    type: "annual",  note: "Solo dopo aggiornamento listone" },
+    { label: "Pagamento quota (30€) al tesoriere",  month: 8,  day: 31, section: "Quote",   type: "annual",  note: "Entro le 24:00" },
+    { label: "Inizio finestra ritiro budget extra",  month: 1,  day: 5,  section: "Quote",   type: "annual",  note: "Costo: 2× i milioni ottenuti — entro le 24:00" },
+    { label: "Pagamento costo vivaio (4M)",          month: 8,  day: 15, section: "Rosa",    type: "annual",  note: "Obbligatorio per tutti — entro le 24:00" },
+    { label: "Acquisto giocatori vivaio",            month: 9,  day: 1,  section: "Rosa",    type: "annual",  note: "Solo dopo aggiornamento listone — entro le 24:00" },
     { label: "Pagamento stipendi mensile",           day: 1,              section: "Stipendi",type: "monthly", note: "Alle 00:01" },
     { label: "Abbassamento stipendi in calo",        month: 1,  day: 5,  section: "Stipendi",type: "annual",  note: "Entro le 20:00 su WhatsApp" },
     { label: "Aggiornamento stipendi 01/01",         month: 1,  day: 1,  section: "Stipendi",type: "annual",  note: "Alle 08:00 — art. 4.5" },
     { label: "Aggiornamento stipendi 01/06",         month: 6,  day: 1,  section: "Stipendi",type: "annual",  note: "Alle 08:00 — art. 4.6" },
     { label: "Aggiornamento stipendi 01/08",         month: 8,  day: 1,  section: "Stipendi",type: "annual",  note: "Alle 08:00 — art. 4.7" },
     { label: "Rinnovo/non rinnovo contratti",        month: 5,  day: 31, section: "Stipendi",type: "annual",  note: "Entro le 23:59" },
-    { label: "Vendita/svincolo contratti ribassati", month: 9,  day: 15, section: "Stipendi",type: "annual",  note: "Pena 5M + svincolo forzato" },
+    { label: "Vendita/svincolo contratti ribassati", month: 9,  day: 15, section: "Stipendi",type: "annual",  note: "Pena 5M + svincolo forzato — entro le 24:00" },
     { label: "Scelta obiettivo — 8° classificato",   month: 8,  day: 6,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
     { label: "Scelta obiettivo — 7° classificato",   month: 8,  day: 7,  section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
     { label: "Scelta obiettivo — 6° classificato",   month: 8,  day: 7,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
@@ -1582,9 +1582,9 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
     { label: "Scelta obiettivo — 1° classificato",   month: 8,  day: 10, section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
     { label: "Apertura comunicazione investimenti",  month: 8,  day: 1,  section: "Investimenti", type: "annual", note: "Ore 09:00 — budget max 30M" },
     { label: "Chiusura comunicazione investimenti",  month: 9,  day: 20, section: "Investimenti", type: "annual", note: "Entro le 23:59" },
-    { label: "Scadenza Ricapitalizzazione",          month: 9,  day: 5,  section: "Investimenti", type: "annual", note: "Ultimo giorno per attivarla" },
-    { label: "Apertura investimenti invernali",      month: 12, day: 24, section: "Investimenti", type: "annual", note: "Max 10M" },
-    { label: "Chiusura investimenti invernali",      month: 12, day: 31, section: "Investimenti", type: "annual", note: "Ultimo giorno utile" },
+    { label: "Scadenza Ricapitalizzazione",          month: 9,  day: 5,  section: "Investimenti", type: "annual", note: "Ultimo giorno per attivarla — entro le 24:00" },
+    { label: "Apertura investimenti invernali",      month: 12, day: 24, section: "Investimenti", type: "annual", note: "Max 10M — entro le 24:00" },
+    { label: "Chiusura investimenti invernali",      month: 12, day: 31, section: "Investimenti", type: "annual", note: "Ultimo giorno utile — entro le 24:00" },
   ];
   function resolveDeadline(def) {
     const today = new Date(nowD.getFullYear(), nowD.getMonth(), nowD.getDate());
@@ -1991,13 +1991,13 @@ function DeadlinePage() {
     { label: "Apertura mercato invernale",          month: 1,  day: 1,  section: "Mercato", type: "annual",  note: "Ore 09:00" },
     { label: "Chiusura mercato invernale",          month: 2,  day: 15, section: "Mercato", type: "annual",  note: "Ore 24:00" },
     // QUOTE
-    { label: "Quota iscrizione campionato (30M) — manuale (admin)", month: 7,  day: 31, section: "Quote",    type: "annual",  note: "Applicata da un admin dalla Control Room, non più automatica" },
+    { label: "Quota iscrizione campionato (30M) — manuale (admin)", month: 7,  day: 31, section: "Quote",    type: "annual",  note: "Applicata da un admin dalla Control Room, non più automatica — entro le 24:00" },
     { label: "Decisione investimento extra budget (0–10€)",     month: 8,  day: 14, section: "Quote",    type: "annual",  note: "Entro le 23:59" },
-    { label: "Pagamento quota iscrizione (30€) al tesoriere",   month: 8,  day: 31, section: "Quote",    type: "annual",  note: "" },
-    { label: "Inizio finestra ritiro budget extra",             month: 1,  day: 5,  section: "Quote",    type: "annual",  note: "Costo: 2× i milioni ottenuti" },
+    { label: "Pagamento quota iscrizione (30€) al tesoriere",   month: 8,  day: 31, section: "Quote",    type: "annual",  note: "Entro le 24:00" },
+    { label: "Inizio finestra ritiro budget extra",             month: 1,  day: 5,  section: "Quote",    type: "annual",  note: "Costo: 2× i milioni ottenuti — entro le 24:00" },
     // ROSA
     { label: "Pagamento costo vivaio (4M)",                    month: 8,  day: 15, section: "Rosa",     type: "annual",  note: "Obbligatorio per tutti, anche senza vivaio attivo — entro le 23:59" },
-    { label: "Acquisto giocatori vivaio (apertura)",            month: 9,  day: 1,  section: "Rosa",     type: "annual",  note: "Solo dopo aggiornamento listone post-mercato estivo" },
+    { label: "Acquisto giocatori vivaio (apertura)",            month: 9,  day: 1,  section: "Rosa",     type: "annual",  note: "Solo dopo aggiornamento listone post-mercato estivo — entro le 24:00" },
     // STIPENDI
     { label: "Pagamento stipendi mensile — automatico",         day: 1,              section: "Stipendi", type: "monthly", note: "Alle 00:01 — totale stipendi / 12" },
     { label: "Abbassamento stipendi giocatori in calo",         month: 1,  day: 5,  section: "Stipendi", type: "annual",  note: "Entro le 20:00 — da comunicare su WhatsApp" },
@@ -2006,7 +2006,7 @@ function DeadlinePage() {
     { label: "Aggiornamento stipendi fine stagione 01/06 (art. 4.6)", month: 6, day: 1, section: "Stipendi", type: "annual",  note: "Alle 08:00 — importa listone da Modifica Rose → aggiorna Q e stip di tutti i giocatori" },
     { label: "Aggiornamento stipendi pre-stagione 01/08 (art. 4.7)", month: 8,  day: 1,  section: "Stipendi", type: "annual",  note: "Alle 08:00 — importa listone aggiornato da Modifica Rose" },
     { label: "Rinnovo/non rinnovo contratti biennali",          month: 5,  day: 31, section: "Stipendi", type: "annual",  note: "Entro le 23:59 — non rinnovati diventano svincolati il 01/06" },
-    { label: "Vendita/svincolo giocatori contratto ribassato",  month: 9,  day: 15, section: "Stipendi", type: "annual",  note: "Pena 5M + svincolo forzato se non rispettato" },
+    { label: "Vendita/svincolo giocatori contratto ribassato",  month: 9,  day: 15, section: "Stipendi", type: "annual",  note: "Pena 5M + svincolo forzato se non rispettato — entro le 24:00" },
     // OBIETTIVI (art. 9.1)
     { label: "Scelta obiettivo — 8° classificato",   month: 8,  day: 6,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
     { label: "Scelta obiettivo — 7° classificato",   month: 8,  day: 7,  section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
@@ -2019,9 +2019,9 @@ function DeadlinePage() {
     // INVESTIMENTI (art. 10)
     { label: "Apertura comunicazione investimenti",  month: 8,  day: 1,  section: "Investimenti", type: "annual", note: "Ore 09:00 — budget max 30M" },
     { label: "Chiusura comunicazione investimenti",  month: 9,  day: 20, section: "Investimenti", type: "annual", note: "Entro le 23:59" },
-    { label: "Scadenza Ricapitalizzazione",          month: 9,  day: 5,  section: "Investimenti", type: "annual", note: "Ultimo giorno per attivarla" },
-    { label: "Apertura investimenti invernali",      month: 12, day: 24, section: "Investimenti", type: "annual", note: "Max 10M" },
-    { label: "Chiusura investimenti invernali",      month: 12, day: 31, section: "Investimenti", type: "annual", note: "Ultimo giorno utile" },
+    { label: "Scadenza Ricapitalizzazione",          month: 9,  day: 5,  section: "Investimenti", type: "annual", note: "Ultimo giorno per attivarla — entro le 24:00" },
+    { label: "Apertura investimenti invernali",      month: 12, day: 24, section: "Investimenti", type: "annual", note: "Max 10M — entro le 24:00" },
+    { label: "Chiusura investimenti invernali",      month: 12, day: 31, section: "Investimenti", type: "annual", note: "Ultimo giorno utile — entro le 24:00" },
   ];
 
   // Calcola la prossima occorrenza di una deadline e i giorni mancanti
