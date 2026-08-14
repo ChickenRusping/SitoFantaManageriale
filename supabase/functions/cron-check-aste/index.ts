@@ -257,11 +257,16 @@ function formatNotificaApp(type: string, p: Record<string, any>): { titolo: stri
   }
 }
 
-// ── Scadenze pubbliche (art. vari del regolamento) — notifica alle 9:00 del
-// giorno in cui scade una di queste. ATTENZIONE MANUTENZIONE: stessa lista di
-// DEADLINE_DEFS in App.jsx (pagina Lega e pagina Deadline) — se cambi una
-// scadenza in un posto, cambiala anche negli altri due.
-const DEADLINE_DEFS_PUBBLICHE: { label: string; month?: number; day: number; type: "annual" | "monthly" }[] = [
+// ── Scadenze pubbliche (art. vari del regolamento) — notifica alle 9:00.
+// ATTENZIONE MANUTENZIONE: stessa lista di DEADLINE_DEFS in App.jsx (pagina
+// Lega e pagina Deadline) — se cambi una scadenza in un posto, cambiala anche
+// negli altri due.
+// `precoce: true` = l'orario reale della scadenza è tra le 00:00 e le 09:00
+// (quindi le 9 di quel giorno sarebbero già tardi): si notifica alle 9:00 del
+// giorno PRIMA. Tutte le altre (orario preciso dalle 9 in poi, o nessun
+// orario preciso indicato — in tal caso si intende "entro le 24") si
+// notificano alle 9:00 del giorno stesso.
+const DEADLINE_DEFS_PUBBLICHE: { label: string; month?: number; day: number; type: "annual" | "monthly"; precoce?: boolean }[] = [
   { label: "Apertura mercato estivo", month: 6, day: 1, type: "annual" },
   { label: "Chiusura mercato estivo", month: 9, day: 15, type: "annual" },
   { label: "Apertura mercato invernale", month: 1, day: 1, type: "annual" },
@@ -272,22 +277,22 @@ const DEADLINE_DEFS_PUBBLICHE: { label: string; month?: number; day: number; typ
   { label: "Inizio finestra ritiro budget extra", month: 1, day: 5, type: "annual" },
   { label: "Pagamento costo vivaio (4M)", month: 8, day: 15, type: "annual" },
   { label: "Acquisto giocatori vivaio (apertura)", month: 9, day: 1, type: "annual" },
-  { label: "Pagamento stipendi mensile", day: 1, type: "monthly" },
+  { label: "Pagamento stipendi mensile", day: 1, type: "monthly", precoce: true }, // 00:01
   { label: "Abbassamento stipendi giocatori in calo", month: 1, day: 5, type: "annual" },
-  { label: "Aggiornamento stipendi 01/01", month: 1, day: 1, type: "annual" },
+  { label: "Aggiornamento stipendi 01/01", month: 1, day: 1, type: "annual", precoce: true }, // 08:00
   { label: "Termine ribasso stipendi 01/01", month: 1, day: 5, type: "annual" },
-  { label: "Aggiornamento stipendi fine stagione 01/06", month: 6, day: 1, type: "annual" },
-  { label: "Aggiornamento stipendi pre-stagione 01/08", month: 8, day: 1, type: "annual" },
+  { label: "Aggiornamento stipendi fine stagione 01/06", month: 6, day: 1, type: "annual", precoce: true }, // 08:00
+  { label: "Aggiornamento stipendi pre-stagione 01/08", month: 8, day: 1, type: "annual", precoce: true }, // 08:00
   { label: "Rinnovo/non rinnovo contratti biennali", month: 5, day: 31, type: "annual" },
   { label: "Vendita/svincolo giocatori contratto ribassato", month: 9, day: 15, type: "annual" },
-  { label: "Scelta obiettivo — 8° classificato", month: 8, day: 6, type: "annual" },
-  { label: "Scelta obiettivo — 7° classificato", month: 8, day: 7, type: "annual" },
-  { label: "Scelta obiettivo — 6° classificato", month: 8, day: 7, type: "annual" },
-  { label: "Scelta obiettivo — 5° classificato", month: 8, day: 8, type: "annual" },
-  { label: "Scelta obiettivo — 4° classificato", month: 8, day: 8, type: "annual" },
-  { label: "Scelta obiettivo — 3° classificato", month: 8, day: 9, type: "annual" },
-  { label: "Scelta obiettivo — 2° classificato", month: 8, day: 9, type: "annual" },
-  { label: "Scelta obiettivo — 1° classificato", month: 8, day: 10, type: "annual" },
+  { label: "Scelta obiettivo — 8° classificato", month: 8, day: 6, type: "annual" }, // 15:00
+  { label: "Scelta obiettivo — 7° classificato", month: 8, day: 7, type: "annual", precoce: true }, // 03:00
+  { label: "Scelta obiettivo — 6° classificato", month: 8, day: 7, type: "annual" }, // 15:00
+  { label: "Scelta obiettivo — 5° classificato", month: 8, day: 8, type: "annual", precoce: true }, // 03:00
+  { label: "Scelta obiettivo — 4° classificato", month: 8, day: 8, type: "annual" }, // 15:00
+  { label: "Scelta obiettivo — 3° classificato", month: 8, day: 9, type: "annual", precoce: true }, // 03:00
+  { label: "Scelta obiettivo — 2° classificato", month: 8, day: 9, type: "annual" }, // 15:00
+  { label: "Scelta obiettivo — 1° classificato", month: 8, day: 10, type: "annual", precoce: true }, // 03:00
   { label: "Apertura comunicazione investimenti", month: 8, day: 1, type: "annual" },
   { label: "Chiusura comunicazione investimenti", month: 9, day: 20, type: "annual" },
   { label: "Scadenza Ricapitalizzazione", month: 9, day: 5, type: "annual" },
@@ -295,7 +300,8 @@ const DEADLINE_DEFS_PUBBLICHE: { label: string; month?: number; day: number; typ
   { label: "Chiusura investimenti invernali", month: 12, day: 31, type: "annual" },
 ];
 
-// ── Step 4: notifica pubblica alle 9:00 (ora italiana) per le scadenze di oggi ─
+// ── Step 4: notifica pubblica alle 9:00 (ora italiana) per le scadenze del
+// giorno — o del giorno prima, per quelle con orario reale precoce (00-09).
 async function notificaScadenzeDelGiorno(ora: Date) {
   const { y, mo, d, h, mi } = italyWallClockParts(ora);
   // Il cron gira ogni 2-3 minuti: la finestra 9:00-9:03 cattura sempre un solo
@@ -303,17 +309,29 @@ async function notificaScadenzeDelGiorno(ora: Date) {
   // protezione da doppi invii (es. riavvii, trigger manuali).
   if (h !== 9 || mi >= 3) return [];
 
+  // Giorno successivo a oggi (per individuare le scadenze "precoci" di domani,
+  // da annunciare invece oggi alle 9): pura aritmetica di calendario, nessun
+  // problema di fuso — y/mo/d sono già l'orologio da parete italiano.
+  const domani = new Date(Date.UTC(y, mo - 1, d) + 86400000);
+  const domaniMo = domani.getUTCMonth() + 1, domaniD = domani.getUTCDate();
+
   const mesi = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
-  const oggiMatch = DEADLINE_DEFS_PUBBLICHE.filter(def =>
-    def.type === "monthly" ? def.day === d : (def.month === mo && def.day === d)
-  );
+  const oggiMatch = DEADLINE_DEFS_PUBBLICHE.filter(def => {
+    const targetMo = def.precoce ? domaniMo : mo;
+    const targetD = def.precoce ? domaniD : d;
+    return def.type === "monthly" ? def.day === targetD : (def.month === targetMo && def.day === targetD);
+  });
 
   const risultati: any[] = [];
   for (const def of oggiMatch) {
-    const chiave = `${def.label}|${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    // La chiave usa comunque la data REALE della scadenza (non quella di
+    // invio), così resta unica anche per le notifiche precoci del giorno prima.
+    const scadeMo = def.precoce ? domaniMo : mo, scadeD = def.precoce ? domaniD : d;
+    const scadeY = def.precoce && domaniMo === 1 && mo === 12 ? y + 1 : y;
+    const chiave = `${def.label}|${scadeY}-${String(scadeMo).padStart(2, "0")}-${String(scadeD).padStart(2, "0")}`;
     const { error: insErr } = await supabase.from("scadenze_notificate").insert({ chiave });
     if (insErr) continue; // già notificata oggi (violazione unique) o tabella non ancora creata
-    const dataStr = def.type === "monthly" ? `${String(d).padStart(2, "0")} del mese` : `${String(d).padStart(2, "0")} ${mesi[mo - 1]}`;
+    const dataStr = def.type === "monthly" ? `${String(scadeD).padStart(2, "0")} del mese` : `${String(scadeD).padStart(2, "0")} ${mesi[scadeMo - 1]}`;
     await notifica("scadenza_imminente", { giorni: 0, label: def.label, data: dataStr }, null);
     risultati.push({ tipo: "scadenza_notificata", label: def.label });
   }
