@@ -1846,6 +1846,30 @@ function _conteggiaSvincoliDaStorico(svincoli = []) {
   };
 }
 
+// Conteggi puramente informativi (non persistiti in stagione_svincoli, quindi
+// non serve toccare lo schema): esteri e U21 gratuiti non incidono mai sul
+// totale/quota, ma la Control Room li vuole comunque visibili per tracciarli.
+function _conteggiaSvincoliExtra(svincoli = []) {
+  return {
+    count_estero: svincoli.filter(s => s.estero).length,
+    count_u21_nc: svincoli.filter(s => s.tipo === 'straordinario_u21_nc').length,
+  };
+}
+
+// Come getStagioneSvincoli ma include anche i conteggi extra (esteri, U21
+// gratuiti) usati solo per la panoramica in Control Room — non scrive nulla.
+export async function getDettaglioSvincoliStagione(squadra) {
+  const { start, end } = _rangeStagioneSvincoli();
+  const { data, error } = await supabase
+    .from('svincoli')
+    .select('*')
+    .eq('squadra', squadra)
+    .gte('data_svincolo', start)
+    .lte('data_svincolo', end);
+  if (error) throw error;
+  return { ..._conteggiaSvincoliDaStorico(data || []), ..._conteggiaSvincoliExtra(data || []) };
+}
+
 export async function ricostruisciStagioneSvincoli(squadra) {
   const { start, end } = _rangeStagioneSvincoli();
   const { data, error } = await supabase
