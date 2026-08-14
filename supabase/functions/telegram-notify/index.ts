@@ -148,7 +148,9 @@ function buildMessage(type: string, p: Record<string, unknown>): string | null {
       return `${badge}↩️ <b>Nuova risposta al tuo commento</b>\n\n🏟 <b>${p.autore_squadra ?? p.autore ?? "Un presidente"}</b> ti ha risposto nel post:\n<b>${p.titolo}</b>\n\n“${String(p.testo ?? "").slice(0, 280)}${String(p.testo ?? "").length > 280 ? "…" : ""}”${link}`;
 
     case "scadenza_imminente":
-      return `${badge}⏰ <b>Scadenza tra ${p.giorni} giorn${Number(p.giorni) === 1 ? "o" : "i"}!</b>\n\n📋 ${p.label}\n📅 ${p.data}${link}`;
+      return Number(p.giorni) === 0
+        ? `${badge}⏰ <b>Scadenza oggi!</b>\n\n📋 ${p.label}\n📅 ${p.data}${link}`
+        : `${badge}⏰ <b>Scadenza tra ${p.giorni} giorn${Number(p.giorni) === 1 ? "o" : "i"}!</b>\n\n📋 ${p.label}\n📅 ${p.data}${link}`;
 
     case "mercato_aperto":
       return `${badge}🟢 <b>Mercato aperto</b> — sessione <b>${p.periodo}</b>\nPotete ora fare offerte e trattative.${link}`;

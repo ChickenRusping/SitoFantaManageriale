@@ -1572,6 +1572,19 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
     { label: "Aggiornamento stipendi 01/08",         month: 8,  day: 1,  section: "Stipendi",type: "annual",  note: "Alle 08:00 — art. 4.7" },
     { label: "Rinnovo/non rinnovo contratti",        month: 5,  day: 31, section: "Stipendi",type: "annual",  note: "Entro le 23:59" },
     { label: "Vendita/svincolo contratti ribassati", month: 9,  day: 15, section: "Stipendi",type: "annual",  note: "Pena 5M + svincolo forzato" },
+    { label: "Scelta obiettivo — 8° classificato",   month: 8,  day: 6,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
+    { label: "Scelta obiettivo — 7° classificato",   month: 8,  day: 7,  section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
+    { label: "Scelta obiettivo — 6° classificato",   month: 8,  day: 7,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
+    { label: "Scelta obiettivo — 5° classificato",   month: 8,  day: 8,  section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
+    { label: "Scelta obiettivo — 4° classificato",   month: 8,  day: 8,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
+    { label: "Scelta obiettivo — 3° classificato",   month: 8,  day: 9,  section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
+    { label: "Scelta obiettivo — 2° classificato",   month: 8,  day: 9,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
+    { label: "Scelta obiettivo — 1° classificato",   month: 8,  day: 10, section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
+    { label: "Apertura comunicazione investimenti",  month: 8,  day: 1,  section: "Investimenti", type: "annual", note: "Ore 09:00 — budget max 30M" },
+    { label: "Chiusura comunicazione investimenti",  month: 9,  day: 20, section: "Investimenti", type: "annual", note: "Entro le 23:59" },
+    { label: "Scadenza Ricapitalizzazione",          month: 9,  day: 5,  section: "Investimenti", type: "annual", note: "Ultimo giorno per attivarla" },
+    { label: "Apertura investimenti invernali",      month: 12, day: 24, section: "Investimenti", type: "annual", note: "Max 10M" },
+    { label: "Chiusura investimenti invernali",      month: 12, day: 31, section: "Investimenti", type: "annual", note: "Ultimo giorno utile" },
   ];
   function resolveDeadline(def) {
     const today = new Date(nowD.getFullYear(), nowD.getMonth(), nowD.getDate());
@@ -1597,8 +1610,8 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
     const mesi = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
     return { ...def, dateObj: prev, dateStr: `${String(prev.getDate()).padStart(2,'0')} ${mesi[prev.getMonth()]} ${prev.getFullYear()}`, days: -daysAgo, daysAgo };
   }).filter(Boolean).sort((a,b) => a.daysAgo - b.daysAgo).slice(0, 3);
-  const sC = { Mercato: "#6366f1", Quote: "#818cf8", Rosa: "#10b981", Stipendi: "#f97316" };
-  const sI = { Mercato: "🤝", Quote: "💶", Rosa: "🌿", Stipendi: "💰" };
+  const sC = { Mercato: "#6366f1", Quote: "#818cf8", Rosa: "#10b981", Stipendi: "#f97316", Obiettivi: "#ec4899", Investimenti: "#06b6d4" };
+  const sI = { Mercato: "🤝", Quote: "💶", Rosa: "🌿", Stipendi: "💰", Obiettivi: "🎯", Investimenti: "📈" };
   // ── Premi ────────────────────────────────────────────────────────────────────
 
   const [premi, setPremi] = useState([]);
@@ -1983,7 +1996,7 @@ function DeadlinePage() {
     { label: "Pagamento quota iscrizione (30€) al tesoriere",   month: 8,  day: 31, section: "Quote",    type: "annual",  note: "" },
     { label: "Inizio finestra ritiro budget extra",             month: 1,  day: 5,  section: "Quote",    type: "annual",  note: "Costo: 2× i milioni ottenuti" },
     // ROSA
-    { label: "Pagamento costo vivaio (4M)",                    month: 8,  day: 15, section: "Rosa",     type: "annual",  note: "Obbligatorio per tutti, anche senza vivaio attivo" },
+    { label: "Pagamento costo vivaio (4M)",                    month: 8,  day: 15, section: "Rosa",     type: "annual",  note: "Obbligatorio per tutti, anche senza vivaio attivo — entro le 23:59" },
     { label: "Acquisto giocatori vivaio (apertura)",            month: 9,  day: 1,  section: "Rosa",     type: "annual",  note: "Solo dopo aggiornamento listone post-mercato estivo" },
     // STIPENDI
     { label: "Pagamento stipendi mensile — automatico",         day: 1,              section: "Stipendi", type: "monthly", note: "Alle 00:01 — totale stipendi / 12" },
@@ -1993,8 +2006,22 @@ function DeadlinePage() {
     { label: "Aggiornamento stipendi fine stagione 01/06 (art. 4.6)", month: 6, day: 1, section: "Stipendi", type: "annual",  note: "Alle 08:00 — importa listone da Modifica Rose → aggiorna Q e stip di tutti i giocatori" },
     { label: "Aggiornamento stipendi pre-stagione 01/08 (art. 4.7)", month: 8,  day: 1,  section: "Stipendi", type: "annual",  note: "Alle 08:00 — importa listone aggiornato da Modifica Rose" },
     { label: "Rinnovo/non rinnovo contratti biennali",          month: 5,  day: 31, section: "Stipendi", type: "annual",  note: "Entro le 23:59 — non rinnovati diventano svincolati il 01/06" },
-    { label: "Vivaio: pagamento costo mantenimento (4M)",         month: 8,  day: 15, section: "Stipendi", type: "annual",  note: "Entro le 23:59 — obbligatorio per tutti" },
     { label: "Vendita/svincolo giocatori contratto ribassato",  month: 9,  day: 15, section: "Stipendi", type: "annual",  note: "Pena 5M + svincolo forzato se non rispettato" },
+    // OBIETTIVI (art. 9.1)
+    { label: "Scelta obiettivo — 8° classificato",   month: 8,  day: 6,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
+    { label: "Scelta obiettivo — 7° classificato",   month: 8,  day: 7,  section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
+    { label: "Scelta obiettivo — 6° classificato",   month: 8,  day: 7,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
+    { label: "Scelta obiettivo — 5° classificato",   month: 8,  day: 8,  section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
+    { label: "Scelta obiettivo — 4° classificato",   month: 8,  day: 8,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
+    { label: "Scelta obiettivo — 3° classificato",   month: 8,  day: 9,  section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
+    { label: "Scelta obiettivo — 2° classificato",   month: 8,  day: 9,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
+    { label: "Scelta obiettivo — 1° classificato",   month: 8,  day: 10, section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
+    // INVESTIMENTI (art. 10)
+    { label: "Apertura comunicazione investimenti",  month: 8,  day: 1,  section: "Investimenti", type: "annual", note: "Ore 09:00 — budget max 30M" },
+    { label: "Chiusura comunicazione investimenti",  month: 9,  day: 20, section: "Investimenti", type: "annual", note: "Entro le 23:59" },
+    { label: "Scadenza Ricapitalizzazione",          month: 9,  day: 5,  section: "Investimenti", type: "annual", note: "Ultimo giorno per attivarla" },
+    { label: "Apertura investimenti invernali",      month: 12, day: 24, section: "Investimenti", type: "annual", note: "Max 10M" },
+    { label: "Chiusura investimenti invernali",      month: 12, day: 31, section: "Investimenti", type: "annual", note: "Ultimo giorno utile" },
   ];
 
   // Calcola la prossima occorrenza di una deadline e i giorni mancanti
@@ -2029,8 +2056,8 @@ function DeadlinePage() {
   }).sort((a, b) => a.dateObj - b.dateObj);
 
   const sections = [...new Set(DEADLINE_DEFS.map(d => d.section))];
-  const sectionIcons = { Mercato: "🤝", Quote: "💶", Rosa: "🌿", Stipendi: "💰" };
-  const sectionColors = { Mercato: "#6366f1", Quote: "#818cf8", Rosa: "#10b981", Stipendi: "#f97316" };
+  const sectionIcons = { Mercato: "🤝", Quote: "💶", Rosa: "🌿", Stipendi: "💰", Obiettivi: "🎯", Investimenti: "📈" };
+  const sectionColors = { Mercato: "#6366f1", Quote: "#818cf8", Rosa: "#10b981", Stipendi: "#f97316", Obiettivi: "#ec4899", Investimenti: "#06b6d4" };
 
   // Prossima scadenza assoluta
   const prossima = resolvedDeadlines[0];

@@ -250,9 +250,74 @@ function formatNotificaApp(type: string, p: Record<string, any>): { titolo: stri
       return { titolo: "DS Masterclass attivato", corpo: `${p.giocatore} — offerta più alta: ${p.offertaRivelata ? p.offertaRivelata + "M" : "nessuna offerta"}`, link };
     case "ds_masterclass_usato":
       return { titolo: "DS Masterclass utilizzato", corpo: `${p.squadra} ha attivato un utilizzo per l'asta di ${p.giocatore}`, link };
+    case "scadenza_imminente":
+      return { titolo: "Scadenza oggi", corpo: `${p.label} — ${p.data}`, link: "/lega" };
     default:
       return null;
   }
+}
+
+// ── Scadenze pubbliche (art. vari del regolamento) — notifica alle 9:00 del
+// giorno in cui scade una di queste. ATTENZIONE MANUTENZIONE: stessa lista di
+// DEADLINE_DEFS in App.jsx (pagina Lega e pagina Deadline) — se cambi una
+// scadenza in un posto, cambiala anche negli altri due.
+const DEADLINE_DEFS_PUBBLICHE: { label: string; month?: number; day: number; type: "annual" | "monthly" }[] = [
+  { label: "Apertura mercato estivo", month: 6, day: 1, type: "annual" },
+  { label: "Chiusura mercato estivo", month: 9, day: 15, type: "annual" },
+  { label: "Apertura mercato invernale", month: 1, day: 1, type: "annual" },
+  { label: "Chiusura mercato invernale", month: 2, day: 15, type: "annual" },
+  { label: "Quota iscrizione campionato (30M)", month: 7, day: 31, type: "annual" },
+  { label: "Decisione investimento extra budget (0–10€)", month: 8, day: 14, type: "annual" },
+  { label: "Pagamento quota iscrizione (30€) al tesoriere", month: 8, day: 31, type: "annual" },
+  { label: "Inizio finestra ritiro budget extra", month: 1, day: 5, type: "annual" },
+  { label: "Pagamento costo vivaio (4M)", month: 8, day: 15, type: "annual" },
+  { label: "Acquisto giocatori vivaio (apertura)", month: 9, day: 1, type: "annual" },
+  { label: "Pagamento stipendi mensile", day: 1, type: "monthly" },
+  { label: "Abbassamento stipendi giocatori in calo", month: 1, day: 5, type: "annual" },
+  { label: "Aggiornamento stipendi 01/01", month: 1, day: 1, type: "annual" },
+  { label: "Termine ribasso stipendi 01/01", month: 1, day: 5, type: "annual" },
+  { label: "Aggiornamento stipendi fine stagione 01/06", month: 6, day: 1, type: "annual" },
+  { label: "Aggiornamento stipendi pre-stagione 01/08", month: 8, day: 1, type: "annual" },
+  { label: "Rinnovo/non rinnovo contratti biennali", month: 5, day: 31, type: "annual" },
+  { label: "Vendita/svincolo giocatori contratto ribassato", month: 9, day: 15, type: "annual" },
+  { label: "Scelta obiettivo — 8° classificato", month: 8, day: 6, type: "annual" },
+  { label: "Scelta obiettivo — 7° classificato", month: 8, day: 7, type: "annual" },
+  { label: "Scelta obiettivo — 6° classificato", month: 8, day: 7, type: "annual" },
+  { label: "Scelta obiettivo — 5° classificato", month: 8, day: 8, type: "annual" },
+  { label: "Scelta obiettivo — 4° classificato", month: 8, day: 8, type: "annual" },
+  { label: "Scelta obiettivo — 3° classificato", month: 8, day: 9, type: "annual" },
+  { label: "Scelta obiettivo — 2° classificato", month: 8, day: 9, type: "annual" },
+  { label: "Scelta obiettivo — 1° classificato", month: 8, day: 10, type: "annual" },
+  { label: "Apertura comunicazione investimenti", month: 8, day: 1, type: "annual" },
+  { label: "Chiusura comunicazione investimenti", month: 9, day: 20, type: "annual" },
+  { label: "Scadenza Ricapitalizzazione", month: 9, day: 5, type: "annual" },
+  { label: "Apertura investimenti invernali", month: 12, day: 24, type: "annual" },
+  { label: "Chiusura investimenti invernali", month: 12, day: 31, type: "annual" },
+];
+
+// ── Step 4: notifica pubblica alle 9:00 (ora italiana) per le scadenze di oggi ─
+async function notificaScadenzeDelGiorno(ora: Date) {
+  const { y, mo, d, h, mi } = italyWallClockParts(ora);
+  // Il cron gira ogni 2-3 minuti: la finestra 9:00-9:03 cattura sempre un solo
+  // tick al giorno. La tabella scadenze_notificate resta comunque la vera
+  // protezione da doppi invii (es. riavvii, trigger manuali).
+  if (h !== 9 || mi >= 3) return [];
+
+  const mesi = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
+  const oggiMatch = DEADLINE_DEFS_PUBBLICHE.filter(def =>
+    def.type === "monthly" ? def.day === d : (def.month === mo && def.day === d)
+  );
+
+  const risultati: any[] = [];
+  for (const def of oggiMatch) {
+    const chiave = `${def.label}|${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    const { error: insErr } = await supabase.from("scadenze_notificate").insert({ chiave });
+    if (insErr) continue; // già notificata oggi (violazione unique) o tabella non ancora creata
+    const dataStr = def.type === "monthly" ? `${String(d).padStart(2, "0")} del mese` : `${String(d).padStart(2, "0")} ${mesi[mo - 1]}`;
+    await notifica("scadenza_imminente", { giorni: 0, label: def.label, data: dataStr }, null);
+    risultati.push({ tipo: "scadenza_notificata", label: def.label });
+  }
+  return risultati;
 }
 
 // ── Step 1: chiamate scadute → crea asta ───────────────────────────────────
@@ -646,6 +711,13 @@ serve(async (req) => {
     } catch (e) {
       risultati.push({ tipo: "errore", id: a.id, error: e.message });
     }
+  }
+
+  // 4) Scadenze pubbliche del giorno (alle 9:00 ora italiana)
+  try {
+    risultati.push(...await notificaScadenzeDelGiorno(ora));
+  } catch (e) {
+    risultati.push({ tipo: "errore", contesto: "scadenze_pubbliche", error: e.message });
   }
 
   return new Response(JSON.stringify({ ok: true, risultati }), {
