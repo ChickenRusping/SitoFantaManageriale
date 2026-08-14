@@ -4811,6 +4811,20 @@ Gli obiettivi verranno azzerati.`;
     catch(e){ alert(`Errore: ${e.message}`); }
     finally { setSavingAll(false); }
   }
+  // Obiettivi con più condizioni indipendenti (es. "compra 3 giocatori e che
+  // totalizzino 25 presenze"): ob.metriche = [{chiave,label,soglia}], ognuna
+  // tracciata separatamente in progresso_metriche (jsonb, {chiave: valore}).
+  async function salvaProgrObjMetrica(ob, chiave) {
+    if (!canManageObiettivi) return;
+    setSavingAll(true);
+    try {
+      const pg = progresso.find(p=>p.obiettivo_id===ob.id);
+      const metriche = { ...(pg?.progresso_metriche||{}), [chiave]: parseFloat(editVal)||0 };
+      await upsertProgresso(team.name, ob.id, { progresso_metriche: metriche }, STAGIONE_CORRENTE);
+      setEditId(null); await loadAll();
+    } catch(e){ alert(`Errore: ${e.message}`); }
+    finally { setSavingAll(false); }
+  }
   async function salvaModuloTracker() {
     if (!canManageObiettivi) return;
     if (!giornataModulo || !moduloScelto) return;
@@ -5144,7 +5158,33 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                           <div style={{ flex:1 }}>
                             <div style={{ fontSize:12,color:comp?"#10b981":fall?"#ef4444":"#ddd",fontWeight:600,lineHeight:1.4 }}>{comp?"✅ ":fall?"❌ ":""}{ob.testo}</div>
                             <div style={{ display:"flex",gap:8,alignItems:"center",marginTop:6,flexWrap:"wrap" }}>
-                              {canManageObiettivi && editId===ob.id?(
+                              {Array.isArray(ob.metriche) && ob.metriche.length>0 ? (
+                                <div style={{ display:"flex",flexDirection:"column",gap:5,width:"100%" }}>
+                                  {ob.metriche.map(m=>{
+                                    const mKey = `${ob.id}::${m.chiave}`;
+                                    const val = pg?.progresso_metriche?.[m.chiave] || 0;
+                                    return (
+                                      <div key={m.chiave} style={{ display:"flex",gap:8,alignItems:"center",flexWrap:"wrap" }}>
+                                        <span style={{ fontSize:10,color:"#888",minWidth:130 }}>{m.label}</span>
+                                        {canManageObiettivi && editId===mKey?(
+                                          <div style={{ display:"flex",gap:4 }}>
+                                            <input style={{ padding:"2px 6px",borderRadius:5,border:"1px solid #ffffff18",background:"#0d0f14",color:"#f0f0f0",fontSize:11,width:60 }} type="number" value={editVal} onChange={e=>setEditVal(e.target.value)}/>
+                                            <button onClick={()=>salvaProgrObjMetrica(ob,m.chiave)} disabled={savingAll} style={{ padding:"2px 8px",borderRadius:5,border:"none",background:savingAll?"#0d6b4c":"#10b98122",color:"#10b981",fontSize:10,cursor:savingAll?"wait":"pointer" }}>{savingAll?"⏳":"✓"}</button>
+                                            <button onClick={()=>setEditId(null)} disabled={savingAll} style={{ padding:"2px 6px",borderRadius:5,border:"none",background:"#ffffff10",color:"#888",fontSize:10,cursor:"pointer" }}>✕</button>
+                                          </div>
+                                        ):canManageObiettivi?(
+                                          <button onClick={()=>{setEditId(mKey);setEditVal(val);}} style={{ padding:"2px 8px",borderRadius:5,border:"1px solid #ffffff15",background:"transparent",color:"#666",fontSize:10,cursor:"pointer" }}>
+                                            📊 {val}{m.soglia?`/${m.soglia}`:""}
+                                          </button>
+                                        ):(
+                                          <span style={{ padding:"2px 8px",fontSize:10,color:"#666" }}>📊 {val}{m.soglia?`/${m.soglia}`:""}</span>
+                                        )}
+                                        {m.soglia>0&&!comp&&<div style={{ flex:1,minWidth:60 }}><StatBar value={val} max={m.soglia} color={info.color} height={4}/></div>}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ):canManageObiettivi && editId===ob.id?(
                                 <div style={{ display:"flex",gap:4 }}>
                                   <input style={{ padding:"2px 6px",borderRadius:5,border:"1px solid #ffffff18",background:"#0d0f14",color:"#f0f0f0",fontSize:11,width:60 }} type="number" value={editVal} onChange={e=>setEditVal(e.target.value)}/>
                                   <button onClick={()=>salvaProgrObj(ob.id)} disabled={savingAll} style={{ padding:"2px 8px",borderRadius:5,border:"none",background:savingAll?"#0d6b4c":"#10b98122",color:"#10b981",fontSize:10,cursor:savingAll?"wait":"pointer" }}>{savingAll?"⏳":"✓"}</button>
@@ -5159,7 +5199,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                                   📊 {pg?.valore_attuale||0}{ob.soglia?`/${ob.soglia}`:""}
                                 </span>
                               )}
-                              {ob.soglia>0&&!comp&&<div style={{ flex:1,minWidth:60 }}><StatBar value={pg?.valore_attuale||0} max={ob.soglia} color={info.color} height={4}/></div>}
+                              {!(Array.isArray(ob.metriche) && ob.metriche.length>0) && ob.soglia>0&&!comp&&<div style={{ flex:1,minWidth:60 }}><StatBar value={pg?.valore_attuale||0} max={ob.soglia} color={info.color} height={4}/></div>}
                               <Badge color={info.color}>+{ob.guadagno}M</Badge>
                               {ob.penalita>0&&<Badge color="#ef4444">−{ob.penalita}M</Badge>}
                               {pg?.incassato&&<Badge color="#10b981">Incassato</Badge>}
