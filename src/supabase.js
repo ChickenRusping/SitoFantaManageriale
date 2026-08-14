@@ -1812,7 +1812,9 @@ function _rangeStagioneSvincoli(date = new Date()) {
 
 function _conteggiaSvincoliDaStorico(svincoli = []) {
   const ordinari = svincoli.filter(s => s.tipo === 'ordinario').length;
-  const straord = svincoli.filter(s => ['straordinario', 'straordinario_u21'].includes(s.tipo));
+  // Gli svincoli esteri non contano più nella quota straordinari né nel tetto
+  // dei 14 annuali (art. 6.1 aggiornato) — restano solo nello storico/cooldown.
+  const straord = svincoli.filter(s => ['straordinario', 'straordinario_u21'].includes(s.tipo) && !s.estero);
   const estivi = straord.filter(s => {
     const m = new Date(s.data_svincolo).getMonth() + 1;
     return [6, 7, 8, 9].includes(m);
@@ -1821,7 +1823,7 @@ function _conteggiaSvincoliDaStorico(svincoli = []) {
     const m = new Date(s.data_svincolo).getMonth() + 1;
     return [1, 2].includes(m);
   }).length;
-  const countTotale = svincoli.filter(s => s.tipo !== 'straordinario_u21_nc').length;
+  const countTotale = svincoli.filter(s => s.tipo !== 'straordinario_u21_nc' && !s.estero).length;
   const history = svincoli
     .filter(s => s.tipo !== 'straordinario_u21_nc')
     .map(s => {
@@ -2169,7 +2171,9 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
   }
 
   // Penale extra: 2M per ogni svincolo conteggiato oltre il 14° (art. 6.5).
-  const isConteggiatoPerTotale = tipo !== 'straordinario_u21_nc';
+  // Gli svincoli esteri non contano più né nella quota straordinari né nel
+  // tetto dei 14 annuali (art. 6.1 aggiornato).
+  const isConteggiatoPerTotale = tipo !== 'straordinario_u21_nc' && !estero;
   const numeroProgressivo = totalePre + (isConteggiatoPerTotale ? 1 : 0);
   const penaleOltre14 = isConteggiatoPerTotale && numeroProgressivo > 14 ? 2 : 0;
   if (penaleOltre14 > 0) {
@@ -2247,7 +2251,7 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
     const riacquistabileDal = new Date(oggi.getTime() + 60 * 86400000).toISOString().slice(0, 10);
     history.push({ nome: player.nome, data_svincolo: oggiStr, riacquistabile_dal: riacquistabileDal });
 
-    const isConteggiato = tipo !== 'straordinario_u21_nc';
+    const isConteggiato = tipo !== 'straordinario_u21_nc' && !estero;
     const isStraord = tipo === 'straordinario' || tipo === 'straordinario_u21';
     const periodo = _getPeriodoStraordinariSvincoli(oggi);
     const isEstivo = periodo === 'estivo';
