@@ -688,7 +688,9 @@ function isFPFEscluso(descrizione) {
     d.startsWith('storno:') ||            // Storni/correzioni manuali (annulla evento, correzioni admin) — mai operazioni di mercato
     // Iscrizione campionato (quota obbligatoria di lega, non un'operazione di mercato)
     d.startsWith('iscrizione campionato') ||
-    d.startsWith('iscrizione al campionato')
+    d.startsWith('iscrizione al campionato') ||
+    // Costo mantenimento vivaio (art. 3.4.4): quota fissa obbligatoria per tutti, non un'operazione di mercato
+    d.startsWith('costo mantenimento vivaio')
   );
 }
 
