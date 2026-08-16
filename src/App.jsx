@@ -519,7 +519,7 @@ function TeamCard({ team, onClick, scLive: scLiveProp, capLimite: capLimiteProp,
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 10 }}>
         {[
-          { label: "BILANCIO",  value: `${team.bilancio.toFixed(1)}M`, color: bilColor },
+          { label: "BILANCIO",  value: `${team.bilancio.toFixed(2)}M`, color: bilColor },
           { label: "SC USATO",  value: `${scLive.toFixed(1)}M`,        color: scColor },
           { label: "SC LIBERO", value: scLiberoStr,                     color: scLiberoColor },
         ].map(s => (
@@ -1039,7 +1039,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
             {/* Bilancio + SC + FPF */}
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
               {[
-                { label: "BILANCIO", value: `${myTeam.bilancio?.toFixed(1)}M`, color: myTeam.bilancio < 10 ? "#f97316" : "#10b981" },
+                { label: "BILANCIO", value: `${myTeam.bilancio?.toFixed(2)}M`, color: myTeam.bilancio < 10 ? "#f97316" : "#10b981" },
                 { label: "SALARY CAP", value: `${scUsato.toFixed(1)} / ${scLimite.toFixed(1)}M`, color: scUsato > scLimite ? "#ef4444" : scUsato > scLimite - 10 ? "#f59e0b" : "#10b981" },
                 { label: "FPF", value: fpfDisplay, color: fpfColor },
               ].map(s => (
