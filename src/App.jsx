@@ -282,6 +282,29 @@ function scaricaSnapshotCSV(righe) {
   URL.revokeObjectURL(url);
 }
 
+// Come scaricaSnapshotCSV ma per l'elenco giocatori (una riga per giocatore,
+// tutte le rose, con i badge visibili in app: cedibile, da cedere, fuori
+// rosa, prestito, vivaio, U21/31+).
+function scaricaRoseCSV(righe) {
+  const headers = ['presidente','giocatore','ruolo','eta','squadra_serie_a','quotazione','stipendio','anni_contratto','clausola','in_vivaio','fuori_rosa','da_cedere','cedibile_stato','cedibile_richiesta','in_prestito','prestito_tipo','prestito_da','prestito_scadenza','under21','over31'];
+  const escape = (v) => {
+    const s = String(v ?? '');
+    return /[",\n;]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+  };
+  const lines = [headers.join(',')];
+  for (const r of righe) lines.push(headers.map(h => escape(r[h])).join(','));
+  const csv = '\uFEFF' + lines.join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `rose_giocatori_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function calcolaStipCorretto(quot, anniContratto, anni) {
   const base = parseFloat((Number(quot || 0) / 5).toFixed(2));
   const isU21 = anni > 0 && anni <= 21;
@@ -1551,6 +1574,44 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
     } catch(e) { alert(`Errore export: ${e.message}`); }
     finally { setExportingCSV(false); }
   }
+
+  // ── Export CSV rose: una riga per giocatore, tutte le squadre, con i badge
+  // visibili in app (cedibile, da cedere, fuori rosa, prestito, vivaio, U21/31+) ──
+  const [exportingRoseCSV, setExportingRoseCSV] = useState(false);
+  function handleExportRoseCSV() {
+    setExportingRoseCSV(true);
+    try {
+      const righe = [];
+      for (const t of teams) {
+        for (const p of (roseMap[t.name] || [])) {
+          righe.push({
+            presidente: t.name,
+            giocatore: p.nome,
+            ruolo: p.ruolo,
+            eta: p.anni || '',
+            squadra_serie_a: p.squadra_serie_a || '',
+            quotazione: p.quot ?? '',
+            stipendio: p.stip ?? '',
+            anni_contratto: p.anni_contratto ?? '',
+            clausola: p.clausola ?? '',
+            in_vivaio: p.in_vivaio ? 'si' : 'no',
+            fuori_rosa: p.fuori_lista ? 'si' : 'no',
+            da_cedere: p.da_cedere ? 'si' : 'no',
+            cedibile_stato: p.cedibile_stato || '',
+            cedibile_richiesta: p.cedibile_richiesta || '',
+            in_prestito: p.in_prestito ? 'si' : 'no',
+            prestito_tipo: p.in_prestito ? (p.prestito_tipo || '') : '',
+            prestito_da: p.in_prestito ? (p.squadra_originale || '') : '',
+            prestito_scadenza: p.in_prestito ? (p.scadenza_prestito || '') : '',
+            under21: (Number(p.anni||0) > 0 && Number(p.anni||0) <= 21) ? 'si' : 'no',
+            over31: Number(p.anni||0) >= 31 ? 'si' : 'no',
+          });
+        }
+      }
+      scaricaRoseCSV(righe);
+    } catch(e) { alert(`Errore export: ${e.message}`); }
+    finally { setExportingRoseCSV(false); }
+  }
   // ── Deadline ─────────────────────────────────────────────────────────────────
   const [nowD, setNowD] = useState(new Date());
   useEffect(() => { const t = setInterval(() => setNowD(new Date()), 600000); return () => clearInterval(t); }, []);
@@ -1819,10 +1880,16 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
             {roseIrregolari.length>0?"❌ ROSE NON REGOLARI":"✅ TUTTE LE ROSE REGOLARI"}
           </div>
           {isAdmin && (
-            <button onClick={handleExportCSV} disabled={exportingCSV}
-              style={{ padding:"6px 14px", borderRadius:8, border:"1px solid #6366f140", background:exportingCSV?"#2a2f6b":"#6366f118", color:"#818cf8", fontSize:11, fontWeight:700, cursor:exportingCSV?"wait":"pointer" }}>
-              {exportingCSV?"⏳ Attendere...":"📥 Esporta CSV squadre"}
-            </button>
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+              <button onClick={handleExportCSV} disabled={exportingCSV}
+                style={{ padding:"6px 14px", borderRadius:8, border:"1px solid #6366f140", background:exportingCSV?"#2a2f6b":"#6366f118", color:"#818cf8", fontSize:11, fontWeight:700, cursor:exportingCSV?"wait":"pointer" }}>
+                {exportingCSV?"⏳ Attendere...":"📥 Esporta CSV squadre"}
+              </button>
+              <button onClick={handleExportRoseCSV} disabled={exportingRoseCSV}
+                style={{ padding:"6px 14px", borderRadius:8, border:"1px solid #10b98140", background:exportingRoseCSV?"#0d6b4c":"#10b98118", color:"#10b981", fontSize:11, fontWeight:700, cursor:exportingRoseCSV?"wait":"pointer" }}>
+                {exportingRoseCSV?"⏳ Attendere...":"📥 Esporta CSV giocatori"}
+              </button>
+            </div>
           )}
         </div>
         {roseIrregolari.map(([name, comp]) => {
