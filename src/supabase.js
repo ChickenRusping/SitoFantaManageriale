@@ -6841,6 +6841,25 @@ export async function deleteRegolamentoArticolo(id) {
   if (error) throw error;
 }
 
+// ─── CHANGELOG (Archivio > Changelog) ─────────────────────────────────────────
+export async function getChangelog() {
+  const { data, error } = await supabase.from('changelog').select('*').order('data', { ascending: false }).order('id', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+export async function upsertChangelogEntry(voce) {
+  const { error } = await supabase.from('changelog').upsert(voce, { onConflict: 'id' });
+  if (error) throw error;
+}
+export async function insertChangelogEntry(voce) {
+  const { error } = await supabase.from('changelog').insert(voce);
+  if (error) throw error;
+}
+export async function deleteChangelogEntry(id) {
+  const { error } = await supabase.from('changelog').delete().eq('id', id);
+  if (error) throw error;
+}
+
 export async function rimuoviAllenatore(squadra, nomeAllenatore, rimborso = 0) {
   await supabase.from('allenatori_carte').update({ squadra: null }).eq('nome', nomeAllenatore).eq('squadra', squadra);
   if (rimborso > 0) {

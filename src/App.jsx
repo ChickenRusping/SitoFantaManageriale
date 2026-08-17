@@ -200,6 +200,7 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   // Albo d'Oro & Regolamento
   getStagioniPassate, upsertStagione, deleteStagione, uploadMaglia,
   getRegolamentoArticoli, upsertRegolamentoArticolo, insertRegolamentoArticolo, deleteRegolamentoArticolo,
+  getChangelog, upsertChangelogEntry, insertChangelogEntry, deleteChangelogEntry,
 } from "./supabase.js";
 
 // ─── SORTABLE TABLE HOOK ──────────────────────────────────────────────────────
@@ -898,6 +899,68 @@ function CalcolatoreGiornata({ profile, teams }) {
 }
 
 /* ─── SQUADRE PAGE ──────────────────────────────────────────────────────────── */
+/* ─── COSA DEVO FARE — checklist personalizzata ─────────────────────────────── */
+// Aggrega in un unico posto i promemoria sparsi tra Obiettivi/Contratti/
+// Investimenti/Vivaio, così da non dover girare tab per tab per capire cosa
+// scade a breve. Ogni voce si genera solo se effettivamente applicabile.
+function TodoWidget({ team, mySquadra, myAllenatore }) {
+  const [contratti, setContratti] = useState([]);
+  const [investimentiSpesi, setInvestimentiSpesi] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!mySquadra) return;
+    let cancelled = false;
+    Promise.all([
+      getContrattiInScadenza(mySquadra).catch(() => []),
+      getInvestimenti(mySquadra).catch(() => []),
+    ]).then(([c, inv]) => {
+      if (cancelled) return;
+      setContratti(c || []);
+      setInvestimentiSpesi((inv || []).reduce((s, i) => s + Number(i.costo || 0), 0));
+      setLoaded(true);
+    });
+    return () => { cancelled = true; };
+  }, [mySquadra]);
+
+  if (!loaded || !team) return null;
+
+  const oggi = new Date();
+  const m = oggi.getMonth() + 1, d = oggi.getDate();
+  const inFinestraEstivaInvest = (m === 8) || (m === 9 && d <= 20);
+  const inFinestraInvernaleInvest = (m === 12 && d >= 24 && d <= 31);
+  const vivaioPagatoStagione = team.vivaio_stagione_pagata === STAGIONE_CORRENTE || (team.vivaio_pagato && !team.vivaio_stagione_pagata);
+
+  const items = [];
+  if (!myAllenatore) items.push({ testo: "Non hai ancora scelto un allenatore per questa stagione", urgente: true, icona: "🎓" });
+  if (contratti.length > 0) items.push({ testo: `${contratti.length} giocator${contratti.length===1?'e':'i'} da rinnovare/non rinnovare entro il 31/05`, urgente: false, icona: "📄" });
+  if (!vivaioPagatoStagione) items.push({ testo: "Costo mantenimento vivaio (4M) non ancora pagato — entro il 15/08", urgente: (m===8 && d>=10), icona: "🌱" });
+  if (inFinestraEstivaInvest && investimentiSpesi !== null) {
+    const residuo = parseFloat((30 - investimentiSpesi).toFixed(2));
+    if (residuo > 0) items.push({ testo: `${residuo}M di budget investimenti ancora disponibili — finestra chiude il 20/09`, urgente: (m===9 && d>=15), icona: "📈" });
+  }
+  if (inFinestraInvernaleInvest && investimentiSpesi !== null) {
+    const residuo = parseFloat((30 - investimentiSpesi).toFixed(2));
+    if (residuo > 0) items.push({ testo: `Finestra investimenti invernali aperta (max 10M) — chiude il 31/12`, urgente: d>=29, icona: "❄️" });
+  }
+
+  if (items.length === 0) return null;
+
+  return (
+    <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 16, padding: 16 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", letterSpacing: "0.1em", marginBottom: 10 }}>✅ COSA DEVO FARE</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {items.map((it, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: it.urgente ? "#ef444410" : "#ffffff05", border: `1px solid ${it.urgente ? "#ef444430" : "#ffffff10"}`, borderRadius: 9, padding: "8px 10px" }}>
+            <span style={{ fontSize: 14 }}>{it.icona}</span>
+            <span style={{ fontSize: 11, color: it.urgente ? "#fca5a5" : "#ccc", flex: 1 }}>{it.testo}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
   const mySquadra = profile?.squadra;
   const myTeam = teams.find(t => t.name === mySquadra);
@@ -1101,6 +1164,9 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
           </div>
         </div>
       )}
+
+      {/* ── 1b. COSA DEVO FARE ── */}
+      {myTeam && <TodoWidget team={myTeam} mySquadra={mySquadra} myAllenatore={myAllenatore} />}
 
       {/* ── 2. CALCOLATORE GIORNATA ── */}
       <CalcolatoreGiornata profile={profile} teams={teams} />
@@ -6343,6 +6409,50 @@ function TelegramRegistrationCard({ squadra }) {
   );
 }
 
+/* ─── TRACKER RIVALITÀ (art. 8.3) ───────────────────────────────────────────── */
+// Le sfide vs rivale non hanno un campo dedicato: sono ricavate dai movimenti
+// "Guadagno giornata N (vs rivale)" salvati dal Calcolatore Giornata. Non è
+// possibile ricostruire da lì vittoria/pareggio/sconfitta (l'importo è un
+// totale aggregato con gol/bonus giocatori), quindi si mostra solo il
+// conteggio delle sfide già giocate in stagione, non l'esito.
+function RivalTracker({ squadra, rivale }) {
+  const [count, setCount] = useState(null);
+  const [giornate, setGiornate] = useState([]);
+
+  useEffect(() => {
+    if (!squadra || !rivale) return;
+    let cancelled = false;
+    getMovimenti(squadra).then(movs => {
+      if (cancelled) return;
+      const y = new Date().getFullYear(), m = new Date().getMonth() + 1, d = new Date().getDate();
+      const startYear = (m > 6 || (m === 6 && d >= 1)) ? y : y - 1;
+      const inizio = `${startYear}-06-01`, fine = `${startYear + 1}-05-31`;
+      const match = (movs || []).filter(mv => mv.descrizione?.includes('(vs rivale)') && mv.data >= inizio && mv.data <= fine);
+      const nums = match
+        .map(mv => { const mm = mv.descrizione.match(/giornata (\d+)/); return mm ? Number(mm[1]) : null; })
+        .filter(n => n !== null);
+      setCount(match.length);
+      setGiornate([...new Set(nums)].sort((a, b) => a - b));
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [squadra, rivale]);
+
+  if (count === null) return null;
+  const max = 5;
+  return (
+    <div style={{ marginTop: 6, background: "#ffffff05", border: "1px solid #ffffff10", borderRadius: 8, padding: "6px 8px" }}>
+      <div style={{ fontSize: 9, color: "#666", letterSpacing: "0.05em", marginBottom: 3 }}>⚔️ SFIDE VS RIVALE (ART. 8.3)</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: "#ddd", fontFamily: "'Bebas Neue',sans-serif" }}>{count}/{max}</div>
+        <div style={{ flex: 1, height: 4, borderRadius: 2, background: "#ffffff10", overflow: "hidden" }}>
+          <div style={{ width: `${Math.min(100, (count / max) * 100)}%`, height: "100%", background: count >= max ? "#f59e0b" : "#6366f1" }} />
+        </div>
+      </div>
+      {giornate.length > 0 && <div style={{ fontSize: 9, color: "#555", marginTop: 4 }}>Giornate: {giornate.join(', ')}</div>}
+    </div>
+  );
+}
+
 /* ─── CLUB IDENTITY RIGHT PANEL ─────────────────────────────────────────────── */
 function ClubIdentityRight({ team, clubIdentity, isAdmin, mySquadra, onRefresh }) {
   const canEdit = isAdmin || mySquadra === team.name;
@@ -6528,6 +6638,7 @@ function ClubIdentityRight({ team, clubIdentity, isAdmin, mySquadra, onRefresh }
             {editing && !canEditRivale && (
               <div style={{ fontSize: 9, color: "#555", marginTop: 2 }}>Il rivale è già stato scelto e non può essere modificato (solo admin)</div>
             )}
+            {!editing && clubIdentity?.rivali && <RivalTracker squadra={team.name} rivale={clubIdentity.rivali} />}
           </div>
         </div>
       </div>
@@ -6796,6 +6907,230 @@ const URGENZA_COLORS_MERCATO = {
   critical: { bg: '#dc262612', border: '#dc262644', text: '#fca5a5' },
   scaduta:  { bg: '#7f1d1d22', border: '#ef444466', text: '#fca5a5' },
 };
+
+/* ─── COMPARATORE ROSE ──────────────────────────────────────────────────────── */
+function CompareRosePage({ teams }) {
+  const [nomeA, setNomeA] = useState(teams?.[0]?.name || "");
+  const [nomeB, setNomeB] = useState(teams?.[1]?.name || "");
+  const [datiA, setDatiA] = useState(null);
+  const [datiB, setDatiB] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  async function caricaDati(nome, team) {
+    if (!nome || !team) return null;
+    const [rosa, scAllenatore, effetti] = await Promise.all([
+      cachedFetch('rosa_' + nome, () => getRosa(nome), 600000),
+      getSCAllenatore(nome),
+      getEffettiInvestimenti(nome),
+    ]);
+    const rosaAttiva = (rosa || []).filter(p => !p.in_vivaio);
+    const scRosa = rosaAttiva.reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
+    const scUsato = parseFloat((scRosa + Number(scAllenatore || 0)).toFixed(2));
+    const scLimite = 75 + Number(team.scBonusObiettivi || 0) + Number(effetti?.scBonusInvestimenti || 0);
+    return {
+      rosa: rosaAttiva,
+      bilancio: Number(team.bilancio || 0),
+      fpf: Number(team.fpf ?? 0),
+      scUsato, scLimite,
+      rosaTotale: rosaAttiva.length,
+      under21: rosaAttiva.filter(p => Number(p.anni || 0) > 0 && Number(p.anni || 0) <= 21).length,
+      over31: rosaAttiva.filter(p => Number(p.anni || 0) >= 31).length,
+      cedibili: rosaAttiva.filter(p => p.cedibile_stato).length,
+      valoreRosa: rosaAttiva.reduce((s, p) => s + Number(p.quot || 0), 0),
+    };
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    Promise.all([
+      caricaDati(nomeA, teams?.find(t => t.name === nomeA)),
+      caricaDati(nomeB, teams?.find(t => t.name === nomeB)),
+    ]).then(([a, b]) => { if (!cancelled) { setDatiA(a); setDatiB(b); setLoading(false); } });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nomeA, nomeB, teams]);
+
+  const sel = { padding: "8px 12px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 13, fontWeight: 700 };
+  const righeMetriche = [
+    { label: "Bilancio", get: d => `${d.bilancio.toFixed(2)}M`, colore: d => d.bilancio < 0 ? "#ef4444" : "#10b981" },
+    { label: "Salary Cap", get: d => `${d.scUsato.toFixed(1)} / ${d.scLimite.toFixed(1)}M`, colore: d => d.scUsato > d.scLimite ? "#ef4444" : "#888" },
+    { label: "FPF", get: d => `${d.fpf.toFixed(2)}M`, colore: () => "#888" },
+    { label: "Rosa totale", get: d => d.rosaTotale, colore: d => (d.rosaTotale < 25 || d.rosaTotale > 30) ? "#ef4444" : "#888" },
+    { label: "Under-21", get: d => d.under21, colore: () => "#a78bfa" },
+    { label: "31+", get: d => d.over31, colore: () => "#fb923c" },
+    { label: "Valore rosa (Q totali)", get: d => d.valoreRosa.toFixed(1), colore: () => "#f59e0b" },
+    { label: "Giocatori cedibili", get: d => d.cedibili, colore: () => "#818cf8" },
+  ];
+
+  return (
+    <div>
+      <h1 style={{ fontSize: 20, fontWeight: 900, color: "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "1px", marginBottom: 4 }}>⚖️ COMPARA ROSE</h1>
+      <p style={{ fontSize: 12, color: "#888", marginBottom: 14 }}>Confronto rapido tra due squadre — utile prima di aprire una trattativa.</p>
+
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 16 }}>
+        <select value={nomeA} onChange={e => setNomeA(e.target.value)} style={sel}>
+          {teams?.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
+        </select>
+        <span style={{ color: "#555", fontSize: 12, fontWeight: 700 }}>VS</span>
+        <select value={nomeB} onChange={e => setNomeB(e.target.value)} style={sel}>
+          {teams?.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
+        </select>
+      </div>
+
+      {loading || !datiA || !datiB ? <div style={{ color: "#555", fontSize: 12 }}>Caricamento...</div> : (
+        <>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", minWidth: 480, borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid #ffffff15" }}>
+                  <th style={{ padding: "8px 6px", textAlign: "left", color: "#555", fontSize: 10 }}>METRICA</th>
+                  <th style={{ padding: "8px 6px", textAlign: "center", color: "#6366f1", fontWeight: 800 }}>{nomeA}</th>
+                  <th style={{ padding: "8px 6px", textAlign: "center", color: "#f59e0b", fontWeight: 800 }}>{nomeB}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {righeMetriche.map(r => (
+                  <tr key={r.label} style={{ borderBottom: "1px solid #ffffff08" }}>
+                    <td style={{ padding: "7px 6px", color: "#888", fontSize: 11 }}>{r.label}</td>
+                    <td style={{ padding: "7px 6px", textAlign: "center", fontWeight: 800, color: r.colore(datiA), fontFamily: "'Bebas Neue',sans-serif", fontSize: 15 }}>{r.get(datiA)}</td>
+                    <td style={{ padding: "7px 6px", textAlign: "center", fontWeight: 800, color: r.colore(datiB), fontFamily: "'Bebas Neue',sans-serif", fontSize: 15 }}>{r.get(datiB)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 18 }}>
+            {[[nomeA, datiA, "#6366f1"], [nomeB, datiB, "#f59e0b"]].map(([nome, dati, colore]) => (
+              <div key={nome} style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: colore, letterSpacing: "0.08em", marginBottom: 8 }}>{nome.toUpperCase()} — ROSA</div>
+                <div style={{ maxHeight: 320, overflowY: "auto", display: "flex", flexDirection: "column", gap: 3 }}>
+                  {dati.rosa.sort((a, b) => Number(b.quot || 0) - Number(a.quot || 0)).map(p => (
+                    <div key={p.id} style={{ display: "flex", justifyContent: "space-between", gap: 6, fontSize: 11, padding: "3px 4px", borderRadius: 5, background: "#ffffff04" }}>
+                      <span style={{ color: "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.ruolo} · {p.nome}</span>
+                      <span style={{ color: "#f59e0b", flexShrink: 0, fontWeight: 700 }}>Q{p.quot}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ─── COMPARATORE GIOCATORI ─────────────────────────────────────────────────── */
+function ComparePlayersPage({ teams }) {
+  const [listone, setListone] = useState(null);
+  const [search, setSearch] = useState("");
+  const [selezionati, setSelezionati] = useState([]); // fino a 5 righe del listone
+
+  useEffect(() => {
+    cachedFetch('listone', getListone, 600000).then(d => setListone(d || []));
+  }, []);
+
+  const risultatiRicerca = useMemo(() => {
+    if (!listone || !search.trim()) return [];
+    const q = search.toLowerCase();
+    return listone.filter(p => (p.nome || "").toLowerCase().includes(q) && !selezionati.some(s => s.id === p.id)).slice(0, 12);
+  }, [listone, search, selezionati]);
+
+  function trovaSquadra(p) {
+    if (!p.fanta_squadra) return null;
+    return teams?.find(t => stessaSquadra(t.name, p.fanta_squadra)) || null;
+  }
+
+  function aggiungi(p) {
+    if (selezionati.length >= 5) return;
+    setSelezionati(s => [...s, p]);
+    setSearch("");
+  }
+  function rimuovi(id) { setSelezionati(s => s.filter(p => p.id !== id)); }
+
+  const righe = [
+    { label: "Squadra", get: p => trovaSquadra(p)?.name || "Svincolato" },
+    { label: "Ruolo", get: p => p.ruolo },
+    { label: "Età", get: p => p.anni || "—" },
+    { label: "Squadra Serie A", get: p => p.squadra_serie_a || "—" },
+    { label: "Quotazione", get: p => p.quot, evidenzia: true },
+    { label: "Stipendio", get: p => Number(p.salario || 0).toFixed(2) + "M" },
+    { label: "Clausola", get: p => Number(p.clausola || 0).toFixed(2) + "M" },
+    { label: "Partite a voto", get: p => p.partite_voto ?? "—" },
+    { label: "Media voto", get: p => p.media_voto ?? "—" },
+    { label: "Media fantavoto", get: p => p.media_fantavoto ?? "—", evidenzia: true },
+    { label: "Gol", get: p => p.gol_fatti ?? "—" },
+    { label: "Assist", get: p => p.assist ?? "—" },
+    { label: "Ammonizioni", get: p => p.ammonizioni ?? "—" },
+    { label: "Espulsioni", get: p => p.espulsioni ?? "—" },
+    { label: "Rigori parati", get: p => p.rigori_parati ?? "—" },
+    { label: "Rigori segnati", get: p => p.rigori_segnati ?? "—" },
+    { label: "Rigori sbagliati", get: p => p.rigori_sbagliati ?? "—" },
+  ];
+
+  const inp = { padding: "8px 12px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 13, width: 260 };
+
+  return (
+    <div>
+      <h1 style={{ fontSize: 20, fontWeight: 900, color: "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "1px", marginBottom: 4 }}>🆚 COMPARA GIOCATORI</h1>
+      <p style={{ fontSize: 12, color: "#888", marginBottom: 14 }}>Scegli fino a 5 giocatori dal listone (in rosa o svincolati) e confronta tutti i loro dati.</p>
+
+      <div style={{ position: "relative", marginBottom: 16 }}>
+        <input type="text" placeholder="🔍 Cerca un giocatore da aggiungere..." value={search} onChange={e => setSearch(e.target.value)}
+          disabled={selezionati.length >= 5} style={inp} />
+        {selezionati.length >= 5 && <span style={{ marginLeft: 10, fontSize: 11, color: "#666" }}>Massimo 5 giocatori — rimuovine uno per aggiungerne un altro.</span>}
+        {risultatiRicerca.length > 0 && (
+          <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: "#14161c", border: "1px solid #ffffff18", borderRadius: 8, width: 320, maxHeight: 280, overflowY: "auto", zIndex: 20, boxShadow: "0 8px 24px #00000060" }}>
+            {risultatiRicerca.map(p => (
+              <div key={p.id} onClick={() => aggiungi(p)}
+                style={{ padding: "8px 12px", cursor: "pointer", fontSize: 12, borderBottom: "1px solid #ffffff08", display: "flex", justifyContent: "space-between" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                <span style={{ color: "#ddd" }}>{p.ruolo} · {p.nome}</span>
+                <span style={{ color: "#666" }}>{trovaSquadra(p)?.name || "Svincolato"}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {selezionati.length === 0 ? (
+        <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 10, padding: 14 }}>
+          Nessun giocatore selezionato. Usa la ricerca sopra per aggiungerne.
+        </div>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", minWidth: 200 + selezionati.length * 140, borderCollapse: "collapse", fontSize: 12 }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid #ffffff15" }}>
+                <th style={{ padding: "8px 6px", textAlign: "left", color: "#555", fontSize: 10, position: "sticky", left: 0, background: "#0d0f14" }}>DATO</th>
+                {selezionati.map(p => (
+                  <th key={p.id} style={{ padding: "8px 6px", textAlign: "center", minWidth: 130 }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                      <span style={{ color: "#818cf8", fontWeight: 800, fontSize: 12 }}>{p.nome}</span>
+                      <button onClick={() => rimuovi(p.id)} style={{ border: "none", background: "#ef444415", color: "#ef4444", borderRadius: 5, padding: "1px 8px", fontSize: 10, cursor: "pointer" }}>rimuovi</button>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {righe.map(r => (
+                <tr key={r.label} style={{ borderBottom: "1px solid #ffffff08" }}>
+                  <td style={{ padding: "6px 6px", color: "#888", fontSize: 11, position: "sticky", left: 0, background: "#0d0f14" }}>{r.label}</td>
+                  {selezionati.map(p => (
+                    <td key={p.id} style={{ padding: "6px 6px", textAlign: "center", color: r.evidenzia ? "#f59e0b" : "#ccc", fontWeight: r.evidenzia ? 800 : 500 }}>{r.get(p)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMercato }) {
   const location = useLocation();
@@ -7601,8 +7936,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
       {/* ── Switcher Mercato / Svincolati ── */}
       <div style={{ display:"flex",gap:0,background:"#ffffff08",borderRadius:12,padding:4,alignSelf:"flex-start",maxWidth:"100%",overflowX:"auto",WebkitOverflowScrolling:"touch" }}>
-        {[["mercato","🤝 Mercato"],["trasferimenti","🏷️ Lista Trasferimenti"],["svincolati","🔍 Svincolati"],["listone","📋 Listone"]].map(([k,l])=>{
-          const kcolor = k==="mercato"?"#6366f1":k==="trasferimenti"?"#f59e0b":k==="svincolati"?"#10b981":"#f59e0b";
+        {[["mercato","🤝 Mercato"],["trasferimenti","🏷️ Lista Trasferimenti"],["svincolati","🔍 Svincolati"],["listone","📋 Listone"],["compara-rose","⚖️ Compara Rose"],["compara-giocatori","🆚 Compara Giocatori"]].map(([k,l])=>{
+          const kcolor = k==="mercato"?"#6366f1":k==="trasferimenti"?"#f59e0b":k==="svincolati"?"#10b981":k==="listone"?"#f59e0b":k==="compara-rose"?"#818cf8":"#a78bfa";
           return (
           <button key={k} onClick={()=>setMercatoSection(k)}
             style={{ padding:"8px 20px",borderRadius:9,border:"none",background:mercatoSection===k?kcolor:"transparent",color:mercatoSection===k?"#fff":"#666",fontSize:13,fontWeight:700,cursor:"pointer",transition:"all 0.15s",whiteSpace:"nowrap",flexShrink:0 }}>
@@ -7615,6 +7950,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
       {mercatoSection === "svincolati" && <SvincolatiPage profile={profile} isAdmin={isAdmin} teams={teams} />}
       {mercatoSection === "listone" && <ListonePage teams={teams} profile={profile} />}
+      {mercatoSection === "compara-rose" && <CompareRosePage teams={teams} />}
+      {mercatoSection === "compara-giocatori" && <ComparePlayersPage teams={teams} />}
 
       {mercatoSection === "trasferimenti" && (() => {
         const TH = ({ col, label }) => (
@@ -13011,6 +13348,7 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
   const [tab, setTab] = useState('albo');
   const [stagioni, setStagioni] = useState([]);
   const [articoli, setArticoli] = useState([]);
+  const [changelog, setChangelog] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [editStagione, setEditStagione] = useState(null);
@@ -13018,6 +13356,8 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
   const [openArticoli, setOpenArticoli] = useState({});
   const [editArt, setEditArt] = useState(null);
   const [savingArt, setSavingArt] = useState(false);
+  const [editLog, setEditLog] = useState(null);
+  const [savingLog, setSavingLog] = useState(false);
 
   const TROPHIES = [
     { key: 'campione',       label: '🏆 Campione',        color: '#f59e0b' },
@@ -13029,9 +13369,10 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
   ];
 
   useEffect(() => {
-    Promise.all([getStagioniPassate(), getRegolamentoArticoli()]).then(([s, a]) => {
+    Promise.all([getStagioniPassate(), getRegolamentoArticoli(), getChangelog()]).then(([s, a, c]) => {
       setStagioni(s);
       setArticoli(a);
+      setChangelog(c);
       setLoading(false);
     });
   }, []);
@@ -13090,6 +13431,25 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
     setArticoli(a => a.filter(x => x.id !== id));
   };
 
+  // ── Changelog edit ──
+  const openEditLog = (v) => setEditLog(v ? { ...v } : { data: new Date().toISOString().slice(0,10), titolo: '', testo: '' });
+  const salvaLog = async () => {
+    if (!editLog?.titolo) return;
+    setSavingLog(true);
+    try {
+      if (editLog.id) await upsertChangelogEntry(editLog);
+      else await insertChangelogEntry(editLog);
+      setChangelog(await getChangelog());
+      setEditLog(null);
+    } catch(e) { alert('Errore: ' + e.message); }
+    setSavingLog(false);
+  };
+  const eliminaLog = async (id) => {
+    if (!confirm('Eliminare questa voce di changelog?')) return;
+    await deleteChangelogEntry(id);
+    setChangelog(c => c.filter(x => x.id !== id));
+  };
+
   const card = { background: '#ffffff08', border: '1px solid #ffffff12', borderRadius: 14, padding: '20px 24px', marginBottom: 14 };
   const inp = { width: '100%', background: '#ffffff0a', border: '1px solid #ffffff18', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 13, boxSizing: 'border-box' };
 
@@ -13097,8 +13457,8 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
     <div style={{ maxWidth: 860, margin: '0 auto', padding: '24px 16px' }}>
       <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 800, marginBottom: 20 }}>📚 Archivio Lega</h2>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-        {[{ key:'albo', label:"🏆 Albo d'Oro" }, { key:'regolamento', label:'📋 Regolamento' }].map(t => (
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+        {[{ key:'albo', label:"🏆 Albo d'Oro" }, { key:'regolamento', label:'📋 Regolamento' }, { key:'changelog', label:'📝 Changelog' }].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: tab===t.key?'#f59e0b22':'#ffffff0a', color: tab===t.key?'#f59e0b':'#888', borderBottom: tab===t.key?'2px solid #f59e0b':'2px solid transparent' }}>{t.label}</button>
         ))}
       </div>
@@ -13269,6 +13629,47 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
             })}
           </div>
         )}
+
+        {/* ── CHANGELOG ── */}
+        {tab === 'changelog' && (
+          <div>
+            <div style={{ color:'#888', fontSize:12, marginBottom:16, lineHeight:1.5 }}>
+              Cosa è cambiato nell'app di recente — aggiornato ad ogni release.
+            </div>
+            {isAdmin && (
+              <button onClick={() => openEditLog(null)} style={{ background:'#10b981', color:'#000', border:'none', borderRadius:8, padding:'8px 16px', fontWeight:700, cursor:'pointer', fontSize:13, marginBottom:20 }}>+ Aggiungi Voce</button>
+            )}
+
+            {changelog.length === 0 && (
+              <div style={{ ...card, textAlign:'center', color:'#555', padding:48 }}>
+                <div style={{ fontSize:40, marginBottom:12 }}>📝</div>
+                <div style={{ fontWeight:700, fontSize:15 }}>Nessuna voce di changelog</div>
+                {isAdmin && <div style={{ color:'#444', fontSize:13, marginTop:6 }}>Usa il pulsante sopra per aggiungerne una</div>}
+              </div>
+            )}
+
+            {changelog.map(v => (
+              <div key={v.id} style={{ ...card, display:'flex', gap:14 }}>
+                <div style={{ flexShrink:0, width:80, textAlign:'right' }}>
+                  <div style={{ color:'#10b981', fontSize:11, fontWeight:800 }}>{new Date(v.data+'T00:00:00').toLocaleDateString('it-IT', { day:'2-digit', month:'short' })}</div>
+                  <div style={{ color:'#555', fontSize:10 }}>{new Date(v.data+'T00:00:00').getFullYear()}</div>
+                </div>
+                <div style={{ flex:1, borderLeft:'2px solid #10b98130', paddingLeft:14 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:8 }}>
+                    <span style={{ color:'#fff', fontWeight:700, fontSize:14 }}>{v.titolo}</span>
+                    {isAdmin && (
+                      <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+                        <button onClick={() => openEditLog(v)} style={{ background:'#ffffff10', border:'none', borderRadius:6, color:'#aaa', padding:'3px 8px', cursor:'pointer', fontSize:11 }}>✏️</button>
+                        <button onClick={() => eliminaLog(v.id)} style={{ background:'#ef444415', border:'none', borderRadius:6, color:'#ef4444', padding:'3px 8px', cursor:'pointer', fontSize:11 }}>🗑</button>
+                      </div>
+                    )}
+                  </div>
+                  {v.testo && <p style={{ color:'#ccc', fontSize:12, lineHeight:1.6, whiteSpace:'pre-wrap', margin:'6px 0 0' }}>{v.testo}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </>}
 
       {/* ── Stagione Modal ── */}
@@ -13388,6 +13789,35 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
             <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
               <button onClick={() => setEditArt(null)} style={{ background:'#ffffff10', border:'none', borderRadius:8, color:'#aaa', padding:'8px 16px', cursor:'pointer', fontWeight:700 }}>Annulla</button>
               <button onClick={salvaArticolo} disabled={savingArt} style={{ background:'#6366f1', border:'none', borderRadius:8, color:'#fff', padding:'8px 20px', cursor:'pointer', fontWeight:700 }}>{savingArt ? 'Salvo…' : 'Salva'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Changelog Modal ── */}
+      {editLog && (
+        <div style={{ position:'fixed', inset:0, background:'#000000cc', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }} onClick={e => e.target===e.currentTarget && setEditLog(null)}>
+          <div className="modal-pad" style={{ background:'#1a1d27', borderRadius:16, padding:28, width:'100%', maxWidth:560, maxHeight:'90vh', overflowY:'auto', border:'1px solid #ffffff15' }}>
+            <h3 style={{ color:'#fff', marginBottom:20, fontSize:16, fontWeight:700 }}>{editLog.id ? 'Modifica Voce' : 'Nuova Voce Changelog'}</h3>
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              <div style={{ display:'flex', gap:10 }}>
+                <div style={{ flex:'0 0 150px' }}>
+                  <label style={{ color:'#888', fontSize:12, fontWeight:700, display:'block', marginBottom:4 }}>Data</label>
+                  <input type="date" value={editLog.data||''} onChange={e => setEditLog(p=>({...p, data:e.target.value}))} style={inp} />
+                </div>
+                <div style={{ flex:1 }}>
+                  <label style={{ color:'#888', fontSize:12, fontWeight:700, display:'block', marginBottom:4 }}>Titolo</label>
+                  <input value={editLog.titolo||''} onChange={e => setEditLog(p=>({...p, titolo:e.target.value}))} placeholder="es. Vincolo salary cap negativo" style={inp} />
+                </div>
+              </div>
+              <div>
+                <label style={{ color:'#888', fontSize:12, fontWeight:700, display:'block', marginBottom:4 }}>Dettaglio (opzionale)</label>
+                <textarea value={editLog.testo||''} onChange={e => setEditLog(p=>({...p, testo:e.target.value}))} rows={6} placeholder="Cosa è cambiato, in breve..." style={{ ...inp, resize:'vertical', fontFamily:'inherit', lineHeight:1.6 }} />
+              </div>
+            </div>
+            <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
+              <button onClick={() => setEditLog(null)} style={{ background:'#ffffff10', border:'none', borderRadius:8, color:'#aaa', padding:'8px 16px', cursor:'pointer', fontWeight:700 }}>Annulla</button>
+              <button onClick={salvaLog} disabled={savingLog} style={{ background:'#10b981', border:'none', borderRadius:8, color:'#000', padding:'8px 20px', cursor:'pointer', fontWeight:700 }}>{savingLog ? 'Salvo…' : 'Salva'}</button>
             </div>
           </div>
         </div>
