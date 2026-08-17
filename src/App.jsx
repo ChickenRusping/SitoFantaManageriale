@@ -475,6 +475,63 @@ function GraficoQuotazione({ nome }) {
   );
 }
 
+/* ─── GRAFICO ANDAMENTO BILANCIO ─────────────────────────────────────────────── */
+// Non esiste uno storico bilancio salvato: viene ricostruito a ritroso dai
+// movimenti (che sono un ledger completo) partendo dal bilancio attuale noto
+// e sottraendo l'effetto di ogni movimento in ordine cronologico inverso.
+// Il primo punto del grafico è quindi il bilancio prima del più vecchio
+// movimento registrato, non necessariamente l'inizio storico della squadra.
+function BilancioTrendChart({ team }) {
+  const [punti, setPunti] = useState(null);
+
+  useEffect(() => {
+    if (!team?.name) return;
+    let cancelled = false;
+    getMovimenti(team.name).then(movs => {
+      if (cancelled) return;
+      const ord = [...(movs || [])].sort((a, b) => {
+        if (a.data !== b.data) return a.data < b.data ? -1 : 1;
+        return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+      });
+      if (ord.length < 2) { setPunti([]); return; }
+      const after = new Array(ord.length);
+      after[ord.length - 1] = Number(team.bilancio || 0);
+      for (let i = ord.length - 1; i >= 1; i--) {
+        const net = (Number(ord[i].entrata) || 0) - (Number(ord[i].uscita) || 0);
+        after[i - 1] = parseFloat((after[i] - net).toFixed(2));
+      }
+      const netPrimo = (Number(ord[0].entrata) || 0) - (Number(ord[0].uscita) || 0);
+      const baseline = parseFloat((after[0] - netPrimo).toFixed(2));
+      setPunti([baseline, ...after]);
+    }).catch(() => setPunti([]));
+    return () => { cancelled = true; };
+  }, [team?.name, team?.bilancio]);
+
+  if (!punti || punti.length < 2) return null;
+
+  const W = 100, H = 60, PAD = 3;
+  const min = Math.min(...punti, 0), max = Math.max(...punti, 0);
+  const range = (max - min) || 1;
+  const stepX = (W - PAD * 2) / (punti.length - 1);
+  const pts = punti.map((v, i) => [PAD + i * stepX, H - PAD - ((v - min) / range) * (H - PAD * 2)]);
+  const zeroY = H - PAD - ((0 - min) / range) * (H - PAD * 2);
+  const trend = punti[punti.length - 1] - punti[0];
+  const color = trend > 0 ? "#10b981" : trend < 0 ? "#ef4444" : "#888";
+
+  return (
+    <div style={{ marginTop: 10, padding: "8px 10px", background: "#ffffff05", border: "1px solid #ffffff10", borderRadius: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+        <span style={{ fontSize: 9, color: "#666", fontWeight: 700, letterSpacing: "0.06em" }}>📈 ANDAMENTO BILANCIO</span>
+        <span style={{ fontSize: 11, fontWeight: 800, color }}>{trend > 0 ? "+" : ""}{trend.toFixed(1)}M nel periodo tracciato</span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={70} preserveAspectRatio="none">
+        {min < 0 && max > 0 && <line x1={PAD} y1={zeroY} x2={W - PAD} y2={zeroY} stroke="#ffffff20" strokeWidth="0.5" strokeDasharray="2,2" />}
+        <polyline points={pts.map(([x, y]) => `${x},${y}`).join(" ")} fill="none" stroke={color} strokeWidth="1.2" vectorEffect="non-scaling-stroke" />
+      </svg>
+    </div>
+  );
+}
+
 function StatBar({ value, max, color, height = 6 }) {
   const pct = Math.min(100, Math.max(0, (value / max) * 100));
   return (
@@ -749,6 +806,7 @@ function CalcolatoreGiornata({ profile, teams }) {
         entrata: totale > 0 ? totale : null,
         uscita: totale < 0 ? Math.abs(totale) : null,
         data: oggi,
+        risultato: risultato || null,
       });
       setSalvatoMsg(`✅ Giornata ${giornata}: ${totale >= 0 ? "+" : ""}${totale}M salvato nei movimenti`);
       setTimeout(() => setSalvatoMsg(null), 4000);
@@ -899,68 +957,6 @@ function CalcolatoreGiornata({ profile, teams }) {
 }
 
 /* ─── SQUADRE PAGE ──────────────────────────────────────────────────────────── */
-/* ─── COSA DEVO FARE — checklist personalizzata ─────────────────────────────── */
-// Aggrega in un unico posto i promemoria sparsi tra Obiettivi/Contratti/
-// Investimenti/Vivaio, così da non dover girare tab per tab per capire cosa
-// scade a breve. Ogni voce si genera solo se effettivamente applicabile.
-function TodoWidget({ team, mySquadra, myAllenatore }) {
-  const [contratti, setContratti] = useState([]);
-  const [investimentiSpesi, setInvestimentiSpesi] = useState(null);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    if (!mySquadra) return;
-    let cancelled = false;
-    Promise.all([
-      getContrattiInScadenza(mySquadra).catch(() => []),
-      getInvestimenti(mySquadra).catch(() => []),
-    ]).then(([c, inv]) => {
-      if (cancelled) return;
-      setContratti(c || []);
-      setInvestimentiSpesi((inv || []).reduce((s, i) => s + Number(i.costo || 0), 0));
-      setLoaded(true);
-    });
-    return () => { cancelled = true; };
-  }, [mySquadra]);
-
-  if (!loaded || !team) return null;
-
-  const oggi = new Date();
-  const m = oggi.getMonth() + 1, d = oggi.getDate();
-  const inFinestraEstivaInvest = (m === 8) || (m === 9 && d <= 20);
-  const inFinestraInvernaleInvest = (m === 12 && d >= 24 && d <= 31);
-  const vivaioPagatoStagione = team.vivaio_stagione_pagata === STAGIONE_CORRENTE || (team.vivaio_pagato && !team.vivaio_stagione_pagata);
-
-  const items = [];
-  if (!myAllenatore) items.push({ testo: "Non hai ancora scelto un allenatore per questa stagione", urgente: true, icona: "🎓" });
-  if (contratti.length > 0) items.push({ testo: `${contratti.length} giocator${contratti.length===1?'e':'i'} da rinnovare/non rinnovare entro il 31/05`, urgente: false, icona: "📄" });
-  if (!vivaioPagatoStagione) items.push({ testo: "Costo mantenimento vivaio (4M) non ancora pagato — entro il 15/08", urgente: (m===8 && d>=10), icona: "🌱" });
-  if (inFinestraEstivaInvest && investimentiSpesi !== null) {
-    const residuo = parseFloat((30 - investimentiSpesi).toFixed(2));
-    if (residuo > 0) items.push({ testo: `${residuo}M di budget investimenti ancora disponibili — finestra chiude il 20/09`, urgente: (m===9 && d>=15), icona: "📈" });
-  }
-  if (inFinestraInvernaleInvest && investimentiSpesi !== null) {
-    const residuo = parseFloat((30 - investimentiSpesi).toFixed(2));
-    if (residuo > 0) items.push({ testo: `Finestra investimenti invernali aperta (max 10M) — chiude il 31/12`, urgente: d>=29, icona: "❄️" });
-  }
-
-  if (items.length === 0) return null;
-
-  return (
-    <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 16, padding: 16 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", letterSpacing: "0.1em", marginBottom: 10 }}>✅ COSA DEVO FARE</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {items.map((it, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: it.urgente ? "#ef444410" : "#ffffff05", border: `1px solid ${it.urgente ? "#ef444430" : "#ffffff10"}`, borderRadius: 9, padding: "8px 10px" }}>
-            <span style={{ fontSize: 14 }}>{it.icona}</span>
-            <span style={{ fontSize: 11, color: it.urgente ? "#fca5a5" : "#ccc", flex: 1 }}>{it.testo}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
   const mySquadra = profile?.squadra;
   const myTeam = teams.find(t => t.name === mySquadra);
@@ -1164,9 +1160,6 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
           </div>
         </div>
       )}
-
-      {/* ── 1b. COSA DEVO FARE ── */}
-      {myTeam && <TodoWidget team={myTeam} mySquadra={mySquadra} myAllenatore={myAllenatore} />}
 
       {/* ── 2. CALCOLATORE GIORNATA ── */}
       <CalcolatoreGiornata profile={profile} teams={teams} />
@@ -4308,6 +4301,8 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
           )}
         </div>
 
+        <BilancioTrendChart team={team} />
+
         {/* Stato bilancio negativo - penalità progressive */}
         {bilancio < 0 && fasciaNeg && !fasciaNeg.fallimento && (
           <div style={{ background: "#ef444410", borderRadius: 10, padding: "10px 12px", marginBottom: 8 }}>
@@ -6416,8 +6411,7 @@ function TelegramRegistrationCard({ squadra }) {
 // totale aggregato con gol/bonus giocatori), quindi si mostra solo il
 // conteggio delle sfide già giocate in stagione, non l'esito.
 function RivalTracker({ squadra, rivale }) {
-  const [count, setCount] = useState(null);
-  const [giornate, setGiornate] = useState([]);
+  const [dati, setDati] = useState(null); // { vittorie, pareggi, sconfitte, nonTracciate, giornate }
 
   useEffect(() => {
     if (!squadra || !rivale) return;
@@ -6431,24 +6425,36 @@ function RivalTracker({ squadra, rivale }) {
       const nums = match
         .map(mv => { const mm = mv.descrizione.match(/giornata (\d+)/); return mm ? Number(mm[1]) : null; })
         .filter(n => n !== null);
-      setCount(match.length);
-      setGiornate([...new Set(nums)].sort((a, b) => a - b));
+      setDati({
+        vittorie: match.filter(mv => mv.risultato === 'V').length,
+        pareggi: match.filter(mv => mv.risultato === 'P').length,
+        sconfitte: match.filter(mv => mv.risultato === 'S').length,
+        nonTracciate: match.filter(mv => !mv.risultato).length,
+        giornate: [...new Set(nums)].sort((a, b) => a - b),
+      });
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [squadra, rivale]);
 
-  if (count === null) return null;
+  if (!dati) return null;
   const max = 5;
+  const totale = dati.vittorie + dati.pareggi + dati.sconfitte + dati.nonTracciate;
   return (
     <div style={{ marginTop: 6, background: "#ffffff05", border: "1px solid #ffffff10", borderRadius: 8, padding: "6px 8px" }}>
-      <div style={{ fontSize: 9, color: "#666", letterSpacing: "0.05em", marginBottom: 3 }}>⚔️ SFIDE VS RIVALE (ART. 8.3)</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <div style={{ fontSize: 13, fontWeight: 800, color: "#ddd", fontFamily: "'Bebas Neue',sans-serif" }}>{count}/{max}</div>
-        <div style={{ flex: 1, height: 4, borderRadius: 2, background: "#ffffff10", overflow: "hidden" }}>
-          <div style={{ width: `${Math.min(100, (count / max) * 100)}%`, height: "100%", background: count >= max ? "#f59e0b" : "#6366f1" }} />
-        </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
+        <div style={{ fontSize: 9, color: "#666", letterSpacing: "0.05em" }}>⚔️ SFIDE VS RIVALE (ART. 8.3)</div>
+        <div style={{ fontSize: 10, color: "#888", fontWeight: 700 }}>{totale}/{max}</div>
       </div>
-      {giornate.length > 0 && <div style={{ fontSize: 9, color: "#555", marginTop: 4 }}>Giornate: {giornate.join(', ')}</div>}
+      <div style={{ display: "flex", gap: 6 }}>
+        {[["V", "Vittorie", dati.vittorie, "#10b981"], ["P", "Pareggi", dati.pareggi, "#f59e0b"], ["S", "Sconfitte", dati.sconfitte, "#ef4444"]].map(([k, label, n, colore]) => (
+          <div key={k} style={{ flex: 1, textAlign: "center", background: "#ffffff06", borderRadius: 6, padding: "4px 2px" }}>
+            <div style={{ fontSize: 15, fontWeight: 900, color: colore, fontFamily: "'Bebas Neue',sans-serif" }}>{n}</div>
+            <div style={{ fontSize: 8, color: "#666" }}>{label}</div>
+          </div>
+        ))}
+      </div>
+      {dati.giornate.length > 0 && <div style={{ fontSize: 9, color: "#555", marginTop: 4 }}>Giornate: {dati.giornate.join(', ')}</div>}
+      {dati.nonTracciate > 0 && <div style={{ fontSize: 9, color: "#555", marginTop: 2, fontStyle: "italic" }}>{dati.nonTracciate} sfida{dati.nonTracciate===1?'':'e'} precedente{dati.nonTracciate===1?'':'i'} a questa funzione, esito non tracciato</div>}
     </div>
   );
 }
@@ -6908,6 +6914,29 @@ const URGENZA_COLORS_MERCATO = {
   scaduta:  { bg: '#7f1d1d22', border: '#ef444466', text: '#fca5a5' },
 };
 
+/* ─── COLORAZIONE CONFRONTI ─────────────────────────────────────────────────── */
+// Colora un valore all'interno di una riga di confronto: il migliore va in
+// verde puro, gli altri su una scala continua rosso→giallo→verde in base a
+// quanto sono distanti dal migliore. direction: 'higher' (più alto = meglio),
+// 'lower' (più basso = meglio) o null/undefined (nessun verso oggettivo,
+// nessuna colorazione).
+function compareColor(values, idx, direction) {
+  if (!direction) return null;
+  const nums = values.map(v => Number(v));
+  if (nums.some(n => !isFinite(n)) || nums.length < 2) return null;
+  const best = direction === 'higher' ? Math.max(...nums) : Math.min(...nums);
+  const worst = direction === 'higher' ? Math.min(...nums) : Math.max(...nums);
+  if (best === worst) return null;
+  const v = nums[idx];
+  const t = direction === 'higher' ? (v - worst) / (best - worst) : (worst - v) / (worst - best);
+  const RED = [239, 68, 68], YELLOW = [245, 158, 11], GREEN = [16, 185, 129];
+  const [c1, c2, f] = t <= 0.5 ? [RED, YELLOW, t / 0.5] : [YELLOW, GREEN, (t - 0.5) / 0.5];
+  const r = Math.round(c1[0] + (c2[0] - c1[0]) * f);
+  const g = Math.round(c1[1] + (c2[1] - c1[1]) * f);
+  const b = Math.round(c1[2] + (c2[2] - c1[2]) * f);
+  return `rgb(${r},${g},${b})`;
+}
+
 /* ─── COMPARATORE ROSE ──────────────────────────────────────────────────────── */
 function CompareRosePage({ teams }) {
   const [nomeA, setNomeA] = useState(teams?.[0]?.name || "");
@@ -6915,6 +6944,26 @@ function CompareRosePage({ teams }) {
   const [datiA, setDatiA] = useState(null);
   const [datiB, setDatiB] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [h2h, setH2h] = useState(null);
+  const [simGiocatore, setSimGiocatore] = useState(""); // "A::<id>" oppure "B::<id>"
+
+  // ── H2H: storico trattative concluse tra le due squadre selezionate ──────
+  useEffect(() => {
+    if (!nomeA || !nomeB || nomeA === nomeB) { setH2h(null); return; }
+    let cancelled = false;
+    cachedFetch('trattative_tutte', getTrattative, 120000).then(tutte => {
+      if (cancelled) return;
+      const concluse = (tutte || []).filter(t =>
+        ['completata', 'accettata', 'clausola_eseguita'].includes(t.stato) &&
+        ((t.da_squadra === nomeA && t.a_squadra === nomeB) || (t.da_squadra === nomeB && t.a_squadra === nomeA))
+      );
+      const valoreTotale = concluse.reduce((s, t) => s + Number(t.prezzo || 0), 0);
+      const perTipo = {};
+      concluse.forEach(t => { perTipo[t.tipo] = (perTipo[t.tipo] || 0) + 1; });
+      setH2h({ concluse, valoreTotale, perTipo });
+    }).catch(() => setH2h(null));
+    return () => { cancelled = true; };
+  }, [nomeA, nomeB]);
 
   async function caricaDati(nome, team) {
     if (!nome || !team) return null;
@@ -6953,14 +7002,15 @@ function CompareRosePage({ teams }) {
 
   const sel = { padding: "8px 12px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 13, fontWeight: 700 };
   const righeMetriche = [
-    { label: "Bilancio", get: d => `${d.bilancio.toFixed(2)}M`, colore: d => d.bilancio < 0 ? "#ef4444" : "#10b981" },
-    { label: "Salary Cap", get: d => `${d.scUsato.toFixed(1)} / ${d.scLimite.toFixed(1)}M`, colore: d => d.scUsato > d.scLimite ? "#ef4444" : "#888" },
-    { label: "FPF", get: d => `${d.fpf.toFixed(2)}M`, colore: () => "#888" },
-    { label: "Rosa totale", get: d => d.rosaTotale, colore: d => (d.rosaTotale < 25 || d.rosaTotale > 30) ? "#ef4444" : "#888" },
-    { label: "Under-21", get: d => d.under21, colore: () => "#a78bfa" },
-    { label: "31+", get: d => d.over31, colore: () => "#fb923c" },
-    { label: "Valore rosa (Q totali)", get: d => d.valoreRosa.toFixed(1), colore: () => "#f59e0b" },
-    { label: "Giocatori cedibili", get: d => d.cedibili, colore: () => "#818cf8" },
+    { label: "Bilancio", get: d => `${d.bilancio.toFixed(2)}M`, val: d => d.bilancio, direction: "higher" },
+    { label: "Salary Cap", get: d => `${d.scUsato.toFixed(1)} / ${d.scLimite.toFixed(1)}M`, val: d => d.scLimite - d.scUsato, direction: "higher" },
+    { label: "FPF", get: d => `${d.fpf.toFixed(2)}M`, val: d => d.fpf, direction: "lower" },
+    { label: "Rosa totale", get: d => d.rosaTotale, direction: null },
+    { label: "Under-21", get: d => d.under21, direction: null },
+    { label: "31+", get: d => d.over31, direction: null },
+    { label: "Valore rosa (Q totali)", get: d => d.valoreRosa.toFixed(1), val: d => d.valoreRosa, direction: "higher" },
+    { label: "Quotazione media", get: d => (d.rosaTotale ? (d.valoreRosa / d.rosaTotale).toFixed(2) : "—"), val: d => d.rosaTotale ? d.valoreRosa / d.rosaTotale : 0, direction: "higher" },
+    { label: "Giocatori cedibili", get: d => d.cedibili, direction: null },
   ];
 
   return (
@@ -6990,13 +7040,18 @@ function CompareRosePage({ teams }) {
                 </tr>
               </thead>
               <tbody>
-                {righeMetriche.map(r => (
-                  <tr key={r.label} style={{ borderBottom: "1px solid #ffffff08" }}>
-                    <td style={{ padding: "7px 6px", color: "#888", fontSize: 11 }}>{r.label}</td>
-                    <td style={{ padding: "7px 6px", textAlign: "center", fontWeight: 800, color: r.colore(datiA), fontFamily: "'Bebas Neue',sans-serif", fontSize: 15 }}>{r.get(datiA)}</td>
-                    <td style={{ padding: "7px 6px", textAlign: "center", fontWeight: 800, color: r.colore(datiB), fontFamily: "'Bebas Neue',sans-serif", fontSize: 15 }}>{r.get(datiB)}</td>
-                  </tr>
-                ))}
+                {righeMetriche.map(r => {
+                  const va = r.val ? r.val(datiA) : null, vb = r.val ? r.val(datiB) : null;
+                  const colA = r.direction ? (compareColor([va, vb], 0, r.direction) || "#888") : "#888";
+                  const colB = r.direction ? (compareColor([va, vb], 1, r.direction) || "#888") : "#888";
+                  return (
+                    <tr key={r.label} style={{ borderBottom: "1px solid #ffffff08" }}>
+                      <td style={{ padding: "7px 6px", color: "#888", fontSize: 11 }}>{r.label}</td>
+                      <td style={{ padding: "7px 6px", textAlign: "center", fontWeight: 800, color: colA, fontFamily: "'Bebas Neue',sans-serif", fontSize: 15 }}>{r.get(datiA)}</td>
+                      <td style={{ padding: "7px 6px", textAlign: "center", fontWeight: 800, color: colB, fontFamily: "'Bebas Neue',sans-serif", fontSize: 15 }}>{r.get(datiB)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -7004,17 +7059,103 @@ function CompareRosePage({ teams }) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 18 }}>
             {[[nomeA, datiA, "#6366f1"], [nomeB, datiB, "#f59e0b"]].map(([nome, dati, colore]) => (
               <div key={nome} style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: 10 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: colore, letterSpacing: "0.08em", marginBottom: 8 }}>{nome.toUpperCase()} — ROSA</div>
-                <div style={{ maxHeight: 320, overflowY: "auto", display: "flex", flexDirection: "column", gap: 3 }}>
-                  {dati.rosa.sort((a, b) => Number(b.quot || 0) - Number(a.quot || 0)).map(p => (
-                    <div key={p.id} style={{ display: "flex", justifyContent: "space-between", gap: 6, fontSize: 11, padding: "3px 4px", borderRadius: 5, background: "#ffffff04" }}>
-                      <span style={{ color: "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.ruolo} · {p.nome}</span>
-                      <span style={{ color: "#f59e0b", flexShrink: 0, fontWeight: 700 }}>Q{p.quot}</span>
-                    </div>
-                  ))}
+                <div style={{ fontSize: 10, fontWeight: 700, color: colore, letterSpacing: "0.08em", marginBottom: 8 }}>{nome.toUpperCase()} — ROSA ({dati.rosa.length})</div>
+                <div style={{ maxHeight: 380, overflowY: "auto", overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                    <thead>
+                      <tr style={{ position: "sticky", top: 0, background: "#14161c" }}>
+                        <th style={{ padding: "4px 4px", textAlign: "left", color: "#555", fontSize: 9 }}>R</th>
+                        <th style={{ padding: "4px 4px", textAlign: "left", color: "#555", fontSize: 9 }}>NOME</th>
+                        <th style={{ padding: "4px 4px", textAlign: "center", color: "#555", fontSize: 9 }}>ETÀ</th>
+                        <th style={{ padding: "4px 4px", textAlign: "center", color: "#555", fontSize: 9 }}>Q</th>
+                        <th style={{ padding: "4px 4px", textAlign: "center", color: "#555", fontSize: 9 }}>STIP.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...dati.rosa].sort((a, b) => { const ra = (a.ruolo||"").localeCompare(b.ruolo||""); return ra !== 0 ? ra : Number(b.quot||0)-Number(a.quot||0); }).map(p => (
+                        <tr key={p.id} style={{ borderBottom: "1px solid #ffffff06", background: p.cedibile_stato ? "#f59e0b08" : "transparent" }}>
+                          <td style={{ padding: "3px 4px", color: "#888" }}>{p.ruolo}</td>
+                          <td style={{ padding: "3px 4px", color: "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}>
+                            {p.nome}{p.cedibile_stato && <span title="Cedibile" style={{ marginLeft: 4 }}>🏷️</span>}
+                          </td>
+                          <td style={{ padding: "3px 4px", textAlign: "center", color: p.anni<=21?"#a78bfa":p.anni>=31?"#fb923c":"#888" }}>{p.anni||"—"}</td>
+                          <td style={{ padding: "3px 4px", textAlign: "center", color: "#f59e0b", fontWeight: 700 }}>{p.quot}</td>
+                          <td style={{ padding: "3px 4px", textAlign: "center", color: "#888" }}>{Number(p.stip||0).toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* ── H2H: storico trattative tra le due squadre ── */}
+          {h2h && (
+            <div style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: 14, marginTop: 18 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", letterSpacing: "0.08em", marginBottom: 10 }}>🤝 STORICO TRATTATIVE {nomeA.toUpperCase()} ↔ {nomeB.toUpperCase()}</div>
+              {h2h.concluse.length === 0 ? (
+                <div style={{ fontSize: 11, color: "#555", fontStyle: "italic" }}>Nessuna trattativa conclusa tra queste due squadre.</div>
+              ) : (
+                <>
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 8 }}>
+                    <div><span style={{ color: "#666", fontSize: 11 }}>Trattative concluse: </span><span style={{ color: "#ddd", fontWeight: 800 }}>{h2h.concluse.length}</span></div>
+                    <div><span style={{ color: "#666", fontSize: 11 }}>Valore totale scambiato: </span><span style={{ color: "#f59e0b", fontWeight: 800 }}>{h2h.valoreTotale.toFixed(1)}M</span></div>
+                    <div><span style={{ color: "#666", fontSize: 11 }}>Per tipo: </span><span style={{ color: "#ccc", fontSize: 11 }}>{Object.entries(h2h.perTipo).map(([t, n]) => `${t} ×${n}`).join(', ')}</span></div>
+                  </div>
+                  <div style={{ maxHeight: 160, overflowY: "auto", display: "flex", flexDirection: "column", gap: 3 }}>
+                    {h2h.concluse.map(t => (
+                      <div key={t.id} style={{ display: "flex", justifyContent: "space-between", gap: 6, fontSize: 11, padding: "3px 6px", background: "#ffffff05", borderRadius: 5 }}>
+                        <span style={{ color: "#ccc" }}>{t.giocatore} · {t.a_squadra} → {t.da_squadra}</span>
+                        <span style={{ color: "#f59e0b", fontWeight: 700, flexShrink: 0 }}>{Number(t.prezzo || 0).toFixed(1)}M</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── SIMULATORE TRASFERIMENTO IPOTETICO ── */}
+          <div style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: 14, marginTop: 18 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#10b981", letterSpacing: "0.08em", marginBottom: 10 }}>🔀 SIMULA UN TRASFERIMENTO</div>
+            <div style={{ fontSize: 11, color: "#666", marginBottom: 10 }}>Scegli un giocatore di una delle due rose per vedere l'effetto sul salary cap se si trasferisse all'altra squadra — nessuna operazione reale.</div>
+            <select value={simGiocatore} onChange={e => setSimGiocatore(e.target.value)} style={{ ...sel, width: "100%", maxWidth: 340, marginBottom: 12 }}>
+              <option value="">— Scegli un giocatore —</option>
+              <optgroup label={nomeA}>
+                {datiA.rosa.map(p => <option key={`A::${p.id}`} value={`A::${p.id}`}>{p.ruolo} · {p.nome} (Q{p.quot})</option>)}
+              </optgroup>
+              <optgroup label={nomeB}>
+                {datiB.rosa.map(p => <option key={`B::${p.id}`} value={`B::${p.id}`}>{p.ruolo} · {p.nome} (Q{p.quot})</option>)}
+              </optgroup>
+            </select>
+            {simGiocatore && (() => {
+              const [origine, idStr] = simGiocatore.split('::');
+              const id = Number(idStr);
+              const daA = origine === 'A';
+              const player = (daA ? datiA.rosa : datiB.rosa).find(p => p.id === id);
+              if (!player) return null;
+              const stipAttuale = calcolaStipCorretto(player.quot, player.anni_contratto, player.anni);
+              const stipNuovo = calcolaStipCorretto(player.quot, 1, player.anni); // nuova proprietà: contratto riparte da anno 1 (art. 5.9)
+              const scA2 = daA ? parseFloat((datiA.scUsato - stipAttuale).toFixed(2)) : parseFloat((datiA.scUsato + stipNuovo).toFixed(2));
+              const scB2 = daA ? parseFloat((datiB.scUsato + stipNuovo).toFixed(2)) : parseFloat((datiB.scUsato - stipAttuale).toFixed(2));
+              return (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  {[[nomeA, datiA.scUsato, scA2, datiA.scLimite], [nomeB, datiB.scUsato, scB2, datiB.scLimite]].map(([nome, prima, dopo, limite]) => (
+                    <div key={nome} style={{ background: "#ffffff05", borderRadius: 8, padding: "8px 10px" }}>
+                      <div style={{ fontSize: 10, color: "#888", marginBottom: 4 }}>{nome}</div>
+                      <div style={{ fontSize: 13, fontWeight: 800, fontFamily: "'Bebas Neue',sans-serif" }}>
+                        <span style={{ color: "#666" }}>{prima.toFixed(1)}M</span>
+                        <span style={{ color: "#555", margin: "0 6px" }}>→</span>
+                        <span style={{ color: dopo > limite ? "#ef4444" : "#10b981" }}>{dopo.toFixed(1)}M</span>
+                        <span style={{ color: "#555", fontSize: 10, fontWeight: 400 }}> / {limite.toFixed(1)}M</span>
+                      </div>
+                      {dopo > limite && <div style={{ fontSize: 9, color: "#ef4444", marginTop: 2 }}>⚠️ supererebbe il salary cap</div>}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         </>
       )}
@@ -7050,24 +7191,27 @@ function ComparePlayersPage({ teams }) {
   }
   function rimuovi(id) { setSelezionati(s => s.filter(p => p.id !== id)); }
 
+  // direction: verso in cui il valore è "migliore" — usato per colorare la
+  // cella (verde il migliore, scala verso il rosso gli altri). null = nessun
+  // verso oggettivo (testo, o dato puramente informativo).
   const righe = [
-    { label: "Squadra", get: p => trovaSquadra(p)?.name || "Svincolato" },
-    { label: "Ruolo", get: p => p.ruolo },
-    { label: "Età", get: p => p.anni || "—" },
-    { label: "Squadra Serie A", get: p => p.squadra_serie_a || "—" },
-    { label: "Quotazione", get: p => p.quot, evidenzia: true },
-    { label: "Stipendio", get: p => Number(p.salario || 0).toFixed(2) + "M" },
-    { label: "Clausola", get: p => Number(p.clausola || 0).toFixed(2) + "M" },
-    { label: "Partite a voto", get: p => p.partite_voto ?? "—" },
-    { label: "Media voto", get: p => p.media_voto ?? "—" },
-    { label: "Media fantavoto", get: p => p.media_fantavoto ?? "—", evidenzia: true },
-    { label: "Gol", get: p => p.gol_fatti ?? "—" },
-    { label: "Assist", get: p => p.assist ?? "—" },
-    { label: "Ammonizioni", get: p => p.ammonizioni ?? "—" },
-    { label: "Espulsioni", get: p => p.espulsioni ?? "—" },
-    { label: "Rigori parati", get: p => p.rigori_parati ?? "—" },
-    { label: "Rigori segnati", get: p => p.rigori_segnati ?? "—" },
-    { label: "Rigori sbagliati", get: p => p.rigori_sbagliati ?? "—" },
+    { label: "Squadra", get: p => trovaSquadra(p)?.name || "Svincolato", direction: null },
+    { label: "Ruolo", get: p => p.ruolo, direction: null },
+    { label: "Età", get: p => p.anni || "—", direction: null },
+    { label: "Squadra Serie A", get: p => p.squadra_serie_a || "—", direction: null },
+    { label: "Quotazione", get: p => p.quot, val: p => p.quot, direction: "higher" },
+    { label: "Stipendio", get: p => Number(p.salario || 0).toFixed(2) + "M", val: p => Number(p.salario || 0), direction: "lower" },
+    { label: "Clausola", get: p => Number(p.clausola || 0).toFixed(2) + "M", val: p => Number(p.clausola || 0), direction: "lower" },
+    { label: "Partite a voto", get: p => p.partite_voto ?? "—", val: p => p.partite_voto, direction: "higher" },
+    { label: "Media voto", get: p => p.media_voto ?? "—", val: p => p.media_voto, direction: "higher" },
+    { label: "Media fantavoto", get: p => p.media_fantavoto ?? "—", val: p => p.media_fantavoto, direction: "higher" },
+    { label: "Gol", get: p => p.gol_fatti ?? "—", val: p => p.gol_fatti, direction: "higher" },
+    { label: "Assist", get: p => p.assist ?? "—", val: p => p.assist, direction: "higher" },
+    { label: "Ammonizioni", get: p => p.ammonizioni ?? "—", val: p => p.ammonizioni, direction: "lower" },
+    { label: "Espulsioni", get: p => p.espulsioni ?? "—", val: p => p.espulsioni, direction: "lower" },
+    { label: "Rigori parati", get: p => p.rigori_parati ?? "—", val: p => p.rigori_parati, direction: "higher" },
+    { label: "Rigori segnati", get: p => p.rigori_segnati ?? "—", val: p => p.rigori_segnati, direction: "higher" },
+    { label: "Rigori sbagliati", get: p => p.rigori_sbagliati ?? "—", val: p => p.rigori_sbagliati, direction: "lower" },
   ];
 
   const inp = { padding: "8px 12px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 13, width: 260 };
@@ -7116,14 +7260,18 @@ function ComparePlayersPage({ teams }) {
               </tr>
             </thead>
             <tbody>
-              {righe.map(r => (
-                <tr key={r.label} style={{ borderBottom: "1px solid #ffffff08" }}>
-                  <td style={{ padding: "6px 6px", color: "#888", fontSize: 11, position: "sticky", left: 0, background: "#0d0f14" }}>{r.label}</td>
-                  {selezionati.map(p => (
-                    <td key={p.id} style={{ padding: "6px 6px", textAlign: "center", color: r.evidenzia ? "#f59e0b" : "#ccc", fontWeight: r.evidenzia ? 800 : 500 }}>{r.get(p)}</td>
-                  ))}
-                </tr>
-              ))}
+              {righe.map(r => {
+                const valori = r.val ? selezionati.map(r.val) : null;
+                return (
+                  <tr key={r.label} style={{ borderBottom: "1px solid #ffffff08" }}>
+                    <td style={{ padding: "6px 6px", color: "#888", fontSize: 11, position: "sticky", left: 0, background: "#0d0f14" }}>{r.label}</td>
+                    {selezionati.map((p, i) => {
+                      const col = valori ? compareColor(valori, i, r.direction) : null;
+                      return <td key={p.id} style={{ padding: "6px 6px", textAlign: "center", color: col || "#ccc", fontWeight: col ? 800 : 500 }}>{r.get(p)}</td>;
+                    })}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
