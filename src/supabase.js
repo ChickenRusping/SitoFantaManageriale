@@ -225,6 +225,18 @@ export async function getRosaLeggeraTutte() {
   return data;
 }
 
+// Rosa di UNA squadra ma solo i campi usati dai comparatori/viste rapide
+// (niente statistiche gol/assist/rigori/ammonizioni, niente side-effect
+// vivaio/prestiti): pensata per ridurre l'egress nelle pagine dove non
+// servono i dati completi di getRosa, non per sostituirla ovunque.
+export async function getRosaLight(squadra) {
+  const { data, error } = await supabase.from('rosa')
+    .select('id, nome, ruolo, anni, quot, stip, clausola, anni_contratto, in_vivaio, in_prestito, cedibile_stato')
+    .eq('squadra', squadra).order('ruolo');
+  if (error) return [];
+  return data;
+}
+
 // ─── REGOLAMENTO ROSA (art. 3) ───────────────────────────────────────────────
 export function calcolaRosaCompliance(players = []) {
   const rosaAttiva = (players || []).filter(p => !p.in_vivaio);
@@ -622,15 +634,21 @@ export function subscribeChiamate(callback) {
 
 // ─── MOVIMENTI ────────────────────────────────────────────────────────────────
 
-export async function getMovimenti(squadra) {
+export async function getMovimenti(squadra, { dataMin } = {}) {
   // Ordina per data e, a parità di giorno, per l'istante esatto di
   // creazione: prima ordinava solo per data (senza orario), quindi più
   // movimenti nello stesso giorno restavano nell'ordine casuale in cui li
   // restituiva il DB, non dal più recente al meno recente.
-  let { data, error } = await supabase.from('movimenti').select('*').eq('squadra', squadra)
-    .order('data', { ascending: false }).order('created_at', { ascending: false });
+  // dataMin (opzionale): limita lo storico scaricato — usarlo sempre che il
+  // chiamante non abbia davvero bisogno di TUTTA la storia della squadra
+  // (l'egress cresce senza limiti stagione dopo stagione altrimenti).
+  let q = supabase.from('movimenti').select('*').eq('squadra', squadra);
+  if (dataMin) q = q.gte('data', dataMin);
+  let { data, error } = await q.order('data', { ascending: false }).order('created_at', { ascending: false });
   if (error && isMissingColumnError(error)) {
-    ({ data, error } = await supabase.from('movimenti').select('*').eq('squadra', squadra).order('data', { ascending: false }));
+    let q2 = supabase.from('movimenti').select('*').eq('squadra', squadra);
+    if (dataMin) q2 = q2.gte('data', dataMin);
+    ({ data, error } = await q2.order('data', { ascending: false }));
   }
   if (error) throw error;
   return data;

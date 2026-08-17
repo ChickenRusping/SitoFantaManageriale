@@ -173,7 +173,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, getEffettiInvestimenti, getSquadreConSuperClub,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, getEffettiInvestimenti, getSquadreConSuperClub,
   getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, usaContatoreInvestimento, registraEventoInvestimento, annullaEventoInvestimento, toggleTraguardoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
@@ -487,7 +487,12 @@ function BilancioTrendChart({ team }) {
   useEffect(() => {
     if (!team?.name) return;
     let cancelled = false;
-    getMovimenti(team.name).then(movs => {
+    // Limitato alla stagione corrente: oltre a dare un trend più leggibile
+    // (coerente con FPF/fair-spending, già scoperti per stagione), evita di
+    // riscaricare l'intero storico movimenti della squadra ad ogni visita.
+    const y = new Date().getFullYear(), m = new Date().getMonth() + 1, d = new Date().getDate();
+    const startYear = (m > 6 || (m === 6 && d >= 1)) ? y : y - 1;
+    getMovimenti(team.name, { dataMin: `${startYear}-06-01` }).then(movs => {
       if (cancelled) return;
       const ord = [...(movs || [])].sort((a, b) => {
         if (a.data !== b.data) return a.data < b.data ? -1 : 1;
@@ -502,7 +507,9 @@ function BilancioTrendChart({ team }) {
       }
       const netPrimo = (Number(ord[0].entrata) || 0) - (Number(ord[0].uscita) || 0);
       const baseline = parseFloat((after[0] - netPrimo).toFixed(2));
-      setPunti([baseline, ...after]);
+      // baseline non ha una data reale (è "prima del primo movimento della
+      // stagione", quindi ~01/06): la ancoro comunque al 01/06 per i marker mese.
+      setPunti([{ v: baseline, data: `${startYear}-06-01` }, ...ord.map((m, i) => ({ v: after[i], data: m.data }))]);
     }).catch(() => setPunti([]));
     return () => { cancelled = true; };
   }, [team?.name, team?.bilancio]);
@@ -510,23 +517,39 @@ function BilancioTrendChart({ team }) {
   if (!punti || punti.length < 2) return null;
 
   const W = 100, H = 60, PAD = 3;
-  const min = Math.min(...punti, 0), max = Math.max(...punti, 0);
+  const valori = punti.map(p => p.v);
+  const min = Math.min(...valori, 0), max = Math.max(...valori, 0);
   const range = (max - min) || 1;
   const stepX = (W - PAD * 2) / (punti.length - 1);
-  const pts = punti.map((v, i) => [PAD + i * stepX, H - PAD - ((v - min) / range) * (H - PAD * 2)]);
+  const pts = punti.map((p, i) => [PAD + i * stepX, H - PAD - ((p.v - min) / range) * (H - PAD * 2)]);
   const zeroY = H - PAD - ((0 - min) / range) * (H - PAD * 2);
-  const trend = punti[punti.length - 1] - punti[0];
+  const trend = valori[valori.length - 1] - valori[0];
   const color = trend > 0 ? "#10b981" : trend < 0 ? "#ef4444" : "#888";
+
+  // Marker "primo del mese": un punto sul primo dato che ricade in ogni mese.
+  const mesi = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
+  const markers = [];
+  let ultimoMese = null;
+  punti.forEach((p, i) => {
+    const mese = p.data?.slice(0, 7);
+    if (mese && mese !== ultimoMese) { markers.push({ x: pts[i][0], y: pts[i][1], label: mesi[Number(p.data.slice(5, 7)) - 1] }); ultimoMese = mese; }
+  });
 
   return (
     <div style={{ marginTop: 10, padding: "8px 10px", background: "#ffffff05", border: "1px solid #ffffff10", borderRadius: 10 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-        <span style={{ fontSize: 9, color: "#666", fontWeight: 700, letterSpacing: "0.06em" }}>📈 ANDAMENTO BILANCIO</span>
+        <span style={{ fontSize: 9, color: "#666", fontWeight: 700, letterSpacing: "0.06em" }}>📈 ANDAMENTO BILANCIO (stagione)</span>
         <span style={{ fontSize: 11, fontWeight: 800, color }}>{trend > 0 ? "+" : ""}{trend.toFixed(1)}M nel periodo tracciato</span>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={70} preserveAspectRatio="none">
+      <svg viewBox={`0 0 ${W} ${H + 8}`} width="100%" height={82} preserveAspectRatio="none">
         {min < 0 && max > 0 && <line x1={PAD} y1={zeroY} x2={W - PAD} y2={zeroY} stroke="#ffffff20" strokeWidth="0.5" strokeDasharray="2,2" />}
         <polyline points={pts.map(([x, y]) => `${x},${y}`).join(" ")} fill="none" stroke={color} strokeWidth="1.2" vectorEffect="non-scaling-stroke" />
+        {markers.map((mk, i) => (
+          <g key={i}>
+            <circle cx={mk.x} cy={mk.y} r="1.3" fill={color} />
+            <text x={mk.x} y={H + 6} fontSize="4.2" fill="#666" textAnchor="middle">{mk.label}</text>
+          </g>
+        ))}
       </svg>
     </div>
   );
@@ -736,8 +759,8 @@ function CalcolatoreGiornata({ profile, teams }) {
   const myTeam = teams?.find(t => t.name === mySquadra);
 
   const [giornata, setGiornata] = useState("");
-  const [golSegnati, setGolSegnati] = useState(0);
-  const [golSubiti, setGolSubiti] = useState(0);
+  const [golSegnati, setGolSegnati] = useState(""); // stringa vuota = non ancora inserito (0 è un risultato valido)
+  const [golSubiti, setGolSubiti] = useState("");
   const [risultato, setRisultato] = useState(""); // "V" | "P" | "S"
   const [rivale, setRivale] = useState(false);   // partita contro la squadra rivale
   const [formazione, setFormazione] = useState(true); // formazione schierata
@@ -754,11 +777,11 @@ function CalcolatoreGiornata({ profile, teams }) {
 
   // ── Tabella guadagni gol segnati (art. 8.1) ──────────────────────────────
   const tabellaGolSegnati = [0,1,2,3,4,5,6,7];
-  const guadagnoGolSegnati = Math.min(golSegnati, 7);
+  const guadagnoGolSegnati = Math.min(Number(golSegnati) || 0, 7);
 
   // Guadagno gol subiti
   const tabellaGolSubiti = { 0: 0.5, 1: -0.25, 2: -0.5, 3: -0.75, 4: -1, 5: -1.25, 6: -1.5, 7: -1.75, 8: -2 };
-  const guadagnoGolSubiti = tabellaGolSubiti[Math.min(golSubiti, 8)] ?? -2;
+  const guadagnoGolSubiti = tabellaGolSubiti[Math.min(Number(golSubiti) || 0, 8)] ?? -2;
 
   // Guadagno risultato
   const guadagnoRisultato = risultato === "V" ? (rivale ? 1 : 0.5)
@@ -793,9 +816,10 @@ function CalcolatoreGiornata({ profile, teams }) {
   }
 
   const color = totale >= 0 ? "#10b981" : "#ef4444";
+  const canSalva = Boolean(mySquadra && giornata && risultato && golSegnati !== "" && golSubiti !== "");
 
   async function salvaGuadagno() {
-    if (!mySquadra || !giornata) return;
+    if (!canSalva) return;
     setSaving(true);
     try {
       const oggi = new Date().toISOString().slice(0, 10);
@@ -851,13 +875,13 @@ function CalcolatoreGiornata({ profile, teams }) {
 
             {/* Giornata */}
             <div>
-              <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>GIORNATA N°</div>
+              <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>GIORNATA N° *</div>
               <input style={inpNum} type="number" placeholder="es. 29" value={giornata} onChange={e => setGiornata(e.target.value)} />
             </div>
 
             {/* Risultato */}
             <div>
-              <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>RISULTATO</div>
+              <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>RISULTATO *</div>
               <div style={{ display: "flex", gap: 4 }}>
                 {[["V","Vittoria"],["P","Pareggio"],["S","Sconfitta"]].map(([v,l]) => (
                   <button key={v} onClick={() => setRisultato(risultato === v ? "" : v)}
@@ -870,16 +894,17 @@ function CalcolatoreGiornata({ profile, teams }) {
 
             {/* Gol segnati */}
             <div>
-              <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>GOL SEGNATI (+{guadagnoGolSegnati}M)</div>
-              <input style={inpNum} type="number" min="0" max="99" value={golSegnati} onChange={e => setGolSegnati(Number(e.target.value))} />
+              <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>GOL SEGNATI * (+{guadagnoGolSegnati}M)</div>
+              <input style={inpNum} type="number" min="0" max="99" placeholder="es. 0" value={golSegnati} onChange={e => setGolSegnati(e.target.value)} />
             </div>
 
             {/* Gol subiti */}
             <div>
-              <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>GOL SUBITI ({guadagnoGolSubiti >= 0 ? "+" : ""}{guadagnoGolSubiti}M)</div>
-              <input style={inpNum} type="number" min="0" max="99" value={golSubiti} onChange={e => setGolSubiti(Number(e.target.value))} />
+              <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>GOL SUBITI * ({guadagnoGolSubiti >= 0 ? "+" : ""}{guadagnoGolSubiti}M)</div>
+              <input style={inpNum} type="number" min="0" max="99" placeholder="es. 0" value={golSubiti} onChange={e => setGolSubiti(e.target.value)} />
             </div>
           </div>
+          <div style={{ fontSize: 9, color: "#555", marginTop: -8, marginBottom: 16 }}>* campi obbligatori</div>
 
           {/* Costi giocatori */}
           <div style={{ marginBottom: 12 }}>
@@ -943,10 +968,13 @@ function CalcolatoreGiornata({ profile, teams }) {
           )}
 
           {mySquadra ? (
-            <button onClick={salvaGuadagno} disabled={saving || !giornata}
-              style={{ width: "100%", padding: "11px", borderRadius: 10, border: "none", background: !giornata ? "#333" : "linear-gradient(135deg,#6366f1,#a855f7)", color: !giornata ? "#555" : "#fff", fontSize: 13, fontWeight: 700, cursor: giornata ? "pointer" : "not-allowed" }}>
-              {saving ? "Salvataggio..." : `💾 Salva giornata ${giornata || "?"} nei movimenti`}
-            </button>
+            <>
+              <button onClick={salvaGuadagno} disabled={saving || !canSalva}
+                style={{ width: "100%", padding: "11px", borderRadius: 10, border: "none", background: !canSalva ? "#333" : "linear-gradient(135deg,#6366f1,#a855f7)", color: !canSalva ? "#555" : "#fff", fontSize: 13, fontWeight: 700, cursor: canSalva ? "pointer" : "not-allowed" }}>
+                {saving ? "Salvataggio..." : `💾 Salva giornata ${giornata || "?"} nei movimenti`}
+              </button>
+              {!canSalva && <div style={{ fontSize: 10, color: "#666", marginTop: 6, textAlign: "center" }}>Compila giornata, risultato, gol segnati e gol subiti per salvare.</div>}
+            </>
           ) : (
             <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", textAlign: "center" }}>Effettua il login per salvare</div>
           )}
@@ -4164,7 +4192,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
   const refreshStatoStipendiMese = useCallback(async () => {
     const { start, end } = getMeseCorrenteRangeClient();
     try {
-      const movimenti = await getMovimenti(team.name);
+      const movimenti = await getMovimenti(team.name, { dataMin: start });
       const match = (movimenti || []).find(m =>
         m.data >= start &&
         m.data < end &&
@@ -6416,11 +6444,13 @@ function RivalTracker({ squadra, rivale }) {
   useEffect(() => {
     if (!squadra || !rivale) return;
     let cancelled = false;
-    getMovimenti(squadra).then(movs => {
+    const y = new Date().getFullYear(), m = new Date().getMonth() + 1, d = new Date().getDate();
+    const startYear = (m > 6 || (m === 6 && d >= 1)) ? y : y - 1;
+    const inizio = `${startYear}-06-01`, fine = `${startYear + 1}-05-31`;
+    // dataMin server-side: evita di riscaricare tutto lo storico movimenti
+    // della squadra solo per contare le sfide vs rivale di questa stagione.
+    getMovimenti(squadra, { dataMin: inizio }).then(movs => {
       if (cancelled) return;
-      const y = new Date().getFullYear(), m = new Date().getMonth() + 1, d = new Date().getDate();
-      const startYear = (m > 6 || (m === 6 && d >= 1)) ? y : y - 1;
-      const inizio = `${startYear}-06-01`, fine = `${startYear + 1}-05-31`;
       const match = (movs || []).filter(mv => mv.descrizione?.includes('(vs rivale)') && mv.data >= inizio && mv.data <= fine);
       const nums = match
         .map(mv => { const mm = mv.descrizione.match(/giornata (\d+)/); return mm ? Number(mm[1]) : null; })
@@ -6938,6 +6968,51 @@ function compareColor(values, idx, direction) {
 }
 
 /* ─── COMPARATORE ROSE ──────────────────────────────────────────────────────── */
+/* ─── TABELLA ROSA ORDINABILE (per il comparatore) ──────────────────────────── */
+function RosaCompareTable({ nome, dati, colore }) {
+  const roleOrder = ["Por","Dc","Dd","Ds","B","E","M","C","T","W","A","Pc"];
+  const rows = useMemo(() => (dati?.rosa || []).map(p => ({
+    ...p,
+    _ruoloOrd: (() => { const i = roleOrder.indexOf((p.ruolo || "").split(";")[0].trim()); return i < 0 ? 99 : i; })(),
+    _quotNum: Number(p.quot || 0),
+    _stipNum: Number(p.stip || 0),
+    _anniNum: Number(p.anni || 0),
+  })), [dati]);
+  const { sorted, SortTh } = useSortableTable(rows, "_ruoloOrd", "asc");
+
+  return (
+    <div style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: 10 }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: colore, letterSpacing: "0.08em", marginBottom: 8 }}>{nome.toUpperCase()} — ROSA ({rows.length})</div>
+      <div style={{ maxHeight: 380, overflowY: "auto", overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+          <thead>
+            <tr style={{ position: "sticky", top: 0, background: "#14161c" }}>
+              <SortTh col="_ruoloOrd" label="R" align="left" style={{ fontSize: 9, padding: "4px 4px" }} />
+              <SortTh col="nome" label="NOME" align="left" style={{ fontSize: 9, padding: "4px 4px" }} />
+              <SortTh col="_anniNum" label="ETÀ" align="center" style={{ fontSize: 9, padding: "4px 4px" }} />
+              <SortTh col="_quotNum" label="Q" align="center" style={{ fontSize: 9, padding: "4px 4px" }} />
+              <SortTh col="_stipNum" label="STIP." align="center" style={{ fontSize: 9, padding: "4px 4px" }} />
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map(p => (
+              <tr key={p.id} style={{ borderBottom: "1px solid #ffffff06", background: p.cedibile_stato ? "#f59e0b08" : "transparent" }}>
+                <td style={{ padding: "3px 4px", color: "#888" }}>{p.ruolo}</td>
+                <td style={{ padding: "3px 4px", color: "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}>
+                  {p.nome}{p.cedibile_stato && <span title="Cedibile" style={{ marginLeft: 4 }}>🏷️</span>}
+                </td>
+                <td style={{ padding: "3px 4px", textAlign: "center", color: p.anni <= 21 ? "#a78bfa" : p.anni >= 31 ? "#fb923c" : "#888" }}>{p.anni || "—"}</td>
+                <td style={{ padding: "3px 4px", textAlign: "center", color: "#f59e0b", fontWeight: 700 }}>{p.quot}</td>
+                <td style={{ padding: "3px 4px", textAlign: "center", color: "#888" }}>{Number(p.stip || 0).toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function CompareRosePage({ teams }) {
   const [nomeA, setNomeA] = useState(teams?.[0]?.name || "");
   const [nomeB, setNomeB] = useState(teams?.[1]?.name || "");
@@ -6968,7 +7043,7 @@ function CompareRosePage({ teams }) {
   async function caricaDati(nome, team) {
     if (!nome || !team) return null;
     const [rosa, scAllenatore, effetti] = await Promise.all([
-      cachedFetch('rosa_' + nome, () => getRosa(nome), 600000),
+      cachedFetch('rosa_light_' + nome, () => getRosaLight(nome), 600000),
       getSCAllenatore(nome),
       getEffettiInvestimenti(nome),
     ]);
@@ -7057,37 +7132,8 @@ function CompareRosePage({ teams }) {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 18 }}>
-            {[[nomeA, datiA, "#6366f1"], [nomeB, datiB, "#f59e0b"]].map(([nome, dati, colore]) => (
-              <div key={nome} style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: 10 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: colore, letterSpacing: "0.08em", marginBottom: 8 }}>{nome.toUpperCase()} — ROSA ({dati.rosa.length})</div>
-                <div style={{ maxHeight: 380, overflowY: "auto", overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
-                    <thead>
-                      <tr style={{ position: "sticky", top: 0, background: "#14161c" }}>
-                        <th style={{ padding: "4px 4px", textAlign: "left", color: "#555", fontSize: 9 }}>R</th>
-                        <th style={{ padding: "4px 4px", textAlign: "left", color: "#555", fontSize: 9 }}>NOME</th>
-                        <th style={{ padding: "4px 4px", textAlign: "center", color: "#555", fontSize: 9 }}>ETÀ</th>
-                        <th style={{ padding: "4px 4px", textAlign: "center", color: "#555", fontSize: 9 }}>Q</th>
-                        <th style={{ padding: "4px 4px", textAlign: "center", color: "#555", fontSize: 9 }}>STIP.</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[...dati.rosa].sort((a, b) => { const ra = (a.ruolo||"").localeCompare(b.ruolo||""); return ra !== 0 ? ra : Number(b.quot||0)-Number(a.quot||0); }).map(p => (
-                        <tr key={p.id} style={{ borderBottom: "1px solid #ffffff06", background: p.cedibile_stato ? "#f59e0b08" : "transparent" }}>
-                          <td style={{ padding: "3px 4px", color: "#888" }}>{p.ruolo}</td>
-                          <td style={{ padding: "3px 4px", color: "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}>
-                            {p.nome}{p.cedibile_stato && <span title="Cedibile" style={{ marginLeft: 4 }}>🏷️</span>}
-                          </td>
-                          <td style={{ padding: "3px 4px", textAlign: "center", color: p.anni<=21?"#a78bfa":p.anni>=31?"#fb923c":"#888" }}>{p.anni||"—"}</td>
-                          <td style={{ padding: "3px 4px", textAlign: "center", color: "#f59e0b", fontWeight: 700 }}>{p.quot}</td>
-                          <td style={{ padding: "3px 4px", textAlign: "center", color: "#888" }}>{Number(p.stip||0).toFixed(2)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))}
+            <RosaCompareTable nome={nomeA} dati={datiA} colore="#6366f1" />
+            <RosaCompareTable nome={nomeB} dati={datiB} colore="#f59e0b" />
           </div>
 
           {/* ── H2H: storico trattative tra le due squadre ── */}
