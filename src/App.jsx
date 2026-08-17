@@ -516,15 +516,38 @@ function BilancioTrendChart({ team }) {
 
   if (!punti || punti.length < 2) return null;
 
-  const W = 100, H = 60, PAD = 3;
+  // Curva smussata (Catmull-Rom → bezier cubiche) invece della semplice spezzata.
+  const catmullRomPath = (pts) => {
+    if (pts.length < 2) return "";
+    if (pts.length === 2) return `M${pts[0][0]},${pts[0][1]} L${pts[1][0]},${pts[1][1]}`;
+    let d = `M${pts[0][0]},${pts[0][1]}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2] || p2;
+      const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+      const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+      const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d += ` C${c1x},${c1y} ${c2x},${c2y} ${p2[0]},${p2[1]}`;
+    }
+    return d;
+  };
+
+  const W = 600, H = 180, PADX = 10, PADY = 14;
   const valori = punti.map(p => p.v);
   const min = Math.min(...valori, 0), max = Math.max(...valori, 0);
   const range = (max - min) || 1;
-  const stepX = (W - PAD * 2) / (punti.length - 1);
-  const pts = punti.map((p, i) => [PAD + i * stepX, H - PAD - ((p.v - min) / range) * (H - PAD * 2)]);
-  const zeroY = H - PAD - ((0 - min) / range) * (H - PAD * 2);
+  const stepX = (W - PADX * 2) / (punti.length - 1);
+  const yOf = v => H - PADY - ((v - min) / range) * (H - PADY * 2);
+  const pts = punti.map((p, i) => [PADX + i * stepX, yOf(p.v)]);
+  const zeroY = yOf(0);
   const trend = valori[valori.length - 1] - valori[0];
   const color = trend > 0 ? "#10b981" : trend < 0 ? "#ef4444" : "#888";
+  const gradId = "bilTrendGrad" + Math.abs(trend).toFixed(0) + (trend >= 0 ? "p" : "n");
+  const linePath = catmullRomPath(pts);
+  const areaPath = `${linePath} L${pts[pts.length - 1][0]},${H - PADY} L${pts[0][0]},${H - PADY} Z`;
 
   // Marker "primo del mese": un punto sul primo dato che ricade in ogni mese.
   const mesi = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
@@ -532,24 +555,38 @@ function BilancioTrendChart({ team }) {
   let ultimoMese = null;
   punti.forEach((p, i) => {
     const mese = p.data?.slice(0, 7);
-    if (mese && mese !== ultimoMese) { markers.push({ x: pts[i][0], y: pts[i][1], label: mesi[Number(p.data.slice(5, 7)) - 1] }); ultimoMese = mese; }
+    if (mese && mese !== ultimoMese) { markers.push({ x: pts[i][0], y: pts[i][1], label: mesi[Number(p.data.slice(5, 7)) - 1], v: p.v, data: p.data }); ultimoMese = mese; }
   });
+  const ultimo = pts[pts.length - 1];
 
   return (
-    <div style={{ marginTop: 10, padding: "8px 10px", background: "#ffffff05", border: "1px solid #ffffff10", borderRadius: 10 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+    <div style={{ marginTop: 10, padding: "12px 14px", background: "#ffffff05", border: "1px solid #ffffff10", borderRadius: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <span style={{ fontSize: 9, color: "#666", fontWeight: 700, letterSpacing: "0.06em" }}>📈 ANDAMENTO BILANCIO (stagione)</span>
-        <span style={{ fontSize: 11, fontWeight: 800, color }}>{trend > 0 ? "+" : ""}{trend.toFixed(1)}M nel periodo tracciato</span>
+        <span style={{ fontSize: 12, fontWeight: 800, color }}>{trend > 0 ? "+" : ""}{trend.toFixed(1)}M nel periodo tracciato</span>
       </div>
-      <svg viewBox={`0 0 ${W} ${H + 8}`} width="100%" height={82} preserveAspectRatio="none">
-        {min < 0 && max > 0 && <line x1={PAD} y1={zeroY} x2={W - PAD} y2={zeroY} stroke="#ffffff20" strokeWidth="0.5" strokeDasharray="2,2" />}
-        <polyline points={pts.map(([x, y]) => `${x},${y}`).join(" ")} fill="none" stroke={color} strokeWidth="1.2" vectorEffect="non-scaling-stroke" />
+      <svg viewBox={`0 0 ${W} ${H + 20}`} width="100%" height={150} preserveAspectRatio="none">
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {min < 0 && max > 0 && <line x1={PADX} y1={zeroY} x2={W - PADX} y2={zeroY} stroke="#ffffff20" strokeWidth="1" strokeDasharray="4,4" />}
+        {markers.map((mk, i) => (
+          <line key={"gl" + i} x1={mk.x} y1={PADY} x2={mk.x} y2={H - PADY} stroke="#ffffff0a" strokeWidth="1" />
+        ))}
+        <path d={areaPath} fill={`url(#${gradId})`} stroke="none" />
+        <path d={linePath} fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
         {markers.map((mk, i) => (
           <g key={i}>
-            <circle cx={mk.x} cy={mk.y} r="1.3" fill={color} />
-            <text x={mk.x} y={H + 6} fontSize="4.2" fill="#666" textAnchor="middle">{mk.label}</text>
+            <circle cx={mk.x} cy={mk.y} r="3" fill="#0d0f14" stroke={color} strokeWidth="1.6" />
+            <text x={mk.x} y={H + 14} fontSize="11" fill="#777" textAnchor="middle" fontWeight="700">{mk.label}</text>
+            <title>{`${mk.label}: ${mk.v.toFixed(2)}M`}</title>
           </g>
         ))}
+        <circle cx={ultimo[0]} cy={ultimo[1]} r="4" fill={color} stroke="#0d0f14" strokeWidth="1.5" />
+        <text x={Math.min(ultimo[0], W - 34)} y={ultimo[1] - 10} fontSize="12" fill={color} textAnchor="middle" fontWeight="800">{valori[valori.length - 1].toFixed(1)}M</text>
       </svg>
     </div>
   );
