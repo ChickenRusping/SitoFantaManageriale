@@ -1202,6 +1202,39 @@ async function _liquidaBonusPendentiAllaRivendita(giocatoreNome, squadraCedente)
   return liquidati;
 }
 
+// Svincolo e clausola rescissoria: i bonus pendenti dell'acquisto con cui
+// squadraCedente aveva preso questo giocatore decadono senza alcun pagamento
+// (a differenza della cessione a titolo definitivo, che li liquida al 50% —
+// vedi _liquidaBonusPendentiAllaRivendita). Vanno comunque rimossi esplicitamente
+// da trattative_bonus/clausole, altrimenti resterebbero "pendenti" per sempre e
+// checkECompletaBonus (che non verifica la proprietà attuale del giocatore)
+// potrebbe pagarli anche a distanza di tempo, dopo che il giocatore ha cambiato
+// squadra per una strada che avrebbe dovuto farli decadere.
+async function _annullaBonusPendenti(giocatoreNome, squadraCedente) {
+  const { data: acquisti } = await supabase
+    .from('trattative')
+    .select('id, da_squadra, a_squadra')
+    .ilike('giocatore', giocatoreNome)
+    .eq('da_squadra', squadraCedente)
+    .in('stato', ['completata', 'accettata', 'clausola_eseguita'])
+    .order('updated_at', { ascending: false })
+    .limit(1);
+  const acquisto = acquisti?.[0];
+  if (!acquisto) return [];
+
+  const { data: bonusPendenti } = await supabase
+    .from('trattative_bonus')
+    .select('id')
+    .eq('trattativa_id', acquisto.id)
+    .eq('completato', false);
+  if (!bonusPendenti?.length) return [];
+
+  const ids = bonusPendenti.map(b => b.id);
+  await supabase.from('clausole').delete().in('trattativa_bonus_id', ids);
+  await supabase.from('trattative_bonus').delete().in('id', ids);
+  return ids;
+}
+
 export async function eseguiTrasferimento(trattativa) {
   const { da_squadra, a_squadra, giocatore, prezzo, tipo, quota_giocatore, quot_giocatore,
           scadenza_prestito, stipendio_a_chi, fuori_mercato, id, oneroso,
@@ -1350,16 +1383,17 @@ export async function eseguiTrasferimento(trattativa) {
     }
   }
 
-  // ── 2c. Liquidazione bonus pendenti di un precedente acquisto di questo
-  // giocatore da parte del cedente (vedi _liquidaBonusPendentiAllaRivendita).
-  // Solo cessioni/scambi trattati tra presidenti: un prestito non cambia
-  // davvero la proprietà, e una clausola rescissoria è un acquisto unilaterale
-  // (non una trattativa negoziata) — in nessuno dei due casi va liquidato il
-  // bonus, così come non va mai liquidato in caso di svincolo (quella strada
-  // non passa da eseguiTrasferimento).
-  if (!isPrestito && tipo !== 'clausola') {
-    try { await _liquidaBonusPendentiAllaRivendita(giocatore, squadraCedente); }
-    catch (e) { console.warn('Liquidazione bonus alla rivendita fallita:', e.message); }
+  // ── 2c. Bonus pendenti di un precedente acquisto di questo giocatore da
+  // parte del cedente. Un prestito non cambia davvero la proprietà, quindi i
+  // bonus restano attivi e verranno controllati normalmente. Una cessione a
+  // titolo definitivo li liquida al 50% forfettario. Una clausola rescissoria
+  // (acquisto unilaterale, non una trattativa negoziata) li fa decadere senza
+  // alcun pagamento, come confermato dalla lega.
+  if (!isPrestito) {
+    try {
+      if (tipo === 'clausola') await _annullaBonusPendenti(giocatore, squadraCedente);
+      else await _liquidaBonusPendentiAllaRivendita(giocatore, squadraCedente);
+    } catch (e) { console.warn('Gestione bonus pendenti alla cessione fallita:', e.message); }
   }
 
   // Se il giocatore non è trovato nella rosa (es. svincolato), non sposta nulla
@@ -2266,6 +2300,11 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
     console.error('eseguiSvincolo: cancellazione dalla rosa fallita dopo aver già scritto tra gli svincolati:', player.nome, delErr);
     throw new Error(`${player.nome} è stato salvato tra gli svincolati ma non è stato possibile rimuoverlo dalla rosa (${delErr.message || delErr.code || 'errore sconosciuto'}). Controlla manualmente per evitare un doppione.`);
   }
+
+  // Bonus pendenti dell'acquisto con cui questa squadra aveva preso il giocatore:
+  // decadono senza alcun pagamento, come confermato dalla lega.
+  try { await _annullaBonusPendenti(player.nome, squadra); }
+  catch (e) { console.warn('Annullamento bonus pendenti allo svincolo fallito:', e.message); }
 
   // ── 3. Aggiorna bilancio ──────────────────────────────────────────────────
   const nuovoBilancio = parseFloat((bilancioAttuale - costoTotale).toFixed(2));
