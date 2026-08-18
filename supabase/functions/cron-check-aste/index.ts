@@ -596,15 +596,23 @@ async function rivelaECompletaAsta(astaId: number) {
         const { data: sq } = await supabase.from("squadre").select("bilancio").eq("name", off.squadra).single();
         if (Number(off.importo || 0) <= Number(sq?.bilancio || 0) + 0.0001) tutteOfferte.push(off);
       }
-      if (!tutteOfferte.length) throw new Error("Nessuna offerta valida: nessun interessato ha liquidità sufficiente.");
-
-      const maxImporto = Number(tutteOfferte?.[0]?.importo || 0);
-      const pareggi = tutteOfferte.filter((o: any) => Number(o.importo) === maxImporto);
-      vincitore = pareggi.length === 1
-        ? pareggi[0].squadra
-        : (ordineInteresse.find((sq: string) => pareggi.some((p: any) => p.squadra === sq)) || pareggi[0]?.squadra);
-      prezzoFinale = maxImporto;
-      if (!vincitore) throw new Error("Nessun offerente");
+      if (!tutteOfferte.length) {
+        // Più interessati, ma nessuno ha liquidità sufficiente nemmeno per la
+        // base d'asta (¾Q): come per l'unico interessato, il giocatore va
+        // comunque assegnato invece di far fallire l'asta — al primo che si
+        // era interessato, al prezzo base, bilancio libero di andare negativo.
+        vincitore = ordineInteresse[0];
+        if (!vincitore) throw new Error("Nessun interessato trovato per questa asta.");
+        prezzoFinale = parseFloat((Number(asta.quot || 0) * 0.75).toFixed(2));
+      } else {
+        const maxImporto = Number(tutteOfferte?.[0]?.importo || 0);
+        const pareggi = tutteOfferte.filter((o: any) => Number(o.importo) === maxImporto);
+        vincitore = pareggi.length === 1
+          ? pareggi[0].squadra
+          : (ordineInteresse.find((sq: string) => pareggi.some((p: any) => p.squadra === sq)) || pareggi[0]?.squadra);
+        prezzoFinale = maxImporto;
+        if (!vincitore) throw new Error("Nessun offerente");
+      }
     }
 
     await verificaRiacquistoConsentito(vincitore, asta.giocatore);
