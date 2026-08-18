@@ -2849,7 +2849,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                     })()}
                   </td>
                   <td style={{ padding:"7px 8px",textAlign:"center" }}>
-                    {(()=>{const ac=p.anni_contratto||0,isU21=p.anni>0&&p.anni<=21,color=ac===0?"#555":ac>=4?"#10b981":ac>=3?"#f59e0b":"#818cf8";
+                    {(()=>{const ac=p.anni_contratto||0,isU21=p.anni>0&&p.anni<=21,color=ac===0?"#555":isU21?"#818cf8":ac>=4?"#10b981":ac===3?"#f97316":ac===2?"#f59e0b":"#818cf8";
                     return <span style={{ background:color+"22",color,border:`1px solid ${color}44`,borderRadius:5,padding:"1px 6px",fontSize:10,fontWeight:700 }}>{ac||"—"}</span>;})()}
                   </td>
                   <td style={{ padding:"7px 8px",textAlign:"center",color:"#666" }}>{p.clausola}M</td>
