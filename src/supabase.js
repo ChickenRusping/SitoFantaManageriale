@@ -5067,7 +5067,9 @@ export async function applicaTop5Rialzo(playerId, squadra, stagione = getStagion
   const { data: p } = await supabase.from('rosa').select('*').eq('id', playerId).single();
   if (!p) throw new Error('Giocatore non trovato');
   const nuovaQuot = Number(p.quot_reale);
-  const nuovoStip = parseFloat((nuovaQuot / 5).toFixed(2));
+  // Lo stipendio segue la nuova quotazione ma mantiene il moltiplicatore
+  // dell'anno di contratto attuale (art. 4.8), non solo la base Q/5.
+  const nuovoStip = _calcolaStipCorretto(nuovaQuot, p.anni_contratto, p.anni);
   const nuovaClausola = parseFloat((nuovaQuot * 1.75).toFixed(2));
 
   await supabase.from('rosa').update({
@@ -5117,7 +5119,9 @@ export async function applicaTop5Ribasso(playerId, squadra, ridurre, stagione = 
   }
 
   const nuovaQuot = Number(p.quot_reale);
-  const nuovoStip = parseFloat((nuovaQuot / 5).toFixed(2));
+  // Lo stipendio segue la nuova quotazione ma mantiene il moltiplicatore
+  // dell'anno di contratto attuale (art. 4.8), non solo la base Q/5.
+  const nuovoStip = _calcolaStipCorretto(nuovaQuot, p.anni_contratto, p.anni);
   const nuovaClausola = parseFloat((nuovaQuot * 1.75).toFixed(2));
   const deveCedere = p.anni >= 22 && p.anni <= 30;
 
@@ -6049,16 +6053,18 @@ export async function aggiornaFantaSquadraListone(nomeGiocatore, nuovaFantaSquad
   if (error) console.warn('aggiornaFantaSquadraListone:', error.message);
 }
 
-// Prende stipendio dal listone e lo applica alla rosa dopo un trasferimento
+// Ricalcola lo stipendio dalla formula vera (art. 4.8) dopo un trasferimento.
+// Non legge più il campo "salario" della tabella listone (fonte separata, mai
+// aggiornata con il moltiplicatore dell'anno di contratto): usa sempre quot e
+// anni_contratto salvati in rosa, la stessa fonte di verità di tutte le altre
+// funzioni che scrivono stip.
 export async function aggiornaStipendioDopoTrasferimento(nomeGiocatore, squadraDestinazione) {
-  const { data: listone } = await supabase.from('listone').select('salario, quot').ilike('nome', nomeGiocatore).single();
-  if (!listone) return null;
-  const stipDaListone = Number(listone.salario) || parseFloat((Number(listone.quot) / 5).toFixed(2));
-  const { data: player } = await supabase.from('rosa').select('id')
+  const { data: player } = await supabase.from('rosa').select('id, quot, anni_contratto, anni')
     .eq('squadra', squadraDestinazione).ilike('nome', nomeGiocatore).single();
   if (!player) return null;
-  await supabase.from('rosa').update({ stip: stipDaListone }).eq('id', player.id);
-  return stipDaListone;
+  const nuovoStip = _calcolaStipCorretto(player.quot, player.anni_contratto, player.anni);
+  await supabase.from('rosa').update({ stip: nuovoStip }).eq('id', player.id);
+  return nuovoStip;
 }
 
 // ─── BONUS TRATTATIVA ────────────────────────────────────────────────────────
@@ -6986,7 +6992,7 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
   // Aggiorna listone + stats rosa via funzione esistente (match case-insensitive per nome)
   await importListoneDaExcel(rows);
 
-  const { data: rosaAll } = await supabase.from('rosa').select('id, nome, anni, stip, fuori_lista').eq('in_vivaio', false);
+  const { data: rosaAll } = await supabase.from('rosa').select('id, nome, anni, anni_contratto, stip, fuori_lista').eq('in_vivaio', false);
   const { data: svinAll }  = await supabase.from('svincolati').select('id, nome, fuori_lista').eq('stagione', stagione);
 
   // Normalizza accenti e spazi multipli (non la punteggiatura, per non fondere
@@ -7046,10 +7052,12 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
           ...statsRosa,
         };
         if (aggiornaQuotazioneRosa) {
-          // Art. 4.2/4.8.1: gli U21 non hanno aumenti contrattuali percentuali,
-          // ma lo stipendio base segue sempre la quotazione aggiornata (Q/5).
+          // Lo stipendio segue la quotazione aggiornata MA mantiene il
+          // moltiplicatore dell'anno di contratto attuale (art. 4.8) — non va
+          // azzerato a Q/5 puro se il giocatore è già al 2°/3° anno.
+          const stipRosa = _calcolaStipCorretto(quot, p.anni_contratto, anni);
           Object.assign(updatePayload, {
-            quot, stip, stip_originale: stip, clausola,
+            quot, stip: stipRosa, stip_originale: stipRosa, clausola,
             quot_precedente: p.quot || quot,
           });
         }
@@ -7147,7 +7155,7 @@ export async function importDatabaseFanta(rows, stagione = getStagioneQuota()) {
 export async function applica01GiugnoAgosto(stagione = getStagioneQuota()) {
   const { data } = await supabase
     .from('rosa')
-    .select('id, nome, anni, quot, quot_reale, stip, squadra')
+    .select('id, nome, anni, anni_contratto, quot, quot_reale, stip, squadra')
     .eq('in_vivaio', false)
     .not('quot_reale', 'is', null);
 
@@ -7159,12 +7167,10 @@ export async function applica01GiugnoAgosto(stagione = getStagioneQuota()) {
   for (let i = 0; i < players.length; i += BATCH) {
     await Promise.all(players.slice(i, i + BATCH).map(async p => {
       const nuovaQuot = Number(p.quot_reale);
-      // Niente eccezione U21 qui: la quotazione (e quindi lo stip base Q/5)
-      // aggiorna tutti allo stesso modo. L'unica cosa che gli U21 NON hanno è
-      // il bonus percentuale di rinnovo contrattuale (+10%/+20%), che è un
-      // calcolo di visualizzazione fatto in calcolaStipCorretto() lato rosa,
-      // non qualcosa da congelare qui in fase di import.
-      const nuovoStip = parseFloat((nuovaQuot / 5).toFixed(2));
+      // Il nuovo stipendio segue la nuova quotazione MA mantiene il moltiplicatore
+      // dell'anno di contratto attuale (art. 4.8) — un giocatore al 2°/3° anno
+      // non deve tornare alla base solo perché la quotazione si aggiorna.
+      const nuovoStip = _calcolaStipCorretto(nuovaQuot, p.anni_contratto, p.anni);
       const nuovaClausola = parseFloat((nuovaQuot * 1.75).toFixed(2));
       await supabase.from('rosa').update({
         quot: nuovaQuot,
