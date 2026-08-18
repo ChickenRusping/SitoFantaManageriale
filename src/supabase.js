@@ -5479,7 +5479,7 @@ export function calcolaScadenzaAsta(dataPrimaChiamata = new Date()) {
 // principali di quello stesso venerdì hanno una scadenza_interesse precedente
 // alla chiamata corrente: è deterministico e indipendente da quando/come
 // viene creata l'asta.
-export async function calcolaSlotVenerdì(venerdìUTC, scadenzaInteresseChiamata) {
+export async function calcolaSlotVenerdì(venerdìUTC, primaria) {
   // Tutte le chiamate la cui scadenza_interesse cade nel giorno (giovedì) che
   // porta a QUESTO venerdì di aste: stessa finestra di 24h usata per calcolare
   // "ven" in creaAstaDaChiamate (scadenzaInteresse + 1 giorno).
@@ -5491,15 +5491,25 @@ export async function calcolaSlotVenerdì(venerdìUTC, scadenzaInteresseChiamata
 
   const { data: chiamateStessoVenerdi } = await supabase
     .from('chiamate')
-    .select('scadenza_interesse')
+    .select('id, scadenza_interesse, created_at')
     .eq('tipo', 'prima')
     .gte('scadenza_interesse', giornoChiamate.toISOString())
     .lte('scadenza_interesse', fineGiornoChiamate.toISOString());
 
-  const targetISO = new Date(scadenzaInteresseChiamata).toISOString();
   // Slot = quante chiamate di questo stesso venerdì sono state fatte prima
-  // (scadenza_interesse minore) della chiamata corrente.
-  return (chiamateStessoVenerdi || []).filter(c => c.scadenza_interesse < targetISO).length;
+  // della chiamata corrente. scadenza_interesse è quasi sempre IDENTICA per
+  // tutte le chiamate della settimana (è fissa al giovedì 20:00 per tutti,
+  // art. 6.4): usarla da sola come chiave d'ordinamento mette tutte le
+  // chiamate pari-merito allo STESSO slot. created_at (l'istante reale della
+  // chiamata) rompe il pareggio e dà a ognuna il proprio slot progressivo.
+  const targetScad = new Date(primaria.scadenza_interesse).toISOString();
+  const targetCreated = new Date(primaria.created_at).toISOString();
+  const vieneNPrima = c => {
+    if (c.scadenza_interesse !== targetScad) return c.scadenza_interesse < targetScad;
+    if (c.created_at !== targetCreated) return c.created_at < targetCreated;
+    return c.id < primaria.id;
+  };
+  return (chiamateStessoVenerdi || []).filter(vieneNPrima).length;
 }
 
 // ── Crea asta da chiamate esistenti ──────────────────────────────────────────
@@ -5526,7 +5536,7 @@ export async function calcolaScadenzaOfferteAttesa(primaria) {
   const ven = new Date(scadenzaInteresse);
   ven.setUTCDate(scadenzaInteresse.getUTCDate() + 1);
   ven.setUTCHours(_oraItaliaInUTC(ven, 13), 0, 0, 0);
-  const slot = await calcolaSlotVenerdì(ven, primaria.scadenza_interesse);
+  const slot = await calcolaSlotVenerdì(ven, primaria);
   ven.setUTCMinutes(slot * 30);
   return ven;
 }
