@@ -5968,6 +5968,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
   const [movForm, setMovForm] = useState(emptyMovForm);
   const [editingMovimento, setEditingMovimento] = useState(null);
   const [movSort, setMovSort] = useState("data_desc");
+  const [movSearch, setMovSearch] = useState("");
   const [rosaPlayers, setRosaPlayers] = useState([]);
   const [contrattiScadenza, setContrattiScadenza] = useState([]);
   const [pagandoStipendi, setPagandoStipendi] = useState(false);
@@ -6285,7 +6286,14 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.08em" }}>📋 MOVIMENTI</div>
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                    <input
+                      type="text"
+                      placeholder="🔍 Cerca..."
+                      value={movSearch}
+                      onChange={e => setMovSearch(e.target.value)}
+                      style={{ padding: "5px 10px", borderRadius: 7, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 11, width: 130 }}
+                    />
                     {[
                       { asc: "data_asc", desc: "data_desc", labelAsc: "📅 Vecchi", labelDesc: "📅 Recenti" },
                       { asc: "imp_asc",  desc: "imp_desc",  labelAsc: "💰 ↑",       labelDesc: "💰 ↓" },
@@ -6351,7 +6359,9 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
                 )}
 
                 {(() => {
-                  const sorted = [...movimenti].sort((a, b) => {
+                  const q = movSearch.trim().toLowerCase();
+                  const filtered = q ? movimenti.filter(m => (m.descrizione || "").toLowerCase().includes(q)) : movimenti;
+                  const sorted = [...filtered].sort((a, b) => {
                     const va = a.entrata ?? -(a.uscita ?? 0);
                     const vb = b.entrata ?? -(b.uscita ?? 0);
                     const da = new Date(a.data), db = new Date(b.data);
@@ -6362,7 +6372,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
                     return 0;
                   });
                   return sorted.length === 0
-                    ? <div style={{ fontSize: 12, color: "#555", fontStyle: "italic" }}>Nessun movimento registrato</div>
+                    ? <div style={{ fontSize: 12, color: "#555", fontStyle: "italic" }}>{q ? "Nessun movimento trovato" : "Nessun movimento registrato"}</div>
                     : sorted.map(m => (
                       <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #ffffff08" }}>
                         <div style={{ width: 6, height: 6, borderRadius: "50%", background: m.entrata ? "#10b981" : "#ef4444", flexShrink: 0 }} />
