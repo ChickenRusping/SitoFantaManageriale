@@ -2905,14 +2905,11 @@ export async function upsertProgresso(squadra, obiettivoId, fields, stagione = g
   if (error) throw error;
 
   // Obiettivi allenatore: il premio è incassabile subito al completamento.
-  // DS/DG: restano completati ma incassabili solo dal 31/05.
+  // DS/DG: restano completati/falliti ma premio e malus sono solo manuali,
+  // applicabili dagli admin dal 31/05 in poi (art. 9.2) — vedi incassaObiettivo
+  // e applicaMalusObiettivo, mai chiamati automaticamente qui per i DS/DG.
   if (completato && !finale) {
     await incassaObiettivo(squadra, obiettivoId, stagione);
-  }
-
-  // DS/DG falliti: applica subito il malus economico una sola volta.
-  if (fallito && finale && Number(obiettivo.penalita || 0) > 0) {
-    await applicaMalusObiettivo(squadra, obiettivoId, stagione);
   }
 }
 
@@ -2946,13 +2943,24 @@ export async function incassaObiettivo(squadra, obiettivoId, stagione = getStagi
   return { incassato: true, importo };
 }
 
+// Applica il malus di un obiettivo fallito. Per gli obiettivi allenatore non
+// c'è un vincolo temporale (nessuna penalità prevista dal regolamento su quel
+// tipo). Per DS/DG (art. 9.2: "i DG e DS daranno soldi solo a fine campionato")
+// il malus, come il premio, è applicabile solo manualmente dal 31/05 in poi —
+// non viene mai applicato automaticamente al solo segnare l'obiettivo fallito.
 export async function applicaMalusObiettivo(squadra, obiettivoId, stagione = getStagioneQuota()) {
   const obiettivo = await _getObiettivoCartaById(obiettivoId);
+  const tipo = String(obiettivo.tipo || '').toLowerCase();
+  const finale = _isObiettivoFinale(tipo);
   const { data: prog, error: progErr } = await supabase.from('progresso_obiettivi')
     .select('*').eq('squadra', squadra).eq('obiettivo_id', obiettivoId).eq('stagione', stagione).single();
   if (progErr) throw progErr;
   if (!prog?.fallito) throw new Error('Obiettivo non segnato come fallito.');
   if (prog.malus_applicato) return { giaApplicato: true };
+  if (finale) {
+    const fine = _fineCampionatoObiettivi(stagione);
+    if (_oggiISO() < fine) throw new Error(`Il malus degli obiettivi DS/DG è applicabile solo dal ${fine}.`);
+  }
   const importo = Number(obiettivo.penalita || 0);
   if (importo <= 0) return { nessunMalus: true };
   await _applicaMovimentoObiettivo({
@@ -2966,6 +2974,23 @@ export async function applicaMalusObiettivo(squadra, obiettivoId, stagione = get
     .eq('squadra', squadra).eq('obiettivo_id', obiettivoId).eq('stagione', stagione);
   if (error) throw error;
   return { applicato: true, importo };
+}
+
+export async function applicaMalusObiettiviFinali(squadra, stagione = getStagioneQuota()) {
+  const fine = _fineCampionatoObiettivi(stagione);
+  if (_oggiISO() < fine) throw new Error(`Il malus degli obiettivi DS/DG è applicabile solo dal ${fine}.`);
+  const { data, error } = await supabase.from('progresso_obiettivi')
+    .select('*, obiettivi_carte(*)')
+    .eq('squadra', squadra).eq('stagione', stagione).eq('fallito', true).eq('malus_applicato', false);
+  if (error) throw error;
+  let tot = 0;
+  for (const p of data || []) {
+    const tipo = String(p.obiettivi_carte?.tipo || '').toLowerCase();
+    if (!_isObiettivoFinale(tipo)) continue;
+    const res = await applicaMalusObiettivo(squadra, p.obiettivo_id, stagione);
+    tot += Number(res.importo || 0);
+  }
+  return { totale: parseFloat(tot.toFixed(2)) };
 }
 
 export async function incassaObiettiviFinali(squadra, stagione = getStagioneQuota()) {
