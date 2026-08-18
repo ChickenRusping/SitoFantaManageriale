@@ -203,9 +203,10 @@ async function calcolaScadenzaOfferteAttesa(primaria: any): Promise<Date> {
   if (modalita === "libero") {
     return await calcolaScadenzaOfferteLiberoConCoda(primaria);
   }
-  const ven = new Date(scadenzaInteresse);
-  ven.setUTCDate(scadenzaInteresse.getUTCDate() + 1);
-  ven.setUTCHours(13, 0, 0, 0);
+  const venGiorno = new Date(scadenzaInteresse);
+  venGiorno.setUTCDate(scadenzaInteresse.getUTCDate() + 1);
+  // Slot base 13:00 ora italiana VERA (gestisce CET/CEST), non un offset UTC fisso.
+  const ven = realDateFromItalyWallClock(venGiorno.getUTCFullYear(), venGiorno.getUTCMonth() + 1, venGiorno.getUTCDate(), 13, 0, 0);
   const slot = await calcolaSlotVenerdì(ven, primaria.scadenza_interesse);
   ven.setUTCMinutes(slot * 30);
   return ven;
