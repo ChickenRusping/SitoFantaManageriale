@@ -2841,9 +2841,9 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                   <td style={{ padding:"7px 6px",textAlign:"center" }}>
                     {(()=>{
                       const isU21s = p.anni > 0 && p.anni <= 21;
-                      const ac1 = (p.anni_contratto||0) <= 1;
-                      const color = isU21s ? "#10b981" : p._stipDiff ? "#f59e0b" : ac1 ? "#aaa" : "#aaa";
-                      const fw = (isU21s || p._stipDiff) ? 700 : 400;
+                      const acStip = p.anni_contratto || 0;
+                      const color = isU21s ? "#10b981" : p._stipDiff ? "#f59e0b" : acStip>=4 ? "#10b981" : acStip===3 ? "#f97316" : acStip===2 ? "#f59e0b" : "#aaa";
+                      const fw = (isU21s || p._stipDiff || acStip>=2) ? 700 : 400;
                       const ttip = p._stipDiff ? `Stip. salvato: ${Number(p.stip).toFixed(2)}M · Calcolato: ${p._stipCorretto.toFixed(2)}M` : `Q${p.quot}/5${p._acNum>=2&&!isU21s?" +incremento contratto":""}`;
                       return <span style={{ color, fontWeight: fw }} title={ttip}>{p._stipCorretto.toFixed(2)}M</span>;
                     })()}
