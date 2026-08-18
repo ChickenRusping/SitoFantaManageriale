@@ -173,7 +173,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, getEffettiInvestimenti, getSquadreConSuperClub,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, getEffettiInvestimenti, getSquadreConSuperClub,
   getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, usaContatoreInvestimento, registraEventoInvestimento, annullaEventoInvestimento, toggleTraguardoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
@@ -4975,12 +4975,36 @@ Gli obiettivi verranno azzerati.`;
   }
   async function handleToggleF(ob,pg) {
     if (!canManageObiettivi) return;
+    const finale = ['ds','dg'].includes(String(ob.tipo || '').toLowerCase());
     const msg = !pg?.fallito
-      ? `Segnare l'obiettivo come fallito?${ob.penalita>0 ? `\n\nVerrà applicato il malus di ${ob.penalita}M se previsto.` : ''}`
+      ? (ob.penalita>0
+          ? (finale
+              ? `Segnare l'obiettivo come fallito?\n\nIl malus di ${ob.penalita}M sarà applicabile manualmente dal 31/05.`
+              : `Segnare l'obiettivo come fallito e applicare subito il malus di ${ob.penalita}M?`)
+          : `Segnare l'obiettivo come fallito?`)
       : `Rimuovere lo stato fallito da questo obiettivo?`;
     if (!window.confirm(msg)) return;
     setSavingAll(true);
-    try{await upsertProgresso(team.name,ob.id,{fallito:!pg?.fallito,completato:false},STAGIONE_CORRENTE);await loadAll();}catch(e){alert(e.message);}finally{setSavingAll(false);}
+    try{
+      await upsertProgresso(team.name,ob.id,{fallito:!pg?.fallito,completato:false},STAGIONE_CORRENTE);
+      if (!pg?.fallito && !finale && ob.penalita>0) await applicaMalusObiettivo(team.name, ob.id, STAGIONE_CORRENTE);
+      await loadAll();
+    }catch(e){alert(e.message);}finally{setSavingAll(false);}
+  }
+  async function handleApplicaMalus(ob) {
+    if (!canManageObiettivi) return;
+    setSavingAll(true);
+    try { await applicaMalusObiettivo(team.name, ob.id, STAGIONE_CORRENTE); await loadAll(); }
+    catch(e){ alert(e.message); }
+    finally { setSavingAll(false); }
+  }
+  async function handleApplicaMalusFinali() {
+    if (!canManageObiettivi) return;
+    if (!window.confirm('Applicare tutti i malus degli obiettivi DS/DG falliti e non ancora applicati?')) return;
+    setSavingAll(true);
+    try { const r = await applicaMalusObiettiviFinali(team.name, STAGIONE_CORRENTE); alert(`Applicati malus per ${r.totale || 0}M`); await loadAll(); }
+    catch(e){ alert(e.message); }
+    finally { setSavingAll(false); }
   }
   async function handleIncassaObiettivo(ob) {
     if (!canManageObiettivi) return;
@@ -5398,6 +5422,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                               {pg?.incassato&&<Badge color="#10b981">Incassato</Badge>}
                               {pg?.malus_applicato&&<Badge color="#ef4444">Malus applicato</Badge>}
                               {comp&&!pg?.incassato&&['ds','dg'].includes(String(ob.tipo||'').toLowerCase())&&<Badge color="#f59e0b">Incasso 31/05</Badge>}
+                              {fall&&!pg?.malus_applicato&&ob.penalita>0&&['ds','dg'].includes(String(ob.tipo||'').toLowerCase())&&<Badge color="#f59e0b">Malus 31/05</Badge>}
                             </div>
                           </div>
                           {canManageObiettivi&&(
@@ -5405,6 +5430,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                               <button title="Completa / annulla" onClick={()=>handleToggleC(ob,pg)} disabled={savingAll} style={{ padding:"4px 8px",borderRadius:6,border:"none",background:comp?"#10b98130":"#10b98115",color:"#10b981",fontSize:10,cursor:"pointer" }}>✓</button>
                               {ob.penalita>0&&<button title="Fallito / annulla" onClick={()=>handleToggleF(ob,pg)} disabled={savingAll} style={{ padding:"4px 8px",borderRadius:6,border:"none",background:fall?"#ef444430":"#ef444415",color:"#ef4444",fontSize:10,cursor:"pointer" }}>✕</button>}
                               {comp&&!pg?.incassato&&<button title="Incassa" onClick={()=>handleIncassaObiettivo(ob)} disabled={savingAll} style={{ padding:"4px 8px",borderRadius:6,border:"none",background:"#f59e0b18",color:"#f59e0b",fontSize:10,cursor:"pointer" }}>💰</button>}
+                              {fall&&!pg?.malus_applicato&&ob.penalita>0&&<button title="Applica malus" onClick={()=>handleApplicaMalus(ob)} disabled={savingAll} style={{ padding:"4px 8px",borderRadius:6,border:"none",background:"#ef444418",color:"#ef4444",fontSize:10,cursor:"pointer" }}>⚠️</button>}
                             </div>
                           )}
                         </div>
@@ -12579,12 +12605,18 @@ function AdminControlRoomPage({ teams }) {
                   const completati = progressi.filter(p=>p.completato).length;
                   const incassati = progressi.filter(p=>p.incassato).length;
                   const finaliDaIncassare = progressi.filter(p => p.completato && !p.incassato && ['ds','dg'].includes(String(p.obiettivi_carte?.tipo||'').toLowerCase())).length;
+                  const falliti = progressi.filter(p=>p.fallito).length;
+                  const finaliMalusDaApplicare = progressi.filter(p => p.fallito && !p.malus_applicato && Number(p.obiettivi_carte?.penalita||0)>0 && ['ds','dg'].includes(String(p.obiettivi_carte?.tipo||'').toLowerCase())).length;
                   return <div key={t.name} style={{ background:'#ffffff06', border:'1px solid #ffffff12', borderRadius:12, padding:'12px 14px' }}>
                     <div style={{ fontSize:13, fontWeight:900, color:'#f0f0f0' }}>{t.name}</div>
                     <div style={{ fontSize:11, color:'#aaa', marginTop:4 }}>Carta: <b style={{ color:'#c7d2fe' }}>{card?.nome || '—'}</b></div>
                     <div style={{ fontSize:11, color: conteggio.ok ? '#10b981' : '#f59e0b', marginTop:4 }}>Moduli validi: {conteggio.validi}/{conteggio.richiesti} · tot. tracciati {conteggio.totale}</div>
                     <div style={{ fontSize:11, color:'#888', marginTop:4 }}>Obiettivi completati {completati} · incassati {incassati} · DS/DG da incassare {finaliDaIncassare}</div>
-                    {finaliDaIncassare > 0 && <button onClick={async()=>{ try { await incassaObiettiviFinali(t.name, STAGIONE_CR); await loadObiettiviAdmin(); } catch(e){ alert(e.message); } }} style={{ marginTop:8, padding:'5px 10px', borderRadius:7, border:'1px solid #10b98140', background:'#10b98112', color:'#10b981', fontSize:11, fontWeight:700 }}>💰 Incassa finali</button>}
+                    <div style={{ fontSize:11, color:'#888', marginTop:2 }}>Obiettivi falliti {falliti} · DS/DG con malus da applicare {finaliMalusDaApplicare}</div>
+                    <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                      {finaliDaIncassare > 0 && <button onClick={async()=>{ try { await incassaObiettiviFinali(t.name, STAGIONE_CR); await loadObiettiviAdmin(); } catch(e){ alert(e.message); } }} style={{ marginTop:8, padding:'5px 10px', borderRadius:7, border:'1px solid #10b98140', background:'#10b98112', color:'#10b981', fontSize:11, fontWeight:700 }}>💰 Incassa finali</button>}
+                      {finaliMalusDaApplicare > 0 && <button onClick={async()=>{ try { await applicaMalusObiettiviFinali(t.name, STAGIONE_CR); await loadObiettiviAdmin(); } catch(e){ alert(e.message); } }} style={{ marginTop:8, padding:'5px 10px', borderRadius:7, border:'1px solid #ef444440', background:'#ef444412', color:'#ef4444', fontSize:11, fontWeight:700 }}>⚠️ Applica malus finali</button>}
+                    </div>
                   </div>;
                 })}
               </div>}
