@@ -1345,6 +1345,7 @@ export async function eseguiTrasferimento(trattativa) {
         scadenza_prestito: scadenza_prestito || _prossimaScadenzaPrestitoValida(),
         stip: stipendio_a_chi === 'cedente' ? 0 : nuovoStip, // cedente paga → 0 per ricevente
         stip_prestito_cedente: stipendio_a_chi === 'cedente' ? nuovoStip : 0,
+        anni_contratto: 1, // il ricevente lo tratta come un nuovo arrivo: se poi lo riscatta, resta a 1
       }).eq('id', player.id);
     } else {
       // Cessione definitiva: aggiorna squadra e stipendio
@@ -1544,8 +1545,12 @@ export async function eseguiRientroPrestito(playerId, squadraOriginale) {
   const { data: player } = await supabase.from('rosa').select('*').eq('id', playerId).single();
   if (!player) return;
 
-  // Ripristina stipendio corretto (Q/5) per la squadra cedente
-  const nuovoStip = parseFloat((Number(player.quot || 0) / 5).toFixed(2));
+  // Il cedente lo riprende al 2° anno di contratto (era entrato al ricevente
+  // come se fosse un nuovo arrivo al 1° anno; se non viene riscattato torna
+  // al cedente "invecchiato" di una stagione) — stipendio ricalcolato di
+  // conseguenza con la formula vera (art. 4.8), non semplicemente Q/5.
+  const nuovoAnniContratto = 2;
+  const nuovoStip = _calcolaStipCorretto(player.quot, nuovoAnniContratto, player.anni);
   await supabase.from('rosa').update({
     squadra: squadraOriginale,
     in_prestito: false,
@@ -1558,6 +1563,7 @@ export async function eseguiRientroPrestito(playerId, squadraOriginale) {
     rescissione_prestito_da: null,
     stip: nuovoStip,
     stip_prestito_cedente: 0,
+    anni_contratto: nuovoAnniContratto,
   }).eq('id', playerId);
 
   await supabase.from('movimenti').insert({
@@ -4336,13 +4342,13 @@ export async function applicaStipendioATutti() {
         continue;
       }
 
-      const { data: rosa, error: rosaErr } = await supabase.from('rosa').select('quot, stip, anni_contratto, anni')
+      const { data: rosa, error: rosaErr } = await supabase.from('rosa').select('quot, anni_contratto, anni')
         .eq('squadra', sq.name).eq('in_vivaio', false);
       if (rosaErr) throw rosaErr;
-      const stipRosa = (rosa || []).reduce((s, p) => {
-        const stipSalvato = Number(p.stip);
-        return s + (Number.isFinite(stipSalvato) && stipSalvato > 0 ? stipSalvato : _calcolaStipCorretto(p.quot, p.anni_contratto, p.anni));
-      }, 0);
+      // Sempre ricalcolato dalla formula vera (mai dal campo "stip" salvato, che può
+      // essere disallineato) — stesso identico calcolo usato dal pulsante "Paga
+      // Stipendi" nella pagina della squadra e dal salary cap enforcement.
+      const stipRosa = (rosa || []).reduce((s, p) => s + _calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
       const { data: all } = await supabase.from('allenatori_carte').select('stipendio_sc')
         .eq('squadra', sq.name).maybeSingle();
       const totalStip = parseFloat((stipRosa + Number(all?.stipendio_sc || 0)).toFixed(2));
@@ -6316,17 +6322,13 @@ export async function aggiornaContrattiAnnuali() {
 
     // Gli anni di contratto avanzano sempre, anche per U21 (art. 4.8.1).
     // Gli U21 non subiscono aumenti/riduzioni percentuali finché restano U21.
-    let percAumento = 0;
-    if (!isU21) {
-      if (ac === 1) percAumento = 10;
-      else if (ac === 2) percAumento = 20;
-      else if (ac === 3 && !p.bonus_fedelta_applicato) percAumento = -10;
-      else percAumento = 0;
-    }
-
-    const nuovoStip = percAumento !== 0
-      ? parseFloat((stipAttuale * (1 + percAumento / 100)).toFixed(2))
-      : stipAttuale;
+    // Il nuovo stipendio si ricalcola sempre da zero con la formula vera
+    // (quot/5 × moltiplicatore) invece di applicare la percentuale sul valore
+    // già salvato: moltiplicare in sequenza (×1.1 poi ×1.2 poi ×0.9) comporrebbe
+    // gli aumenti invece di applicarli sulla base, disallineando "stip" dalla
+    // formula usata ovunque altrove (salary cap, pagamento stipendi mensile).
+    const nuovoStip = _calcolaStipCorretto(p.quot, ac + 1, p.anni);
+    const percAumento = stipAttuale > 0 ? Math.round((nuovoStip / stipAttuale - 1) * 1000) / 10 : 0;
 
     const update = {
       anni_contratto: ac + 1,
