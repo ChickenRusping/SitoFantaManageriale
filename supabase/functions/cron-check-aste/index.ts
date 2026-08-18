@@ -151,12 +151,18 @@ async function calcolaSlotVenerdì(venerdìUTC: Date, primaria: any) {
     .gte("scadenza_interesse", giornoChiamate.toISOString())
     .lte("scadenza_interesse", fineGiornoChiamate.toISOString());
 
-  const targetScad = new Date(primaria.scadenza_interesse).toISOString();
-  const targetCreated = new Date(primaria.created_at).toISOString();
+  // Confronto sempre come numeri (getTime()), mai come stringhe — il formato
+  // timestamp di Postgres e quello normalizzato da .toISOString() rappresentano
+  // lo stesso istante ma sono stringhe diverse, quindi un confronto testuale
+  // non riflette l'ordine cronologico reale (anche per la stessa identica riga).
+  const targetScad = new Date(primaria.scadenza_interesse).getTime();
+  const targetCreated = new Date(primaria.created_at).getTime();
   const vieneNPrima = (c: any) => {
-    if (c.scadenza_interesse !== targetScad) return c.scadenza_interesse < targetScad;
-    if (c.created_at !== targetCreated) return c.created_at < targetCreated;
-    return c.id < primaria.id;
+    const cScad = new Date(c.scadenza_interesse).getTime();
+    if (cScad !== targetScad) return cScad < targetScad;
+    const cCreated = new Date(c.created_at).getTime();
+    if (cCreated !== targetCreated) return cCreated < targetCreated;
+    return String(c.id) < String(primaria.id);
   };
   return (chiamateStessoVenerdi || []).filter(vieneNPrima).length;
 }
