@@ -133,7 +133,11 @@ function calcolaScadenzaOfferteLibero(scadenzaInteresse: Date): Date {
 }
 
 // ── Slot venerdì (modalità normale) ────────────────────────────────────────
-async function calcolaSlotVenerdì(venerdìUTC: Date, scadenzaInteresseChiamata: string) {
+// scadenza_interesse è quasi sempre IDENTICA per tutte le chiamate della
+// settimana (fissa al giovedì 20:00 per tutti, art. 6.4): usarla da sola come
+// chiave d'ordinamento mette tutte le chiamate pari-merito allo STESSO slot.
+// created_at (l'istante reale della chiamata) rompe il pareggio.
+async function calcolaSlotVenerdì(venerdìUTC: Date, primaria: any) {
   const giornoChiamate = new Date(venerdìUTC);
   giornoChiamate.setUTCDate(giornoChiamate.getUTCDate() - 1);
   giornoChiamate.setUTCHours(0, 0, 0, 0);
@@ -142,12 +146,19 @@ async function calcolaSlotVenerdì(venerdìUTC: Date, scadenzaInteresseChiamata:
 
   const { data: chiamateStessoVenerdi } = await supabase
     .from("chiamate")
-    .select("scadenza_interesse")
+    .select("id, scadenza_interesse, created_at")
+    .eq("tipo", "prima")
     .gte("scadenza_interesse", giornoChiamate.toISOString())
     .lte("scadenza_interesse", fineGiornoChiamate.toISOString());
 
-  const targetISO = new Date(scadenzaInteresseChiamata).toISOString();
-  return (chiamateStessoVenerdi || []).filter((c: any) => c.scadenza_interesse < targetISO).length;
+  const targetScad = new Date(primaria.scadenza_interesse).toISOString();
+  const targetCreated = new Date(primaria.created_at).toISOString();
+  const vieneNPrima = (c: any) => {
+    if (c.scadenza_interesse !== targetScad) return c.scadenza_interesse < targetScad;
+    if (c.created_at !== targetCreated) return c.created_at < targetCreated;
+    return c.id < primaria.id;
+  };
+  return (chiamateStessoVenerdi || []).filter(vieneNPrima).length;
 }
 
 // ── Coda modalità libera (distanziamento minimo 30' tra scadenze offerte) ──
@@ -207,7 +218,7 @@ async function calcolaScadenzaOfferteAttesa(primaria: any): Promise<Date> {
   venGiorno.setUTCDate(scadenzaInteresse.getUTCDate() + 1);
   // Slot base 13:00 ora italiana VERA (gestisce CET/CEST), non un offset UTC fisso.
   const ven = realDateFromItalyWallClock(venGiorno.getUTCFullYear(), venGiorno.getUTCMonth() + 1, venGiorno.getUTCDate(), 13, 0, 0);
-  const slot = await calcolaSlotVenerdì(ven, primaria.scadenza_interesse);
+  const slot = await calcolaSlotVenerdì(ven, primaria);
   ven.setUTCMinutes(slot * 30);
   return ven;
 }
