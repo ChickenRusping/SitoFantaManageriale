@@ -460,12 +460,26 @@ export function calcolaScadenzaInteresse(dataChiamata = new Date()) {
   return gio;
 }
 
-// Sempre: venerdì della stessa settimana, slot base 13:00 UTC (= 14:00 Italia)
+// Restituisce l'ora UTC (può essere negativa/>23, va bene per setUTCHours) che
+// corrisponde a una certa ora locale italiana in quella data specifica,
+// gestendo automaticamente il cambio ora legale/solare (CEST/CET) — usare un
+// offset fisso (es. sempre UTC+1) sbaglia di un'ora per metà dell'anno.
+export function _oraItaliaInUTC(dataRef, oraItalia) {
+  const mezzogiornoUTC = new Date(Date.UTC(dataRef.getUTCFullYear(), dataRef.getUTCMonth(), dataRef.getUTCDate(), 12, 0, 0));
+  const oraLocale = parseInt(
+    mezzogiornoUTC.toLocaleString('en-US', { timeZone: 'Europe/Rome', hour: '2-digit', hour12: false }), 10
+  );
+  const offset = oraLocale - 12; // +1 CET (inverno), +2 CEST (estate)
+  return oraItalia - offset;
+}
+
+// Sempre: venerdì della stessa settimana, slot base 13:00 Italia (ora locale
+// vera, non un offset UTC fisso — vedi _oraItaliaInUTC)
 export function calcolaScadenzaOfferte(scadenzaInteresse) {
   const d = new Date(scadenzaInteresse); // giovedì 20:00 UTC
   const ven = new Date(d);
   ven.setUTCDate(d.getUTCDate() + 1); // giovedì → venerdì
-  ven.setUTCHours(13, 0, 0, 0); // 13:00 UTC = 14:00 Italia (slot base)
+  ven.setUTCHours(_oraItaliaInUTC(ven, 13), 0, 0, 0); // 13:00 Italia (slot base)
   return ven;
 }
 
@@ -5508,10 +5522,10 @@ export async function calcolaScadenzaOfferteAttesa(primaria) {
     // solo le aste già esistenti.
     return await _calcolaScadenzaOfferteLiberoConCoda(primaria);
   }
-  // Sempre: venerdì = giovedì + 1 giorno, slot base 13:00 UTC (14:00 Italia) + 30min per ogni chiamata precedente
+  // Sempre: venerdì = giovedì + 1 giorno, slot base 13:00 Italia + 30min per ogni chiamata precedente
   const ven = new Date(scadenzaInteresse);
   ven.setUTCDate(scadenzaInteresse.getUTCDate() + 1);
-  ven.setUTCHours(13, 0, 0, 0);
+  ven.setUTCHours(_oraItaliaInUTC(ven, 13), 0, 0, 0);
   const slot = await calcolaSlotVenerdì(ven, primaria.scadenza_interesse);
   ven.setUTCMinutes(slot * 30);
   return ven;
