@@ -5502,12 +5502,20 @@ export async function calcolaSlotVenerdì(venerdìUTC, primaria) {
   // art. 6.4): usarla da sola come chiave d'ordinamento mette tutte le
   // chiamate pari-merito allo STESSO slot. created_at (l'istante reale della
   // chiamata) rompe il pareggio e dà a ognuna il proprio slot progressivo.
-  const targetScad = new Date(primaria.scadenza_interesse).toISOString();
-  const targetCreated = new Date(primaria.created_at).toISOString();
+  // IMPORTANTE: confrontare come numeri (getTime()), mai come stringhe — il
+  // formato timestamp restituito da Postgres ("2026-08-20 20:00:00+02") e
+  // quello normalizzato da .toISOString() ("2026-08-20T18:00:00.000Z")
+  // rappresentano lo stesso istante ma sono stringhe diverse: un confronto
+  // testuale tra i due format non riflette l'ordine cronologico reale, anche
+  // quando gli istanti sono identici o addirittura per la stessa identica riga.
+  const targetScad = new Date(primaria.scadenza_interesse).getTime();
+  const targetCreated = new Date(primaria.created_at).getTime();
   const vieneNPrima = c => {
-    if (c.scadenza_interesse !== targetScad) return c.scadenza_interesse < targetScad;
-    if (c.created_at !== targetCreated) return c.created_at < targetCreated;
-    return c.id < primaria.id;
+    const cScad = new Date(c.scadenza_interesse).getTime();
+    if (cScad !== targetScad) return cScad < targetScad;
+    const cCreated = new Date(c.created_at).getTime();
+    if (cCreated !== targetCreated) return cCreated < targetCreated;
+    return String(c.id) < String(primaria.id);
   };
   return (chiamateStessoVenerdi || []).filter(vieneNPrima).length;
 }
