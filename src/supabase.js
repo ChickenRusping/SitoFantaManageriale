@@ -442,24 +442,35 @@ export async function getChiamateByGiocatore(nomeGiocatore) {
 }
 
 // ── Calcola scadenza interesse lato JS (art. 6.4) ─────────────────────────
-// La scadenza per manifestare interesse è giovedì alle 20:00, in orario locale
-// dell'app/browser. Non usiamo più 20:00 UTC, perché spostava la scadenza reale
-// alle 21/22 in Italia a seconda dell'ora legale.
+// La scadenza per manifestare interesse è sempre giovedì alle 20:00 ora
+// italiana. Calcoliamo il giorno civile e l'ora usando esplicitamente il fuso
+// Europe/Rome (vedi _oraItaliaInUTC) invece di getDay()/setHours() locali:
+// questi ultimi usano il fuso del dispositivo di chi chiama, che se diverso da
+// quello italiano (telefono con fuso sbagliato, dispositivo non in Italia,
+// ecc.) sposta la scadenza salvata di un'ora o più rispetto a quella attesa.
 export function calcolaScadenzaInteresse(dataChiamata = new Date()) {
   const d = new Date(dataChiamata);
-  const dow = d.getDay(); // 0=dom, 1=lun, ..., 4=gio
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short'
+  }).formatToParts(d);
+  const get = t => parts.find(p => p.type === t).value;
+  const year = parseInt(get('year'), 10);
+  const month = parseInt(get('month'), 10) - 1;
+  const day = parseInt(get('day'), 10);
+  const dow = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[get('weekday')];
   const giorniDaLun = (dow === 0) ? 6 : dow - 1;
 
-  const lun = new Date(d);
-  lun.setDate(d.getDate() - giorniDaLun);
-  lun.setHours(0, 0, 0, 0);
+  const lunUTC = new Date(Date.UTC(year, month, day - giorniDaLun));
+  const gio = new Date(lunUTC);
+  gio.setUTCDate(lunUTC.getUTCDate() + 3); // giovedì
+  gio.setUTCHours(_oraItaliaInUTC(gio, 20), 0, 0, 0);
 
-  const gio = new Date(lun);
-  gio.setDate(lun.getDate() + 3);
-  gio.setHours(20, 0, 0, 0);
-
-  // Se siamo già oltre giovedì 20:00 locali, vai alla settimana successiva
-  if (d >= gio) gio.setDate(gio.getDate() + 7);
+  // Se siamo già oltre giovedì 20:00 italiane, vai alla settimana successiva
+  // (ricalcola l'ora UTC: un salto di 7 giorni può attraversare il cambio CET/CEST)
+  if (d >= gio) {
+    gio.setUTCDate(gio.getUTCDate() + 7);
+    gio.setUTCHours(_oraItaliaInUTC(gio, 20), 0, 0, 0);
+  }
   return gio;
 }
 
