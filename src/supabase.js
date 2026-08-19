@@ -1,7 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://ougxeheoaifcuetnmgrw.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_ZI75g_AJGpsblAxVDDFBIQ_-tqGXPym';
+// Sovrascrivibili tramite variabili d'ambiente Vite (VITE_SUPABASE_URL /
+// VITE_SUPABASE_KEY), così si può puntare a un altro progetto Supabase
+// (es. in caso di emergenza) senza toccare il codice.
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://ougxeheoaifcuetnmgrw.supabase.co';
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY || 'sb_publishable_ZI75g_AJGpsblAxVDDFBIQ_-tqGXPym';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
