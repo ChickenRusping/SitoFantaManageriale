@@ -15324,13 +15324,29 @@ function AppInner() {
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   useEffect(() => {
+    let risolto = false;
+    // Se il refresh del token resta bloccato (sessione salvata corrotta/scaduta e
+    // la richiesta di rete non risponde mai), non lasciare l'app bloccata in eterno
+    // sulla schermata di caricamento: dopo 8s puliamo la sessione locale (senza
+    // rete, "scope: local") e ricarichiamo, così il login riparte da zero.
+    const timeout = setTimeout(() => {
+      if (risolto) return;
+      console.warn('⚠️ Timeout nel recupero sessione: pulizia sessione locale e reload...');
+      supabase.auth.signOut({ scope: 'local' }).finally(() => window.location.reload());
+    }, 8000);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      risolto = true; clearTimeout(timeout);
       setSession(session); if (session) loadProfile(session.user.id); else setAuthLoading(false);
+    }).catch(() => {
+      risolto = true; clearTimeout(timeout);
+      setAuthLoading(false);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      risolto = true; clearTimeout(timeout);
       setSession(session); if (session) loadProfile(session.user.id); else { setProfile(null); setAuthLoading(false); }
     });
-    return () => subscription.unsubscribe();
+    return () => { clearTimeout(timeout); subscription.unsubscribe(); };
   }, []);
 
   async function loadProfile(userId) {
