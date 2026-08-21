@@ -482,25 +482,53 @@ function GraficoQuotazione({ nome }) {
 // Il primo punto del grafico è quindi il bilancio prima del più vecchio
 // movimento registrato, non necessariamente l'inizio storico della squadra.
 function BilancioTrendChart({ team }) {
-  const [punti, setPunti] = useState(null);
+  const [puntiRaw, setPuntiRaw] = useState(null);
   const [selIdx, setSelIdx] = useState(null);
+  const svgRef = useRef(null);
+  const [renderedW, setRenderedW] = useState(600);
+  // Filtro periodo: "from" cambia cosa viene scaricato (serve per andare
+  // indietro oltre l'inizio stagione), "to" taglia solo la visualizzazione
+  // (i dati fino ad oggi restano scaricati per poter ricostruire correttamente
+  // il bilancio a ritroso dal valore attuale — vedi commento più sotto).
+  const [filtro, setFiltro] = useState({ from: '', to: '' });
+  const [inputFrom, setInputFrom] = useState('');
+  const [inputTo, setInputTo] = useState('');
+
+  // L'svg usa preserveAspectRatio="none" per riempire tutta la larghezza a
+  // altezza fissa (necessario per il look dell'area chart): questo però
+  // deforma anche il testo, che viene "stirato" in orizzontale in modo
+  // proporzionale a quanto lo svg è più largo del suo viewBox. Misuriamo la
+  // larghezza renderizzata reale e la usiamo per compensare SOLO il testo
+  // (vedi textScale/textTransform più sotto), lasciando intatta la curva.
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0]?.contentRect?.width;
+      if (w) setRenderedW(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!team?.name) return;
     setSelIdx(null);
     let cancelled = false;
-    // Limitato alla stagione corrente: oltre a dare un trend più leggibile
-    // (coerente con FPF/fair-spending, già scoperti per stagione), evita di
-    // riscaricare l'intero storico movimenti della squadra ad ogni visita.
+    // Default: stagione corrente (oltre a dare un trend più leggibile, coerente
+    // con FPF/fair-spending, evita di riscaricare l'intero storico movimenti
+    // della squadra ad ogni visita). Un "from" personalizzato dall'utente
+    // sostituisce questo default per andare più indietro nel tempo.
     const y = new Date().getFullYear(), m = new Date().getMonth() + 1, d = new Date().getDate();
     const startYear = (m > 6 || (m === 6 && d >= 1)) ? y : y - 1;
-    getMovimenti(team.name, { dataMin: `${startYear}-06-01` }).then(movs => {
+    const dataMin = filtro.from || `${startYear}-06-01`;
+    getMovimenti(team.name, { dataMin }).then(movs => {
       if (cancelled) return;
       const ord = [...(movs || [])].sort((a, b) => {
         if (a.data !== b.data) return a.data < b.data ? -1 : 1;
         return new Date(a.created_at || 0) - new Date(b.created_at || 0);
       });
-      if (ord.length < 2) { setPunti([]); return; }
+      if (ord.length < 2) { setPuntiRaw([]); return; }
       const after = new Array(ord.length);
       after[ord.length - 1] = Number(team.bilancio || 0);
       for (let i = ord.length - 1; i >= 1; i--) {
@@ -509,14 +537,43 @@ function BilancioTrendChart({ team }) {
       }
       const netPrimo = (Number(ord[0].entrata) || 0) - (Number(ord[0].uscita) || 0);
       const baseline = parseFloat((after[0] - netPrimo).toFixed(2));
-      // baseline non ha una data reale (è "prima del primo movimento della
-      // stagione", quindi ~01/06): la ancoro comunque al 01/06 per i marker mese.
-      setPunti([{ v: baseline, data: `${startYear}-06-01` }, ...ord.map((m, i) => ({ v: after[i], data: m.data }))]);
-    }).catch(() => setPunti([]));
+      // baseline non ha una data reale (è "prima del primo movimento nel
+      // periodo scaricato"): la ancoro comunque a dataMin per i marker mese.
+      setPuntiRaw([{ v: baseline, data: dataMin }, ...ord.map((m, i) => ({ v: after[i], data: m.data }))]);
+    }).catch(() => setPuntiRaw([]));
     return () => { cancelled = true; };
-  }, [team?.name, team?.bilancio]);
+  }, [team?.name, team?.bilancio, filtro.from]);
 
-  if (!punti || punti.length < 2) return null;
+  if (!puntiRaw) return null;
+  const punti = filtro.to ? puntiRaw.filter(p => p.data <= filtro.to) : puntiRaw;
+  const filtroAttivo = !!(filtro.from || filtro.to);
+
+  const applicaFiltro = () => setFiltro({ from: inputFrom, to: inputTo });
+  const resetFiltro = () => { setInputFrom(''); setInputTo(''); setFiltro({ from: '', to: '' }); };
+
+  const controlliFiltro = (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+      <span style={{ fontSize: 9, color: "#666", fontWeight: 700, letterSpacing: "0.06em" }}>PERIODO</span>
+      <input type="date" value={inputFrom} onChange={e => setInputFrom(e.target.value)}
+        style={{ background: "#ffffff08", border: "1px solid #ffffff15", borderRadius: 6, color: "#ccc", fontSize: 11, padding: "3px 6px" }} />
+      <span style={{ fontSize: 11, color: "#555" }}>→</span>
+      <input type="date" value={inputTo} onChange={e => setInputTo(e.target.value)}
+        style={{ background: "#ffffff08", border: "1px solid #ffffff15", borderRadius: 6, color: "#ccc", fontSize: 11, padding: "3px 6px" }} />
+      <button onClick={applicaFiltro} style={{ background: "#6366f125", border: "1px solid #6366f150", borderRadius: 6, color: "#a5b4fc", fontSize: 11, fontWeight: 700, padding: "3px 10px", cursor: "pointer" }}>Applica</button>
+      {filtroAttivo && (
+        <button onClick={resetFiltro} style={{ background: "transparent", border: "1px solid #ffffff15", borderRadius: 6, color: "#888", fontSize: 11, padding: "3px 10px", cursor: "pointer" }}>Reset (stagione)</button>
+      )}
+    </div>
+  );
+
+  if (punti.length < 2) {
+    return (
+      <div style={{ marginTop: 10, padding: "12px 14px", background: "#ffffff05", border: "1px solid #ffffff10", borderRadius: 10 }}>
+        {controlliFiltro}
+        <div style={{ fontSize: 12, color: "#666", textAlign: "center", padding: "12px 0" }}>Nessun dato nel periodo selezionato.</div>
+      </div>
+    );
+  }
 
   // Curva smussata (Catmull-Rom → bezier cubiche) invece della semplice spezzata.
   const catmullRomPath = (pts) => {
@@ -561,13 +618,23 @@ function BilancioTrendChart({ team }) {
   });
   const ultimo = pts[pts.length - 1];
 
+  // Compensazione dello stretch orizzontale del testo (vedi commento sopra
+  // renderedW): scaleX/scaleY sono quanto lo svg stira il viewBox in
+  // orizzontale/verticale per riempire width:100%/height:150 fissi.
+  const RENDER_H = 150;
+  const scaleX = renderedW / W;
+  const scaleY = RENDER_H / (H + 20);
+  const textScale = scaleX ? scaleY / scaleX : 1;
+  const textTransform = (x, y) => `translate(${x} ${y}) scale(${textScale} 1) translate(${-x} ${-y})`;
+
   return (
     <div style={{ marginTop: 10, padding: "12px 14px", background: "#ffffff05", border: "1px solid #ffffff10", borderRadius: 10 }}>
+      {controlliFiltro}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-        <span style={{ fontSize: 9, color: "#666", fontWeight: 700, letterSpacing: "0.06em" }}>📈 ANDAMENTO BILANCIO (stagione)</span>
+        <span style={{ fontSize: 9, color: "#666", fontWeight: 700, letterSpacing: "0.06em" }}>📈 ANDAMENTO BILANCIO {filtroAttivo ? "(periodo personalizzato)" : "(stagione)"}</span>
         <span style={{ fontSize: 12, fontWeight: 800, color }}>{trend > 0 ? "+" : ""}{trend.toFixed(1)}M nel periodo tracciato</span>
       </div>
-      <svg viewBox={`0 0 ${W} ${H + 20}`} width="100%" height={150} preserveAspectRatio="none">
+      <svg ref={svgRef} viewBox={`0 0 ${W} ${H + 20}`} width="100%" height={150} preserveAspectRatio="none">
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity="0.35" />
@@ -583,12 +650,12 @@ function BilancioTrendChart({ team }) {
         {markers.map((mk, i) => (
           <g key={i}>
             <circle cx={mk.x} cy={mk.y} r="3" fill="#0d0f14" stroke={color} strokeWidth="1.6" />
-            <text x={mk.x} y={H + 14} fontSize="11" fill="#777" textAnchor="middle" fontWeight="700">{mk.label}</text>
+            <text x={mk.x} y={H + 14} transform={textTransform(mk.x, H + 14)} fontSize="11" fill="#777" textAnchor="middle" fontWeight="700">{mk.label}</text>
             <title>{`${mk.label}: ${mk.v.toFixed(2)}M`}</title>
           </g>
         ))}
         <circle cx={ultimo[0]} cy={ultimo[1]} r="4" fill={color} stroke="#0d0f14" strokeWidth="1.5" />
-        <text x={Math.min(ultimo[0], W - 34)} y={ultimo[1] - 10} fontSize="12" fill={color} textAnchor="middle" fontWeight="800">{valori[valori.length - 1].toFixed(1)}M</text>
+        <text x={Math.min(ultimo[0], W - 34)} y={ultimo[1] - 10} transform={textTransform(Math.min(ultimo[0], W - 34), ultimo[1] - 10)} fontSize="12" fill={color} textAnchor="middle" fontWeight="800">{valori[valori.length - 1].toFixed(1)}M</text>
 
         {/* Hit-area cliccabile su OGNI punto (non solo i marker di inizio mese):
             invisibile finché non selezionato, per vedere il bilancio esatto in
@@ -613,8 +680,13 @@ function BilancioTrendChart({ team }) {
             <g>
               <line x1={sx} y1={PADY} x2={sx} y2={H - PADY} stroke={color} strokeWidth="1" strokeDasharray="3,3" opacity="0.5" />
               <circle cx={sx} cy={sy} r="4.5" fill={color} stroke="#0d0f14" strokeWidth="1.6" />
-              <rect x={boxX} y={boxY} width={boxW} height={20} rx="5" fill="#0d0f14" stroke={color} strokeWidth="1" />
-              <text x={boxX + boxW / 2} y={boxY + 14} fontSize="11" fill="#eee" textAnchor="middle" fontWeight="700">{label}</text>
+              {/* Il riquadro (sfondo + testo) va compensato insieme, altrimenti
+                  lo sfondo resterebbe largo quanto prima mentre il testo si
+                  restringe: qui si scalano entrambi attorno allo stesso punto. */}
+              <g transform={textTransform(sx, sy)}>
+                <rect x={boxX} y={boxY} width={boxW} height={20} rx="5" fill="#0d0f14" stroke={color} strokeWidth="1" />
+                <text x={boxX + boxW / 2} y={boxY + 14} fontSize="11" fill="#eee" textAnchor="middle" fontWeight="700">{label}</text>
+              </g>
             </g>
           );
         })()}
