@@ -483,9 +483,11 @@ function GraficoQuotazione({ nome }) {
 // movimento registrato, non necessariamente l'inizio storico della squadra.
 function BilancioTrendChart({ team }) {
   const [punti, setPunti] = useState(null);
+  const [selIdx, setSelIdx] = useState(null);
 
   useEffect(() => {
     if (!team?.name) return;
+    setSelIdx(null);
     let cancelled = false;
     // Limitato alla stagione corrente: oltre a dare un trend più leggibile
     // (coerente con FPF/fair-spending, già scoperti per stagione), evita di
@@ -587,6 +589,35 @@ function BilancioTrendChart({ team }) {
         ))}
         <circle cx={ultimo[0]} cy={ultimo[1]} r="4" fill={color} stroke="#0d0f14" strokeWidth="1.5" />
         <text x={Math.min(ultimo[0], W - 34)} y={ultimo[1] - 10} fontSize="12" fill={color} textAnchor="middle" fontWeight="800">{valori[valori.length - 1].toFixed(1)}M</text>
+
+        {/* Hit-area cliccabile su OGNI punto (non solo i marker di inizio mese):
+            invisibile finché non selezionato, per vedere il bilancio esatto in
+            un punto qualsiasi del grafico. */}
+        {pts.map(([x, y], i) => (
+          <circle
+            key={"hit" + i}
+            cx={x} cy={y} r="9"
+            fill="transparent"
+            style={{ cursor: "pointer" }}
+            onClick={() => setSelIdx(prev => prev === i ? null : i)}
+          />
+        ))}
+        {selIdx != null && punti[selIdx] && (() => {
+          const [sx, sy] = pts[selIdx];
+          const dataFmt = new Date(punti[selIdx].data).toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric" });
+          const label = `${dataFmt}: ${punti[selIdx].v.toFixed(2)}M`;
+          const boxW = label.length * 5.6 + 16;
+          const boxX = Math.min(Math.max(sx - boxW / 2, PADX), W - PADX - boxW);
+          const boxY = Math.max(sy - 34, 2);
+          return (
+            <g>
+              <line x1={sx} y1={PADY} x2={sx} y2={H - PADY} stroke={color} strokeWidth="1" strokeDasharray="3,3" opacity="0.5" />
+              <circle cx={sx} cy={sy} r="4.5" fill={color} stroke="#0d0f14" strokeWidth="1.6" />
+              <rect x={boxX} y={boxY} width={boxW} height={20} rx="5" fill="#0d0f14" stroke={color} strokeWidth="1" />
+              <text x={boxX + boxW / 2} y={boxY + 14} fontSize="11" fill="#eee" textAnchor="middle" fontWeight="700">{label}</text>
+            </g>
+          );
+        })()}
       </svg>
     </div>
   );
@@ -10245,11 +10276,10 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
 
   // Aste concluse (storico)
   const asteConcluse = aste.filter(a => a.stato === 'assegnata');
-  // Ordinate dalla chiamata più vecchia alla più recente (scadenza_interesse
-  // riflette il momento della chiamata originale, non quando l'asta stessa
-  // è stata creata).
+  // Ordinate per scadenza offerte (quella mostrata a schermo, "Offerte
+  // entro"), dalla più vicina alla più lontana.
   const asteAttive   = aste.filter(a => a.stato === 'raccolta_offerte')
-    .sort((a, b) => new Date(a.scadenza_interesse || a.created_at || 0) - new Date(b.scadenza_interesse || b.created_at || 0));
+    .sort((a, b) => new Date(a.scadenza || a.created_at || 0) - new Date(b.scadenza || b.created_at || 0));
 
   const dsMasterclass = investimenti.find(i => i.nome === 'DS Masterclass');
 
