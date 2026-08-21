@@ -2026,6 +2026,18 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
                   <div style={{ flex:1,minWidth:0 }}>
                     <div style={{ fontSize:11,color:urg?"#fca5a5":"#ccc",fontWeight:600 }}>{urg?"🔴 ":vic&&!urg?"🟡 ":""}{d.label}</div>
                     <div style={{ fontSize:9,color:"#555" }}><span style={{ color:sC[d.section]||"#555",marginRight:4 }}>{sI[d.section]} {d.section}</span>{d.dateStr}{d.note?" · "+d.note:""}</div>
+                    {(() => {
+                      // Progresso nel ciclo (mensile o annuale) verso questa scadenza ricorrente.
+                      const prev = new Date(d.dateObj);
+                      if (d.type === 'monthly') prev.setMonth(prev.getMonth() - 1); else prev.setFullYear(prev.getFullYear() - 1);
+                      const cicloGiorni = Math.round((d.dateObj - prev) / 86400000) || 1;
+                      const pct = Math.min(100, Math.max(0, ((cicloGiorni - d.days) / cicloGiorni) * 100));
+                      return (
+                        <div style={{ height:3, borderRadius:99, background:"#ffffff0f", overflow:"hidden", marginTop:5 }}>
+                          <div style={{ height:"100%", width:`${pct}%`, borderRadius:99, background:bc }} />
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div style={{ textAlign:"center",flexShrink:0 }}>
                     <div style={{ fontSize:d.days<=9?20:16,fontWeight:900,color:bc,fontFamily:"'Bebas Neue',sans-serif",lineHeight:1 }}>{d.days===0?"OGGI":d.days}</div>
