@@ -493,6 +493,20 @@ function BilancioTrendChart({ team }) {
   const [filtro, setFiltro] = useState({ from: '', to: '' });
   const [inputFrom, setInputFrom] = useState('');
   const [inputTo, setInputTo] = useState('');
+  const [primaData, setPrimaData] = useState(null);
+  const oggiStr = new Date().toISOString().slice(0, 10);
+
+  // Estremi selezionabili nei date-picker: non si può scegliere una data prima
+  // del primo movimento mai registrato per la squadra, né dopo oggi.
+  useEffect(() => {
+    if (!team?.name) return;
+    let cancelled = false;
+    supabase.from('movimenti').select('data').eq('squadra', team.name)
+      .order('data', { ascending: true }).limit(1).then(({ data }) => {
+        if (!cancelled) setPrimaData(data?.[0]?.data || null);
+      });
+    return () => { cancelled = true; };
+  }, [team?.name]);
 
   // L'svg usa preserveAspectRatio="none" per riempire tutta la larghezza a
   // altezza fissa (necessario per il look dell'area chart): questo però
@@ -548,21 +562,35 @@ function BilancioTrendChart({ team }) {
   const punti = filtro.to ? puntiRaw.filter(p => p.data <= filtro.to) : puntiRaw;
   const filtroAttivo = !!(filtro.from || filtro.to);
 
-  const applicaFiltro = () => setFiltro({ from: inputFrom, to: inputTo });
+  const clampData = d => d ? (primaData && d < primaData ? primaData : d > oggiStr ? oggiStr : d) : d;
+  const applicaFiltro = () => setFiltro({ from: clampData(inputFrom), to: clampData(inputTo) });
   const resetFiltro = () => { setInputFrom(''); setInputTo(''); setFiltro({ from: '', to: '' }); };
+  const applicaPreset = giorni => {
+    const from = clampData(new Date(Date.now() - giorni * 86400000).toISOString().slice(0, 10));
+    setInputFrom(from); setInputTo(''); setFiltro({ from, to: '' });
+  };
+  const presetBtnStyle = attivo => ({
+    background: attivo ? "#6366f125" : "transparent",
+    border: `1px solid ${attivo ? "#6366f150" : "#ffffff15"}`,
+    borderRadius: 6, color: attivo ? "#a5b4fc" : "#888", fontSize: 11, fontWeight: attivo ? 700 : 400,
+    padding: "3px 10px", cursor: "pointer",
+  });
 
   const controlliFiltro = (
     <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
       <span style={{ fontSize: 9, color: "#666", fontWeight: 700, letterSpacing: "0.06em" }}>PERIODO</span>
+      <button onClick={() => applicaPreset(30)} style={presetBtnStyle(filtro.from === clampData(new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)) && !filtro.to)}>Ultimo mese</button>
+      <button onClick={() => applicaPreset(90)} style={presetBtnStyle(filtro.from === clampData(new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10)) && !filtro.to)}>Ultimi 3 mesi</button>
+      <button onClick={resetFiltro} style={presetBtnStyle(!filtroAttivo)}>Stagione</button>
+      <span style={{ fontSize: 11, color: "#444" }}>|</span>
       <input type="date" value={inputFrom} onChange={e => setInputFrom(e.target.value)}
+        min={primaData || undefined} max={oggiStr}
         style={{ background: "#ffffff08", border: "1px solid #ffffff15", borderRadius: 6, color: "#ccc", fontSize: 11, padding: "3px 6px" }} />
       <span style={{ fontSize: 11, color: "#555" }}>→</span>
       <input type="date" value={inputTo} onChange={e => setInputTo(e.target.value)}
+        min={primaData || undefined} max={oggiStr}
         style={{ background: "#ffffff08", border: "1px solid #ffffff15", borderRadius: 6, color: "#ccc", fontSize: 11, padding: "3px 6px" }} />
       <button onClick={applicaFiltro} style={{ background: "#6366f125", border: "1px solid #6366f150", borderRadius: 6, color: "#a5b4fc", fontSize: 11, fontWeight: 700, padding: "3px 10px", cursor: "pointer" }}>Applica</button>
-      {filtroAttivo && (
-        <button onClick={resetFiltro} style={{ background: "transparent", border: "1px solid #ffffff15", borderRadius: 6, color: "#888", fontSize: 11, padding: "3px 10px", cursor: "pointer" }}>Reset (stagione)</button>
-      )}
     </div>
   );
 
@@ -10413,16 +10441,35 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
             const scaduta = asta.scadenza ? new Date() > new Date(asta.scadenza) : false;
             const interessatiAsta = chiamate.filter(c => c.giocatore === asta.giocatore && c.stato === 'in_asta');
             const giaInteressato = interessatiAsta.some(c => c.squadra === mySquadra);
+            // Barra di progresso urgenza: quota di tempo trascorso tra la
+            // creazione dell'asta e la scadenza offerte, colorata in base a
+            // quanto tempo resta (non solo al countdown testuale).
+            const inizioMs = asta.created_at ? new Date(asta.created_at).getTime() : null;
+            const fineMs = asta.scadenza ? new Date(asta.scadenza).getTime() : null;
+            const oraMs = Date.now();
+            let progressoPct = null, frazioneRimasta = 1;
+            if (inizioMs && fineMs && fineMs > inizioMs) {
+              const totale = fineMs - inizioMs;
+              const trascorso = Math.min(Math.max(oraMs - inizioMs, 0), totale);
+              progressoPct = (trascorso / totale) * 100;
+              frazioneRimasta = 1 - trascorso / totale;
+            }
+            const coloreProgresso = scaduta ? "#ef4444" : frazioneRimasta <= 0.2 ? "#ef4444" : frazioneRimasta <= 0.5 ? "#f59e0b" : "#6366f1";
             return (
               <div key={asta.id} style={{ background: scaduta ? "#ef444408" : "#6366f108", border: `1.5px solid ${scaduta ? "#ef444430" : "#6366f130"}`, borderRadius: 14, padding: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
-                  <div>
+                  <div style={{ flex: 1, minWidth: 180 }}>
                     <div style={{ fontSize: 14, fontWeight: 800, color: "#f0f0f0" }}>{asta.giocatore}</div>
                     <div style={{ fontSize: 11, color: "#888" }}>{asta.ruolo} · {asta.anni}aa · Q{asta.quot} · base ¾Q = {(asta.quot * 0.75).toFixed(2)}M</div>
                     <div style={{ fontSize: 10, color: scaduta ? "#ef4444" : "#818cf8", marginTop: 4 }}>
                       {scaduta ? "⏰ Scadenza offerte passata" : `⏳ Offerte entro: ${new Date(asta.scadenza).toLocaleString("it-IT", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })} (${formatCountdown(asta.scadenza)})`}
                     </div>
-                    <div style={{ fontSize: 10, color: "#555", marginTop: 2 }}>
+                    {progressoPct != null && (
+                      <div style={{ height: 5, borderRadius: 99, background: "#ffffff10", overflow: "hidden", marginTop: 6, maxWidth: 240 }}>
+                        <div style={{ height: "100%", width: `${progressoPct}%`, borderRadius: 99, background: coloreProgresso, transition: "width 0.3s" }} />
+                      </div>
+                    )}
+                    <div style={{ fontSize: 10, color: "#555", marginTop: 4 }}>
                       Interessati: {interessatiAsta.map(c => c.squadra).join(", ") || "—"}
                     </div>
                   </div>
