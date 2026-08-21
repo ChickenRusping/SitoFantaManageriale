@@ -2425,22 +2425,38 @@ function DeadlinePage() {
 
       {/* Prossima scadenza in evidenza */}
       {prossima && (
-        <div style={{ background: prossima.days <= 3 ? "#ef444412" : prossima.days <= 14 ? "#f59e0b10" : "#6366f112", border: `1.5px solid ${prossima.days <= 3 ? "#ef444440" : prossima.days <= 14 ? "#f59e0b33" : "#6366f133"}`, borderRadius: 16, padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "#666", letterSpacing: "0.1em", marginBottom: 4 }}>⏳ PROSSIMA SCADENZA</div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#f0f0f0" }}>{prossima.label}</div>
-            <div style={{ fontSize: 11, color: "#888", marginTop: 3 }}>
-              <span style={{ color: sectionColors[prossima.section] || "#888" }}>{sectionIcons[prossima.section]} {prossima.section}</span>
-              {" · "}{prossima.dateStr}
-              {prossima.note ? ` — ${prossima.note}` : ""}
+        <div style={{ background: prossima.days <= 3 ? "#ef444412" : prossima.days <= 14 ? "#f59e0b10" : "#6366f112", border: `1.5px solid ${prossima.days <= 3 ? "#ef444440" : prossima.days <= 14 ? "#f59e0b33" : "#6366f133"}`, borderRadius: 16, padding: "14px 18px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#666", letterSpacing: "0.1em", marginBottom: 4 }}>⏳ PROSSIMA SCADENZA</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#f0f0f0" }}>{prossima.label}</div>
+              <div style={{ fontSize: 11, color: "#888", marginTop: 3 }}>
+                <span style={{ color: sectionColors[prossima.section] || "#888" }}>{sectionIcons[prossima.section]} {prossima.section}</span>
+                {" · "}{prossima.dateStr}
+                {prossima.note ? ` — ${prossima.note}` : ""}
+              </div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 40, fontWeight: 900, color: prossima.days <= 3 ? "#ef4444" : prossima.days <= 14 ? "#f59e0b" : "#818cf8", fontFamily: "'Bebas Neue',sans-serif", lineHeight: 1 }}>
+                {prossima.days === 0 ? "OGGI" : `${prossima.days}`}
+              </div>
+              {prossima.days > 0 && <div style={{ fontSize: 10, color: "#666" }}>giorni</div>}
             </div>
           </div>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 40, fontWeight: 900, color: prossima.days <= 3 ? "#ef4444" : prossima.days <= 14 ? "#f59e0b" : "#818cf8", fontFamily: "'Bebas Neue',sans-serif", lineHeight: 1 }}>
-              {prossima.days === 0 ? "OGGI" : `${prossima.days}`}
-            </div>
-            {prossima.days > 0 && <div style={{ fontSize: 10, color: "#666" }}>giorni</div>}
-          </div>
+          {/* Progresso nel ciclo corrente (mensile o annuale) verso questa scadenza ricorrente. */}
+          {prossima.ricorrente && (() => {
+            const prev = new Date(prossima.dateObj);
+            if (prossima.type === 'monthly') prev.setMonth(prev.getMonth() - 1);
+            else prev.setFullYear(prev.getFullYear() - 1);
+            const cicloGiorni = Math.round((prossima.dateObj - prev) / 86400000) || 1;
+            const pct = Math.min(100, Math.max(0, ((cicloGiorni - prossima.days) / cicloGiorni) * 100));
+            const col = prossima.days <= 3 ? "#ef4444" : prossima.days <= 14 ? "#f59e0b" : "#6366f1";
+            return (
+              <div style={{ height: 5, borderRadius: 99, background: "#ffffff10", overflow: "hidden", marginTop: 12 }}>
+                <div style={{ height: "100%", width: `${pct}%`, borderRadius: 99, background: col }} />
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -3202,6 +3218,18 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                   <div style={{ fontSize:12,fontWeight:700,color:na?"#fca5a5":"#e0e0e0" }}>{p.nome}</div>
                   <div style={{ fontSize:10,color:"#666" }}>{p.anni}aa · Q{p.quot}{p.quot_iniziale_vivaio ? ` (ingresso Q${p.quot_iniziale_vivaio})` : ""} · {p.vivaio_presenze||0} presenze</div>
                   {na && <div style={{ fontSize:9,color:"#ef4444",fontWeight:700 }}>Scelta entro {decisioneScadenzaLabel(p)} · poi svincolo automatico</div>}
+                  {na && p.vivaio_decisione_da && p.vivaio_decisione_scadenza && (() => {
+                    const inizioMs = new Date(p.vivaio_decisione_da).getTime();
+                    const fineMs = new Date(p.vivaio_decisione_scadenza).getTime();
+                    if (fineMs <= inizioMs) return null;
+                    const pct = Math.min(100, Math.max(0, ((Date.now() - inizioMs) / (fineMs - inizioMs)) * 100));
+                    const col = pct >= 80 ? "#ef4444" : pct >= 50 ? "#f97316" : "#f59e0b";
+                    return (
+                      <div style={{ height:3, borderRadius:99, background:"#ffffff10", overflow:"hidden", marginTop:3, maxWidth:180 }}>
+                        <div style={{ height:"100%", width:`${pct}%`, borderRadius:99, background:col }} />
+                      </div>
+                    );
+                  })()}
                 </div>
                 {canEdit&&(
                   <div style={{ display:"flex",gap:5 }}>
@@ -6026,6 +6054,18 @@ function VivaiTab({ team, isAdmin }) {
                       {p.anni}aa · Q{p.quot}{p.quot_iniziale_vivaio ? ` (ingresso Q${p.quot_iniziale_vivaio})` : ""} · Entrato: {p.data_entrata_vivaio || "—"}
                     </div>
                     {needAct && <div style={{ fontSize: 9, color: "#ef4444", fontWeight: 700, marginTop: 2 }}>Scelta entro {scadenzaDecisioneLabel(p)} · poi svincolo automatico</div>}
+                    {needAct && p.vivaio_decisione_da && p.vivaio_decisione_scadenza && (() => {
+                      const inizioMs = new Date(p.vivaio_decisione_da).getTime();
+                      const fineMs = new Date(p.vivaio_decisione_scadenza).getTime();
+                      if (fineMs <= inizioMs) return null;
+                      const pct = Math.min(100, Math.max(0, ((Date.now() - inizioMs) / (fineMs - inizioMs)) * 100));
+                      const col = pct >= 80 ? "#ef4444" : pct >= 50 ? "#f97316" : "#f59e0b";
+                      return (
+                        <div style={{ height: 4, borderRadius: 99, background: "#ffffff10", overflow: "hidden", marginTop: 4, maxWidth: 200 }}>
+                          <div style={{ height: "100%", width: `${pct}%`, borderRadius: 99, background: col }} />
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Presenze */}
@@ -8996,8 +9036,21 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, width: "100%" }}>
                           {/* Countdown risposta 24h (art. 5.3) */}
-                          <div style={{ fontSize: 10, color: urgente ? "#ef4444" : "#555" }}>
-                            ⏱ {hLeft}h rimaste · penalità: {hLeft > 24 ? "—" : hLeft > 0 ? "1M" : hLeft === 0 ? "5M" : "96h rule"}
+                          <div style={{ minWidth: 140 }}>
+                            <div style={{ fontSize: 10, color: urgente ? "#ef4444" : "#555" }}>
+                              ⏱ {hLeft}h rimaste · penalità: {hLeft > 24 ? "—" : hLeft > 0 ? "1M" : hLeft === 0 ? "5M" : "96h rule"}
+                            </div>
+                            {(() => {
+                              const msRimasti = new Date(t.deadline_risposta) - now;
+                              const pct = Math.min(100, Math.max(0, (1 - msRimasti / (24 * 3600 * 1000)) * 100));
+                              const frazioneRimasta = msRimasti / (24 * 3600 * 1000);
+                              const col = frazioneRimasta <= 0.25 ? "#ef4444" : frazioneRimasta <= 0.5 ? "#f59e0b" : "#6366f1";
+                              return (
+                                <div style={{ height: 4, borderRadius: 99, background: "#ffffff10", overflow: "hidden", marginTop: 3, maxWidth: 160 }}>
+                                  <div style={{ height: "100%", width: `${pct}%`, borderRadius: 99, background: col }} />
+                                </div>
+                              );
+                            })()}
                           </div>
                           {canRispondi && (
                             <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 6 }}>
@@ -9128,6 +9181,18 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                   {a.tipo_asta === 'rialzo' && (
                     <div style={{ marginBottom: 10 }}>
                       {scadFra !== null && <div style={{ fontSize: 11, color: scadFra === 0 ? "#ef4444" : scadFra < 30 ? "#f97316" : "#888", marginBottom: 6 }}>⏱ {scadFra === 0 ? "⏰ SCADUTA — in attesa di chiusura" : `Scade in ${scadFra < 60 ? `${scadFra} min` : `${Math.floor(scadFra/60)}h ${scadFra%60}min`}`}{horaCongelata ? " (CONGELATO)" : ""}</div>}
+                      {scadFra !== null && (() => {
+                        // Finestra fissa di 2h (in minuti attivi) da ogni ultima offerta.
+                        const FINESTRA_MIN = 120;
+                        const pct = Math.min(100, Math.max(0, ((FINESTRA_MIN - scadFra) / FINESTRA_MIN) * 100));
+                        const frazioneRimasta = scadFra / FINESTRA_MIN;
+                        const col = frazioneRimasta <= 0.2 ? "#ef4444" : frazioneRimasta <= 0.5 ? "#f97316" : "#f59e0b";
+                        return (
+                          <div style={{ height: 4, borderRadius: 99, background: "#ffffff10", overflow: "hidden", marginBottom: 8, maxWidth: 200 }}>
+                            <div style={{ height: "100%", width: `${pct}%`, borderRadius: 99, background: col }} />
+                          </div>
+                        );
+                      })()}
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                         {a.proprietario !== mySquadra && !!mySquadra && !horaCongelata && scadFra !== 0 && (
                           <button onClick={() => faiOffertaRialzo(a)} disabled={loading} style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: loading ? "#8a670f" : "#f59e0b", color: "#000", fontSize: 12, fontWeight: 800, cursor: loading ? "wait" : "pointer" }}>
@@ -9149,9 +9214,16 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                       {isFloor && (() => {
                         const floorAt = calcolaFloorRaggiuntoAt(a.quot_giocatore, a.avviata_at);
                         const minutiRimasti = Math.max(0, 30 - Math.floor((now - floorAt) / 60000));
+                        const pct = Math.min(100, Math.max(0, ((30 - minutiRimasti) / 30) * 100));
+                        const col = minutiRimasti <= 6 ? "#ef4444" : minutiRimasti <= 15 ? "#f97316" : "#f59e0b";
                         return (
-                          <div style={{ fontSize: 11, color: "#f97316", marginBottom: 6 }}>
-                            🔻 Prezzo minimo raggiunto — si annulla automaticamente tra {minutiRimasti} min se nessuno compra
+                          <div style={{ marginBottom: 8 }}>
+                            <div style={{ fontSize: 11, color: "#f97316", marginBottom: 4 }}>
+                              🔻 Prezzo minimo raggiunto — si annulla automaticamente tra {minutiRimasti} min se nessuno compra
+                            </div>
+                            <div style={{ height: 4, borderRadius: 99, background: "#ffffff10", overflow: "hidden", maxWidth: 200 }}>
+                              <div style={{ height: "100%", width: `${pct}%`, borderRadius: 99, background: col }} />
+                            </div>
                           </div>
                         );
                       })()}
@@ -9576,6 +9648,19 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
               {scadutaInteresse
                 ? "⌛ Scadenza interesse passata — elaborazione in corso..."
                 : `⏳ Interesse aperto fino a: ${scadInt.toLocaleString("it-IT", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })} (${formatCountdown(scadInt)})`}
+              {!scadutaInteresse && primaria.created_at && (() => {
+                const inizioMs = new Date(primaria.created_at).getTime();
+                const fineMs = scadInt.getTime();
+                if (fineMs <= inizioMs) return null;
+                const pct = Math.min(100, Math.max(0, ((Date.now() - inizioMs) / (fineMs - inizioMs)) * 100));
+                const frazioneRimasta = 1 - pct / 100;
+                const col = frazioneRimasta <= 0.2 ? "#ef4444" : frazioneRimasta <= 0.5 ? "#f59e0b" : "#6366f1";
+                return (
+                  <div style={{ height: 4, borderRadius: 99, background: "#ffffff10", overflow: "hidden", marginTop: 4, maxWidth: 200 }}>
+                    <div style={{ height: "100%", width: `${pct}%`, borderRadius: 99, background: col }} />
+                  </div>
+                );
+              })()}
               {scadOfferteAttesa && (
                 <div style={{ marginTop: 2, color: "#666" }}>
                   📮 Offerte entro (previsto): {new Date(scadOfferteAttesa).toLocaleString("it-IT", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
@@ -9586,6 +9671,19 @@ function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRe
           {astaAttiva && (
             <div style={{ fontSize: 10, color: "#818cf8" }}>
               🏷️ Offerte entro: {new Date(astaAttiva.scadenza).toLocaleString("it-IT", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })} ({formatCountdown(astaAttiva.scadenza)})
+              {astaAttiva.created_at && (() => {
+                const inizioMs = new Date(astaAttiva.created_at).getTime();
+                const fineMs = new Date(astaAttiva.scadenza).getTime();
+                if (fineMs <= inizioMs) return null;
+                const pct = Math.min(100, Math.max(0, ((Date.now() - inizioMs) / (fineMs - inizioMs)) * 100));
+                const frazioneRimasta = 1 - pct / 100;
+                const col = frazioneRimasta <= 0.2 ? "#ef4444" : frazioneRimasta <= 0.5 ? "#f59e0b" : "#6366f1";
+                return (
+                  <div style={{ height: 4, borderRadius: 99, background: "#ffffff10", overflow: "hidden", marginTop: 4, maxWidth: 200 }}>
+                    <div style={{ height: "100%", width: `${pct}%`, borderRadius: 99, background: col }} />
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
