@@ -4633,9 +4633,13 @@ const VIVAIO_DECISIONE_GIORNI = 3;
 function getMotiviDecisioneVivaio(player = {}) {
   const motivi = [];
   const presenze = Number(player.vivaio_presenze ?? player.presenze_voto ?? player.partite ?? 0);
-  const quot = Number(player.quot || 0);
+  // Confronta la quotazione REALE di mercato (aggiornata ad ogni import anche
+  // per il vivaio — vedi _importDatabaseCore), non player.quot: quella resta
+  // sempre congelata al valore d'ingresso per i giocatori in vivaio, quindi
+  // confrontarla con se stessa non avrebbe mai rilevato una crescita.
+  const quotAttuale = Number(player.quot_reale ?? player.quot ?? 0);
   const quotIniziale = Number(player.quot_iniziale_vivaio ?? player.quot ?? 0);
-  const aumento = quot - quotIniziale;
+  const aumento = quotAttuale - quotIniziale;
   if (presenze >= 2) motivi.push(`${presenze} presenze a voto`);
   if (quotIniziale > 0 && aumento >= 2) motivi.push(`quotazione +${parseFloat(aumento.toFixed(2))}`);
   return motivi;
@@ -7046,7 +7050,13 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
   // Aggiorna listone + stats rosa via funzione esistente (match case-insensitive per nome)
   await importListoneDaExcel(rows);
 
-  const { data: rosaAll } = await supabase.from('rosa').select('id, nome, anni, anni_contratto, stip, fuori_lista').eq('in_vivaio', false);
+  // NON esclude i giocatori in vivaio: anche loro devono ricevere quot_reale e
+  // le statistiche reali aggiornate ad ogni import (altrimenti il controllo di
+  // idoneità del vivaio confronta dati congelati al momento dell'acquisto e
+  // non si accorge mai se un giocatore cresce troppo o gioca titolare). Il
+  // ramo aggiornaQuotazioneRosa più sotto resta comunque bloccato per loro:
+  // quot/stipendio del vivaio non vanno mai toccati da qui.
+  const { data: rosaAll } = await supabase.from('rosa').select('id, nome, anni, anni_contratto, stip, fuori_lista, in_vivaio');
   const { data: svinAll }  = await supabase.from('svincolati').select('id, nome, fuori_lista').eq('stagione', stagione);
 
   // Normalizza accenti e spazi multipli (non la punteggiatura, per non fondere
@@ -7105,7 +7115,7 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
           fuori_lista: fuoriListaRiga,
           ...statsRosa,
         };
-        if (aggiornaQuotazioneRosa) {
+        if (aggiornaQuotazioneRosa && !p.in_vivaio) {
           // Lo stipendio segue la quotazione aggiornata MA mantiene il
           // moltiplicatore dell'anno di contratto attuale (art. 4.8) — non va
           // azzerato a Q/5 puro se il giocatore è già al 2°/3° anno.
