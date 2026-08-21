@@ -9211,6 +9211,23 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
                   {a.tipo_asta === 'discesa' && (
                     <div style={{ marginBottom: 10 }}>
+                      {!isFloor && !horaCongelata && (() => {
+                        // Countdown ricorrente: ogni 30 min attivi il prezzo scende di 0.25M.
+                        const minutiNelCiclo = minsAttiviPassati % 30;
+                        const minutiAlProssimoCalo = 30 - minutiNelCiclo;
+                        const pct = (minutiNelCiclo / 30) * 100;
+                        const col = minutiAlProssimoCalo <= 5 ? "#ef4444" : "#f59e0b";
+                        return (
+                          <div style={{ marginBottom: 8 }}>
+                            <div style={{ fontSize: 10, color: "#888", marginBottom: 4 }}>
+                              📉 Prossimo calo (−0.25M) tra {minutiAlProssimoCalo} min
+                            </div>
+                            <div style={{ height: 4, borderRadius: 99, background: "#ffffff10", overflow: "hidden", maxWidth: 200 }}>
+                              <div style={{ height: "100%", width: `${pct}%`, borderRadius: 99, background: col }} />
+                            </div>
+                          </div>
+                        );
+                      })()}
                       {isFloor && (() => {
                         const floorAt = calcolaFloorRaggiuntoAt(a.quot_giocatore, a.avviata_at);
                         const minutiRimasti = Math.max(0, 30 - Math.floor((now - floorAt) / 60000));
