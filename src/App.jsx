@@ -936,6 +936,15 @@ function CalcolatoreGiornata({ profile, teams }) {
   const [salvatoMsg, setSalvatoMsg] = useState(null);
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
+  const [allenatoreGiornata, setAllenatoreGiornata] = useState(null);
+  const [moduloGiornata, setModuloGiornata] = useState(""); // "" = Nessuno (obbligatorio sceglierne uno)
+
+  useEffect(() => {
+    if (!mySquadra) { setAllenatoreGiornata(null); return; }
+    let cancelled = false;
+    getAllenatoreBySquadra(mySquadra, STAGIONE_CORRENTE).then(a => { if (!cancelled) setAllenatoreGiornata(a); });
+    return () => { cancelled = true; };
+  }, [mySquadra]);
 
   // Costi giocatori (cumulativi da inserire manualmente)
   const [costiGiocatori, setCostiGiocatori] = useState({
@@ -984,7 +993,7 @@ function CalcolatoreGiornata({ profile, teams }) {
   }
 
   const color = totale >= 0 ? "#10b981" : "#ef4444";
-  const canSalva = Boolean(mySquadra && giornata && risultato && golSegnati !== "" && golSubiti !== "");
+  const canSalva = Boolean(mySquadra && giornata && risultato && golSegnati !== "" && golSubiti !== "" && moduloGiornata);
 
   async function salvaGuadagno() {
     if (!canSalva) return;
@@ -1000,8 +1009,20 @@ function CalcolatoreGiornata({ profile, teams }) {
         data: oggi,
         risultato: risultato || null,
       });
-      setSalvatoMsg(`✅ Giornata ${giornata}: ${totale >= 0 ? "+" : ""}${totale}M salvato nei movimenti`);
-      setTimeout(() => setSalvatoMsg(null), 4000);
+      // Registra automaticamente il modulo schierato nel tracker allenatore:
+      // conta come giornata valida solo se combacia con uno dei due moduli
+      // della carta allenatore (lo fa già conteggioModuliAllenatore a valle),
+      // altrimenti resta comunque tracciata ma non valida.
+      let msgModulo = "";
+      try {
+        await upsertModuloTracker(mySquadra, giornata, moduloGiornata, STAGIONE_CORRENTE);
+        const valido = allenatoreGiornata && (moduloGiornata === allenatoreGiornata.modulo1 || moduloGiornata === allenatoreGiornata.modulo2);
+        msgModulo = valido ? ` · modulo ${moduloGiornata} valido per l'allenatore ✓` : ` · modulo ${moduloGiornata} registrato (non tra quelli dell'allenatore)`;
+      } catch (eMod) {
+        msgModulo = ` · ⚠️ modulo non salvato nel tracker (${eMod.message})`;
+      }
+      setSalvatoMsg(`✅ Giornata ${giornata}: ${totale >= 0 ? "+" : ""}${totale}M salvato nei movimenti${msgModulo}`);
+      setTimeout(() => setSalvatoMsg(null), 5000);
     } catch(e) { alert(e.message); }
     finally { setSaving(false); }
   }
@@ -1070,6 +1091,19 @@ function CalcolatoreGiornata({ profile, teams }) {
             <div>
               <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>GOL SUBITI * ({guadagnoGolSubiti >= 0 ? "+" : ""}{guadagnoGolSubiti}M)</div>
               <input style={inpNum} type="number" min="0" max="99" placeholder="es. 0" value={golSubiti} onChange={e => setGolSubiti(e.target.value)} />
+            </div>
+
+            {/* Modulo giocato — obbligatorio, alimenta il tracker moduli allenatore */}
+            <div style={{ gridColumn: "1 / -1" }}>
+              <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>
+                MODULO GIOCATO *{allenatoreGiornata && <span style={{ color: "#818cf8" }}> (allenatore: {allenatoreGiornata.modulo1} / {allenatoreGiornata.modulo2})</span>}
+              </div>
+              <select value={moduloGiornata} onChange={e => setModuloGiornata(e.target.value)} style={inpNum}>
+                <option value="">Nessuno</option>
+                {[allenatoreGiornata?.modulo1, allenatoreGiornata?.modulo2, "3-5-2", "3-4-3", "3-4-1-2", "3-4-2-1", "3-5-1-1", "4-3-3", "4-3-1-2", "4-4-2", "4-4-1-1", "4-2-3-1", "4-1-4-1"]
+                  .filter((v, i, a) => v && a.indexOf(v) === i)
+                  .map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
             </div>
           </div>
           <div style={{ fontSize: 9, color: "#555", marginTop: -8, marginBottom: 16 }}>* campi obbligatori</div>
@@ -1141,7 +1175,7 @@ function CalcolatoreGiornata({ profile, teams }) {
                 style={{ width: "100%", padding: "11px", borderRadius: 10, border: "none", background: !canSalva ? "#333" : "linear-gradient(135deg,#6366f1,#a855f7)", color: !canSalva ? "#555" : "#fff", fontSize: 13, fontWeight: 700, cursor: canSalva ? "pointer" : "not-allowed" }}>
                 {saving ? "Salvataggio..." : `💾 Salva giornata ${giornata || "?"} nei movimenti`}
               </button>
-              {!canSalva && <div style={{ fontSize: 10, color: "#666", marginTop: 6, textAlign: "center" }}>Compila giornata, risultato, gol segnati e gol subiti per salvare.</div>}
+              {!canSalva && <div style={{ fontSize: 10, color: "#666", marginTop: 6, textAlign: "center" }}>Compila giornata, risultato, gol segnati, gol subiti e modulo giocato per salvare.</div>}
             </>
           ) : (
             <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", textAlign: "center" }}>Effettua il login per salvare</div>
