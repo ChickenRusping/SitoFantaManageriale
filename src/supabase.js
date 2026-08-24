@@ -2746,25 +2746,37 @@ export function getPenalitaNeg(bilancio, settimane) {
   };
 }
 
+// Idempotente: le settimane trascorse si ricalcolano ogni volta dalla data di
+// inizio (bilancio_neg_dal), non da un contatore incrementato ad ogni
+// chiamata — altrimenti chiamarla più volte nella stessa settimana (es. ogni
+// volta che si apre la tab Finanze) falserebbe il conteggio. Sicura da
+// chiamare da qualunque punto dell'app, quante volte serve.
 export async function aggiornaStatoBilancioNeg(squadra, bilancio) {
   const { data: sq } = await supabase.from('squadre').select('bilancio_neg_dal, bilancio_neg_settimane').eq('name', squadra).single();
   if (!sq) return;
 
   if (bilancio >= 0) {
-    // Rientrato in positivo — reset
-    await supabase.from('squadre').update({ bilancio_neg_dal: null, bilancio_neg_settimane: 0 }).eq('name', squadra);
-    return { reset: true };
+    const eraNegativo = Boolean(sq.bilancio_neg_dal || sq.bilancio_neg_settimane);
+    if (eraNegativo) {
+      await supabase.from('squadre').update({ bilancio_neg_dal: null, bilancio_neg_settimane: 0 }).eq('name', squadra);
+    }
+    return { reset: true, cambiato: eraNegativo };
   }
 
-  const oggi = new Date().toISOString().slice(0, 10);
+  const oggiStr = new Date().toISOString().slice(0, 10);
   if (!sq.bilancio_neg_dal) {
-    await supabase.from('squadre').update({ bilancio_neg_dal: oggi, bilancio_neg_settimane: 1 }).eq('name', squadra);
-    return { settimane: 1 };
+    await supabase.from('squadre').update({ bilancio_neg_dal: oggiStr, bilancio_neg_settimane: 1 }).eq('name', squadra);
+    return { settimane: 1, cambiato: true };
   }
 
-  const settimane = (sq.bilancio_neg_settimane || 0) + 1;
-  await supabase.from('squadre').update({ bilancio_neg_settimane: settimane }).eq('name', squadra);
-  return { settimane };
+  const inizio = new Date(`${sq.bilancio_neg_dal}T00:00:00`);
+  const oggi = new Date(`${oggiStr}T00:00:00`);
+  const settimane = Math.floor((oggi - inizio) / (7 * 86400000)) + 1;
+  if (settimane !== sq.bilancio_neg_settimane) {
+    await supabase.from('squadre').update({ bilancio_neg_settimane: settimane }).eq('name', squadra);
+    return { settimane, cambiato: true };
+  }
+  return { settimane, cambiato: false };
 }
 
 // ─── FAIR SPENDING (art. 7.3) ─────────────────────────────────────────────────
