@@ -2201,7 +2201,12 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
   const oggi = new Date();
   const oggiStr = oggi.toISOString().slice(0, 10);
 
-  if (!_isPeriodoSvincoliConsentito(oggi)) {
+  // Gli svincoli straordinari "estero" sono un caso a parte: sempre possibili
+  // (non solo durante le finestre di mercato) e senza vincolo dei 30 giorni
+  // dall'acquisto, validi quindi per qualsiasi giocatore in qualsiasi momento.
+  const isStraordinarioEstero = (tipo === 'straordinario' || tipo === 'straordinario_u21') && estero;
+
+  if (!isStraordinarioEstero && !_isPeriodoSvincoliConsentito(oggi)) {
     throw new Error('Svincoli non consentiti a giugno/luglio: sono ammessi solo dal 01/08 al 31/05.');
   }
 
@@ -2210,11 +2215,11 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
   }
 
   const periodoStraordinari = _getPeriodoStraordinariSvincoli(oggi);
-  if ((tipo === 'straordinario' || tipo === 'straordinario_u21') && !periodoStraordinari) {
+  if (!isStraordinarioEstero && (tipo === 'straordinario' || tipo === 'straordinario_u21') && !periodoStraordinari) {
     throw new Error('Gli svincoli straordinari sono consentiti solo durante il mercato estivo (01/06-15/09, con giugno/luglio bloccati per gli svincoli) o invernale (01/01-15/02).');
   }
 
-  if (player.data_acquisto) {
+  if (!isStraordinarioEstero && player.data_acquisto) {
     const acquistatoIl = new Date(`${player.data_acquisto}T00:00:00`);
     const trascorsi = giorniTra(acquistatoIl, oggi);
     if (trascorsi < 30) {
