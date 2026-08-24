@@ -4474,12 +4474,21 @@ export async function getControlRoomStatus() {
     tasseDateBySquadra[t.squadra].push(t.data_controllo);
   }
 
+  // Squadre esenti dalla tassa questa settimana (bilancio basso/negativo:
+  // calcolaTassa arrotonda l'importo a 0 e applicaTassaSettimana la salta —
+  // quindi per loro NON esiste nessun record in tasse_settimanali di
+  // proposito, e vanno mostrate come "OK" invece che "Da fare/mancante".
+  const squadreEsentiTassa = new Set(
+    squadreList.filter(sq => calcolaTassa(Number(sq.bilancio || 0)).importo <= 0).map(sq => sq.name)
+  );
+
   const tassePagate = new Set(Object.keys(tasseCountBySquadra).filter(squadra => squadreAttive.has(squadra) && tasseCountBySquadra[squadra] >= 1));
+  for (const squadra of squadreEsentiTassa) tassePagate.add(squadra);
   const tasseDuplicate = Object.entries(tasseCountBySquadra)
     .filter(([squadra, count]) => squadreAttive.has(squadra) && count > 1)
     .map(([squadra, count]) => ({ squadra, count, date: tasseDateBySquadra[squadra] || [] }));
   const tasseMancanti = squadreList
-    .filter(sq => !tasseCountBySquadra[sq.name])
+    .filter(sq => !tasseCountBySquadra[sq.name] && !squadreEsentiTassa.has(sq.name))
     .map(sq => sq.name);
   const tasseExtra = Object.entries(tasseCountBySquadra)
     .filter(([squadra]) => !squadreAttive.has(squadra))
