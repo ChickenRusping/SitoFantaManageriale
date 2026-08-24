@@ -2762,10 +2762,13 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
     if (!player||!contatori) return [];
     const w=[], oggi=new Date();
     const periodoStraord = getPeriodoStraordinariSvincoli(oggi);
-    if (player.data_acquisto) { const gg=Math.floor((oggi-new Date(player.data_acquisto))/86400000); if(gg<30)w.push({tipo:'error',testo:`Acquistato ${gg}gg fa — min 30gg`}); }
-    if (!isPeriodoSvincoliConsentito(oggi)) w.push({tipo:'error',testo:'Svincoli non consentiti a giugno/luglio: ammessi solo dal 01/08 al 31/05'});
+    // Svincolo straordinario "estero": sempre possibile, nessun vincolo di
+    // finestra di mercato né di 30 giorni dall'acquisto (valido per tutti).
+    const isStraordEstero = (tipo==='straordinario'||tipo==='straordinario_u21') && estero;
+    if (!isStraordEstero && player.data_acquisto) { const gg=Math.floor((oggi-new Date(player.data_acquisto))/86400000); if(gg<30)w.push({tipo:'error',testo:`Acquistato ${gg}gg fa — min 30gg`}); }
+    if (!isStraordEstero && !isPeriodoSvincoliConsentito(oggi)) w.push({tipo:'error',testo:'Svincoli non consentiti a giugno/luglio: ammessi solo dal 01/08 al 31/05'});
     if (tipo==='straordinario'||tipo==='straordinario_u21') {
-      if (!periodoStraord) w.push({tipo:'error',testo:'Straordinari consentiti solo nel mercato estivo (01/06-15/09) o invernale (01/01-15/02)'});
+      if (!isStraordEstero && !periodoStraord) w.push({tipo:'error',testo:'Straordinari consentiti solo nel mercato estivo (01/06-15/09) o invernale (01/01-15/02)'});
       if (!estero&&periodoStraord==='estivo'&&contatori.count_straord_estivi>=5) w.push({tipo:'error',testo:'Esauriti straord. estivi (5/5)'});
       if (!estero&&periodoStraord==='invernale'&&contatori.count_straord_invernali>=4) w.push({tipo:'error',testo:'Esauriti straord. invernali (4/4)'});
     }
@@ -2935,7 +2938,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
     const ind = parseFloat((quotBase * 0.5).toFixed(2));
     if (!window.confirm(`Richiamare ${p.nome} da ${p.squadra}?\n\nPaghi ${ind}M (50% Q reale) di indennizzo. Rientrerà tra 7 giorni se il mercato è aperto, altrimenti al primo giorno di mercato disponibile (art. 5.8.2).`)) return;
     setSaving(true);
-    try { await eseguiRescissioneAnticipataPrestito(p.id, 'cedente'); await loadAll(); }
+    try { await eseguiRescissioneAnticipataPrestito(p.id, 'cedente'); await loadAll(); setPopup(null); }
     catch(e) { alert(`Errore: ${e.message}`); }
     finally { setSaving(false); }
   }
@@ -3093,7 +3096,18 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                 <br/>Finché è in prestito non può essere oggetto di trattative né svincolato (art. 5.7/5.8).
               </div>
               {popup.mode!=='own' ? (
-                <div style={{ fontSize:11,color:"#555",fontStyle:"italic" }}>Nessuna azione disponibile: solo {popup.player.squadra} può decidere su questo prestito.</div>
+                mySquadra===popup.player.squadra_originale ? (
+                  popup.player.rescissione_prestito_attiva ? (
+                    <div style={{ fontSize:11,color:"#f59e0b" }}>⏳ Rientro già programmato per il {popup.player.rescissione_prestito_scadenza || "—"}.</div>
+                  ) : (
+                    <button onClick={()=>handleRichiamaCedente(popup.player)} disabled={saving}
+                      style={{ padding:"9px",borderRadius:9,border:"1px solid #f97316aa",background:"#f9731618",color:"#f97316",fontSize:12,fontWeight:700,cursor:saving?"wait":"pointer" }}>
+                      {saving ? "⏳ Attendere..." : `↩ Richiama alla base (paga ${parseFloat((Number(popup.player.quot_reale ?? popup.player.quot)*0.5).toFixed(2))}M — 50%Q reale)`}
+                    </button>
+                  )
+                ) : (
+                  <div style={{ fontSize:11,color:"#555",fontStyle:"italic" }}>Nessuna azione disponibile: solo {popup.player.squadra} o {popup.player.squadra_originale} possono decidere su questo prestito.</div>
+                )
               ) : popup.player.rescissione_prestito_attiva ? (
                 <div style={{ fontSize:11,color:"#f59e0b" }}>⏳ Rientro/riscatto già programmato per il {popup.player.rescissione_prestito_scadenza || "—"}.</div>
               ) : (
@@ -3406,20 +3420,23 @@ function SvincoliTab({ team, isAdmin }) {
     const warnings = [];
     const oggi = new Date();
     const periodoStraord = getPeriodoStraordinariSvincoli(oggi);
+    // Svincolo straordinario "estero": sempre possibile, nessun vincolo di
+    // finestra di mercato né di 30 giorni dall'acquisto (valido per tutti).
+    const isStraordEstero = (tipo === 'straordinario' || tipo === 'straordinario_u21') && estero;
 
     // Vincolo 30 giorni dall'acquisto (art. 6.2)
-    if (player.data_acquisto) {
+    if (!isStraordEstero && player.data_acquisto) {
       const gg = Math.floor((oggi - new Date(player.data_acquisto)) / 86400000);
       if (gg < 30) warnings.push({ tipo: 'error', testo: `Non svincolabile: acquistato ${gg} giorni fa (min. 30gg)` });
     }
 
     // Impossibile giu-lug per tutti i tipi (art. 6.1)
-    if (!isPeriodoSvincoliConsentito(oggi))
+    if (!isStraordEstero && !isPeriodoSvincoliConsentito(oggi))
       warnings.push({ tipo: 'error', testo: 'Svincoli non consentiti a giugno/luglio: ammessi solo dal 01/08 al 31/05' });
 
     // Max straordinari e finestre valide (art. 6.1)
     if (tipo === 'straordinario' || tipo === 'straordinario_u21') {
-      if (!periodoStraord)
+      if (!isStraordEstero && !periodoStraord)
         warnings.push({ tipo: 'error', testo: 'Straordinari consentiti solo nel mercato estivo (01/06-15/09) o invernale (01/01-15/02)' });
       if (!estero && periodoStraord === 'estivo' && contatori.count_straord_estivi >= 5)
         warnings.push({ tipo: 'error', testo: `Esauriti svincoli straordinari estivi (5/5)` });
@@ -4573,31 +4590,34 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
 
         <BilancioTrendChart team={team} />
 
-        {/* Stato bilancio negativo - penalità progressive */}
-        {bilancio < 0 && fasciaNeg && !fasciaNeg.fallimento && (
-          <div style={{ background: "#ef444410", borderRadius: 10, padding: "10px 12px", marginBottom: 8 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "#ef4444", letterSpacing: "0.08em", marginBottom: 8 }}>
-              📉 FASCIA: {bilancio >= -20 ? "0/−20M" : bilancio >= -40 ? "−20/−40M" : "−40/−60M"}
-            </div>
-            {[
-              { s: 1, pts: fasciaNeg.pts[0], label: "Sett. 1" },
-              { s: 2, pts: fasciaNeg.pts[0]+fasciaNeg.pts[1], label: "Sett. 2" },
-              { s: 3, pts: fasciaNeg.pts.reduce((a,b)=>a+b,0), label: "Sett. 3" },
-              { s: 4, pts: null, euro: fasciaNeg.euro4, label: "Sett. 4" },
-              { s: 5, pts: null, fallimento: true, label: "Sett. 5" },
-            ].map(r => (
-              <div key={r.s} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #ffffff08", opacity: settNeg >= r.s ? 1 : 0.4 }}>
-                <span style={{ fontSize: 11, color: settNeg >= r.s ? "#f0f0f0" : "#555", fontWeight: settNeg === r.s ? 800 : 400 }}>
-                  {settNeg === r.s ? "▶ " : ""}{r.label}
-                  {settNeg >= r.s && settNeg === r.s && " (ATTUALE)"}
+        {/* Stato bilancio negativo — SOLO informativo: i punti penalità non
+            vengono applicati automaticamente da questo sito, restano gestiti
+            a mano su Leghe FC. La soglia di tolleranza prima che la penalità
+            scatti dipende dallo stato del mercato (2 settimane se aperto,
+            1 se chiuso), fissa dall'inizio del periodo negativo. */}
+        {bilancio < 0 && fasciaNeg && (() => {
+          const mercatoAperto = calcolaStatoMercato().aperto;
+          const sogliaSettimane = mercatoAperto ? 2 : 1;
+          const penalitaAttiva = settNeg >= sogliaSettimane;
+          return (
+            <div style={{ background: "#ef444410", borderRadius: 10, padding: "10px 12px", marginBottom: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#ef4444", letterSpacing: "0.08em", marginBottom: 8 }}>
+                📉 FASCIA: {bilancio >= -10 ? "0/−10M" : bilancio >= -20 ? "−10/−20M" : bilancio >= -30 ? "−20/−30M" : "oltre −30M"}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 11, color: "#f0f0f0" }}>
+                  Negativo da <b>{settNeg}</b> settiman{settNeg === 1 ? "a" : "e"} · soglia {sogliaSettimane} settiman{sogliaSettimane === 1 ? "a" : "e"} (mercato {mercatoAperto ? "aperto" : "chiuso"})
                 </span>
-                <span style={{ fontSize: 11, color: r.fallimento ? "#ef4444" : r.euro ? "#f59e0b" : "#ef4444", fontWeight: 700 }}>
-                  {r.fallimento ? "💀 FALLIMENTO" : r.euro ? `${r.euro}€ multa` : `−${r.pts}pt`}
+                <span style={{ fontSize: 13, fontWeight: 800, color: penalitaAttiva ? "#ef4444" : "#666" }}>
+                  {penalitaAttiva ? `−${fasciaNeg.pts}pt/settimana` : "non ancora attiva"}
                 </span>
               </div>
-            ))}
-          </div>
-        )}
+              <div style={{ fontSize: 9, color: "#666", marginTop: 6, fontStyle: "italic" }}>
+                ℹ️ Solo indicativo: la penalità in punti classifica va applicata manualmente su Leghe FC, non viene scalata automaticamente qui.
+              </div>
+            </div>
+          );
+        })()}
         {bilancio < -60 && (
           <div style={{ background: "#ef444420", borderRadius: 10, padding: "10px 12px", fontSize: 12, color: "#ef4444", fontWeight: 700 }}>
             💀 BILANCIO OLTRE −60M — FALLIMENTO IMMEDIATO
