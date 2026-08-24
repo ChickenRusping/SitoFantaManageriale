@@ -173,7 +173,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, getEffettiInvestimenti, getSquadreConSuperClub,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, getEffettiInvestimenti, getSquadreConSuperClub,
   getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, usaContatoreInvestimento, registraEventoInvestimento, annullaEventoInvestimento, toggleTraguardoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
@@ -4471,11 +4471,28 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
     refreshStatoStipendiMese();
   }, [team.name, refreshStatoStipendiMese]);
 
+  // Aggiorna bilancio_neg_dal/bilancio_neg_settimane (mai scritti altrimenti
+  // da nessuna parte dell'app finora): idempotente, sicura da richiamare ogni
+  // volta che si apre questa tab. Ricarica solo se qualcosa è davvero
+  // cambiato, per non innescare un loop di refresh.
+  useEffect(() => {
+    let cancelled = false;
+    aggiornaStatoBilancioNeg(team.name, team.bilancio).then(res => {
+      if (!cancelled && res?.cambiato && onRefresh) onRefresh();
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [team.name, team.bilancio]);
+
   const bilancio = team.bilancio;
   const tassa = calcolaTassa(bilancio, _modalitaTassazione);
   const tasseAttive = isTassaAttiva();
   const fasciaNeg = getFasciaBilancioNeg(bilancio);
-  const settNeg = team.bilancio_neg_settimane || 0;
+  // team qui è l'oggetto normalizzato (camelCase) da getSquadre(): il vecchio
+  // team.bilancio_neg_settimane (snake_case) non esisteva mai su questo
+  // oggetto, quindi settNeg è sempre stato 0 — la sezione "negativo da N
+  // settimane" non ha mai mostrato un dato reale finora.
+  const settNeg = team.bilancioNegSettimane || 0;
+  const bilancioNegDal = team.bilancioNegDal || null;
   const penNeg = fasciaNeg ? getPenalitaNeg(bilancio, settNeg) : null;
   const sem = getSemestreCorrente();
 
@@ -4587,6 +4604,34 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
             </div>
           )}
         </div>
+
+        {/* Countdown penalità, prima del grafico: le 2 (mercato aperto) o 1
+            (mercato chiuso) settimane di tolleranza partono esattamente dal
+            momento (giorno) in cui il bilancio è diventato negativo
+            (bilancio_neg_dal), non da quando si apre questa pagina. */}
+        {bilancio < 0 && fasciaNeg && bilancioNegDal && (() => {
+          const mercatoAperto = calcolaStatoMercato().aperto;
+          const sogliaSettimane = mercatoAperto ? 2 : 1;
+          const sogliaMs = sogliaSettimane * 7 * 86400000;
+          const inizioMs = new Date(`${bilancioNegDal}T00:00:00`).getTime();
+          const fineMs = inizioMs + sogliaMs;
+          const oraMs = Date.now();
+          const pct = Math.min(100, Math.max(0, ((oraMs - inizioMs) / sogliaMs) * 100));
+          const penalitaAttiva = oraMs >= fineMs;
+          return (
+            <div style={{ background: penalitaAttiva ? "#ef444412" : "#f59e0b10", border: `1px solid ${penalitaAttiva ? "#ef444433" : "#f59e0b30"}`, borderRadius: 10, padding: "10px 12px", marginBottom: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: penalitaAttiva ? "#ef4444" : "#f59e0b" }}>
+                  {penalitaAttiva ? `⚠️ Penalità attiva: −${fasciaNeg.pts}pt` : `⏳ Penalità (−${fasciaNeg.pts}pt) tra ${formatCountdown(new Date(fineMs))}`}
+                </span>
+                <span style={{ fontSize: 9, color: "#666" }}>soglia {sogliaSettimane} settiman{sogliaSettimane === 1 ? "a" : "e"} (mercato {mercatoAperto ? "aperto" : "chiuso"})</span>
+              </div>
+              <div style={{ height: 5, borderRadius: 99, background: "#ffffff10", overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${pct}%`, borderRadius: 99, background: penalitaAttiva ? "#ef4444" : "#f59e0b" }} />
+              </div>
+            </div>
+          );
+        })()}
 
         <BilancioTrendChart team={team} />
 
