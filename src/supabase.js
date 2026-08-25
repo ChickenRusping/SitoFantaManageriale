@@ -7101,7 +7101,20 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
   const nuoviCreatiNomi = [];
   const BATCH = 50;
 
-  const validRows = rows.filter(r => (r['Nome'] || '').trim());
+  // Se il file contiene più righe per lo stesso giocatore (capita con export
+  // da fonti diverse da fantacalcio.it, specie durante il mercato con righe
+  // vecchia/nuova squadra), scriverle tutte in parallelo (vedi Promise.all
+  // sotto) è una race condition sulla stessa riga rosa/svincolato: quale
+  // vince dipende dall'ordine di risposta del database, non dall'ordine nel
+  // file — da qui ruolo/quotazione/stipendio a volte sbagliati al primo
+  // import e "corretti" al secondo per puro caso. Deduplichiamo per nome
+  // PRIMA di scrivere, tenendo l'ultima riga del file (convenzione più
+  // comune per le correzioni), così ogni giocatore viene scritto una sola
+  // volta e il risultato è deterministico.
+  const validRowsRaw = rows.filter(r => (r['Nome'] || '').trim());
+  const validRowsMap = new Map();
+  for (const r of validRowsRaw) validRowsMap.set(normPlayerName(r['Nome']), r);
+  const validRows = [...validRowsMap.values()];
   const nomiExcel = new Set(validRows.map(r => normPlayerName(r['Nome'])));
 
   for (let i = 0; i < validRows.length; i += BATCH) {
