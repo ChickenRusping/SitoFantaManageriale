@@ -1005,6 +1005,33 @@ function CalcolatoreGiornata({ profile, teams }) {
     guadagnoGolSegnati + guadagnoGolSubiti + guadagnoRisultato + costoGiocatori
   ).toFixed(2));
 
+  // Investimenti legati a questa giornata (Accordi TV, Clean Sheet, The MVP,
+  // Abbonamenti Premium): calcolati qui per l'anteprima E riusati in
+  // salvaGuadagno per l'accredito reale, così i due non possono disallinearsi.
+  // Sono un movimento separato dal "Guadagno giornata" (non entrano nel
+  // TOTALE GIORNATA qui sotto), ma vengono comunque accreditati al salvataggio.
+  const investimentiDaPagare = [];
+  if (invAccordiTV && Number(golSegnati) >= 2) {
+    investimentiDaPagare.push({ inv: invAccordiTV, valore: 0.5, etichetta: "Accordi TV: ≥2 gol" });
+  }
+  if (invMVP && Number(costiGiocatori.mvp) >= 1) {
+    investimentiDaPagare.push({ inv: invMVP, valore: 0.5, etichetta: "The MVP" });
+  }
+  if (invCleanSheet && avversarioSotto66) {
+    investimentiDaPagare.push({ inv: invCleanSheet, valore: 1.5, etichetta: "Clean Sheet" });
+  }
+  if (invAbbonamenti && inCasa && (risultato === 'V' || risultato === 'P')) {
+    const scarto = Number(golSegnati) - Number(golSubiti);
+    if (risultato === 'V' && scarto >= 2) {
+      investimentiDaPagare.push({ inv: invAbbonamenti, valore: 2, etichetta: "Abbonamenti Premium: vittoria larga casa", chiave: 'vittoria_larga' });
+    } else if (risultato === 'V') {
+      investimentiDaPagare.push({ inv: invAbbonamenti, valore: 1.5, etichetta: "Abbonamenti Premium: vittoria casa", chiave: 'vittoria' });
+    } else {
+      investimentiDaPagare.push({ inv: invAbbonamenti, valore: 1, etichetta: "Abbonamenti Premium: pareggio casa", chiave: 'pareggio' });
+    }
+  }
+  const totaleInvestimenti = parseFloat(investimentiDaPagare.reduce((s, x) => s + x.valore, 0).toFixed(2));
+
   // Se formazione non schierata: perdite doppie, guadagni 0
   if (!formazione) {
     const perdite = Math.min(totale, 0) * 2;
@@ -1042,29 +1069,13 @@ function CalcolatoreGiornata({ profile, teams }) {
         msgModulo = ` · ⚠️ modulo non salvato nel tracker (${eMod.message})`;
       }
 
-      // Investimenti legati a questa giornata (Accordi TV, Clean Sheet, The
-      // MVP, Abbonamenti Premium): idempotente per numero di giornata, quindi
-      // risalvare la stessa giornata non paga due volte lo stesso evento.
-      const eventiInvestimenti = [];
-      if (invAccordiTV && Number(golSegnati) >= 2) {
-        eventiInvestimenti.push(registraEventoGiornataInvestimento(invAccordiTV.id, mySquadra, giornata, 0.5, "Accordi TV: ≥2 gol"));
-      }
-      if (invMVP && Number(costiGiocatori.mvp) >= 1) {
-        eventiInvestimenti.push(registraEventoGiornataInvestimento(invMVP.id, mySquadra, giornata, 0.5, "The MVP"));
-      }
-      if (invCleanSheet && avversarioSotto66) {
-        eventiInvestimenti.push(registraEventoGiornataInvestimento(invCleanSheet.id, mySquadra, giornata, 1.5, "Clean Sheet"));
-      }
-      if (invAbbonamenti && inCasa && (risultato === 'V' || risultato === 'P')) {
-        const scarto = Number(golSegnati) - Number(golSubiti);
-        if (risultato === 'V' && scarto >= 2) {
-          eventiInvestimenti.push(registraEventoGiornataInvestimento(invAbbonamenti.id, mySquadra, giornata, 2, "Abbonamenti Premium: vittoria larga casa", { chiave: 'vittoria_larga' }));
-        } else if (risultato === 'V') {
-          eventiInvestimenti.push(registraEventoGiornataInvestimento(invAbbonamenti.id, mySquadra, giornata, 1.5, "Abbonamenti Premium: vittoria casa", { chiave: 'vittoria' }));
-        } else {
-          eventiInvestimenti.push(registraEventoGiornataInvestimento(invAbbonamenti.id, mySquadra, giornata, 1, "Abbonamenti Premium: pareggio casa", { chiave: 'pareggio' }));
-        }
-      }
+      // Investimenti legati a questa giornata (vedi investimentiDaPagare più
+      // sopra, già mostrati in anteprima nel Riepilogo): idempotente per
+      // numero di giornata, quindi risalvare la stessa giornata non paga due
+      // volte lo stesso evento.
+      const eventiInvestimenti = investimentiDaPagare.map(x =>
+        registraEventoGiornataInvestimento(x.inv.id, mySquadra, giornata, x.valore, x.etichetta, { chiave: x.chiave || 'default' })
+      );
       let msgInvestimenti = "";
       if (eventiInvestimenti.length) {
         try {
@@ -1219,6 +1230,24 @@ function CalcolatoreGiornata({ profile, teams }) {
               </span>
             </div>
           </div>
+
+          {/* Anteprima bonus investimenti legati alla giornata: movimento separato
+              dal totale sopra, accreditato comunque al salvataggio. */}
+          {investimentiDaPagare.length > 0 && (
+            <div style={{ background: "#10b98108", border: "1px solid #10b98125", borderRadius: 12, padding: 14, marginBottom: 12 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#10b981", letterSpacing: "0.08em", marginBottom: 8 }}>💰 BONUS INVESTIMENTI (movimento separato)</div>
+              {investimentiDaPagare.map((x, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #ffffff06" }}>
+                  <span style={{ fontSize: 11, color: "#888" }}>{x.etichetta}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#10b981" }}>+{x.valore}M</span>
+                </div>
+              ))}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6, paddingTop: 6, borderTop: "1px solid #ffffff12" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#ccc" }}>Totale bonus</span>
+                <span style={{ fontSize: 15, fontWeight: 900, color: "#10b981", fontFamily: "'Bebas Neue',sans-serif" }}>+{totaleInvestimenti}M</span>
+              </div>
+            </div>
+          )}
 
           {salvatoMsg && (
             <div style={{ background: "#10b98115", border: "1px solid #10b98133", borderRadius: 9, padding: "9px 14px", fontSize: 12, color: "#10b981", marginBottom: 10 }}>
