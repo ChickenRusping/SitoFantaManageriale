@@ -1684,25 +1684,57 @@ export async function eseguiScadenzaPrestito(item, azione = null) {
   }
 }
 
-// Riscatto ANTICIPATO di un prestito con diritto (art. 5.7): il ricevente può
-// esercitarlo in qualsiasi momento durante il prestito, non solo a scadenza —
-// riusa la stessa logica di eseguiScadenzaPrestito, recuperando la cifra
-// pattuita dalla trattativa originale (mai stata ancora addebitata, dato che
+// Le uniche due scadenze prestito valide sono 01/06 e 01/01 (vedi
+// _prossimaScadenzaPrestitoValida/prossimeScadenzePrestito): il riscatto
+// anticipato apre esattamente all'ALTRA di queste due date, non a un generico
+// "6 mesi prima" calcolato sui giorni — se scade 01/06 si apre il 01/01 dello
+// stesso anno, se scade 01/01 si apre il 01/06 dell'anno precedente.
+// Formatta una data come YYYY-MM-DD usando i componenti LOCALI, mai
+// .toISOString() su una data-senza-ora: quella converte in UTC e sposta la
+// data indietro di un giorno per chiunque sia in un fuso orario diverso da
+// UTC+0 (Italia inclusa, es. mezzanotte locale CEST → sera precedente UTC).
+function _formatDataLocale(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function _inizioFinestraRiscattoAnticipato(scadenzaPrestitoStr) {
+  if (!scadenzaPrestitoStr) return null;
+  const scad = new Date(`${scadenzaPrestitoStr}T00:00:00`);
+  const inizio = new Date(scad);
+  if (scad.getMonth() === 5) { // scade 01/06 → apre 01/01 stesso anno
+    inizio.setMonth(0);
+  } else { // scade 01/01 (o altro) → apre 01/06 dell'anno precedente
+    inizio.setFullYear(inizio.getFullYear() - 1);
+    inizio.setMonth(5);
+  }
+  return inizio;
+}
+
+// Riscatto ANTICIPATO di un prestito con diritto O obbligo di riscatto (art.
+// 5.7): possibile non prima di 6 mesi dalla scadenza naturale del prestito
+// (cioè dall'altra finestra di mercato standard, vedi
+// _inizioFinestraRiscattoAnticipato) — non in qualsiasi momento. Riusa la
+// stessa logica di eseguiScadenzaPrestito, recuperando la cifra pattuita
+// dalla trattativa originale (mai stata ancora addebitata, dato che
 // all'accettazione si paga solo l'oneroso 10%).
 export async function eseguiRiscattoAnticipatoDiritto(playerId) {
   const { data: player } = await supabase.from('rosa').select('*').eq('id', playerId).single();
-  if (!player || !player.in_prestito || player.prestito_tipo !== 'prestito_diritto') {
-    throw new Error('Riscatto anticipato disponibile solo per un prestito con diritto di riscatto in corso.');
+  if (!player || !player.in_prestito || !['prestito_diritto', 'prestito_obbligo'].includes(player.prestito_tipo)) {
+    throw new Error('Riscatto anticipato disponibile solo per un prestito con diritto o obbligo di riscatto in corso.');
   }
   if (player.rescissione_prestito_attiva) {
     throw new Error('Per questo giocatore è già stata attivata una rescissione anticipata: non è più possibile riscattarlo.');
   }
+  const inizioFinestra = _inizioFinestraRiscattoAnticipato(player.scadenza_prestito);
+  if (inizioFinestra && new Date() < inizioFinestra) {
+    throw new Error(`Riscatto anticipato disponibile solo a partire dal ${_formatDataLocale(inizioFinestra)} (non prima di 6 mesi dalla scadenza naturale del ${player.scadenza_prestito}).`);
+  }
   const { data: tratt } = await supabase.from('trattative')
     .select('prezzo').eq('giocatore', player.nome)
     .eq('a_squadra', player.squadra_originale).eq('da_squadra', player.squadra)
-    .eq('tipo', 'prestito_diritto').order('created_at', { ascending: false }).limit(1);
+    .eq('tipo', player.prestito_tipo).order('created_at', { ascending: false }).limit(1);
   const prezzo = Number(tratt?.[0]?.prezzo || 0);
-  return await eseguiScadenzaPrestito({ player, tipo: 'prestito_diritto', prezzo }, 'riscatto');
+  return await eseguiScadenzaPrestito({ player, tipo: player.prestito_tipo, prezzo }, 'riscatto');
 }
 
 // ── Rescissione anticipata prestito (art. 5.8.1) ─────────────────────────────
