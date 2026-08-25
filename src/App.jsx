@@ -5090,6 +5090,7 @@ function AltroTab({ team, isAdmin, mySquadra }) {
 
   // ── BONUS TRATTATIVE ─────────────────────────────────────────────────────────
   const [bonusData, setBonusData] = useState([]);
+  const [noteTrattative, setNoteTrattative] = useState([]);
   const [loadingBonus, setLoadingBonus] = useState(true);
   const [bonusSectionOpen, setBonusSectionOpen] = useState(true);
   const [bonusGiocatoreAperto, setBonusGiocatoreAperto] = useState(null);
@@ -5108,19 +5109,25 @@ function AltroTab({ team, isAdmin, mySquadra }) {
         // davvero. Stessa convenzione già usata altrove per "trattativa conclusa"
         // (vedi checkECompletaBonus/_liquidaBonusPendentiAllaRivendita).
         const { data: tratt, error: trattErr } = await supabase.from('trattative')
-          .select('id,giocatore,da_squadra,a_squadra,stato')
+          .select('id,giocatore,da_squadra,a_squadra,stato,note')
           .or(`da_squadra.eq.${team.name},a_squadra.eq.${team.name}`)
           .in('stato', ['completata', 'accettata', 'clausola_eseguita']);
 
         if (trattErr) throw trattErr;
         if (!tratt?.length) {
-          if (!cancelled) setBonusData([]);
+          if (!cancelled) { setBonusData([]); setNoteTrattative([]); }
           return;
         }
 
         const results = [];
+        // Note scritte a mano nella trattativa (accordi non modellati come bonus
+        // strutturati): mostrate come promemoria informale nella stessa sezione,
+        // sotto il giocatore a cui si riferiscono — a differenza dei bonus veri
+        // non hanno soglia/completamento, sono solo testo libero da ricordare.
+        const note = [];
 
         for (const tr of tratt) {
+          if ((tr.note || '').trim()) note.push(tr);
           try {
             const bonusList = await getBonusTrattativa(tr.id);
             if (!bonusList?.length) continue;
@@ -5153,10 +5160,10 @@ function AltroTab({ team, isAdmin, mySquadra }) {
           }
         }
 
-        if (!cancelled) setBonusData(results);
+        if (!cancelled) { setBonusData(results); setNoteTrattative(note); }
       } catch (e) {
         console.warn('Errore caricamento bonus trattative:', e?.message || e);
-        if (!cancelled) setBonusData([]);
+        if (!cancelled) { setBonusData([]); setNoteTrattative([]); }
       } finally {
         if (!cancelled) setLoadingBonus(false);
       }
@@ -5557,6 +5564,22 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
     return map;
   }, [bonusData]);
 
+  // Note delle trattative, raggruppate per giocatore (vedi noteTrattative sopra).
+  const notePerGiocatore = useMemo(() => {
+    const map = {};
+    for (const tr of noteTrattative) {
+      if (!map[tr.giocatore]) map[tr.giocatore] = [];
+      map[tr.giocatore].push(tr);
+    }
+    return map;
+  }, [noteTrattative]);
+
+  // Elenco giocatori da mostrare: unione di chi ha bonus strutturati e chi ha
+  // solo una nota scritta a mano nella trattativa (senza bonus formali).
+  const giocatoriBonusENote = useMemo(() => {
+    return [...new Set([...Object.keys(bonusPerGiocatore), ...Object.keys(notePerGiocatore)])];
+  }, [bonusPerGiocatore, notePerGiocatore]);
+
   // Recap potenziale: solo bonus ancora pendenti (non già completati/predetti
   // dal valore live), sommati per direzione rispetto a QUESTA squadra —
   // "acquirente_paga" paga chi ha comprato (trattativa.da_squadra), altrimenti
@@ -5585,13 +5608,13 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
           style={{ display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", marginBottom: bonusSectionOpen ? 12 : 0, userSelect:"none" }}>
           <div style={{ fontSize:11,fontWeight:700,color:"#818cf8",letterSpacing:"0.1em", display:"flex", alignItems:"center", gap:6 }}>
             📊 BONUS TRATTATIVE
-            {bonusData.length > 0 && <span style={{ fontSize:9, color:"#818cf8", background:"#6366f118", border:"1px solid #6366f130", borderRadius:999, padding:"1px 7px" }}>{bonusData.length}</span>}
+            {(bonusData.length + noteTrattative.length) > 0 && <span style={{ fontSize:9, color:"#818cf8", background:"#6366f118", border:"1px solid #6366f130", borderRadius:999, padding:"1px 7px" }}>{bonusData.length + noteTrattative.length}</span>}
           </div>
           <span style={{ fontSize:11, color:"#666" }}>{bonusSectionOpen ? "▴ Chiudi" : "▾ Apri"}</span>
         </div>
         {bonusSectionOpen && (
         loadingBonus?<div style={{ fontSize:12,color:"#555" }}>Caricamento...</div>
-        :bonusData.length===0?<div style={{ fontSize:12,color:"#555",fontStyle:"italic",background:"#ffffff06",border:"1px solid #ffffff10",borderRadius:10,padding:"14px" }}>Nessun bonus attivo nelle trattative.</div>
+        :giocatoriBonusENote.length===0?<div style={{ fontSize:12,color:"#555",fontStyle:"italic",background:"#ffffff06",border:"1px solid #ffffff10",borderRadius:10,padding:"14px" }}>Nessun bonus o nota attiva nelle trattative.</div>
         :<div style={{ display:"flex",flexDirection:"column",gap:8 }}>
           {(bonusRecap.entrata>0||bonusRecap.uscita>0) && (
             <div style={{ display:"flex",gap:8,marginBottom:2 }}>
@@ -5605,22 +5628,34 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
               </div>
             </div>
           )}
-          {Object.entries(bonusPerGiocatore).map(([giocatore,items])=>{
+          {giocatoriBonusENote.map(giocatore=>{
+            const items = bonusPerGiocatore[giocatore] || [];
+            const notes = notePerGiocatore[giocatore] || [];
             const aperto = bonusGiocatoreAperto === giocatore;
-            const tuttiCompletati = items.every(({bonus,valoreAttuale})=>bonus.completato||(valoreAttuale??0)>=Number(bonus.soglia));
+            const tuttiCompletati = items.length>0 && items.every(({bonus,valoreAttuale})=>bonus.completato||(valoreAttuale??0)>=Number(bonus.soglia));
             const nCompletati = items.filter(({bonus,valoreAttuale})=>bonus.completato||(valoreAttuale??0)>=Number(bonus.soglia)).length;
+            const etichette = [
+              items.length>0 ? `${items.length} bonus${nCompletati>0?` · ${nCompletati} completat${nCompletati===1?"o":"i"}`:""}` : null,
+              notes.length>0 ? `${notes.length} nota${notes.length===1?"":"e"}` : null,
+            ].filter(Boolean).join(" · ");
             return (
               <div key={giocatore} style={{ background:"#ffffff08",border:`1.5px solid ${tuttiCompletati?"#10b98130":"#ffffff12"}`,borderRadius:12,overflow:"hidden" }}>
                 <div onClick={()=>setBonusGiocatoreAperto(v=>v===giocatore?null:giocatore)}
                   style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer" }}>
                   <div style={{ fontSize:13,fontWeight:700,color:tuttiCompletati?"#10b981":"#e0e0e0" }}>
                     {tuttiCompletati&&"✅ "}{giocatore}
-                    <span style={{ fontSize:10,color:"#555",fontWeight:400,marginLeft:6 }}>{items.length} bonus{nCompletati>0?` · ${nCompletati} completat${nCompletati===1?"o":"i"}`:""}</span>
+                    <span style={{ fontSize:10,color:"#555",fontWeight:400,marginLeft:6 }}>{etichette}</span>
                   </div>
                   <span style={{ fontSize:11,color:"#666" }}>{aperto?"▲":"▼"}</span>
                 </div>
                 {aperto && (
                   <div style={{ padding:"0 14px 12px",display:"flex",flexDirection:"column",gap:8 }}>
+                    {notes.map(tr=>(
+                      <div key={"nota"+tr.id} style={{ background:"#f59e0b0a",border:"1.5px solid #f59e0b25",borderRadius:10,padding:"10px 12px" }}>
+                        <div style={{ fontSize:9,color:"#f59e0b",fontWeight:700,letterSpacing:"0.06em",marginBottom:4 }}>📝 NOTA TRATTATIVA ({tr.a_squadra} → {tr.da_squadra})</div>
+                        <div style={{ fontSize:11,color:"#ccc" }}>{tr.note}</div>
+                      </div>
+                    ))}
                     {items.map(({bonus,trattativa,valoreAttuale})=>{
                       const soglia=Number(bonus.soglia),val=valoreAttuale??0;
                       const pct=soglia>0?Math.min(100,Math.round((val/soglia)*100)):0;
