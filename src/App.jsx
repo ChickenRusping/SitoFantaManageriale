@@ -12583,10 +12583,10 @@ function AdminControlRoomPage({ teams }) {
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em', marginBottom: 10 }}>
                     ⚽ GUADAGNI GIORNATA {guadagniGiornataStato.maxGiornataLega > 0 ? `— giornata più avanzata: ${guadagniGiornataStato.maxGiornataLega}` : ''}
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 8, overflowX: 'auto' }}>
                     {guadagniGiornataStato.squadre.map(sq => (
                       <div key={sq.squadra} style={{
-                        flex: '1 1 150px', padding: '8px 12px', borderRadius: 8,
+                        flex: '1 1 0', minWidth: 110, padding: '8px 12px', borderRadius: 8,
                         background: sq.inRitardo ? '#ef444412' : '#10b98110',
                         border: `1px solid ${sq.inRitardo ? '#ef444440' : '#10b98130'}`,
                       }}>
