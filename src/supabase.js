@@ -4485,24 +4485,28 @@ export async function annullaStipendiATutti() {
 
 // Recap "chi ha registrato il guadagno giornata e chi no" per il Control
 // Room: la giornata corrente non è un dato salvato da nessuna parte, quindi
-// la si deduce dal numero di giornata più alto che QUALCUNO ha già registrato
-// nei movimenti (assumendo che almeno un presidente sia sempre puntuale) —
-// chi risulta indietro rispetto a quel numero va sollecitato/penalizzato.
+// la si deduce dalla giornata risultante dal movimento PIÙ RECENTE (per data,
+// non per numero più alto — un numero più alto potrebbe venire da una
+// stagione passata) che QUALCUNO ha già registrato nei movimenti — chi
+// risulta indietro rispetto a quella va sollecitato/penalizzato. Limitato
+// alla stagione corrente per non pescare giornate di stagioni precedenti.
 export async function getStatoGuadagniGiornata() {
+  const startYear = stagioneStartYear(new Date());
+  const stagioneInizio = `${startYear}-06-01`;
   const { data: squadre } = await supabase.from('squadre').select('name');
   const { data: movs } = await supabase.from('movimenti')
-    .select('squadra, descrizione, data')
+    .select('squadra, descrizione, data, created_at')
     .ilike('descrizione', 'Guadagno giornata%')
-    .order('data', { ascending: false });
+    .gte('data', stagioneInizio)
+    .order('data', { ascending: false })
+    .order('created_at', { ascending: false });
 
   const bySquadra = {};
   for (const m of (movs || [])) {
+    if (bySquadra[m.squadra]) continue; // già trovato il movimento più recente di questa squadra
     const match = (m.descrizione || '').match(/Guadagno giornata\s+(\d+)/i);
     if (!match) continue;
-    const g = Number(match[1]);
-    if (!bySquadra[m.squadra] || g > bySquadra[m.squadra].giornata) {
-      bySquadra[m.squadra] = { giornata: g, data: m.data };
-    }
+    bySquadra[m.squadra] = { giornata: Number(match[1]), data: m.data };
   }
 
   const maxGiornataLega = Math.max(0, ...Object.values(bySquadra).map(x => x.giornata));
