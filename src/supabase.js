@@ -3442,6 +3442,36 @@ export async function annullaEventoInvestimento(id, squadra, valorePerEvento, et
   return { eventi: eventi - 1 };
 }
 
+// Evento economico legato a UNA SPECIFICA giornata (Accordi TV, Clean Sheet,
+// The MVP, Abbonamenti Premium): a differenza di registraEventoInvestimento
+// (contatore libero, incrementato ad ogni click — usato per Avvocato che è
+// cumulativo sull'intera stagione) qui l'idempotenza è per numero di
+// giornata: se la giornata è già stata elaborata per questo investimento,
+// non paga una seconda volta anche se richiamata di nuovo (es. il Calcolatore
+// Giornata viene risalvato per correggere un errore).
+export async function registraEventoGiornataInvestimento(id, squadra, giornata, valorePerEvento, etichetta, { chiave = 'default' } = {}) {
+  const { data: inv, error } = await supabase.from('investimenti').select('dati, valore_accumulato').eq('id', id).single();
+  if (error) throw error;
+  const dati = inv?.dati || {};
+  const giornateProcessate = Array.isArray(dati.giornateProcessate) ? dati.giornateProcessate : [];
+  const giornataNum = Number(giornata);
+  if (giornateProcessate.includes(giornataNum)) {
+    return { skip: true, motivo: `Giornata ${giornataNum} già elaborata per questo investimento` };
+  }
+  const contatori = dati.contatori || {};
+  const eventi = Number(contatori[chiave] || 0) + 1;
+  const tracker = Array.isArray(dati.tracker) ? dati.tracker : [];
+  tracker.push({ tipo: 'evento_giornata', giornata: giornataNum, nota: `${etichetta} (G${giornataNum}) → +${valorePerEvento}M`, data: new Date().toISOString() });
+  await supabase.from('investimenti').update({
+    dati: { ...dati, contatori: { ...contatori, [chiave]: eventi }, giornateProcessate: [...giornateProcessate, giornataNum], tracker },
+    valore_accumulato: parseFloat((Number(inv.valore_accumulato || 0) + valorePerEvento).toFixed(2)),
+  }).eq('id', id);
+  const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadra).single();
+  await supabase.from('squadre').update({ bilancio: parseFloat((Number(sq?.bilancio || 0) + valorePerEvento).toFixed(2)) }).eq('name', squadra);
+  await supabase.from('movimenti').insert({ squadra, descrizione: `Investimento: ${etichetta} (G${giornataNum})`, entrata: valorePerEvento, data: new Date().toISOString().slice(0, 10) });
+  return { eventi, importo: valorePerEvento, giornata: giornataNum, cambiato: true };
+}
+
 // Traguardo per giocatore selezionato (es. Scommessa Rendimento, Rientro in
 // Grande, Scouting Estero): toggle raggiunto/non raggiunto, con eventuale
 // importo fisso accreditato/stornato di conseguenza.
@@ -4451,6 +4481,42 @@ export async function annullaStipendiATutti() {
     results.push({ squadra: m.squadra, rimborso: Number(m.uscita || 0) });
   }
   return results;
+}
+
+// Recap "chi ha registrato il guadagno giornata e chi no" per il Control
+// Room: la giornata corrente non è un dato salvato da nessuna parte, quindi
+// la si deduce dal numero di giornata più alto che QUALCUNO ha già registrato
+// nei movimenti (assumendo che almeno un presidente sia sempre puntuale) —
+// chi risulta indietro rispetto a quel numero va sollecitato/penalizzato.
+export async function getStatoGuadagniGiornata() {
+  const { data: squadre } = await supabase.from('squadre').select('name');
+  const { data: movs } = await supabase.from('movimenti')
+    .select('squadra, descrizione, data')
+    .ilike('descrizione', 'Guadagno giornata%')
+    .order('data', { ascending: false });
+
+  const bySquadra = {};
+  for (const m of (movs || [])) {
+    const match = (m.descrizione || '').match(/Guadagno giornata\s+(\d+)/i);
+    if (!match) continue;
+    const g = Number(match[1]);
+    if (!bySquadra[m.squadra] || g > bySquadra[m.squadra].giornata) {
+      bySquadra[m.squadra] = { giornata: g, data: m.data };
+    }
+  }
+
+  const maxGiornataLega = Math.max(0, ...Object.values(bySquadra).map(x => x.giornata));
+  const risultato = (squadre || []).map(sq => {
+    const info = bySquadra[sq.name];
+    return {
+      squadra: sq.name,
+      ultimaGiornata: info?.giornata ?? null,
+      data: info?.data ?? null,
+      inRitardo: maxGiornataLega > 0 && (info?.giornata ?? 0) < maxGiornataLega,
+    };
+  }).sort((a, b) => (b.ultimaGiornata || 0) - (a.ultimaGiornata || 0));
+
+  return { squadre: risultato, maxGiornataLega };
 }
 
 // Stato finanziario riepilogativo per il Control Room
