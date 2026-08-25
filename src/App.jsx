@@ -963,10 +963,13 @@ function CalcolatoreGiornata({ profile, teams }) {
   const invMVP = investimentiGiornata.find(i => i.nome === 'The MVP');
   const invAbbonamenti = investimentiGiornata.find(i => i.nome === 'Abbonamenti Premium');
 
-  // Costi giocatori (cumulativi da inserire manualmente)
+  // Costi giocatori (cumulativi da inserire manualmente). Stringa vuota di
+  // default (non 0): con 0 come valore iniziale, scrivere "1" nel campo dà
+  // "01" finché non lo si cancella prima — la moltiplicazione funziona lo
+  // stesso con "" (coercizione JS a 0), quindi non serve altro accorgimento.
   const [costiGiocatori, setCostiGiocatori] = useState({
-    assist: 0, gol: 0, portaInviolata: 0, rigoriParati: 0, mvp: 0,
-    ammonizioni: 0, espulsioni: 0, golSubitiGioc: 0, autogol: 0, rigoriSbagliati: 0,
+    assist: "", gol: "", portaInviolata: "", rigoriParati: "", mvp: "",
+    ammonizioni: "", espulsioni: "", golSubitiGioc: "", autogol: "", rigoriSbagliati: "",
   });
 
   // ── Tabella guadagni gol segnati (art. 8.1) ──────────────────────────────
@@ -1178,8 +1181,8 @@ function CalcolatoreGiornata({ profile, teams }) {
               ].map(([key, label, hint]) => (
                 <div key={key}>
                   <div style={{ fontSize: 9, color: "#555", marginBottom: 2 }}>{label} <span style={{ color: "#444" }}>{hint}</span></div>
-                  <input style={inpNum} type="number" min="0" value={costiGiocatori[key]}
-                    onChange={e => setCostiGiocatori(f => ({ ...f, [key]: Number(e.target.value) }))} />
+                  <input style={inpNum} type="number" min="0" placeholder="0" value={costiGiocatori[key]}
+                    onChange={e => setCostiGiocatori(f => ({ ...f, [key]: e.target.value === "" ? "" : Number(e.target.value) }))} />
                 </div>
               ))}
             </div>
