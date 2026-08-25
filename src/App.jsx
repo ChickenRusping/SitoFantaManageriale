@@ -173,7 +173,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, getEffettiInvestimenti, getSquadreConSuperClub,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, registraEventoGiornataInvestimento, getEffettiInvestimenti, getSquadreConSuperClub, getStatoGuadagniGiornata,
   getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, usaContatoreInvestimento, registraEventoInvestimento, annullaEventoInvestimento, toggleTraguardoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
@@ -938,13 +938,30 @@ function CalcolatoreGiornata({ profile, teams }) {
   const [open, setOpen] = useState(false);
   const [allenatoreGiornata, setAllenatoreGiornata] = useState(null);
   const [moduloGiornata, setModuloGiornata] = useState(""); // "" = Nessuno (obbligatorio sceglierne uno)
+  // Investimenti il cui guadagno dipende da questa giornata (Accordi TV, Clean
+  // Sheet, The MVP, Abbonamenti Premium — vedi INVESTIMENTI_DA_CALCOLATORE_GIORNATA):
+  // caricati per sapere quali sono attivi e mostrare solo i campi extra necessari.
+  const [investimentiGiornata, setInvestimentiGiornata] = useState([]);
+  const [inCasa, setInCasa] = useState(false); // per Abbonamenti Premium
+  const [avversarioSotto66, setAvversarioSotto66] = useState(false); // per Clean Sheet
 
   useEffect(() => {
-    if (!mySquadra) { setAllenatoreGiornata(null); return; }
+    if (!mySquadra) { setAllenatoreGiornata(null); setInvestimentiGiornata([]); return; }
     let cancelled = false;
     getAllenatoreBySquadra(mySquadra, STAGIONE_CORRENTE).then(a => { if (!cancelled) setAllenatoreGiornata(a); });
+    getInvestimenti(mySquadra, STAGIONE_CORRENTE).then(list => {
+      // Doppio controllo esplicito (squadra+stagione già filtrati da getInvestimenti,
+      // "attivo" qui per sicurezza extra): conta solo gli investimenti che il
+      // presidente ha davvero sottoscritto quest'anno, mai gli altri.
+      if (!cancelled) setInvestimentiGiornata((list || []).filter(i => i.attivo !== false && INVESTIMENTI_DA_CALCOLATORE_GIORNATA.includes(i.nome)));
+    });
     return () => { cancelled = true; };
   }, [mySquadra]);
+
+  const invAccordiTV = investimentiGiornata.find(i => i.nome === 'Accordi TV');
+  const invCleanSheet = investimentiGiornata.find(i => i.nome === 'Clean Sheet');
+  const invMVP = investimentiGiornata.find(i => i.nome === 'The MVP');
+  const invAbbonamenti = investimentiGiornata.find(i => i.nome === 'Abbonamenti Premium');
 
   // Costi giocatori (cumulativi da inserire manualmente)
   const [costiGiocatori, setCostiGiocatori] = useState({
@@ -1021,7 +1038,42 @@ function CalcolatoreGiornata({ profile, teams }) {
       } catch (eMod) {
         msgModulo = ` · ⚠️ modulo non salvato nel tracker (${eMod.message})`;
       }
-      setSalvatoMsg(`✅ Giornata ${giornata}: ${totale >= 0 ? "+" : ""}${totale}M salvato nei movimenti${msgModulo}`);
+
+      // Investimenti legati a questa giornata (Accordi TV, Clean Sheet, The
+      // MVP, Abbonamenti Premium): idempotente per numero di giornata, quindi
+      // risalvare la stessa giornata non paga due volte lo stesso evento.
+      const eventiInvestimenti = [];
+      if (invAccordiTV && Number(golSegnati) >= 2) {
+        eventiInvestimenti.push(registraEventoGiornataInvestimento(invAccordiTV.id, mySquadra, giornata, 0.5, "Accordi TV: ≥2 gol"));
+      }
+      if (invMVP && Number(costiGiocatori.mvp) >= 1) {
+        eventiInvestimenti.push(registraEventoGiornataInvestimento(invMVP.id, mySquadra, giornata, 0.5, "The MVP"));
+      }
+      if (invCleanSheet && avversarioSotto66) {
+        eventiInvestimenti.push(registraEventoGiornataInvestimento(invCleanSheet.id, mySquadra, giornata, 1.5, "Clean Sheet"));
+      }
+      if (invAbbonamenti && inCasa && (risultato === 'V' || risultato === 'P')) {
+        const scarto = Number(golSegnati) - Number(golSubiti);
+        if (risultato === 'V' && scarto >= 2) {
+          eventiInvestimenti.push(registraEventoGiornataInvestimento(invAbbonamenti.id, mySquadra, giornata, 2, "Abbonamenti Premium: vittoria larga casa", { chiave: 'vittoria_larga' }));
+        } else if (risultato === 'V') {
+          eventiInvestimenti.push(registraEventoGiornataInvestimento(invAbbonamenti.id, mySquadra, giornata, 1.5, "Abbonamenti Premium: vittoria casa", { chiave: 'vittoria' }));
+        } else {
+          eventiInvestimenti.push(registraEventoGiornataInvestimento(invAbbonamenti.id, mySquadra, giornata, 1, "Abbonamenti Premium: pareggio casa", { chiave: 'pareggio' }));
+        }
+      }
+      let msgInvestimenti = "";
+      if (eventiInvestimenti.length) {
+        try {
+          const risultati = await Promise.all(eventiInvestimenti);
+          const pagati = risultati.filter(r => r?.cambiato);
+          if (pagati.length) msgInvestimenti = ` · investimenti: +${pagati.reduce((s, r) => s + r.importo, 0).toFixed(2)}M`;
+        } catch (eInv) {
+          msgInvestimenti = ` · ⚠️ investimenti non registrati (${eInv.message})`;
+        }
+      }
+
+      setSalvatoMsg(`✅ Giornata ${giornata}: ${totale >= 0 ? "+" : ""}${totale}M salvato nei movimenti${msgModulo}${msgInvestimenti}`);
       setTimeout(() => setSalvatoMsg(null), 5000);
     } catch(e) { alert(e.message); }
     finally { setSaving(false); }
@@ -1138,6 +1190,8 @@ function CalcolatoreGiornata({ profile, teams }) {
             {[
               [rivale, setRivale, "⚔️ Partita contro rivale", "Vittoria +1M / Pareggio +0.5M"],
               [!formazione, v => setFormazione(!v), "⚠️ Formazione non schierata", "Perdite ×2 / Guadagni 0"],
+              ...(invAbbonamenti ? [[inCasa, setInCasa, "🏠 Partita in casa", "Abbonamenti Premium: vittoria/pareggio in casa"]] : []),
+              ...(invCleanSheet ? [[avversarioSotto66, setAvversarioSotto66, "🛡️ Avversario <66pt fantacalcistici", "Clean Sheet: +1.5M"]] : []),
             ].map(([val, setter, lbl, hint], i) => (
               <button key={i} onClick={() => setter(!val)}
                 style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${val ? "#f59e0b" : "#ffffff15"}`, background: val ? "#f59e0b18" : "transparent", color: val ? "#f59e0b" : "#555", fontSize: 11, cursor: "pointer", textAlign: "left" }}>
@@ -4977,6 +5031,14 @@ const CATALOGO_INVESTIMENTI = [
   { nome: "Corso Analisi Video",      categoria: "invernale", costo: 10,  desc: "1 sostituzione extra rispetto alla formazione originaria. Non nelle ultime 5 giornate né in finale/semifinale Coppa. Usabile una volta.", meccanica: "contatore_utilizzo", max: 1 },
 ];
 
+// Investimenti il cui evento economico dipende da dati che il presidente
+// inserisce già ogni settimana nel Calcolatore Giornata (gol segnati, risultato,
+// ecc.): per questi il guadagno si registra da lì (una volta sola per giornata,
+// vedi registraEventoGiornataInvestimento), non con il bottone manuale "+1
+// evento" qui in Finanze — che resta invece per gli altri (es. Avvocato,
+// legato alle ammonizioni cumulative di stagione, non a una singola giornata).
+const INVESTIMENTI_DA_CALCOLATORE_GIORNATA = ["Accordi TV", "Clean Sheet", "The MVP", "Abbonamenti Premium"];
+
 /* ─── ALLENATORE TAB ─────────────────────────────────────────────────────────── */
 function AltroTab({ team, isAdmin, mySquadra }) {
 
@@ -5861,10 +5923,13 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
 
                 {meccanica==='contatore_economico' && !catInfo.varianti && (() => {
                   const eventi = Number(dati.contatori?.default||0);
+                  const daGiornata = INVESTIMENTI_DA_CALCOLATORE_GIORNATA.includes(inv.nome);
                   return (
                     <div style={{ display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
                       <span style={{ fontSize:10,color:"#888" }}>{catInfo.etichettaEvento}: <b style={{ color:"#818cf8" }}>{eventi}</b>{catInfo.ogniNEventi>1?` (paga ogni ${catInfo.ogniNEventi})`:""}</span>
-                      {canManageInv && (
+                      {daGiornata ? (
+                        <span style={{ fontSize:9,color:"#555",fontStyle:"italic" }}>📅 Gestito dal Calcolatore Giornata</span>
+                      ) : canManageInv && (
                         <>
                           <button onClick={()=>handleRegistraEvento(inv, catInfo.valorePerEvento, catInfo.etichettaEvento, { ogniNEventi: catInfo.ogniNEventi||1 })} disabled={savingInv}
                             style={{ padding:"3px 10px",borderRadius:6,border:"1px solid #10b98140",background:savingInv?"#0d6b4c":"#10b98112",color:"#10b981",fontSize:10,fontWeight:700,cursor:savingInv?"wait":"pointer" }}>
@@ -5882,14 +5947,17 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                   );
                 })()}
 
-                {meccanica==='contatore_economico' && catInfo.varianti && (
+                {meccanica==='contatore_economico' && catInfo.varianti && (() => {
+                  const daGiornata = INVESTIMENTI_DA_CALCOLATORE_GIORNATA.includes(inv.nome);
+                  return (
                   <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                    {daGiornata && <span style={{ fontSize:9,color:"#555",fontStyle:"italic" }}>📅 Gestito dal Calcolatore Giornata</span>}
                     {catInfo.varianti.map(v=>{
                       const eventi = Number(dati.contatori?.[v.chiave]||0);
                       return (
                         <div key={v.chiave} style={{ display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
                           <span style={{ fontSize:10,color:"#888",minWidth:170 }}>{v.label}: <b style={{ color:"#818cf8" }}>{eventi}</b></span>
-                          {canManageInv && (
+                          {!daGiornata && canManageInv && (
                             <>
                               <button onClick={()=>handleRegistraEvento(inv, v.valorePerEvento, v.label, { chiave: v.chiave })} disabled={savingInv}
                                 style={{ padding:"3px 10px",borderRadius:6,border:"1px solid #10b98140",background:savingInv?"#0d6b4c":"#10b98112",color:"#10b981",fontSize:10,fontWeight:700,cursor:savingInv?"wait":"pointer" }}>
@@ -5907,7 +5975,8 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                       );
                     })}
                   </div>
-                )}
+                  );
+                })()}
 
                 {meccanica==='selezione_giocatore' && (() => {
                   const nomi = (inv.note||'').split(',').map(s=>s.trim()).filter(Boolean);
@@ -11972,6 +12041,7 @@ function AdminControlRoomPage({ teams }) {
   const [tab, setTab] = useState('panoramica');
   const [status, setStatus] = useState(null);
   const [stadioInv, setStadioInv] = useState([]);
+  const [guadagniGiornataStato, setGuadagniGiornataStato] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(null); // quale operazione sta girando
   const [lastResult, setLastResult] = useState(null);
@@ -12022,12 +12092,14 @@ function AdminControlRoomPage({ teams }) {
   async function load() {
     setLoading(true);
     try {
-      const [s, inv] = await Promise.all([
+      const [s, inv, gg] = await Promise.all([
         getControlRoomStatus(),
         getStadioInvestimenti(STAGIONE_CR),
+        getStatoGuadagniGiornata(),
       ]);
       setStatus(s);
       setStadioInv(inv);
+      setGuadagniGiornataStato(gg);
     } finally { setLoading(false); }
   }
 
@@ -12500,6 +12572,35 @@ function AdminControlRoomPage({ teams }) {
                   </div>
                 ))}
               </div>
+
+              {/* Recap "guadagno giornata" — chi è indietro rispetto alla giornata più
+                  avanzata già registrata da qualcun altro, per far scattare penalità. */}
+              {guadagniGiornataStato && (
+                <div style={{ marginTop: 18, background: '#ffffff06', border: '1.5px solid #ffffff12', borderRadius: 12, padding: '14px 16px' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em', marginBottom: 10 }}>
+                    ⚽ GUADAGNI GIORNATA {guadagniGiornataStato.maxGiornataLega > 0 ? `— giornata più avanzata: ${guadagniGiornataStato.maxGiornataLega}` : ''}
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {guadagniGiornataStato.squadre.map(sq => (
+                      <div key={sq.squadra} style={{
+                        flex: '1 1 150px', padding: '8px 12px', borderRadius: 8,
+                        background: sq.inRitardo ? '#ef444412' : '#10b98110',
+                        border: `1px solid ${sq.inRitardo ? '#ef444440' : '#10b98130'}`,
+                      }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#ddd' }}>{sq.squadra}</div>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: sq.inRitardo ? '#ef4444' : '#10b981', fontFamily: "'Bebas Neue',sans-serif" }}>
+                          {sq.ultimaGiornata != null ? `G${sq.ultimaGiornata}` : '— nessuna'}
+                        </div>
+                        {sq.data && <div style={{ fontSize: 9, color: '#666' }}>{sq.data}</div>}
+                        {sq.inRitardo && <div style={{ fontSize: 9, color: '#ef4444', fontWeight: 700, marginTop: 2 }}>⚠ In ritardo</div>}
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 9, color: '#555', marginTop: 10 }}>
+                    La "giornata più avanzata" è dedotta dal numero più alto già registrato da una qualsiasi squadra — non è un dato certo, usalo come indicazione per capire chi non ha ancora inserito il calcolo di questa settimana.
+                  </div>
+                </div>
+              )}
 
               {(status.tasseDettagli?.duplicate?.length > 0 || status.tasseDettagli?.mancanti?.length > 0 || status.tasseDettagli?.extra?.length > 0) && (
                 <div style={{ marginTop: 14, background: '#f59e0b0d', border: '1px solid #f59e0b30', borderRadius: 10, padding: '12px 14px' }}>
