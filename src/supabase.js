@@ -1374,6 +1374,9 @@ export async function eseguiTrasferimento(trattativa) {
         stip: stipendio_a_chi === 'cedente' ? 0 : nuovoStip, // cedente paga → 0 per ricevente
         stip_prestito_cedente: stipendio_a_chi === 'cedente' ? nuovoStip : 0,
         anni_contratto: 1, // il ricevente lo tratta come un nuovo arrivo: se poi lo riscatta, resta a 1
+        // Il badge "cedibile" del cedente non deve seguire il giocatore dal ricevente.
+        cedibile_stato: null,
+        cedibile_richiesta: null,
       }).eq('id', player.id);
     } else {
       // Cessione definitiva: aggiorna squadra e stipendio
@@ -1394,6 +1397,10 @@ export async function eseguiTrasferimento(trattativa) {
         tag_rosa: null,
         squadra_originale: null,
         scadenza_prestito: null,
+        // Cambio di proprietà: il badge "cedibile" impostato dal vecchio
+        // proprietario non deve restare visibile sotto il nuovo.
+        cedibile_stato: null,
+        cedibile_richiesta: null,
       }).eq('id', player.id);
     }
   }
@@ -1408,6 +1415,8 @@ export async function eseguiTrasferimento(trattativa) {
         squadra: squadraCedente, stip: nuovoStip2, stip_originale: nuovoStip2,
         anni_contratto: 1, data_acquisto: oggi,
         in_prestito: false, prestito_tipo: null, tag_rosa: null, squadra_originale: null, scadenza_prestito: null,
+        cedibile_stato: null,
+        cedibile_richiesta: null,
       }).eq('id', p2.id);
     }
   }
@@ -1592,6 +1601,10 @@ export async function eseguiRientroPrestito(playerId, squadraOriginale) {
     stip: nuovoStip,
     stip_prestito_cedente: 0,
     anni_contratto: nuovoAnniContratto,
+    // Il badge "cedibile" (lista trasferimenti) impostato da chi lo aveva in
+    // prestito non ha senso per il cedente che lo riprende — va azzerato.
+    cedibile_stato: null,
+    cedibile_richiesta: null,
   }).eq('id', playerId);
 
   await supabase.from('movimenti').insert({
