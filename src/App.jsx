@@ -3202,12 +3202,25 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                     style={{ padding:"9px",borderRadius:9,border:"1px solid #f97316aa",background:"#f9731618",color:"#f97316",fontSize:12,fontWeight:700,cursor:saving?"wait":"pointer" }}>
                     {saving ? "⏳ Attendere..." : `↩ Rimanda a ${popup.player.squadra_originale} (paga ${parseFloat((Number(popup.player.quot_reale ?? popup.player.quot)*0.25).toFixed(2))}M — 25%Q reale)`}
                   </button>
-                  {popup.player.prestito_tipo==='prestito_diritto' && (
-                    <button onClick={()=>handleRiscattoAnticipato(popup.player)} disabled={saving}
-                      style={{ padding:"9px",borderRadius:9,border:"none",background:saving?"#0d6b4c":"#10b981",color:"#fff",fontSize:12,fontWeight:700,cursor:saving?"wait":"pointer" }}>
-                      {saving ? "⏳ Attendere..." : "✓ Riscatta ora (paga la cifra di riscatto pattuita)"}
-                    </button>
-                  )}
+                  {(popup.player.prestito_tipo==='prestito_diritto' || popup.player.prestito_tipo==='prestito_obbligo') && (() => {
+                    // Riscattabile solo da 6 mesi prima della scadenza naturale
+                    // (l'altra finestra di mercato standard, 01/06 o 01/01).
+                    const scad = popup.player.scadenza_prestito ? new Date(`${popup.player.scadenza_prestito}T00:00:00`) : null;
+                    const inizioFinestra = scad ? new Date(scad) : null;
+                    if (inizioFinestra) {
+                      if (scad.getMonth() === 5) inizioFinestra.setMonth(0);
+                      else { inizioFinestra.setFullYear(inizioFinestra.getFullYear() - 1); inizioFinestra.setMonth(5); }
+                    }
+                    const finestraAperta = !inizioFinestra || new Date() >= inizioFinestra;
+                    return finestraAperta ? (
+                      <button onClick={()=>handleRiscattoAnticipato(popup.player)} disabled={saving}
+                        style={{ padding:"9px",borderRadius:9,border:"none",background:saving?"#0d6b4c":"#10b981",color:"#fff",fontSize:12,fontWeight:700,cursor:saving?"wait":"pointer" }}>
+                        {saving ? "⏳ Attendere..." : "✓ Riscatta ora (paga la cifra di riscatto pattuita)"}
+                      </button>
+                    ) : (
+                      <div style={{ fontSize:11,color:"#666" }}>🔒 Riscatto anticipato disponibile dal {`${inizioFinestra.getFullYear()}-${String(inizioFinestra.getMonth()+1).padStart(2,'0')}-${String(inizioFinestra.getDate()).padStart(2,'0')}`} (6 mesi prima della scadenza).</div>
+                    );
+                  })()}
                 </>
               )}
             </div>
