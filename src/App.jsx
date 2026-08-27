@@ -1351,6 +1351,7 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate }) 
   const [scBonusInvestimenti, setScBonusInvestimenti] = useState(0);
   const [contrattiScadenza, setContrattiScadenza] = useState([]);
   const [news, setNews] = useState([]);
+  const [scLive, setScLive] = useState(null);
 
   useEffect(() => {
     if (!team) return;
@@ -1358,6 +1359,18 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate }) 
     cachedFetch('effetti_inv_' + team.name, () => getEffettiInvestimenti(team.name), 600000)
       .then(e => setScBonusInvestimenti(Number(e?.scBonusInvestimenti || 0)));
     getContrattiInScadenza(team.name).then(d => setContrattiScadenza(d || []));
+    // Salary Cap usato: stesso identico calcolo live di Squadra → Finanze
+    // (stipendi rosa attiva + staff allenatore), NON il campo team.salaryUsed
+    // (colonna DB aggiornata solo periodicamente da aggiornaSCNegativo) — per
+    // evitare che Home mostri un valore disallineato rispetto a Finanze.
+    Promise.all([
+      cachedFetch('rosa_' + team.name, () => getRosa(team.name), 600000),
+      getSCAllenatore(team.name),
+    ]).then(([rosa, scAll]) => {
+      const rosaAttiva = (rosa || []).filter(p => !p.in_vivaio);
+      const scRosa = rosaAttiva.reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
+      setScLive(parseFloat((scRosa + Number(scAll || 0)).toFixed(2)));
+    });
     const loadClassifica = () => getClassifica().then(rows => {
       const idx = (rows || []).findIndex(r => r.squadra === team.name);
       if (idx >= 0) { setPosizione(idx + 1); setPunti(rows[idx].pt); }
@@ -1375,7 +1388,7 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate }) 
     return <div style={{ padding: 40, textAlign: "center", color: "#555", fontSize: 14 }}>Nessuna squadra associata al tuo profilo.</div>;
   }
 
-  const salaryCapUsato = Number(team.salaryUsed || 0);
+  const salaryCapUsato = scLive ?? Number(team.salaryUsed || 0);
   const salaryCapLimite = 75 + Number(team.scBonusObiettivi || 0) + scBonusInvestimenti;
   const salaryCapSforato = salaryCapUsato > salaryCapLimite;
 
