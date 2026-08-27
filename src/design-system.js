@@ -42,6 +42,22 @@ export const INK = {
   soft: '#7D879B',
 };
 
+// ── Form control standard (input/select filtro/ricerca) ────────────────────
+// Valore mediano dei ~16 oggetti `inp`/`sel` locali già sparsi in App.jsx,
+// quasi identici tra loro con drift non motivato (radius 5-10, padding
+// 4×6-12×14). Qui solo per i controlli di densità "standard" (ricerca/filtro
+// in pagina) — le varianti compatte (celle dense di tabella) e quelle
+// spaziose (campo principale di un form) restano intenzionalmente diverse,
+// vedi commenti nei rispettivi punti di App.jsx.
+export const FIELD = {
+  padding: '7px 10px',
+  borderRadius: 8,
+  border: '1px solid #ffffff18',
+  background: '#0d0f14',
+  color: '#f0f0f0',
+  fontSize: 12,
+};
+
 // ── Spacing scale (4/8/12/16/20/24/32) ──────────────────────────────────────
 export const SPACE = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32 };
 
