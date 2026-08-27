@@ -485,6 +485,32 @@ function CedibileBadge({ stato, compact = false }) {
   );
 }
 
+// Badge di stato giocatore riusati in Rosa (lista mobile + tabella), Listone,
+// Svincolati, Confronta giocatori e nel popup Dettaglio giocatore — stesso
+// linguaggio visivo ovunque per lo stesso significato (nessuna logica qui,
+// solo presentazione: il chiamante decide quando mostrarli).
+function U21Badge({ compact = false }) {
+  return (
+    <span style={{ marginLeft: compact ? 4 : 0, fontSize: compact ? 9 : 10, background: "#8b5cf622", color: "#a78bfa", border: "1px solid #8b5cf644", borderRadius: compact ? 4 : 6, padding: compact ? "1px 4px" : "3px 7px", fontWeight: 700, whiteSpace: "nowrap" }}>
+      U21
+    </span>
+  );
+}
+function Over31Badge({ compact = false }) {
+  return (
+    <span style={{ marginLeft: compact ? 4 : 0, fontSize: compact ? 9 : 10, background: "#f9731622", color: "#fb923c", border: "1px solid #f9731644", borderRadius: compact ? 4 : 6, padding: compact ? "1px 4px" : "3px 7px", fontWeight: 700, whiteSpace: "nowrap" }}>
+      31+
+    </span>
+  );
+}
+function FuoriListaBadge({ compact = false }) {
+  return (
+    <span style={{ marginLeft: compact ? 4 : 0, fontSize: compact ? 9 : 10, background: "#ef444422", color: "#ef4444", border: "1px solid #ef444455", borderRadius: compact ? 4 : 6, padding: compact ? "1px 4px" : "3px 7px", fontWeight: 700, whiteSpace: "nowrap" }}>
+      {compact ? "FUORI" : "FUORI LISTA"}
+    </span>
+  );
+}
+
 // Mini-grafico del trend di quotazione di un giocatore (storico_quotazioni),
 // pensato per stare dentro un popup/modale già esistente senza appesantirlo:
 // niente libreria esterna, solo un piccolo SVG. Compare in tutti i menù
@@ -3387,11 +3413,11 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                   <td style={{ padding:"7px 8px",textAlign:"center",color:p.anni<=21?"#a78bfa":p.anni>=31?"#f97316":"#888" }}>{p.anni||"—"}</td>
                   <td style={{ padding:"7px 6px",color:fuori?"#ef4444":"#e0e0e0",fontWeight:600,wordBreak:"break-word" }}>
                     {p.nome}
-                    {fuori&&<span style={{ marginLeft:4,fontSize:9,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444455",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>FUORI</span>}
+                    {fuori&&<FuoriListaBadge compact />}
                     {p.da_cedere&&<DaCedereBadge compact />}
                     {p.cedibile_stato&&<CedibileBadge stato={p.cedibile_stato} compact />}
-                    {!fuori&&p.anni>0&&p.anni<=21&&<span style={{ marginLeft:4,fontSize:9,background:"#8b5cf622",color:"#a78bfa",border:"1px solid #8b5cf644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>U21</span>}
-                    {!fuori&&p.anni>=31&&<span style={{ marginLeft:4,fontSize:9,background:"#f9731622",color:"#fb923c",border:"1px solid #f9731644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>31+</span>}
+                    {!fuori&&p.anni>0&&p.anni<=21&&<U21Badge compact />}
+                    {!fuori&&p.anni>=31&&<Over31Badge compact />}
                     {p.in_prestito&&<span title={`Prestito${p.squadra_originale ? ` da ${p.squadra_originale}` : ""}${p.scadenza_prestito ? ` · scad. ${p.scadenza_prestito}` : ""}`} style={{ marginLeft:4,fontSize:9,background:"#6366f122",color:"#a5b4fc",border:"1px solid #6366f144",borderRadius:4,padding:"1px 4px",fontWeight:800 }}>{p.tag_rosa || (p.prestito_tipo === 'prestito_obbligo' ? 'PREST. OBBL.' : p.prestito_tipo === 'prestito_secco' ? 'PREST. SECCO' : 'PREST. DIR.')}</span>}
                     {!p.in_vivaio&&p.anni>0&&p.anni<=23&&Number(p.quot||0)<=3&&(p.partite||0)===0&&vivaio.length<maxVivaio&&<span title="Eleggibile vivaio" style={{ marginLeft:4,fontSize:11 }}>🌱</span>}
                   </td>
@@ -3460,11 +3486,11 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                       <div style={{ flex:1,minWidth:0 }}>
                         <div style={{ fontSize:12.5,fontWeight:700,color:fuori?"#ef4444":"#e8e8e8" }}>
                           {p.nome}
-                          {fuori&&<span style={{ marginLeft:4,fontSize:8,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444455",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>FUORI</span>}
+                          {fuori&&<FuoriListaBadge compact />}
                           {p.da_cedere&&<DaCedereBadge compact />}
                           {p.cedibile_stato&&<CedibileBadge stato={p.cedibile_stato} compact />}
-                          {!fuori&&p.anni>0&&p.anni<=21&&<span style={{ marginLeft:4,fontSize:8,background:"#8b5cf622",color:"#a78bfa",border:"1px solid #8b5cf644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>U21</span>}
-                          {!fuori&&p.anni>=31&&<span style={{ marginLeft:4,fontSize:8,background:"#f9731622",color:"#fb923c",border:"1px solid #f9731644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>31+</span>}
+                          {!fuori&&p.anni>0&&p.anni<=21&&<U21Badge compact />}
+                          {!fuori&&p.anni>=31&&<Over31Badge compact />}
                           {p.in_prestito&&<span style={{ marginLeft:4,fontSize:8,background:"#6366f122",color:"#a5b4fc",border:"1px solid #6366f144",borderRadius:4,padding:"1px 4px",fontWeight:800 }}>{p.tag_rosa || (p.prestito_tipo === 'prestito_obbligo' ? 'PREST. OBBL.' : p.prestito_tipo === 'prestito_secco' ? 'PREST. SECCO' : 'PREST. DIR.')}</span>}
                           {!p.in_vivaio&&p.anni>0&&p.anni<=23&&Number(p.quot||0)<=3&&(p.partite||0)===0&&vivaio.length<maxVivaio&&<span title="Eleggibile vivaio" style={{ marginLeft:4,fontSize:10 }}>🌱</span>}
                         </div>
@@ -3520,7 +3546,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                 </div>
               )}
             </div>
-            <button onClick={()=>setPopup(null)} style={{ background:"none",border:"none",color:"#555",fontSize:18,cursor:"pointer",padding:"0 4px",lineHeight:1 }}>✕</button>
+            <button onClick={()=>setPopup(null)} aria-label="Chiudi dettaglio giocatore" style={{ background:"none",border:"none",color:"#555",fontSize:18,cursor:"pointer",padding:"0 4px",lineHeight:1 }}>✕</button>
           </div>
 
           {/* ── Info base + Statistiche ──
@@ -3534,11 +3560,11 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
             {popup.player.squadra_serie_a && <span style={{ background:"#ffffff0a",color:"#aaa",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:600 }}>{popup.player.squadra_serie_a}</span>}
             <span style={{ background:"#ffffff0a",color:"#aaa",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:600 }}>{popup.player.anni_contratto||"—"} anni contratto</span>
             <span style={{ background:"#ffffff0a",color:"#aaa",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:600 }}>Clausola {popup.player.clausola??"—"}M</span>
-            {popup.player.fuori_lista && <span style={{ background:"#ef444422",color:"#ef4444",border:"1px solid #ef444455",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:700 }}>FUORI LISTA</span>}
+            {popup.player.fuori_lista && <FuoriListaBadge />}
             {popup.player.da_cedere && <DaCedereBadge compact />}
             {popup.player.cedibile_stato && <CedibileBadge stato={popup.player.cedibile_stato} compact />}
-            {popup.player.anni>0 && popup.player.anni<=21 && <span style={{ background:"#8b5cf622",color:"#a78bfa",border:"1px solid #8b5cf644",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:700 }}>U21</span>}
-            {popup.player.anni>=31 && <span style={{ background:"#f9731622",color:"#fb923c",border:"1px solid #f9731644",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:700 }}>31+</span>}
+            {popup.player.anni>0 && popup.player.anni<=21 && <U21Badge />}
+            {popup.player.anni>=31 && <Over31Badge />}
           </div>
           ); })()}
 
@@ -10716,10 +10742,10 @@ function SvincolatiTable({ filtered, chiamateAttive, mySquadra, isAdmin, setShow
                 <td style={{ padding: "7px 8px", color: fuori ? "#ef4444" : "#e0e0e0", fontWeight: 600 }}>
                   {p.nome}
                   {p.isVivaio && <span style={{ marginLeft: 5, fontSize: 9, background: "#10b98120", color: "#10b981", border: "1px solid #10b98140", borderRadius: 4, padding: "1px 4px", fontWeight: 700 }}>🌱</span>}
-                  {fuori && <span style={{ marginLeft: 5, fontSize: 9, background: "#ef444422", color: "#ef4444", border: "1px solid #ef444455", borderRadius: 4, padding: "1px 5px", fontWeight: 700 }}>FUORI</span>}
+                  {fuori && <FuoriListaBadge compact />}
                   {giaChi && <span style={{ marginLeft: 5, fontSize: 9, background: "#f59e0b18", color: "#f59e0b", border: "1px solid #f59e0b40", borderRadius: 4, padding: "1px 4px" }}>📞</span>}
-                  {!fuori && p.anni <= 21 && !p.isVivaio && <span style={{ marginLeft: 5, fontSize: 9, background: "#8b5cf622", color: "#a78bfa", borderRadius: 4, padding: "1px 4px" }}>U21</span>}
-                  {!fuori && p.anni >= 31 && <span style={{ marginLeft: 5, fontSize: 9, background: "#f9731622", color: "#fb923c", borderRadius: 4, padding: "1px 4px" }}>31+</span>}
+                  {!fuori && p.anni <= 21 && !p.isVivaio && <U21Badge compact />}
+                  {!fuori && p.anni >= 31 && <Over31Badge compact />}
                 </td>
                 <td style={{ padding: "7px 8px", color: "#888" }}>{p.squadra_serie_a || "—"}</td>
                 <td style={{ padding: "7px 8px", textAlign: "center", fontWeight: 800, color: p.quot >= 20 ? "#f59e0b" : "#ccc", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14 }}>{p.quot}</td>
@@ -15691,6 +15717,7 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, 
         <div style={{ display:"grid", gridTemplateColumns:notizia.immagini.length===1?"1fr":"1fr 1fr", gap:4, borderRadius:12, overflow:"hidden", marginBottom:14 }}>
           {notizia.immagini.slice(0,4).map((img,i) => {
             const { thumbSrc, fullSrc } = resolveNewsImageSrc(img, notizia.immagini_thumb?.[i]);
+            if (!thumbSrc) return null;
             return (
               <div key={i} style={{ position:"relative", paddingBottom:notizia.immagini.length===1?"52%":"60%", cursor:"pointer" }} onClick={() => setImgOpen(fullSrc)}>
                 <img loading="lazy" decoding="async" src={thumbSrc} alt="" style={{ position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover" }}/>
@@ -15774,9 +15801,9 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, 
         </button>
 
         <div style={{ marginLeft:"auto", display:"flex", gap:6 }}>
-          {isAdmin && <button onClick={() => onPin(notizia.id, !notizia.pinnata)} style={{ padding:"5px 10px",borderRadius:8,border:"1px solid #ffffff10",background:"transparent",color:notizia.pinnata?"#f59e0b":"#444",fontSize:12,cursor:"pointer" }}>📌</button>}
-          {canEdit && <button onClick={() => onEdit(notizia)} style={{ padding:"5px 10px",borderRadius:8,border:"1px solid #ffffff10",background:"transparent",color:"#444",fontSize:12,cursor:"pointer" }} onMouseEnter={e=>e.currentTarget.style.color="#818cf8"} onMouseLeave={e=>e.currentTarget.style.color="#444"}>✏️</button>}
-          {canDelete && <button onClick={() => onDelete(notizia.id)} style={{ padding:"5px 10px",borderRadius:8,border:"1px solid #ffffff10",background:"transparent",color:"#444",fontSize:12,cursor:"pointer" }} onMouseEnter={e=>e.currentTarget.style.color="#ef4444"} onMouseLeave={e=>e.currentTarget.style.color="#444"}>🗑</button>}
+          {isAdmin && <button onClick={() => onPin(notizia.id, !notizia.pinnata)} aria-label={notizia.pinnata ? "Rimuovi dagli in evidenza" : "Metti in evidenza"} title={notizia.pinnata ? "Rimuovi dagli in evidenza" : "Metti in evidenza"} style={{ padding:"5px 10px",borderRadius:8,border:"1px solid #ffffff10",background:"transparent",color:notizia.pinnata?"#f59e0b":"#444",fontSize:12,cursor:"pointer" }}>📌</button>}
+          {canEdit && <button onClick={() => onEdit(notizia)} aria-label="Modifica post" title="Modifica post" style={{ padding:"5px 10px",borderRadius:8,border:"1px solid #ffffff10",background:"transparent",color:"#444",fontSize:12,cursor:"pointer" }} onMouseEnter={e=>e.currentTarget.style.color="#818cf8"} onMouseLeave={e=>e.currentTarget.style.color="#444"}>✏️</button>}
+          {canDelete && <button onClick={() => onDelete(notizia.id)} aria-label="Elimina post" title="Elimina post" style={{ padding:"5px 10px",borderRadius:8,border:"1px solid #ffffff10",background:"transparent",color:"#444",fontSize:12,cursor:"pointer" }} onMouseEnter={e=>e.currentTarget.style.color="#ef4444"} onMouseLeave={e=>e.currentTarget.style.color="#444"}>🗑</button>}
         </div>
       </div>
 
@@ -16091,6 +16118,7 @@ function NewsComposer({ profile, teams, onPost, isAdmin, editingPost = null, onC
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
           {immagini.map((img, i) => {
             const previewSrc = resolveNewsImageSrc(img, immaginiThumb[i]).thumbSrc;
+            if (!previewSrc) return null;
             return (
               <div key={i} style={{ position: "relative", width: 80, height: 80 }}>
                 <img loading="lazy" decoding="async" src={previewSrc} alt="" style={{ width: 80, height: 80, borderRadius: 8, objectFit: "cover" }} />
@@ -16591,7 +16619,7 @@ table{border-collapse:collapse;min-width:max-content}
                 const active = currentPage === item.key;
                 const badge = item.key === "mercato" && offerteInAttesa.length > 0 ? offerteInAttesa.length : 0;
                 return (
-                  <button key={item.key} onClick={() => navigate(item.path)}
+                  <button key={item.key} onClick={() => navigate(item.path)} aria-current={active ? "page" : undefined}
                     style={{ width:"100%",display:"flex",alignItems:"center",gap:12,padding:"10px 12px",borderRadius:10,border:"none",background:active?"#6366f122":"transparent",color:active?"#818cf8":"#666",fontWeight:700,fontSize:13,cursor:"pointer",marginBottom:4,textAlign:"left",position:"relative" }}
                     onMouseEnter={e=>{if(!active){e.currentTarget.style.background="#ffffff08";e.currentTarget.style.color="#aaa";}}}
                     onMouseLeave={e=>{if(!active){e.currentTarget.style.background="transparent";e.currentTarget.style.color="#666";}}}>
@@ -16675,7 +16703,7 @@ table{border-collapse:collapse;min-width:max-content}
             {navItems.map(item => {
               const active = currentPage === item.key;
               const badge = item.key === "mercato" && offerteInAttesa.length > 0 ? offerteInAttesa.length : 0;
-              return <button key={item.key} onClick={()=>navigate(item.path)} style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,border:"none",background:"transparent",cursor:"pointer",padding:"8px 0",position:"relative",minHeight:44 }}>
+              return <button key={item.key} onClick={()=>navigate(item.path)} aria-current={active ? "page" : undefined} style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,border:"none",background:"transparent",cursor:"pointer",padding:"8px 0",position:"relative",minHeight:44 }}>
                 {active&&<div style={{ position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:28,height:3,borderRadius:"0 0 3px 3px",background:"#6366f1" }}/>}
                 <span style={{ display:"inline-flex",position:"relative" }}><item.Icon size={21} />{badge>0&&<span style={{ position:"absolute",top:-3,right:-5,background:"#ef4444",color:"#fff",borderRadius:"50%",fontSize:8,width:13,height:13,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900 }}>{badge}</span>}</span>
                 <span style={{ fontSize:10,fontWeight:700,color:active?"#6366f1":"#666" }}>{item.label}</span>
@@ -16773,7 +16801,7 @@ function NotificationBell({ mySquadra, navigate }) {
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      <button onClick={toggleOpen} title="Notifiche"
+      <button onClick={toggleOpen} title="Notifiche" aria-label={`Notifiche${nonLette.length > 0 ? ` — ${nonLette.length} non lette` : ''}`} aria-expanded={open}
         style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #ffffff12", background: "transparent", color: "#555", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
         🔔
         {nonLette.length > 0 && (
