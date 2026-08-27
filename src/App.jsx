@@ -4410,11 +4410,15 @@ function ContrattoRinnovoRow({ p, team, isAdmin, mySquadra, onToggle }) {
   const percAumento = isU21 ? 0 : 20;
   const nuovoStip = parseFloat((Number(p.stip) * (1 + percAumento / 100)).toFixed(2));
 
+  // Salva solo l'INTENZIONE (rinnovo_confermato) — non cambia anni_contratto
+  // né stipendio qui: la transizione vera avviene con "Aggiorna contratti
+  // annuali" in Control Room (invariata). confermRinnovoBiennale rifiuta la
+  // scrittura fuori da maggio, quindi il vincolo temporale vale anche se
+  // qualcuno bypassasse questa UI.
   async function toggle(nuovoValore) {
     setConfermando(true);
     try {
-      const { error } = await supabase.from('rosa').update({ rinnovo_confermato: nuovoValore }).eq('id', p.id);
-      if (error) throw error;
+      await confermRinnovoBiennale(p.id, nuovoValore);
       onToggle(p.id, nuovoValore);
     } catch(e) { alert(e.message); }
     finally { setConfermando(false); }
@@ -5349,8 +5353,14 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
         )}
       </div>
 
-      {/* ── 6. CONTRATTI IN SCADENZA (fine 2° anno — rinnovo biennale) ── */}
-      {contrattiScadenza.length > 0 && (
+      {/* ── 6. CONTRATTI IN SCADENZA (fine 2° anno — rinnovo biennale) ──
+          La scelta (conferma/non conferma) è un'indicazione di volontà, non
+          un'azione automatica: viene solo salvata (rinnovo_confermato) e resa
+          effettiva più tardi da "Aggiorna contratti annuali" in Control Room
+          (invariato). Disponibile da esprimere solo nel mese di maggio — la
+          stessa finestra è applicata anche lato server in
+          confermRinnovoBiennale, così non è aggirabile dalla sola UI. */}
+      {contrattiScadenza.length > 0 && new Date().getMonth() === 4 && (
         <div style={{ background: "#f59e0b08", border: "1.5px solid #f59e0b25", borderRadius: 14, padding: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4, flexWrap: "wrap", gap: 8 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", letterSpacing: "0.08em" }}>📋 RINNOVO BIENNALE — CONFERMA ENTRO 31/05</div>
