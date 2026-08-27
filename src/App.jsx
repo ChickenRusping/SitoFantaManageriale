@@ -3443,7 +3443,14 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                           {!p.in_vivaio&&p.anni>0&&p.anni<=23&&Number(p.quot||0)<=3&&(p.partite||0)===0&&vivaio.length<maxVivaio&&<span title="Eleggibile vivaio" style={{ marginLeft:4,fontSize:10 }}>🌱</span>}
                         </div>
                         <div style={{ fontSize:10.5,color:"#888",marginTop:1 }}>
-                          {p.squadra_serie_a||"—"} · Q{p.quot} · <span style={{ color:"#bbb",fontWeight:600 }}>{p._stipCorretto.toFixed(1)}M</span> · C{p.anni_contratto||"—"}
+                          {p.squadra_serie_a||"—"} · Q{p.quot}
+                          {p.quot_reale && Number(p.quot_reale) !== Number(p.quot) && (
+                            <span title={`Quotazione reale aggiornata: ${p.quot_reale} (stip. trasferimento: ${(p.quot_reale/5).toFixed(2)}M)`}
+                              style={{ marginLeft:2,fontWeight:800,color:Number(p.quot_reale)>Number(p.quot)?"#10b981":"#f97316" }}>
+                              {Number(p.quot_reale)>Number(p.quot)?'↑':'↓'}{p.quot_reale}
+                            </span>
+                          )}
+                          {" "}· <span style={{ color:"#bbb",fontWeight:600 }}>{p._stipCorretto.toFixed(1)}M</span> · C{p.anni_contratto||"—"}
                         </div>
                       </div>
                     </div>
