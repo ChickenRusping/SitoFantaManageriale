@@ -6556,15 +6556,21 @@ export async function aggiornaContrattiAnnuali() {
   return { aggiornati, svincolati };
 }
 
-// Conferma rinnovo biennale per un giocatore (da fare entro 31/05)
-export async function confermRinnovoBiennale(playerId) {
+// Esprime l'INTENZIONE di rinnovo biennale per un giocatore al 2° anno di
+// contratto (conferma o annulla) — non tocca anni_contratto né stipendio:
+// scrive solo il flag rinnovo_confermato. La transizione vera (anno 2→3 con
+// +20%, anno 1→2, e lo svincolo gratuito/non conteggiato di chi non ha
+// confermato) avviene solo dopo, con aggiornaContrattiAnnuali() dalla
+// Control Room il 01/06 — invariata, non toccata qui.
+// Utilizzabile solo nel mese di maggio (art. 4.8): fuori da maggio la scelta
+// non è ancora/più rilevante, quindi la scrittura viene rifiutata anche se
+// qualcuno bypassasse il controllo lato UI.
+export async function confermRinnovoBiennale(playerId, vuoiRinnovare = true) {
   const now = new Date();
-  const deadline = new Date(now.getFullYear(), 4, 31, 23, 59, 59, 999); // 31/05 23:59
-  const seasonStarted = new Date(now.getFullYear(), 5, 1, 0, 0, 0, 0);
-  if (now >= seasonStarted || now > deadline) {
-    throw new Error('Rinnovo non consentito: la scadenza è il 31/05 alle 23:59.');
+  if (now.getMonth() !== 4) { // 4 = maggio (0-indexed)
+    throw new Error('La conferma/annullamento del rinnovo è disponibile solo nel mese di maggio.');
   }
-  const { error } = await supabase.from('rosa').update({ rinnovo_confermato: true }).eq('id', playerId);
+  const { error } = await supabase.from('rosa').update({ rinnovo_confermato: vuoiRinnovare }).eq('id', playerId);
   if (error) throw error;
 }
 
