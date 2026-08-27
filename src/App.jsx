@@ -22,6 +22,58 @@ function calcolaBiennioCorrente() {
 const STAGIONE_CORRENTE = calcolaStaginoCorrente();
 const BIENNIO_CORRENTE  = calcolaBiennioCorrente();
 
+// ─── CALENDARIO SCADENZE (condiviso Lega + Home) ────────────────────────────
+// Estratto da LegaPage perché la Home deve mostrare le 2 scadenze più vicine
+// senza duplicare/reinventare questo calendario — stessi dati, stessa
+// funzione di risoluzione data, un'unica fonte di verità.
+const DEADLINE_DEFS = [
+  { label: "Apertura mercato estivo",             month: 6,  day: 1,  section: "Mercato", type: "annual",  note: "Ore 09:00" },
+  { label: "Chiusura mercato estivo",             month: 9,  day: 15, section: "Mercato", type: "annual",  note: "Ore 24:00" },
+  { label: "Apertura mercato invernale",          month: 1,  day: 1,  section: "Mercato", type: "annual",  note: "Ore 09:00" },
+  { label: "Chiusura mercato invernale",          month: 2,  day: 15, section: "Mercato", type: "annual",  note: "Ore 24:00" },
+  { label: "Quota iscrizione campionato (30M)",   month: 7,  day: 31, section: "Quote",   type: "annual",  note: "Detratta automaticamente — entro le 24:00" },
+  { label: "Decisione investimento extra (0–10€)",month: 8,  day: 14, section: "Quote",   type: "annual",  note: "Entro le 23:59" },
+  { label: "Pagamento quota (30€) al tesoriere",  month: 8,  day: 31, section: "Quote",   type: "annual",  note: "Entro le 24:00" },
+  { label: "Inizio finestra ritiro budget extra",  month: 1,  day: 5,  section: "Quote",   type: "annual",  note: "Costo: 2× i milioni ottenuti — entro le 24:00" },
+  { label: "Pagamento costo vivaio (4M)",          month: 8,  day: 15, section: "Rosa",    type: "annual",  note: "Obbligatorio per tutti — entro le 24:00" },
+  { label: "Acquisto giocatori vivaio",            month: 9,  day: 1,  section: "Rosa",    type: "annual",  note: "Solo dopo aggiornamento listone — entro le 24:00" },
+  { label: "Pagamento stipendi mensile",           day: 1,              section: "Stipendi",type: "monthly", note: "Alle 00:01" },
+  { label: "Abbassamento stipendi in calo",        month: 1,  day: 5,  section: "Stipendi",type: "annual",  note: "Entro le 20:00 su WhatsApp" },
+  { label: "Aggiornamento stipendi 01/01",         month: 1,  day: 1,  section: "Stipendi",type: "annual",  note: "Alle 08:00 — art. 4.5" },
+  { label: "Aggiornamento stipendi 01/06",         month: 6,  day: 1,  section: "Stipendi",type: "annual",  note: "Alle 08:00 — art. 4.6" },
+  { label: "Aggiornamento stipendi 01/08",         month: 8,  day: 1,  section: "Stipendi",type: "annual",  note: "Alle 08:00 — art. 4.7" },
+  { label: "Rinnovo/non rinnovo contratti",        month: 5,  day: 31, section: "Stipendi",type: "annual",  note: "Entro le 23:59" },
+  { label: "Vendita/svincolo contratti ribassati", month: 9,  day: 15, section: "Stipendi",type: "annual",  note: "Pena 5M + svincolo forzato — entro le 24:00" },
+  { label: "Scelta obiettivo — 8° classificato",   month: 8,  day: 6,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
+  { label: "Scelta obiettivo — 7° classificato",   month: 8,  day: 7,  section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
+  { label: "Scelta obiettivo — 6° classificato",   month: 8,  day: 7,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
+  { label: "Scelta obiettivo — 5° classificato",   month: 8,  day: 8,  section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
+  { label: "Scelta obiettivo — 4° classificato",   month: 8,  day: 8,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
+  { label: "Scelta obiettivo — 3° classificato",   month: 8,  day: 9,  section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
+  { label: "Scelta obiettivo — 2° classificato",   month: 8,  day: 9,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
+  { label: "Scelta obiettivo — 1° classificato",   month: 8,  day: 10, section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
+  { label: "Apertura comunicazione investimenti",  month: 8,  day: 1,  section: "Investimenti", type: "annual", note: "Ore 09:00 — budget max 30M" },
+  { label: "Chiusura comunicazione investimenti",  month: 9,  day: 20, section: "Investimenti", type: "annual", note: "Entro le 23:59" },
+  { label: "Scadenza Ricapitalizzazione",          month: 9,  day: 5,  section: "Investimenti", type: "annual", note: "Ultimo giorno per attivarla — entro le 24:00" },
+  { label: "Apertura investimenti invernali",      month: 12, day: 24, section: "Investimenti", type: "annual", note: "Max 10M — entro le 24:00" },
+  { label: "Chiusura investimenti invernali",      month: 12, day: 31, section: "Investimenti", type: "annual", note: "Ultimo giorno utile — entro le 24:00" },
+];
+function resolveDeadlineDef(def, nowD) {
+  const today = new Date(nowD.getFullYear(), nowD.getMonth(), nowD.getDate());
+  if (def.type === 'monthly') {
+    let d = new Date(nowD.getFullYear(), nowD.getMonth(), def.day);
+    if (d <= today) d = new Date(nowD.getFullYear(), nowD.getMonth() + 1, def.day);
+    return { dateObj: d, dateStr: `${String(def.day).padStart(2,'0')} ogni mese`, days: Math.round((d - today) / 86400000) };
+  }
+  let d = new Date(nowD.getFullYear(), def.month - 1, def.day);
+  if (d < today) d = new Date(nowD.getFullYear() + 1, def.month - 1, def.day);
+  const mesi = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+  return { dateObj: d, dateStr: `${String(def.day).padStart(2,'0')} ${mesi[def.month-1]} ${d.getFullYear()}`, days: Math.round((d - today) / 86400000) };
+}
+function getResolvedDeadlines(nowD) {
+  return DEADLINE_DEFS.map(def => ({ ...def, ...resolveDeadlineDef(def, nowD) })).sort((a, b) => a.dateObj - b.dateObj);
+}
+
 // Confronto "tollerante" tra nomi squadra: ignora maiuscole/minuscole e spazi/
 // punteggiatura. Serve perché il campo "FantaSquadra" importato dal listone
 // Excel a volte non è scritto carattere per carattere come il nome canonico
@@ -1307,7 +1359,7 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate }) 
   }, [team?.name]);
 
   useEffect(() => {
-    getNotizie(undefined, 3).then(setNews).catch(() => setNews([]));
+    getNotizie(undefined, 2).then(setNews).catch(() => setNews([]));
   }, []);
 
   if (!team) {
@@ -1318,9 +1370,20 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate }) 
   const salaryCapLimite = 75 + Number(team.scBonusObiettivi || 0) + scBonusInvestimenti;
   const salaryCapSforato = salaryCapUsato > salaryCapLimite;
 
+  // Le 2 scadenze di Lega più vicine — stesso calendario/stessa funzione di
+  // risoluzione già usati in Lega → Scadenze (getResolvedDeadlines, definita
+  // a livello di modulo), nessuna logica duplicata o reinventata qui.
+  const prossimeScadenzeLega = getResolvedDeadlines(new Date()).filter(d => d.days >= 0).slice(0, 2);
+
+  // I contratti in scadenza compaiono in Home solo quando la scadenza reale
+  // (31/05 — "Rinnovo/non rinnovo contratti", stesso calendario di cui sopra)
+  // è a 2 mesi o meno: non voglio anticipare l'alert di mesi. Non cambia la
+  // business logic dei contratti, solo la soglia di visibilità qui in Home.
+  const scadenzaRinnovi = getResolvedDeadlines(new Date()).find(d => d.label === "Rinnovo/non rinnovo contratti");
+  const rinnoviVicini = scadenzaRinnovi && scadenzaRinnovi.days >= 0 && scadenzaRinnovi.days <= 60;
   // Stesso filtro già usato in PresidentePage per "contratti in scadenza reale"
   // (esclude U21 con rinnovo automatico esente aumento) — riusato identico.
-  const alertContratti = contrattiScadenza.filter(p => !p.anni_giocatore || p.anni > 21);
+  const alertContratti = rinnoviVicini ? contrattiScadenza.filter(p => !p.anni_giocatore || p.anni > 21) : [];
   const nOfferte = offerteInAttesa.length;
   const haRichiesteAttenzione = nOfferte > 0 || alertContratti.length > 0;
 
@@ -1360,10 +1423,21 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate }) 
         </div>
       )}
 
-      <div onClick={() => navigate('/lega')} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: SURFACE.card, borderRadius: 12, padding: "12px 14px", marginBottom: 12, cursor: "pointer" }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#ccc" }}>Scadenze di lega</span>
-        <IconChevronRight size={14} style={{ color: "#888" }} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "4px 2px 6px" }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: "#777", letterSpacing: "0.06em", textTransform: "uppercase" }}>Scadenze di lega</span>
+        <span onClick={() => navigate('/lega?tab=scadenze')} style={{ fontSize: 10.5, color: BRAND.primary, fontWeight: 700, cursor: "pointer" }}>Tutte →</span>
       </div>
+      {prossimeScadenzeLega.length === 0 ? (
+        <div style={{ fontSize: 11.5, color: "#555", fontStyle: "italic", marginBottom: 12 }}>Nessuna scadenza imminente.</div>
+      ) : prossimeScadenzeLega.map((d, i) => (
+        <div key={i} onClick={() => navigate('/lega?tab=scadenze')} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: SURFACE.card, borderRadius: 12, padding: "10px 14px", marginBottom: 8, cursor: "pointer" }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: "#ddd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.label}</div>
+            <div style={{ fontSize: 10, color: "#777", marginTop: 1 }}>{d.dateStr}</div>
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 800, color: d.days <= 7 ? SEMANTIC.warning : "#888", fontFamily: "'Bebas Neue',sans-serif", flexShrink: 0, marginLeft: 8 }}>{d.days === 0 ? "OGGI" : `${d.days}gg`}</span>
+        </div>
+      ))}
 
       <div style={{ fontSize: 10, fontWeight: 700, color: "#777", letterSpacing: "0.06em", textTransform: "uppercase", margin: "16px 2px 6px" }}>News</div>
       {news.map(n => (
@@ -2126,54 +2200,13 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
   // ── Deadline ─────────────────────────────────────────────────────────────────
   const [nowD, setNowD] = useState(new Date());
   useEffect(() => { const t = setInterval(() => setNowD(new Date()), 600000); return () => clearInterval(t); }, []);
-  const DEADLINE_DEFS = [
-    { label: "Apertura mercato estivo",             month: 6,  day: 1,  section: "Mercato", type: "annual",  note: "Ore 09:00" },
-    { label: "Chiusura mercato estivo",             month: 9,  day: 15, section: "Mercato", type: "annual",  note: "Ore 24:00" },
-    { label: "Apertura mercato invernale",          month: 1,  day: 1,  section: "Mercato", type: "annual",  note: "Ore 09:00" },
-    { label: "Chiusura mercato invernale",          month: 2,  day: 15, section: "Mercato", type: "annual",  note: "Ore 24:00" },
-    { label: "Quota iscrizione campionato (30M)",   month: 7,  day: 31, section: "Quote",   type: "annual",  note: "Detratta automaticamente — entro le 24:00" },
-    { label: "Decisione investimento extra (0–10€)",month: 8,  day: 14, section: "Quote",   type: "annual",  note: "Entro le 23:59" },
-    { label: "Pagamento quota (30€) al tesoriere",  month: 8,  day: 31, section: "Quote",   type: "annual",  note: "Entro le 24:00" },
-    { label: "Inizio finestra ritiro budget extra",  month: 1,  day: 5,  section: "Quote",   type: "annual",  note: "Costo: 2× i milioni ottenuti — entro le 24:00" },
-    { label: "Pagamento costo vivaio (4M)",          month: 8,  day: 15, section: "Rosa",    type: "annual",  note: "Obbligatorio per tutti — entro le 24:00" },
-    { label: "Acquisto giocatori vivaio",            month: 9,  day: 1,  section: "Rosa",    type: "annual",  note: "Solo dopo aggiornamento listone — entro le 24:00" },
-    { label: "Pagamento stipendi mensile",           day: 1,              section: "Stipendi",type: "monthly", note: "Alle 00:01" },
-    { label: "Abbassamento stipendi in calo",        month: 1,  day: 5,  section: "Stipendi",type: "annual",  note: "Entro le 20:00 su WhatsApp" },
-    { label: "Aggiornamento stipendi 01/01",         month: 1,  day: 1,  section: "Stipendi",type: "annual",  note: "Alle 08:00 — art. 4.5" },
-    { label: "Aggiornamento stipendi 01/06",         month: 6,  day: 1,  section: "Stipendi",type: "annual",  note: "Alle 08:00 — art. 4.6" },
-    { label: "Aggiornamento stipendi 01/08",         month: 8,  day: 1,  section: "Stipendi",type: "annual",  note: "Alle 08:00 — art. 4.7" },
-    { label: "Rinnovo/non rinnovo contratti",        month: 5,  day: 31, section: "Stipendi",type: "annual",  note: "Entro le 23:59" },
-    { label: "Vendita/svincolo contratti ribassati", month: 9,  day: 15, section: "Stipendi",type: "annual",  note: "Pena 5M + svincolo forzato — entro le 24:00" },
-    { label: "Scelta obiettivo — 8° classificato",   month: 8,  day: 6,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
-    { label: "Scelta obiettivo — 7° classificato",   month: 8,  day: 7,  section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
-    { label: "Scelta obiettivo — 6° classificato",   month: 8,  day: 7,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
-    { label: "Scelta obiettivo — 5° classificato",   month: 8,  day: 8,  section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
-    { label: "Scelta obiettivo — 4° classificato",   month: 8,  day: 8,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
-    { label: "Scelta obiettivo — 3° classificato",   month: 8,  day: 9,  section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
-    { label: "Scelta obiettivo — 2° classificato",   month: 8,  day: 9,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
-    { label: "Scelta obiettivo — 1° classificato",   month: 8,  day: 10, section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
-    { label: "Apertura comunicazione investimenti",  month: 8,  day: 1,  section: "Investimenti", type: "annual", note: "Ore 09:00 — budget max 30M" },
-    { label: "Chiusura comunicazione investimenti",  month: 9,  day: 20, section: "Investimenti", type: "annual", note: "Entro le 23:59" },
-    { label: "Scadenza Ricapitalizzazione",          month: 9,  day: 5,  section: "Investimenti", type: "annual", note: "Ultimo giorno per attivarla — entro le 24:00" },
-    { label: "Apertura investimenti invernali",      month: 12, day: 24, section: "Investimenti", type: "annual", note: "Max 10M — entro le 24:00" },
-    { label: "Chiusura investimenti invernali",      month: 12, day: 31, section: "Investimenti", type: "annual", note: "Ultimo giorno utile — entro le 24:00" },
-  ];
-  function resolveDeadline(def) {
-    const today = new Date(nowD.getFullYear(), nowD.getMonth(), nowD.getDate());
-    if (def.type === 'monthly') {
-      let d = new Date(nowD.getFullYear(), nowD.getMonth(), def.day);
-      if (d <= today) d = new Date(nowD.getFullYear(), nowD.getMonth() + 1, def.day);
-      return { dateObj: d, dateStr: `${String(def.day).padStart(2,'0')} ogni mese`, days: Math.round((d - today) / 86400000) };
-    }
-    let d = new Date(nowD.getFullYear(), def.month - 1, def.day);
-    if (d < today) d = new Date(nowD.getFullYear() + 1, def.month - 1, def.day);
-    const mesi = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
-    return { dateObj: d, dateStr: `${String(def.day).padStart(2,'0')} ${mesi[def.month-1]} ${d.getFullYear()}`, days: Math.round((d - today) / 86400000) };
-  }
-  const resolvedDeadlines = DEADLINE_DEFS.map(def => ({ ...def, ...resolveDeadline(def) })).sort((a, b) => a.dateObj - b.dateObj);
+  // Calendario e risoluzione date: definiti a livello di modulo (condivisi
+  // con HomePage) — vedi DEADLINE_DEFS/resolveDeadlineDef/getResolvedDeadlines
+  // in cima al file. Nessun dato o regola duplicati qui.
+  const resolvedDeadlines = getResolvedDeadlines(nowD);
   const entro100 = resolvedDeadlines.filter(d => d.days <= 60 && d.days >= 0);
   const recenti = DEADLINE_DEFS.map(def => {
-    const r = resolveDeadline(def);
+    const r = resolveDeadlineDef(def, nowD);
     let prev = new Date(r.dateObj);
     if (def.type === 'annual') prev = new Date(r.dateObj.getFullYear()-1, def.month-1, def.day);
     else prev = new Date(nowD.getFullYear(), nowD.getMonth()-1, def.day);
@@ -2253,7 +2286,16 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
   // Scadenze e Premi), solo mostrate una alla volta invece che impilate.
   // "Rose non regolari" resta sempre visibile: è un avviso di compliance
   // trasversale, non legato a una singola competizione.
-  const [legaTab, setLegaTab] = useState('competizioni');
+  const location = useLocation();
+  const [legaTab, setLegaTab] = useState(() => new URLSearchParams(location.search).get('tab') || 'competizioni');
+  // Permette il deep-link da Home ("2 prossime scadenze" → /lega?tab=scadenze)
+  // anche quando LegaPage è già montata — stesso pattern già usato in
+  // MercatoPage per ?section=.
+  useEffect(() => {
+    const t = new URLSearchParams(location.search).get('tab');
+    if (t && t !== legaTab) setLegaTab(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
   const LEGA_TABS = [
     { key: 'competizioni', label: '🏅 Competizioni' },
     { key: 'scadenze',     label: '📅 Scadenze' },
@@ -3439,7 +3481,48 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
             <button onClick={()=>setPopup(null)} style={{ background:"none",border:"none",color:"#555",fontSize:18,cursor:"pointer",padding:"0 4px",lineHeight:1 }}>✕</button>
           </div>
 
+          {/* ── Info base + Statistiche ──
+              Pannello informativo completo prima delle azioni: stessi dati
+              già disponibili sull'oggetto giocatore (nessun valore inventato,
+              nessuna formula nuova) — solo mostrati qui oltre che nella
+              tabella desktop, così restano consultabili anche da mobile. */}
+          {(() => { const rc = getRoleColor(popup.player.ruolo); return (
+          <div style={{ display:"flex",flexWrap:"wrap",gap:5,marginBottom:12 }}>
+            <span style={{ background:rc.bg,color:rc.text,border:`1px solid ${rc.border}`,borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:700 }}>{popup.player.ruolo}</span>
+            {popup.player.squadra_serie_a && <span style={{ background:"#ffffff0a",color:"#aaa",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:600 }}>{popup.player.squadra_serie_a}</span>}
+            <span style={{ background:"#ffffff0a",color:"#aaa",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:600 }}>{popup.player.anni_contratto||"—"} anni contratto</span>
+            <span style={{ background:"#ffffff0a",color:"#aaa",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:600 }}>Clausola {popup.player.clausola??"—"}M</span>
+            {popup.player.fuori_lista && <span style={{ background:"#ef444422",color:"#ef4444",border:"1px solid #ef444455",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:700 }}>FUORI LISTA</span>}
+            {popup.player.da_cedere && <DaCedereBadge compact />}
+            {popup.player.cedibile_stato && <CedibileBadge stato={popup.player.cedibile_stato} compact />}
+            {popup.player.anni>0 && popup.player.anni<=21 && <span style={{ background:"#8b5cf622",color:"#a78bfa",border:"1px solid #8b5cf644",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:700 }}>U21</span>}
+            {popup.player.anni>=31 && <span style={{ background:"#f9731622",color:"#fb923c",border:"1px solid #f9731644",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:700 }}>31+</span>}
+          </div>
+          ); })()}
+
+          <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginBottom:14 }}>
+            {[
+              { label:"Presenze", val: popup.player.partite },
+              { label:"Media voto", val: popup.player.media_voto ? Number(popup.player.media_voto).toFixed(2) : null },
+              { label:"Media fantav.", val: popup.player.media_fantavoto ? Number(popup.player.media_fantavoto).toFixed(2) : null },
+              { label:"Gol", val: popup.player.gol },
+              { label:"Assist", val: popup.player.assist },
+              { label:"Ammonizioni", val: popup.player.ammonizioni },
+              { label:"Espulsioni", val: popup.player.espulsioni },
+              { label:"Rig. parati", val: popup.player.rigori_parati },
+              { label:"Rig. segnati", val: popup.player.rigori_segnati },
+              { label:"Rig. sbagliati", val: popup.player.rigori_sbagliati },
+            ].filter(s => s.val !== undefined && s.val !== null).map(s => (
+              <div key={s.label} style={{ background:"#ffffff08",borderRadius:8,padding:"6px 4px",textAlign:"center" }}>
+                <div style={{ fontSize:14,fontWeight:800,color:"#e0e0e0",fontFamily:"'Bebas Neue',sans-serif" }}>{s.val || "—"}</div>
+                <div style={{ fontSize:7.5,color:"#666",letterSpacing:"0.03em",marginTop:1 }}>{s.label.toUpperCase()}</div>
+              </div>
+            ))}
+          </div>
+
           <GraficoQuotazione nome={popup.player.nome} />
+
+          <div style={{ fontSize:10,fontWeight:700,color:"#666",letterSpacing:"0.1em",margin:"14px 0 8px" }}>AZIONI</div>
 
           {popup.player.in_prestito ? (
             <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
@@ -6683,6 +6766,15 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
   const setTab = (newTab) => {
     navigate(`/presidente/${team.id}/${newTab}`, { replace: false });
   };
+  // Su mobile la Club Identity (stemma/maglie/palmarès/rivalità/Telegram) non
+  // deve comparire impilata sotto qualsiasi tab: appare solo dentro il tab
+  // "Club". Su desktop resta sempre visibile come colonna laterale, invariato.
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
+  useEffect(() => {
+    const h = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
   const [movimenti, setMovimenti] = useState([]);
   const [showMovForm, setShowMovForm] = useState(false);
   const emptyMovForm = { descrizione: "", entrata: "", uscita: "", data: new Date().toISOString().slice(0, 10) };
@@ -7126,7 +7218,9 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
           </div>
         </div>
 
-        {/* RIGHT — club identity, always visible */}
+        {/* RIGHT — club identity: sempre visibile su desktop (colonna
+            laterale), su mobile solo dentro il tab "Club" — vedi nota sopra. */}
+        {(isDesktop || tab === 'altro') && (
         <div className="pres-right" style={{ width: 280, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>
           <ClubIdentityRight
             team={team}
@@ -7140,6 +7234,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
             <TelegramRegistrationCard squadra={team.name} />
           )}
         </div>
+        )}
       </div>
     </div>
   );
