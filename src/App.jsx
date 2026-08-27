@@ -489,7 +489,7 @@ function CedibileBadge({ stato, compact = false }) {
 // pensato per stare dentro un popup/modale già esistente senza appesantirlo:
 // niente libreria esterna, solo un piccolo SVG. Compare in tutti i menù
 // giocatore (rosa propria/altrui, chiamata svincolati).
-function GraficoQuotazione({ nome }) {
+function GraficoQuotazione({ nome, quotRosa }) {
   const [storico, setStorico] = useState(null);
 
   useEffect(() => {
@@ -501,14 +501,23 @@ function GraficoQuotazione({ nome }) {
   }, [nome]);
 
   if (!nome || storico === null) return null;
-  if (storico.length < 2) return null; // con 0-1 punti non c'è un trend da mostrare
+
+  // Punto di partenza = quotazione di rosa (quella su cui è calcolato lo
+  // stipendio del giocatore), poi tutte le variazioni reali già registrate
+  // in storico_quotazioni, in ordine cronologico — nessun nuovo dato
+  // salvato, solo composizione di due valori già esistenti nell'app.
+  const serie = (quotRosa != null && Number(quotRosa) > 0)
+    ? [{ quot: Number(quotRosa) }, ...storico]
+    : storico;
+
+  if (serie.length < 2) return null; // con 0-1 punti non c'è un trend da mostrare
 
   const W = 280, H = 56, PAD = 4;
-  const quots = storico.map(p => Number(p.quot));
+  const quots = serie.map(p => Number(p.quot));
   const min = Math.min(...quots), max = Math.max(...quots);
   const range = max - min || 1;
-  const stepX = storico.length > 1 ? (W - PAD * 2) / (storico.length - 1) : 0;
-  const pts = storico.map((p, i) => [
+  const stepX = serie.length > 1 ? (W - PAD * 2) / (serie.length - 1) : 0;
+  const pts = serie.map((p, i) => [
     PAD + i * stepX,
     H - PAD - ((Number(p.quot) - min) / range) * (H - PAD * 2),
   ]);
@@ -3520,7 +3529,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
             ))}
           </div>
 
-          <GraficoQuotazione nome={popup.player.nome} />
+          <GraficoQuotazione nome={popup.player.nome} quotRosa={popup.player.quot} />
 
           <div style={{ fontSize:10,fontWeight:700,color:"#666",letterSpacing:"0.1em",margin:"14px 0 8px" }}>AZIONI</div>
 
