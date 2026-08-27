@@ -1388,9 +1388,12 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate }) 
     return <div style={{ padding: 40, textAlign: "center", color: "#555", fontSize: 14 }}>Nessuna squadra associata al tuo profilo.</div>;
   }
 
-  const salaryCapUsato = scLive ?? Number(team.salaryUsed || 0);
+  // Niente fallback su team.salaryUsed (colonna DB potenzialmente stale):
+  // finché il calcolo live non risponde, salaryCapUsato resta null e la
+  // ProgressBar viene sostituita da un placeholder neutro (vedi sotto).
+  const salaryCapUsato = scLive;
   const salaryCapLimite = 75 + Number(team.scBonusObiettivi || 0) + scBonusInvestimenti;
-  const salaryCapSforato = salaryCapUsato > salaryCapLimite;
+  const salaryCapSforato = salaryCapUsato != null && salaryCapUsato > salaryCapLimite;
 
   // Le 2 scadenze di Lega più vicine — stesso calendario/stessa funzione di
   // risoluzione già usati in Lega → Scadenze (getResolvedDeadlines, definita
@@ -1423,7 +1426,17 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate }) 
         <div style={{ marginTop: 18, textAlign: "left" }}>
           <div style={{ fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "#777", textAlign: "center" }}>Bilancio</div>
           <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, color: BRAND.gold, textAlign: "center", marginBottom: 14 }}>{team.bilancio.toFixed(1)}M</div>
-          <ProgressBar label="Salary Cap" used={salaryCapUsato} limit={salaryCapLimite} overLimit={salaryCapSforato} />
+          {salaryCapUsato != null ? (
+            <ProgressBar label="Salary Cap" used={salaryCapUsato} limit={salaryCapLimite} overLimit={salaryCapSforato} />
+          ) : (
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#7D879B", marginBottom: 4 }}>
+                <span>Salary Cap</span>
+                <span>—</span>
+              </div>
+              <div style={{ height: 6, borderRadius: 999, background: "#1C2230", overflow: "hidden" }} />
+            </div>
+          )}
         </div>
       </HeroSurface>
 
