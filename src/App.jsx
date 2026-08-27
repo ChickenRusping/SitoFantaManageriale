@@ -173,6 +173,10 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
+import { SURFACE, BRAND, SEMANTIC } from "./design-system.js";
+import { IconHome, IconShield, IconTrophy, IconMarket, IconMore, IconAdmin, IconChevronRight, IconArchive } from "./components/ui/Icons.jsx";
+import { ProgressBar } from "./components/ui/ProgressBar.jsx";
+import { HeroSurface } from "./components/ui/Surface.jsx";
 import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, registraEventoGiornataInvestimento, getEffettiInvestimenti, getSquadreConSuperClub, getStatoGuadagniGiornata,
   getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, usaContatoreInvestimento, registraEventoInvestimento, annullaEventoInvestimento, toggleTraguardoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
@@ -837,8 +841,8 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
       <table style={{ width: "100%", minWidth: 560, borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
           <tr style={{ borderBottom: "1px solid #ffffff15" }}>
-            <th style={{ padding: "6px 8px", fontSize: 10, fontWeight: 700, color: "#555" }}>#</th>
-            <SortTh col="squadra"   label="Squadra"   align="left"   style={{ minWidth: 100 }} />
+            <th style={{ padding: "6px 8px", fontSize: 10, fontWeight: 700, color: "#555", position:"sticky", left:0, background:"#0d0f14", zIndex:2 }}>#</th>
+            <SortTh col="squadra"   label="Squadra"   align="left"   style={{ minWidth: 100, position:"sticky", left:28, background:"#0d0f14", zIndex:2 }} />
             <SortTh col="g"         label="G"         align="center" />
             <SortTh col="v"         label="V"         align="center" />
             <SortTh col="n"         label="N"         align="center" />
@@ -863,8 +867,8 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
                 onMouseEnter={e => { if (!isMe) e.currentTarget.style.background = "#ffffff05"; }}
                 onMouseLeave={e => { if (!isMe) e.currentTarget.style.background = isMe ? "#6366f110" : "transparent"; }}
               >
-                <td style={{ padding: "9px 4px", textAlign: "center", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif", fontSize: 15, color: rowColor || "#555" }}>{pos}</td>
-                <td style={{ padding: "9px 6px" }}>
+                <td style={{ padding: "9px 4px", textAlign: "center", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif", fontSize: 15, color: rowColor || "#555", position:"sticky", left:0, background: isMe ? "#1a1d3a" : "#0d0f14", zIndex:1 }}>{pos}</td>
+                <td style={{ padding: "9px 6px", position:"sticky", left:28, background: isMe ? "#1a1d3a" : "#0d0f14", zIndex:1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     {row.team && <TeamAvatar team={row.team} size={22} />}
                     <span style={{ fontSize: 11, fontWeight: isMe ? 800 : 600, color: isMe ? "#f0f0f0" : "#ccc", wordBreak: "break-word" }}>
@@ -1273,6 +1277,138 @@ function CalcolatoreGiornata({ profile, teams }) {
 }
 
 /* ─── SQUADRE PAGE ──────────────────────────────────────────────────────────── */
+/* ─── HOME (nuova destinazione principale) ──────────────────────────────────
+   Sintesi, non un cruscotto: identità club, situazione economica come
+   progress bar, "Richiede attenzione" solo se esistono eventi reali, e
+   ultime news. Nessuna funzione "prossimo incontro"/formazione: non esistono
+   nell'app e non vengono introdotte qui. */
+function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate }) {
+  const team = teams.find(t => t.name === mySquadra);
+  const [allenatoreNome, setAllenatoreNome] = useState(null);
+  const [posizione, setPosizione] = useState(null);
+  const [punti, setPunti] = useState(null);
+  const [scBonusInvestimenti, setScBonusInvestimenti] = useState(0);
+  const [contrattiScadenza, setContrattiScadenza] = useState([]);
+  const [news, setNews] = useState([]);
+
+  useEffect(() => {
+    if (!team) return;
+    getAllenatoreBySquadra(team.name, STAGIONE_CORRENTE).then(a => setAllenatoreNome(a?.nome || null));
+    cachedFetch('effetti_inv_' + team.name, () => getEffettiInvestimenti(team.name), 600000)
+      .then(e => setScBonusInvestimenti(Number(e?.scBonusInvestimenti || 0)));
+    getContrattiInScadenza(team.name).then(d => setContrattiScadenza(d || []));
+    const loadClassifica = () => getClassifica().then(rows => {
+      const idx = (rows || []).findIndex(r => r.squadra === team.name);
+      if (idx >= 0) { setPosizione(idx + 1); setPunti(rows[idx].pt); }
+    });
+    loadClassifica();
+    const sub = subscribeClassifica(loadClassifica);
+    return () => supabase.removeChannel(sub);
+  }, [team?.name]);
+
+  useEffect(() => {
+    getNotizie(undefined, 3).then(setNews).catch(() => setNews([]));
+  }, []);
+
+  if (!team) {
+    return <div style={{ padding: 40, textAlign: "center", color: "#555", fontSize: 14 }}>Nessuna squadra associata al tuo profilo.</div>;
+  }
+
+  const salaryCapUsato = Number(team.salaryUsed || 0);
+  const salaryCapLimite = 75 + Number(team.scBonusObiettivi || 0) + scBonusInvestimenti;
+  const salaryCapSforato = salaryCapUsato > salaryCapLimite;
+
+  // Stesso filtro già usato in PresidentePage per "contratti in scadenza reale"
+  // (esclude U21 con rinnovo automatico esente aumento) — riusato identico.
+  const alertContratti = contrattiScadenza.filter(p => !p.anni_giocatore || p.anni > 21);
+  const nOfferte = offerteInAttesa.length;
+  const haRichiesteAttenzione = nOfferte > 0 || alertContratti.length > 0;
+
+  return (
+    <div style={{ maxWidth: 640, margin: "0 auto" }}>
+      <HeroSurface style={{ marginBottom: 14 }}>
+        <TeamAvatar team={team} size={72} />
+        <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, letterSpacing: "0.5px", color: "#f0f0f0", marginTop: 10 }}>{team.name}</div>
+        {allenatoreNome && <div style={{ fontSize: 11.5, color: "#888", marginTop: 2 }}>All. {allenatoreNome}</div>}
+        {posizione != null && (
+          <div style={{ display: "inline-block", marginTop: 8, fontSize: 11, fontWeight: 700, background: "#ffffff10", color: BRAND.gold, padding: "4px 12px", borderRadius: 999 }}>
+            {posizione}° in classifica{punti != null ? ` · ${punti}pt` : ""}
+          </div>
+        )}
+        <div style={{ marginTop: 18, textAlign: "left" }}>
+          <div style={{ fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "#777", textAlign: "center" }}>Bilancio</div>
+          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, color: BRAND.gold, textAlign: "center", marginBottom: 14 }}>{team.bilancio.toFixed(1)}M</div>
+          <ProgressBar label="Salary Cap" used={salaryCapUsato} limit={salaryCapLimite} overLimit={salaryCapSforato} />
+        </div>
+      </HeroSurface>
+
+      {haRichiesteAttenzione && (
+        <div style={{ background: SEMANTIC.warning + "12", borderLeft: `3px solid ${SEMANTIC.warning}`, borderRadius: 12, padding: "12px 14px", marginBottom: 12 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: SEMANTIC.warning, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>⚠ Richiede attenzione</div>
+          {nOfferte > 0 && (
+            <div onClick={() => navigate('/mercato')} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", cursor: "pointer", fontSize: 13 }}>
+              <span>{nOfferte} offert{nOfferte === 1 ? "a" : "e"} ricevut{nOfferte === 1 ? "a" : "e"}</span>
+              <IconChevronRight size={14} style={{ color: "#888" }} />
+            </div>
+          )}
+          {alertContratti.length > 0 && (
+            <div onClick={() => navigate(`/presidente/${team.id}/finanze`)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", cursor: "pointer", fontSize: 13 }}>
+              <span>{alertContratti.length} contratt{alertContratti.length === 1 ? "o" : "i"} in scadenza</span>
+              <IconChevronRight size={14} style={{ color: "#888" }} />
+            </div>
+          )}
+        </div>
+      )}
+
+      <div onClick={() => navigate('/lega')} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: SURFACE.card, borderRadius: 12, padding: "12px 14px", marginBottom: 12, cursor: "pointer" }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#ccc" }}>Scadenze di lega</span>
+        <IconChevronRight size={14} style={{ color: "#888" }} />
+      </div>
+
+      <div style={{ fontSize: 10, fontWeight: 700, color: "#777", letterSpacing: "0.06em", textTransform: "uppercase", margin: "16px 2px 6px" }}>News</div>
+      {news.map(n => (
+        <div key={n.id} onClick={() => navigate('/news')} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "8px 2px", borderBottom: "1px solid #ffffff0c", cursor: "pointer" }}>
+          <span style={{ fontSize: 12.5, fontWeight: 600, color: "#ddd", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.titolo || n.testo?.slice(0, 60)}</span>
+          <span style={{ fontSize: 10, color: "#666", flexShrink: 0 }}>{new Date(n.created_at).toLocaleDateString("it-IT", { day: "2-digit", month: "short" })}</span>
+        </div>
+      ))}
+      <div onClick={() => navigate('/news')} style={{ textAlign: "right", fontSize: 11.5, color: BRAND.primary, fontWeight: 700, cursor: "pointer", padding: "8px 2px" }}>Tutte le news →</div>
+    </div>
+  );
+}
+
+/* ─── ALTRO (hub) ────────────────────────────────────────────────────────────
+   Nuova destinazione bottom-nav che raggruppa Sala Stampa, Archivio, Profilo
+   (con Logout) e, per l'admin, il link alla Control Room — nessuna di queste
+   pagine viene rimossa: restano raggiungibili con le loro route esistenti
+   (/news, /storico, /profilo, /admin-control), qui c'è solo l'indice. */
+function AltroHubPage({ navigate, isAdmin, profile }) {
+  const items = [
+    { icon: "📰", label: "Sala Stampa", sub: "Comunicati e news della lega", path: "/news" },
+    { icon: <IconArchive size={20} />, label: "Archivio", sub: "Albo d'oro, regolamento, changelog", path: "/storico" },
+    { icon: "👤", label: "Profilo", sub: profile?.nome || profile?.email || "", path: "/profilo" },
+    ...(isAdmin ? [{ icon: <IconAdmin size={20} />, label: "Admin Control Room", sub: "Gestione lega", path: "/admin-control" }] : []),
+  ];
+  return (
+    <div style={{ maxWidth: 560, margin: "0 auto" }}>
+      {items.map(it => (
+        <div key={it.path} onClick={() => navigate(it.path)}
+          style={{ display: "flex", alignItems: "center", gap: 12, background: SURFACE.card, borderRadius: 14, padding: "14px 16px", marginBottom: 10, cursor: "pointer" }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: "#ffffff0f", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>{it.icon}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: "#eee" }}>{it.label}</div>
+            {it.sub && <div style={{ fontSize: 11, color: "#777", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.sub}</div>}
+          </div>
+          <IconChevronRight size={16} style={{ color: "#666", flexShrink: 0 }} />
+        </div>
+      ))}
+      <button onClick={() => signOut()} style={{ width: "100%", marginTop: 8, padding: "12px", borderRadius: 12, border: "1px solid #ffffff14", background: "transparent", color: "#888", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+        Esci
+      </button>
+    </div>
+  );
+}
+
 function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
   const mySquadra = profile?.squadra;
   const myTeam = teams.find(t => t.name === mySquadra);
@@ -2112,10 +2248,32 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
   }
   const inp = { padding: "4px 6px", borderRadius: 5, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 11, width: "100%" };
 
+  // Sotto-navigazione "Lega": stesse 3 sezioni già esistenti (Competizioni
+  // — con classifica/coppa/supercoppa già selezionabili al suo interno —
+  // Scadenze e Premi), solo mostrate una alla volta invece che impilate.
+  // "Rose non regolari" resta sempre visibile: è un avviso di compliance
+  // trasversale, non legato a una singola competizione.
+  const [legaTab, setLegaTab] = useState('competizioni');
+  const LEGA_TABS = [
+    { key: 'competizioni', label: '🏅 Competizioni' },
+    { key: 'scadenze',     label: '📅 Scadenze' },
+    { key: 'premi',        label: '🏆 Premi' },
+  ];
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
 
+      <div style={{ display:"flex",gap:6,overflowX:"auto",paddingBottom:2 }}>
+        {LEGA_TABS.map(t => (
+          <button key={t.key} onClick={() => setLegaTab(t.key)}
+            style={{ padding:"8px 16px",borderRadius:999,border:"none",background:legaTab===t.key?"#6366f122":"#ffffff0a",color:legaTab===t.key?"#818cf8":"#888",fontSize:12.5,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap" }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
       {/* ── 1. SCADENZE ── */}
+      {legaTab==='scadenze' && (
       <div style={{ background:"#ffffff06",border:"1.5px solid #ffffff12",borderRadius:16,padding:18 }}>
         <div style={{ fontSize:11,fontWeight:700,color:"#888",letterSpacing:"0.1em",marginBottom:16 }}>📅 SCADENZE</div>
         <style>{`@media(max-width:768px){.dl-cols{flex-direction:column!important;align-items:stretch!important}.dl-sep{display:none!important}}`}</style>
@@ -2169,9 +2327,10 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
           </div>
         </div>
       </div>
+      )}
 
       {/* ── 2. COMPETIZIONI (Serie A + Coppa Italia + Supercoppa) ── */}
-      {(()=>{
+      {legaTab==='competizioni' && (()=>{
         const COMP_TABS = [
           { key: 'serie_a',    label: '🏅 FantaSerie A' },
           { key: 'coppa',      label: '🏆 FantaCoppa Italia' },
@@ -2295,6 +2454,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
       </div>
 
       {/* ── 4. PREMI ── */}
+      {legaTab==='premi' && (
       <div style={{ background:"#ffffff06",border:"1.5px solid #ffffff12",borderRadius:16,padding:18 }}>
         <div style={{ fontSize:11,fontWeight:700,color:"#888",letterSpacing:"0.1em",marginBottom:16 }}>🏆 PREMI · {STAGIONE_CORRENTE}</div>
         <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
@@ -2392,6 +2552,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
           </div>
         </div>
       </div>
+      )}
 
     </div>
   );
@@ -2771,6 +2932,17 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
   // MODIFICARE quella rosa per aprirlo, basta essere un presidente loggato.
   const canClickPlayer = canEdit || !!mySquadra;
 
+  // Su mobile la tabella 12 colonne diventa "Lista Premium" (righe compatte
+  // raggruppate per macro-sezione); su desktop resta la tabella completa.
+  // Stesso pattern isDesktop già usato altrove nell'app (AppInner).
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
+  useEffect(() => {
+    const h = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  const [openSections, setOpenSections] = useState({});
+
   const [players, setPlayers] = useState([]);
   const [vivaio, setVivaio] = useState([]);
   const [svincoli, setSvincoli] = useState([]);
@@ -2827,6 +2999,24 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
     };
   });
   const { sorted, SortTh } = useSortableTable(playersRich, "_ruoloOrd", "asc");
+
+  // Macro-sezioni SOLO per raggruppare visivamente la Lista Premium mobile —
+  // il badge mostrato resta sempre il ruolo Mantra reale (p.ruolo), qui
+  // serve solo a decidere sotto quale titolo di sezione va la riga.
+  const MACRO_SEZIONI = ["Portieri", "Difesa", "Centrocampo", "Trequarti", "Attacco"];
+  function macroSezioneFromOrd(ord) {
+    if (ord === 0) return "Portieri";
+    if (ord <= 4) return "Difesa";
+    if (ord <= 7) return "Centrocampo";
+    if (ord <= 9) return "Trequarti";
+    return "Attacco";
+  }
+  const sortedByRuolo = [...playersRich].sort((a, b) => a._ruoloOrd - b._ruoloOrd);
+  const sezioniMap = {};
+  for (const p of sortedByRuolo) {
+    const sez = macroSezioneFromOrd(p._ruoloOrd);
+    (sezioniMap[sez] = sezioniMap[sez] || []).push(p);
+  }
 
   function calcolaPreview(player, tipo, estero) {
     if (!player) return null;
@@ -3039,36 +3229,54 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
 
   return (
     <div style={{ position: "relative" }}>
-      {/* Click-away overlay — chiude popup quando clicchi fuori */}
+      {/* Click-away overlay — chiude popup quando clicchi fuori.
+          Su mobile è visibilmente scurito (pattern bottom sheet), su
+          desktop resta invisibile come oggi (comportamento invariato). */}
       {popup && (
         <div
-          style={{ position:"fixed",inset:0,zIndex:998 }}
+          style={{ position:"fixed",inset:0,zIndex:998,background:isDesktop?"transparent":"rgba(0,0,0,0.55)" }}
           onClick={() => setPopup(null)}
           onTouchEnd={() => setPopup(null)}
         />
       )}
 
-      {/* ── Compliance ── */}
-      <div style={{ marginBottom:14,background:comp.regolare?"#10b98112":"#ef444412",border:`1.5px solid ${comp.regolare?"#10b98133":"#ef444433"}`,borderRadius:12,padding:"10px 14px" }}>
-        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:comp.issues.length>0?10:0 }}>
-          <span style={{ fontWeight:800,fontSize:12,color:comp.regolare?"#10b981":"#ef4444" }}>{comp.regolare?"✅ ROSA REGOLARE":"❌ ROSA NON REGOLARE"}</span>
-          <div style={{ display:"flex",gap:10,fontSize:11,color:"#888" }}>
-            <span>🧤 {comp.portieri}</span><span>⚽ {comp.movimento}</span>
-            <span style={{ color:comp.u21>=3||comp.totale<=27?"#a78bfa":"#ef4444" }}>🔮 {comp.u21} U21</span>
-            <span style={{ fontWeight:700,color:comp.totale>30?"#ef4444":"#ccc" }}>{comp.totale}/30</span>
-          </div>
+      {/* ── Compliance ──
+          Normalità = poco spazio (riga discreta), anomalia = evidenza (box
+          colorato con i dettagli) — stesso calcolo di comp, cambia solo la
+          quantità di spazio che occupa in base al risultato. */}
+      {comp.regolare ? (
+        <div style={{ display:"flex",alignItems:"center",gap:8,fontSize:11.5,color:"#888",padding:"6px 2px 12px",borderBottom:"1px solid #ffffff0c",marginBottom:10 }}>
+          <span>Rosa regolare · <b style={{ color:"#ccc" }}>{comp.totale}/30</b></span>
+          <span>·</span>
+          <span>{comp.portieri} Por</span>
+          <span>·</span>
+          <span>{comp.u21} U21</span>
         </div>
-        {comp.issues.map((issue,i) => <div key={i} style={{ fontSize:11,color:issue.tipo==="error"?"#ef4444":"#f59e0b",marginTop:4 }}>{issue.tipo==="error"?"⛔":"⚠️"} {issue.testo}</div>)}
-      </div>
+      ) : (
+        <div style={{ marginBottom:14,background:"#ef444412",border:"1.5px solid #ef444433",borderRadius:12,padding:"10px 14px" }}>
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:comp.issues.length>0?10:0 }}>
+            <span style={{ fontWeight:800,fontSize:12,color:"#ef4444" }}>❌ ROSA NON REGOLARE</span>
+            <div style={{ display:"flex",gap:10,fontSize:11,color:"#888" }}>
+              <span>🧤 {comp.portieri}</span><span>⚽ {comp.movimento}</span>
+              <span style={{ color:comp.u21>=3||comp.totale<=27?"#a78bfa":"#ef4444" }}>🔮 {comp.u21} U21</span>
+              <span style={{ fontWeight:700,color:comp.totale>30?"#ef4444":"#ccc" }}>{comp.totale}/30</span>
+            </div>
+          </div>
+          {comp.issues.map((issue,i) => <div key={i} style={{ fontSize:11,color:issue.tipo==="error"?"#ef4444":"#f59e0b",marginTop:4 }}>{issue.tipo==="error"?"⛔":"⚠️"} {issue.testo}</div>)}
+        </div>
+      )}
 
+      {isDesktop && (
       <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8 }}>
         <span style={{ fontSize:12,color:"#aaa" }}>{players.length} giocatori</span>
         <span style={{ fontSize:10,color:"#444",fontStyle:"italic" }}>
           {canClickPlayer?"Tocca un giocatore per azioni":"Click intestazione per ordinare"}
         </span>
       </div>
+      )}
 
-      {/* ── Tabella ── */}
+      {/* ── Tabella (desktop) ── */}
+      {isDesktop && (
       <div style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
         <table style={{ width:"100%",minWidth:680,borderCollapse:"collapse",fontSize:12 }}>
           <thead>
@@ -3145,6 +3353,56 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
           </tbody>
         </table>
       </div>
+      )}
+
+      {/* ── Lista Premium (mobile) ──
+          Pattern: ruolo Mantra reale + nome + squadra Serie A + quotazione +
+          stipendio + contratto + status, righe separate da bordo sottile,
+          raggruppate per macro-sezione (solo aiuto visivo, il badge resta
+          sempre il ruolo reale). Le stesse azioni della tabella desktop
+          restano invariate: tap → openPopup identico. */}
+      {!isDesktop && (
+        <div>
+          {MACRO_SEZIONI.filter(s => sezioniMap[s]?.length).map(sez => {
+            const isOpen = openSections[sez] !== false; // aperto di default
+            const list = sezioniMap[sez];
+            return (
+              <div key={sez} style={{ marginBottom: 6 }}>
+                <div onClick={() => setOpenSections(o => ({ ...o, [sez]: !isOpen }))}
+                  style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 2px",cursor:"pointer" }}>
+                  <span style={{ fontSize:10,fontWeight:700,color:"#777",letterSpacing:"0.06em",textTransform:"uppercase" }}>{sez} · {list.length}</span>
+                  <span style={{ fontSize:11,color:"#666" }}>{isOpen ? "▾" : "▸"}</span>
+                </div>
+                {isOpen && list.map(p => {
+                  const rc = getRoleColor(p.ruolo), fuori = p.fuori_lista, sel = popup?.player?.id===p.id;
+                  return (
+                    <div key={p.id}
+                      onClick={canClickPlayer?(e)=>openPopup(e,p,isOwn?'own':'other'):undefined}
+                      style={{ display:"flex",alignItems:"center",gap:10,padding:"9px 2px",borderBottom:"1px solid #ffffff0a",background:sel?"#6366f118":"transparent",cursor:canClickPlayer?"pointer":"default" }}>
+                      <span style={{ background:rc.bg,color:rc.text,border:`1px solid ${rc.border}`,borderRadius:6,padding:"3px 6px",fontSize:9.5,fontWeight:700,fontFamily:"'IBM Plex Mono',monospace",flexShrink:0 }}>{p.ruolo}</span>
+                      <div style={{ flex:1,minWidth:0 }}>
+                        <div style={{ fontSize:12.5,fontWeight:700,color:fuori?"#ef4444":"#e8e8e8" }}>
+                          {p.nome}
+                          {fuori&&<span style={{ marginLeft:4,fontSize:8,background:"#ef444422",color:"#ef4444",border:"1px solid #ef444455",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>FUORI</span>}
+                          {p.da_cedere&&<DaCedereBadge compact />}
+                          {p.cedibile_stato&&<CedibileBadge stato={p.cedibile_stato} compact />}
+                          {!fuori&&p.anni>0&&p.anni<=21&&<span style={{ marginLeft:4,fontSize:8,background:"#8b5cf622",color:"#a78bfa",border:"1px solid #8b5cf644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>U21</span>}
+                          {!fuori&&p.anni>=31&&<span style={{ marginLeft:4,fontSize:8,background:"#f9731622",color:"#fb923c",border:"1px solid #f9731644",borderRadius:4,padding:"1px 4px",fontWeight:700 }}>31+</span>}
+                          {p.in_prestito&&<span style={{ marginLeft:4,fontSize:8,background:"#6366f122",color:"#a5b4fc",border:"1px solid #6366f144",borderRadius:4,padding:"1px 4px",fontWeight:800 }}>{p.tag_rosa || (p.prestito_tipo === 'prestito_obbligo' ? 'PREST. OBBL.' : p.prestito_tipo === 'prestito_secco' ? 'PREST. SECCO' : 'PREST. DIR.')}</span>}
+                          {!p.in_vivaio&&p.anni>0&&p.anni<=23&&Number(p.quot||0)<=3&&(p.partite||0)===0&&vivaio.length<maxVivaio&&<span title="Eleggibile vivaio" style={{ marginLeft:4,fontSize:10 }}>🌱</span>}
+                        </div>
+                        <div style={{ fontSize:10.5,color:"#888",marginTop:1 }}>
+                          {p.squadra_serie_a||"—"} · Q{p.quot} · <span style={{ color:"#bbb",fontWeight:600 }}>{p._stipCorretto.toFixed(1)}M</span> · C{p.anni_contratto||"—"}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {players.length>0&&(
         <div style={{ marginTop:10,paddingTop:10,borderTop:"1px solid #ffffff10",display:"flex",gap:16,flexWrap:"wrap" }}>
@@ -3153,12 +3411,20 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
         </div>
       )}
 
-      {/* ── POPUP CONTESTUALE ── */}
+      {/* ── POPUP CONTESTUALE ──
+          Desktop: comportamento invariato (ancorato alle coordinate del
+          click). Mobile: stesso contenuto, ma diventa una vera bottom sheet
+          — ancorata in basso, sempre raggiungibile col pollice, come
+          richiesto — nessuna azione/funzione qui dentro è stata toccata. */}
       {popup&&(
         <div
           onClick={e=>e.stopPropagation()}
           onTouchEnd={e=>e.stopPropagation()}
-          style={{ position:"fixed",zIndex:9999,left:popup.x,top:popup.y,width:popup.w||310,background:"#1a1d26",border:"1.5px solid #ffffff18",borderRadius:14,boxShadow:"0 8px 32px #00000099",padding:16,maxHeight:popup.maxH?`${popup.maxH}px`:"90vh",overflowY:"auto" }}>
+          style={isDesktop
+            ? { position:"fixed",zIndex:9999,left:popup.x,top:popup.y,width:popup.w||310,background:"#1a1d26",border:"1.5px solid #ffffff18",borderRadius:14,boxShadow:"0 8px 32px #00000099",padding:16,maxHeight:popup.maxH?`${popup.maxH}px`:"90vh",overflowY:"auto" }
+            : { position:"fixed",zIndex:9999,left:0,right:0,bottom:0,width:"100%",background:"#1a1d26",borderRadius:"20px 20px 0 0",boxShadow:"0 -8px 32px #00000099",padding:"10px 16px 20px",maxHeight:"85vh",overflowY:"auto" }
+          }>
+          {!isDesktop && <div style={{ width:36,height:4,borderRadius:99,background:"#ffffff20",margin:"0 auto 12px" }} />}
           {/* Header */}
           <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14 }}>
             <div>
@@ -5598,10 +5864,29 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
     return { entrata: parseFloat(entrata.toFixed(2)), uscita: parseFloat(uscita.toFixed(2)) };
   }, [bonusData, team.name]);
 
+  // Sotto-navigazione "Club": organizza le stesse 3 sezioni già esistenti
+  // (nessuna funzione spostata o rimossa, solo raggruppata sotto un tab).
+  const [subTab, setSubTab] = useState('bonus');
+  const SUB_TABS = [
+    { key: 'bonus', label: 'Bonus' },
+    { key: 'allenatore', label: 'Allenatore' },
+    { key: 'investimenti', label: 'Investimenti' },
+  ];
+
   return (
     <div style={{ display:"flex",flexDirection:"column",gap:20 }}>
 
+      <div style={{ display:"flex",gap:6,overflowX:"auto",paddingBottom:2 }}>
+        {SUB_TABS.map(t => (
+          <button key={t.key} onClick={() => setSubTab(t.key)}
+            style={{ padding:"7px 14px",borderRadius:999,border:"none",background:subTab===t.key?"#6366f122":"#ffffff0a",color:subTab===t.key?"#818cf8":"#888",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap" }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
       {/* ══ 1. BONUS TRATTATIVE ══ */}
+      {subTab==='bonus' && (
       <div>
         <div
           onClick={() => setBonusSectionOpen(v => !v)}
@@ -5695,8 +5980,10 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
           })}
         </div>)}
       </div>
+      )}
 
       {/* ══ 2. ALLENATORE ══ */}
+      {subTab==='allenatore' && (
       <div>
         <div style={{ fontSize:11,fontWeight:700,color:"#a855f7",letterSpacing:"0.1em",marginBottom:12 }}>🎩 ALLENATORE · {STAGIONE_CORRENTE}</div>
         {loadingAll?<div style={{ fontSize:12,color:"#555" }}>Caricamento...</div>
@@ -5932,8 +6219,10 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
           </div>
         )}
       </div>
+      )}
 
       {/* ══ 3. INVESTIMENTI ══ */}
+      {subTab==='investimenti' && (
       <div>
         <div style={{ fontSize:11,fontWeight:700,color:"#f59e0b",letterSpacing:"0.1em",marginBottom:12 }}>💼 INVESTIMENTI</div>
         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12 }}>
@@ -6133,6 +6422,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
           </div>
         )}
       </div>
+      )}
 
     </div>
   );
@@ -6631,39 +6921,47 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
     } catch(e) { alert(`Errore: ${e.message}`); }
   }
 
+  // "Altro" diventa "Club" solo come etichetta visiva — la key resta "altro"
+  // e AltroTab (bonus/allenatore/investimenti) non viene toccata: nessuna
+  // funzione si sposta, cambia solo il nome mostrato nel tab bar.
   const tabs = [
     { key: "rosa",      label: "Rosa"      },
     { key: "finanze",   label: "Finanze"   },
     { key: "movimenti", label: "Movimenti" },
-    { key: "altro",     label: "Altro"     },
+    { key: "altro",     label: "Club"      },
   ];
+
+  const [posizioneLega, setPosizioneLega] = useState(null);
+  useEffect(() => {
+    const load = () => getClassifica().then(rows => {
+      const idx = (rows || []).findIndex(r => r.squadra === team.name);
+      setPosizioneLega(idx >= 0 ? idx + 1 : null);
+    });
+    load();
+    const sub = subscribeClassifica(load);
+    return () => supabase.removeChannel(sub);
+  }, [team.name]);
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
-        <button onClick={onBack} style={{ background: "#ffffff0f", border: "1px solid #ffffff18", borderRadius: 10, padding: "8px 12px", cursor: "pointer", color: "#aaa", fontSize: 13, fontWeight: 600 }}>← Indietro</button>
-        <TeamAvatar team={team} size={48} />
-        <div>
-          <div style={{ fontSize: 20, fontWeight: 900, color: "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "0.5px" }}>{team.name}</div>
-          {allenatoreNome && (
-            <div style={{ fontSize: 12, color: "#888" }}>Allenatore: <span style={{ color: team.color, fontWeight: 700 }}>{allenatoreNome}</span></div>
-          )}
-        </div>
+      {/* Hero compatta: stemma, nome, allenatore, posizione — niente hero enormi */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+        <button onClick={onBack} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#888", fontSize: 20, padding: 4, lineHeight: 1 }} title="Indietro">‹</button>
       </div>
-
-      {/* Quick stats strip */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 20 }}>
-        {[
-          { label: "Bilancio",  value: `${team.bilancio.toFixed(1)}M`,            color: team.bilancio < 10 ? "#f97316" : "#f0f0f0" },
-          { label: "SC Usato",  value: `${salaryCapUsato.toFixed(1)}M / ${salaryCapLimite.toFixed(1)}M`,     color: salaryCapSforato ? "#ef4444" : "#10b981" },
-          { label: "SC Libero", value: `${(salaryCapLimite - salaryCapUsato) >= 0 ? "+" : ""}${(salaryCapLimite - salaryCapUsato).toFixed(1)}M`,   color: salaryCapSforato ? "#ef4444" : "#10b981" },
-        ].map(s => (
-          <div key={s.label} style={{ background: "#ffffff08", borderRadius: 12, padding: "10px 12px", textAlign: "center" }}>
-            <div style={{ fontSize: 9, color: "#777", letterSpacing: "0.06em", marginBottom: 4 }}>{s.label.toUpperCase()}</div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: s.color, fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "0.5px" }}>{s.value}</div>
+      <div style={{ background: "#ffffff08", borderRadius: 20, padding: "18px 16px", marginBottom: 14, textAlign: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center" }}><TeamAvatar team={team} size={64} /></div>
+        <div style={{ fontSize: 19, fontWeight: 900, color: "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "0.5px", marginTop: 8 }}>{team.name}</div>
+        {allenatoreNome && <div style={{ fontSize: 11.5, color: "#888", marginTop: 2 }}>All. {allenatoreNome}</div>}
+        {posizioneLega != null && (
+          <div style={{ display: "inline-block", marginTop: 8, fontSize: 10.5, fontWeight: 700, background: "#ffffff10", color: "#E8B84B", padding: "4px 12px", borderRadius: 999 }}>
+            {posizioneLega}° in classifica
           </div>
-        ))}
+        )}
+        <div style={{ marginTop: 16, textAlign: "left" }}>
+          <div style={{ fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "#777", textAlign: "center" }}>Bilancio</div>
+          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 24, color: team.bilancio < 10 ? "#f97316" : "#E8B84B", textAlign: "center", marginBottom: 12 }}>{team.bilancio.toFixed(1)}M</div>
+          <ProgressBar label="Salary Cap" used={salaryCapUsato} limit={salaryCapLimite} overLimit={salaryCapSforato} />
+        </div>
       </div>
 
       {/* Two-column layout: tabs left, club identity right */}
@@ -8632,18 +8930,38 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
         </div>
       )}
 
-      {/* ── Switcher Mercato / Svincolati ── */}
-      <div style={{ display:"flex",gap:0,background:"#ffffff08",borderRadius:12,padding:4,alignSelf:"flex-start",maxWidth:"100%",overflowX:"auto",WebkitOverflowScrolling:"touch" }}>
-        {[["mercato","🤝 Mercato"],["trasferimenti","🏷️ Lista Trasferimenti"],["svincolati","🔍 Svincolati"],["listone","📋 Listone"],["compara-rose","⚖️ Compara Rose"],["compara-giocatori","🆚 Compara Giocatori"]].map(([k,l])=>{
-          const kcolor = k==="mercato"?"#6366f1":k==="trasferimenti"?"#f59e0b":k==="svincolati"?"#10b981":k==="listone"?"#f59e0b":k==="compara-rose"?"#818cf8":"#a78bfa";
-          return (
-          <button key={k} onClick={()=>setMercatoSection(k)}
-            style={{ padding:"8px 20px",borderRadius:9,border:"none",background:mercatoSection===k?kcolor:"transparent",color:mercatoSection===k?"#fff":"#666",fontSize:13,fontWeight:700,cursor:"pointer",transition:"all 0.15s",whiteSpace:"nowrap",flexShrink:0 }}>
-            {l}
-            {k==="svincolati" && svincoliOffertePendenti>0 && <span style={{ background:"#ef4444",color:"#fff",borderRadius:"50%",padding:"1px 6px",fontSize:9,marginLeft:5,fontWeight:900 }}>{svincoliOffertePendenti}</span>}
+      {/* ── Navigazione primaria: Trattative · Aste · Trasferimenti ──
+          Stesso stato (mercatoSection/tab) di prima, riorganizzato: prima
+          erano 6 pill dello stesso peso, ora le 3 attività principali sono
+          in primo piano e il resto (Svincolati/Listone/Confronta/Storico)
+          diventa strumenti secondari nella riga sotto. */}
+      <div style={{ display:"flex",gap:8,alignSelf:"flex-start",maxWidth:"100%",overflowX:"auto",WebkitOverflowScrolling:"touch" }}>
+        {[
+          { key:"trattative", label:"🤝 Trattative", active: mercatoSection==="mercato"&&tab==="trattative", badge: tutteTrattative.filter(t=>t.stato==='in attesa').length, onClick:()=>{setMercatoSection("mercato");setTab("trattative");} },
+          { key:"aste",       label:"🏷️ Aste",       active: mercatoSection==="mercato"&&tab==="aste",       badge: astePending.length,                                       onClick:()=>{setMercatoSection("mercato");setTab("aste");} },
+          { key:"trasferimenti", label:"🔁 Trasferimenti", active: mercatoSection==="trasferimenti", badge: 0, onClick:()=>setMercatoSection("trasferimenti") },
+        ].map(it => (
+          <button key={it.key} onClick={it.onClick}
+            style={{ padding:"10px 20px",borderRadius:11,border:"none",background:it.active?"#6366f1":"#ffffff0a",color:it.active?"#fff":"#888",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0 }}>
+            {it.label}
+            {it.badge>0 && <span style={{ background:"#ef4444",color:"#fff",borderRadius:"50%",padding:"1px 6px",fontSize:9,marginLeft:6,fontWeight:900 }}>{it.badge}</span>}
           </button>
-          );
-        })}
+        ))}
+      </div>
+
+      {/* ── Strumenti secondari ── */}
+      <div style={{ display:"flex",gap:16,flexWrap:"wrap" }}>
+        {[
+          { key:"svincolati",         label:"🔍 Svincolati",          onClick:()=>setMercatoSection("svincolati"),         badge: svincoliOffertePendenti, active: mercatoSection==="svincolati" },
+          { key:"listone",            label:"📋 Listone",             onClick:()=>setMercatoSection("listone"),            badge: 0, active: mercatoSection==="listone" },
+          { key:"compara-rose",       label:"⚖️ Confronta rose",      onClick:()=>setMercatoSection("compara-rose"),       badge: 0, active: mercatoSection==="compara-rose" },
+          { key:"compara-giocatori",  label:"🆚 Confronta giocatori", onClick:()=>setMercatoSection("compara-giocatori"),  badge: 0, active: mercatoSection==="compara-giocatori" },
+          { key:"storico",            label:"📜 Storico",             onClick:()=>{setMercatoSection("mercato");setTab("storico");}, badge: 0, active: mercatoSection==="mercato"&&tab==="storico" },
+        ].map(it => (
+          <span key={it.key} onClick={it.onClick} style={{ cursor:"pointer",fontSize:11.5,fontWeight:it.active?700:500,color:it.active?"#818cf8":"#666" }}>
+            {it.label}{it.badge>0 && ` (${it.badge})`}
+          </span>
+        ))}
       </div>
 
       {mercatoSection === "svincolati" && <SvincolatiPage profile={profile} isAdmin={isAdmin} teams={teams} />}
@@ -8795,15 +9113,9 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
         </div>
       )}
 
-      {/* Tab */}
-      <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #ffffff12", paddingBottom: 8 }}>
-        {[["trattative","🤝 Trattative"], ["aste","🏷️ Aste"], ["storico","📋 Storico"]].map(([k, l]) => (
-          <button key={k} onClick={() => setTab(k)} style={{ padding: "7px 16px", borderRadius: 9, border: "none", background: tab === k ? "#6366f133" : "transparent", color: tab === k ? "#818cf8" : "#666", fontSize: 12, fontWeight: 700, cursor: "pointer", borderBottom: tab === k ? "2px solid #6366f1" : "2px solid transparent" }}>
-            {l} {k === 'trattative' && tutteTrattative.filter(t => t.stato === 'in attesa').length > 0 && <span style={{ background: "#ef4444", color: "#fff", borderRadius: "50%", padding: "1px 5px", fontSize: 9, marginLeft: 4 }}>{tutteTrattative.filter(t => t.stato === 'in attesa').length}</span>}
-            {k === 'aste' && astePending.length > 0 && <span style={{ background: "#f59e0b", color: "#000", borderRadius: "50%", padding: "1px 5px", fontSize: 9, marginLeft: 4 }}>{astePending.length}</span>}
-          </button>
-        ))}
-      </div>
+      {/* La selezione trattative/aste/storico è già affidata alla
+          navigazione primaria in cima alla pagina (stesso stato `tab`) —
+          qui non serve più un secondo switcher ridondante. */}
 
       {/* ══ TAB: TRATTATIVE ══ */}
       {tab === "trattative" && (
@@ -9158,7 +9470,16 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
               {tutteTrattative.filter(t => t.stato === 'in attesa' || t.stato === 'controproposta').length > 0 && (
                 <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 16, padding: 18 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", letterSpacing: "0.1em", marginBottom: 14 }}>⏳ IN ATTESA DI RISPOSTA</div>
-                  {tutteTrattative.filter(t => t.stato === 'in attesa' || t.stato === 'controproposta').map(t => {
+                  {tutteTrattative.filter(t => t.stato === 'in attesa' || t.stato === 'controproposta')
+                    // Ricevute (tocca a te rispondere) separate visivamente dalle
+                    // inviate (sei in attesa che risponda l'altro) — stessa lista,
+                    // stessi dati, solo raggruppate invece che mischiate.
+                    .sort((a, b) => {
+                      const aRic = (a.stato === 'controproposta' ? a.da_squadra : a.a_squadra) === mySquadra ? 0 : 1;
+                      const bRic = (b.stato === 'controproposta' ? b.da_squadra : b.a_squadra) === mySquadra ? 0 : 1;
+                      return aRic - bRic;
+                    })
+                    .map(t => {
                     const hLeft = hoursLeft(t.deadline_risposta);
                     const urgente = hLeft <= 6;
                     const daTeam = teams.find(x => x.name === t.da_squadra);
@@ -9171,6 +9492,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                     const prezzoPotenziale = getPrezzoPotenziale(t);
                     const expanded = !!expandedTrattative[t.id];
                     const salaryRecap = getSalaryRecap(t);
+                    const squadraCheRispondeOra = t.stato === 'controproposta' ? t.da_squadra : t.a_squadra;
+                    const isRicevuta = squadraCheRispondeOra === mySquadra;
                     return (
                       <div key={t.id} style={{ background: urgente ? "#ef444410" : "#ffffff08", border: `1px solid ${urgente ? "#ef444430" : "#ffffff10"}`, borderRadius: 12, padding: "12px 14px", marginBottom: 8 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
@@ -9181,6 +9504,9 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                             <div style={{ fontSize: 13, fontWeight: 700, color: "#f0f0f0" }}>{t.giocatore}</div>
                             <div style={{ fontSize: 10, color: "#888" }}>{tipoLabel[t.tipo] || t.tipo}{t.scadenza_prestito ? ` · scad. ${t.scadenza_prestito}` : ""}{t.stipendio_a_chi ? ` · stip: ${t.stipendio_a_chi}` : ""}</div>
                           </div>
+                          {mySquadra && (
+                            <span style={{ fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:999,background:isRicevuta?"#10b98122":"#6366f122",color:isRicevuta?"#10b981":"#818cf8",flexShrink:0 }}>{isRicevuta?"Ricevuta":"Inviata"}</span>
+                          )}
                           <div style={{ textAlign: "right" }}>
                             <div style={{ fontSize: 16, fontWeight: 900, color: "#10b981", fontFamily: "'Bebas Neue',sans-serif" }}>
                               {formatMln(prezzoBase)}{bonusTotale > 0 && <span style={{ color: "#f59e0b" }}> + {formatMln(bonusTotale)}</span>}
@@ -16028,15 +16354,18 @@ function AppInner() {
   const isAdmin = profile?.ruolo === "admin" || profile?.ruolo === "founder";
   const mySquadra = profile?.squadra;
   const pathname = location.pathname;
-  const currentPage = pathname==='/news'?'news':pathname==='/squadre'?'squadre':pathname.startsWith('/presidente')?'squadre':pathname==='/lega'?'lega':pathname==='/mercato'?'mercato':pathname==='/modifica'?'admin-control':pathname==='/adminlog'?'admin-control':pathname==='/admin-control'?'admin-control':pathname==='/profilo'?'profilo':pathname==='/storico'?'storico':'news';
+  // Bottom nav definitiva: Home · Squadre · Lega · Mercato · Altro. News,
+  // Archivio, Profilo e Admin non sono più destinazioni primarie ma restano
+  // raggiungibili (via Altro, o via sidebar su desktop) — nessuna route è
+  // stata rimossa, solo il loro punto d'accesso principale.
+  const currentPage = pathname==='/home'?'home':pathname==='/squadre'?'squadre':pathname.startsWith('/presidente')?'squadre':pathname==='/lega'?'lega':pathname==='/mercato'?'mercato':pathname==='/admin-control'?'admin-control':(pathname==='/news'||pathname==='/storico'||pathname==='/profilo'||pathname==='/altro')?'altro':'home';
 
   const navItems = [
-    { key:"news",    path:"/news",    icon:"📰", label:"News"    },
-    { key:"squadre", path:"/squadre", icon:"🏟", label:"Squadre" },
-    { key:"lega",    path:"/lega",    icon:"📊", label:"Lega"    },
-    { key:"mercato", path:"/mercato", icon:"🤝", label:"Mercato" },
-    { key:"storico", path:"/storico", icon:"📚", label:"Archivio" },
-    ...(isAdmin ? [{ key:"admin-control", path:"/admin-control", icon:"⚡", label:"Admin" }] : []),
+    { key:"home",    path:"/home",    Icon:IconHome,   label:"Home"    },
+    { key:"squadre", path:"/squadre", Icon:IconShield, label:"Squadre" },
+    { key:"lega",    path:"/lega",    Icon:IconTrophy, label:"Lega"    },
+    { key:"mercato", path:"/mercato", Icon:IconMarket, label:"Mercato" },
+    { key:"altro",   path:"/altro",   Icon:IconMore,   label:"Altro"   },
   ];
   const SIDEBAR_W = 200;
 
@@ -16049,7 +16378,9 @@ function AppInner() {
   // Le route vengono ri-renderizzate solo se le props che usano cambiano davvero
   const pageContent = (
     <Routes>
-      <Route path="/" element={<Navigate to="/news" replace />}/>
+      <Route path="/" element={<Navigate to="/home" replace />}/>
+      <Route path="/home" element={<HomePage profile={profile} mySquadra={mySquadra} teams={mergedTeams} offerteInAttesa={offerteInAttesa} navigate={navigate}/>}/>
+      <Route path="/altro" element={<AltroHubPage navigate={navigate} isAdmin={isAdmin} profile={profile}/>}/>
       <Route path="/news" element={<NewsPage profile={profile} isAdmin={isAdmin} teams={mergedTeams}/>}/>
       <Route path="/squadre" element={<SquadrePage onSelectTeam={t=>navigate(`/presidente/${t.id}`)} teams={mergedTeams} profile={profile} isAdmin={isAdmin}/>}/>
       <Route path="/lega" element={<LegaPage teams={mergedTeams} isAdmin={isAdmin}/>}/>
@@ -16059,7 +16390,7 @@ function AppInner() {
       <Route path="/profilo" element={<ProfileSettingsPage session={session} profile={profile} onProfileUpdated={()=>getProfile(session.user.id).then(p=>setProfile(p))}/>}/>
       <Route path="/presidente/:teamId" element={<PresidentePageWrapper mergedTeams={mergedTeams} isAdmin={isAdmin} mySquadra={mySquadra}/>}/>
       <Route path="/presidente/:teamId/:tab" element={<PresidentePageWrapper mergedTeams={mergedTeams} isAdmin={isAdmin} mySquadra={mySquadra}/>}/>
-      <Route path="*" element={<Navigate to="/news" replace />}/>
+      <Route path="*" element={<Navigate to="/home" replace />}/>
     </Routes>
   );
 
@@ -16117,8 +16448,8 @@ table{border-collapse:collapse;min-width:max-content}
                     style={{ width:"100%",display:"flex",alignItems:"center",gap:12,padding:"10px 12px",borderRadius:10,border:"none",background:active?"#6366f122":"transparent",color:active?"#818cf8":"#666",fontWeight:700,fontSize:13,cursor:"pointer",marginBottom:4,textAlign:"left",position:"relative" }}
                     onMouseEnter={e=>{if(!active){e.currentTarget.style.background="#ffffff08";e.currentTarget.style.color="#aaa";}}}
                     onMouseLeave={e=>{if(!active){e.currentTarget.style.background="transparent";e.currentTarget.style.color="#666";}}}>
-                    <span style={{ fontSize:18,position:"relative" }}>
-                      {item.icon}
+                    <span style={{ display:"inline-flex",position:"relative" }}>
+                      <item.Icon size={18} />
                       {badge>0&&<span style={{ position:"absolute",top:-4,right:-4,background:"#ef4444",color:"#fff",borderRadius:"50%",fontSize:8,width:14,height:14,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900 }}>{badge}</span>}
                     </span>
                     {item.label}
@@ -16147,7 +16478,7 @@ table{border-collapse:collapse;min-width:max-content}
               )}
             </nav>
             <div style={{ padding:"12px 16px",borderTop:"1px solid #ffffff0a" }}>
-              {profile && <div onClick={()=>navigate('/profilo')} style={{ display:"flex",alignItems:"center",gap:8,marginBottom:8,cursor:"pointer",padding:"5px 6px",borderRadius:9,transition:"background 0.15s",background:currentPage==='profilo'?"#f59e0b22":"transparent" }} onMouseEnter={e=>{ if(currentPage!=='profilo') e.currentTarget.style.background="#ffffff0a"; }} onMouseLeave={e=>{ e.currentTarget.style.background=currentPage==='profilo'?"#f59e0b22":"transparent"; }}>{profile.avatar_url?<img loading="lazy" decoding="async" src={profile.avatar_url} alt="" style={{ width:26,height:26,borderRadius:7,objectFit:"cover",outline:currentPage==='profilo'?"2px solid #f59e0b":"none" }}/>:<div style={{ width:26,height:26,borderRadius:7,background:currentPage==='profilo'?"#f59e0b22":"#ffffff12",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12 }}>👤</div>}<div style={{ flex:1,minWidth:0 }}><div style={{ fontSize:11,fontWeight:700,color:currentPage==='profilo'?"#f59e0b":"#ccc",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{profile.nome||profile.email}</div><div style={{ fontSize:9,color:currentPage==='profilo'?"#f59e0b88":"#444" }}>{isAdmin?"⚡ Admin":profile.squadra}</div></div>{currentPage==='profilo'&&<div style={{ width:6,height:6,borderRadius:"50%",background:"#f59e0b",flexShrink:0 }}/>}</div>}
+              {profile && <div onClick={()=>navigate('/profilo')} style={{ display:"flex",alignItems:"center",gap:8,marginBottom:8,cursor:"pointer",padding:"5px 6px",borderRadius:9,transition:"background 0.15s",background:pathname==='/profilo'?"#f59e0b22":"transparent" }} onMouseEnter={e=>{ if(currentPage!=='profilo') e.currentTarget.style.background="#ffffff0a"; }} onMouseLeave={e=>{ e.currentTarget.style.background=pathname==='/profilo'?"#f59e0b22":"transparent"; }}>{profile.avatar_url?<img loading="lazy" decoding="async" src={profile.avatar_url} alt="" style={{ width:26,height:26,borderRadius:7,objectFit:"cover",outline:pathname==='/profilo'?"2px solid #f59e0b":"none" }}/>:<div style={{ width:26,height:26,borderRadius:7,background:pathname==='/profilo'?"#f59e0b22":"#ffffff12",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12 }}>👤</div>}<div style={{ flex:1,minWidth:0 }}><div style={{ fontSize:11,fontWeight:700,color:pathname==='/profilo'?"#f59e0b":"#ccc",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{profile.nome||profile.email}</div><div style={{ fontSize:9,color:pathname==='/profilo'?"#f59e0b88":"#444" }}>{isAdmin?"⚡ Admin":profile.squadra}</div></div>{pathname==='/profilo'&&<div style={{ width:6,height:6,borderRadius:"50%",background:"#f59e0b",flexShrink:0 }}/>}</div>}
               <button onClick={()=>signOut()} style={{ width:"100%",padding:"7px",borderRadius:8,border:"1px solid #ffffff10",background:"transparent",color:"#555",fontSize:11,fontWeight:600,cursor:"pointer" }}>Esci</button>
             </div>
           </div>
@@ -16178,16 +16509,14 @@ table{border-collapse:collapse;min-width:max-content}
                 </div>
                 <div style={{ display:"flex",gap:6,alignItems:"center" }}>
                   <NotificationBell mySquadra={mySquadra} navigate={navigate} />
-                  <button onClick={()=>window.location.reload()} title="Aggiorna" style={{ width:28,height:28,borderRadius:7,border:"1px solid #ffffff12",background:"transparent",color:"#555",fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>↻</button>
                   {profile && (
                     <div onClick={()=>navigate('/profilo')} style={{ cursor:"pointer",display:"flex",alignItems:"center" }}>
                       {profile.avatar_url
-                        ? <img loading="lazy" decoding="async" src={profile.avatar_url} alt="" style={{ width:28,height:28,borderRadius:7,objectFit:"cover",outline:currentPage==='profilo'?"2px solid #f59e0b":"1px solid #ffffff18" }} />
-                        : <div style={{ width:28,height:28,borderRadius:7,background:currentPage==='profilo'?"#f59e0b22":"#ffffff10",border:currentPage==='profilo'?"1px solid #f59e0b44":"1px solid #ffffff18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13 }}>👤</div>
+                        ? <img loading="lazy" decoding="async" src={profile.avatar_url} alt="" style={{ width:28,height:28,borderRadius:7,objectFit:"cover",outline:pathname==='/profilo'?"2px solid #f59e0b":"1px solid #ffffff18" }} />
+                        : <div style={{ width:28,height:28,borderRadius:7,background:pathname==='/profilo'?"#f59e0b22":"#ffffff10",border:pathname==='/profilo'?"1px solid #f59e0b44":"1px solid #ffffff18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13 }}>👤</div>
                       }
                     </div>
                   )}
-                  <button onClick={()=>signOut()} style={{ padding:"5px 10px",borderRadius:7,border:"1px solid #ffffff12",background:"transparent",color:"#555",fontSize:11,cursor:"pointer" }}>Esci</button>
                 </div>
               </div>
             </div>
@@ -16201,7 +16530,7 @@ table{border-collapse:collapse;min-width:max-content}
               const badge = item.key === "mercato" && offerteInAttesa.length > 0 ? offerteInAttesa.length : 0;
               return <button key={item.key} onClick={()=>navigate(item.path)} style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,border:"none",background:"transparent",cursor:"pointer",padding:"8px 0",position:"relative",minHeight:44 }}>
                 {active&&<div style={{ position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:28,height:3,borderRadius:"0 0 3px 3px",background:"#6366f1" }}/>}
-                <span style={{ fontSize:20,position:"relative" }}>{item.icon}{badge>0&&<span style={{ position:"absolute",top:-3,right:-5,background:"#ef4444",color:"#fff",borderRadius:"50%",fontSize:8,width:13,height:13,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900 }}>{badge}</span>}</span>
+                <span style={{ display:"inline-flex",position:"relative" }}><item.Icon size={21} />{badge>0&&<span style={{ position:"absolute",top:-3,right:-5,background:"#ef4444",color:"#fff",borderRadius:"50%",fontSize:8,width:13,height:13,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900 }}>{badge}</span>}</span>
                 <span style={{ fontSize:10,fontWeight:700,color:active?"#6366f1":"#666" }}>{item.label}</span>
               </button>;
             })}
