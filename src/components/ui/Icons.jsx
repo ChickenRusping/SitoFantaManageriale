@@ -103,3 +103,13 @@ export const IconAdmin = (props) => (
 export const IconArchive = (props) => (
   <Icon {...props}><path d="M4 19V5a2 2 0 012-2h11l3 3v13a2 2 0 01-2 2H6a2 2 0 01-2-2z" /></Icon>
 );
+
+export const IconRefresh = (props) => (
+  <Icon {...props}>
+    <path d="M21 12a9 9 0 11-3.2-6.9M21 3v5h-5" />
+  </Icon>
+);
+
+export const IconPlus = (props) => (
+  <Icon {...props}><path d="M12 5v14M5 12h14" /></Icon>
+);
