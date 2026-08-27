@@ -77,6 +77,17 @@ html {
   text-size-adjust: 100%;
 }
 
+/* Focus visibile per navigazione da tastiera — molti controlli nell'app
+   impostano outline:none inline (per non mostrare l'anello su click col
+   mouse); questa regola lo ripristina solo quando il focus arriva da
+   tastiera (:focus-visible), con !important perché deve vincere sullo
+   style inline. Non copre :focus generico apposta: non deve comparire
+   sul click del mouse, solo su Tab. */
+:focus-visible {
+  outline: 2px solid #6366f1 !important;
+  outline-offset: 2px !important;
+}
+
 /* Responsive mercato: evita overflow dei pulsanti nelle card trattativa */
 .trattativa-actions {
   width: 100%;
