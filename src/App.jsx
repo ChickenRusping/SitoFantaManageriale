@@ -225,7 +225,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
-import { SURFACE, BRAND, SEMANTIC } from "./design-system.js";
+import { SURFACE, BRAND, SEMANTIC, FIELD } from "./design-system.js";
 import { IconHome, IconShield, IconTrophy, IconMarket, IconMore, IconAdmin, IconChevronRight, IconArchive, IconRefresh, IconPlus, IconEdit, IconTrash, IconClose, IconSearch } from "./components/ui/Icons.jsx";
 import { ProgressBar } from "./components/ui/ProgressBar.jsx";
 import { HeroSurface } from "./components/ui/Surface.jsx";
@@ -4804,7 +4804,7 @@ function FairSpendingSection({ team, isAdmin }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.08em" }}>⚖️ FAIR SPENDING (art. 7.3) — {sem.label}</div>
         <div style={{ display: "flex", gap: 6 }}>
-          <button onClick={carica} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#ffffff10", color: "#888", fontSize: 10, cursor: "pointer" }}>↻</button>
+          <button onClick={carica} aria-label="Aggiorna Fair Spending" title="Aggiorna" style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#ffffff10", color: "#888", cursor: "pointer", display: "inline-flex", alignItems: "center" }}><IconRefresh size={11} /></button>
           <button onClick={() => setShowDetail(v => !v)} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#ffffff10", color: "#888", fontSize: 10, cursor: "pointer" }}>
             {showDetail ? "▲ Nascondi" : "▼ Dettaglio"}
           </button>
@@ -7194,7 +7194,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
                       placeholder="🔍 Cerca..."
                       value={movSearch}
                       onChange={e => setMovSearch(e.target.value)}
-                      style={{ padding: "5px 10px", borderRadius: 7, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 11, width: 130 }}
+                      style={{ ...FIELD, width: 130 }}
                     />
                     {[
                       { asc: "data_asc", desc: "data_desc", labelAsc: "📅 Vecchi", labelDesc: "📅 Recenti" },
@@ -7531,7 +7531,7 @@ function ClubIdentityRight({ team, clubIdentity, isAdmin, mySquadra, onRefresh }
   const canEditRivale    = isAdmin || (!_rivalitaBloccata && !rivaleGiaScelto);
   const canEditGemellato = isAdmin || (!_rivalitaBloccata && !gemellataGiaScelto);
 
-  const inp = { width: "100%", padding: "5px 8px", borderRadius: 7, border: "1px solid #ffffff15", background: "#0d0f14", color: "#f0f0f0", fontSize: 11, outline: "none" };
+  const inp = { ...FIELD, width: "100%" };
 
   return (
     <>
@@ -8053,7 +8053,7 @@ function CompareRosePage({ teams }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nomeA, nomeB, teams]);
 
-  const sel = { padding: "8px 12px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 13, fontWeight: 700 };
+  const sel = { ...FIELD, fontWeight: 700 };
   const righeMetriche = [
     { label: "Bilancio", get: d => `${d.bilancio.toFixed(2)}M`, val: d => d.bilancio, direction: "higher" },
     { label: "Salary Cap", get: d => `${d.scUsato.toFixed(1)} / ${d.scLimite.toFixed(1)}M`, val: d => d.scLimite - d.scUsato, direction: "higher" },
@@ -8238,7 +8238,7 @@ function ComparePlayersPage({ teams }) {
     { label: "Rigori sbagliati", get: p => p.rigori_sbagliati ?? "—", val: p => p.rigori_sbagliati, direction: "lower" },
   ];
 
-  const inp = { padding: "8px 12px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 13, width: 260 };
+  const inp = { ...FIELD, width: 260 };
 
   return (
     <div>
@@ -9083,7 +9083,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const astePending = aste.filter(a => a.stato === 'attiva');
   const asteChiuse  = aste.filter(a => a.stato !== 'attiva');
 
-  const sel = { padding: "8px 12px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12, width: "100%" };
+  const sel = { ...FIELD, width: "100%" };
   const inp = { ...sel };
 
   return (
@@ -10047,7 +10047,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
             <input
               type="text" placeholder="🔍 Cerca giocatore..."
               value={storicoSearch} onChange={e => setStoricoSearch(e.target.value)}
-              style={{ flex: "1 1 160px", padding: "6px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}
+              style={{ ...FIELD, flex: "1 1 160px" }}
             />
             <select value={storicoFilterSquadra} onChange={e => setStoricoFilterSquadra(e.target.value)}
               style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}>
@@ -10226,7 +10226,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
               <input
                 type="text" placeholder="🔍 Cerca giocatore..."
                 value={storicoSvincSearch} onChange={e => setStoricoSvincSearch(e.target.value)}
-                style={{ flex: "1 1 160px", padding: "6px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}
+                style={{ ...FIELD, flex: "1 1 160px" }}
               />
               <select value={storicoSvincFilterSquadra} onChange={e => setStoricoSvincFilterSquadra(e.target.value)}
                 style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}>
@@ -10952,7 +10952,7 @@ function ListonePage({ teams, profile }) {
         <input
           type="text" placeholder="🔍 Cerca giocatore..."
           value={search} onChange={e => { setSearch(e.target.value); setVisibleCount(50); }}
-          style={{ flex: "1 1 160px", padding: "7px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}
+          style={{ ...FIELD, flex: "1 1 160px" }}
         />
         <select value={filterRuolo} onChange={e => { setFilterRuolo(e.target.value); setVisibleCount(50); }}
           style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}>
@@ -11899,7 +11899,7 @@ function ModificaRosePage({ teams, onRefresh, isAdmin = true }) {
     } catch(e) { alert(`Errore: ${e.message}`); }
   }
 
-  const inp = { padding: "7px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12, width: "100%" };
+  const inp = { ...FIELD, width: "100%" };
   const ruoli = ["Por","Dc","Dd","Ds","B","E","M","C","T","W","A","Pc"];
 
   return (
@@ -12173,7 +12173,7 @@ function PenalitaPage({ isAdmin, teams = [] }) {
     { value: "custom",               label: "Personalizzata" },
   ];
 
-  const sel = { padding: "7px 10px", borderRadius: 7, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12, width: "100%" };
+  const sel = { ...FIELD, width: "100%" };
   const inp = { ...sel };
 
   return (
@@ -12423,7 +12423,7 @@ function PremiPage({ isAdmin, teams = [] }) {
     individuali: premi.some(p => p.tipo === 'premio_indiv' || p.tipo === 'malus_indiv'),
   };
 
-  const inp = { padding: "7px 10px", borderRadius: 7, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12, width: "100%" };
+  const inp = { ...FIELD, width: "100%" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -16672,11 +16672,11 @@ table{border-collapse:collapse;min-width:max-content}
           <div className="main-content-pad" style={{ marginLeft:SIDEBAR_W,flex:1,padding:"28px 32px",minWidth:0,position:"relative" }}>
             <div style={{ position:"absolute",top:18,right:24,zIndex:50,display:"flex",alignItems:"center",gap:8 }}>
               <NotificationBell mySquadra={mySquadra} navigate={navigate} />
-              <button onClick={() => window.location.reload()} title="Aggiorna pagina"
-                style={{ background:"#ffffff08",border:"1px solid #ffffff12",borderRadius:8,color:"#555",fontSize:14,width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"background 0.15s,color 0.15s" }}
+              <button onClick={() => window.location.reload()} title="Aggiorna pagina" aria-label="Aggiorna pagina"
+                style={{ background:"#ffffff08",border:"1px solid #ffffff12",borderRadius:8,color:"#555",width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"background 0.15s,color 0.15s" }}
                 onMouseEnter={e=>{e.currentTarget.style.background="#ffffff14";e.currentTarget.style.color="#aaa";}}
                 onMouseLeave={e=>{e.currentTarget.style.background="#ffffff08";e.currentTarget.style.color="#555";}}>
-                ↻
+                <IconRefresh size={15} />
               </button>
             </div>
             {pageContent}
