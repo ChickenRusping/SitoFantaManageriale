@@ -226,7 +226,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
 import { SURFACE, BRAND, SEMANTIC } from "./design-system.js";
-import { IconHome, IconShield, IconTrophy, IconMarket, IconMore, IconAdmin, IconChevronRight, IconArchive } from "./components/ui/Icons.jsx";
+import { IconHome, IconShield, IconTrophy, IconMarket, IconMore, IconAdmin, IconChevronRight, IconArchive, IconRefresh, IconPlus, IconEdit, IconTrash, IconClose, IconSearch } from "./components/ui/Icons.jsx";
 import { ProgressBar } from "./components/ui/ProgressBar.jsx";
 import { HeroSurface } from "./components/ui/Surface.jsx";
 import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, registraEventoGiornataInvestimento, getEffettiInvestimenti, getSquadreConSuperClub, getStatoGuadagniGiornata,
@@ -2098,6 +2098,23 @@ function TorneiSection({ isAdmin, forcedTab }) {
 }
 
 
+// Sub-nav a pillole di primo livello (sezioni di una pagina) — stesso identico
+// linguaggio visivo già usato in Lega e Club, qui centralizzato: nessun
+// comportamento cambiato, i chiamanti restano proprietari di `tabs`/`active`.
+function PillNav({ tabs, active, onChange }) {
+  return (
+    <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}>
+      {tabs.map(t => (
+        <button key={t.key} onClick={() => onChange(t.key)}
+          style={{ padding: "8px 16px", borderRadius: 999, border: "none", background: active === t.key ? "#6366f122" : "#ffffff0a", color: active === t.key ? "#818cf8" : "#888", fontSize: 12.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+          aria-current={active === t.key ? "true" : undefined}>
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /* ─── LEGA PAGE ─────────────────────────────────────────────────────────────── */
 function LegaPage({ teams = TEAMS, isAdmin }) {
   // ── Classifica ──────────────────────────────────────────────────────────────
@@ -2366,14 +2383,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
 
-      <div style={{ display:"flex",gap:6,overflowX:"auto",paddingBottom:2 }}>
-        {LEGA_TABS.map(t => (
-          <button key={t.key} onClick={() => setLegaTab(t.key)}
-            style={{ padding:"8px 16px",borderRadius:999,border:"none",background:legaTab===t.key?"#6366f122":"#ffffff0a",color:legaTab===t.key?"#818cf8":"#888",fontSize:12.5,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap" }}>
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <PillNav tabs={LEGA_TABS} active={legaTab} onChange={setLegaTab} />
 
       {/* ── 1. SCADENZE ── */}
       {legaTab==='scadenze' && (
@@ -6037,14 +6047,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
   return (
     <div style={{ display:"flex",flexDirection:"column",gap:20 }}>
 
-      <div style={{ display:"flex",gap:6,overflowX:"auto",paddingBottom:2 }}>
-        {SUB_TABS.map(t => (
-          <button key={t.key} onClick={() => setSubTab(t.key)}
-            style={{ padding:"7px 14px",borderRadius:999,border:"none",background:subTab===t.key?"#6366f122":"#ffffff0a",color:subTab===t.key?"#818cf8":"#888",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap" }}>
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <PillNav tabs={SUB_TABS} active={subTab} onChange={setSubTab} />
 
       {/* ══ 1. BONUS TRATTATIVE ══ */}
       {subTab==='bonus' && (
@@ -10809,10 +10812,9 @@ function ConflittiListonePage({ teams }) {
         </div>
       </div>
 
-      <button onClick={load} disabled={loading}
-        style={{ padding: '7px 14px', borderRadius: 9, border: '1px solid #f59e0b40', background: '#f59e0b12', color: '#f59e0b', fontSize: 12, fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start' }}>
-        🔄 Ricontrolla
-      </button>
+      <AdminLoadButton onClick={load} disabled={loading} tone="amber">
+        Ricontrolla
+      </AdminLoadButton>
 
       {conflitti.length === 0 ? (
         <div style={{ background: '#10b98110', border: '1px solid #10b98130', borderRadius: 10, padding: '14px 16px', fontSize: 13, color: '#10b981' }}>
@@ -12616,6 +12618,20 @@ function PremiPage({ isAdmin, teams = [] }) {
 /* ─── ADMIN CONTROL ROOM ─────────────────────────────────────────────────────── */
 const STAGIONE_CR = STAGIONE_CORRENTE;
 
+// Pulsante "Carica X" ricorrente in ogni sotto-tab Admin: stesso identico
+// markup (indigo di default, ambra per la sezione Premi che è già colorata
+// in ambra) ripetuto 6 volte con solo l'etichetta diversa — centralizzato
+// qui, nessun comportamento/onClick toccato rispetto a prima.
+function AdminLoadButton({ onClick, children, tone = 'indigo', disabled = false }) {
+  const c = tone === 'amber' ? '#f59e0b' : '#6366f1';
+  const textC = tone === 'amber' ? '#f59e0b' : '#818cf8';
+  return (
+    <button onClick={onClick} disabled={disabled} style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 9, border: `1px solid ${c}30`, background: `${c}10`, color: textC, fontSize: 12, fontWeight: 700, cursor: disabled ? 'wait' : 'pointer' }}>
+      <IconRefresh size={13} /> {children}
+    </button>
+  );
+}
+
 function AdminControlRoomPage({ teams }) {
   const [tab, setTab] = useState('panoramica');
   const [status, setStatus] = useState(null);
@@ -13431,12 +13447,9 @@ function AdminControlRoomPage({ teams }) {
               </div>
 
               {/* Load button */}
-              <button
-                onClick={loadTgRegs}
-                disabled={tgLoading}
-                style={{ alignSelf: 'flex-start', padding: '7px 18px', borderRadius: 9, border: '1.5px solid #6366f150', background: '#6366f118', color: '#818cf8', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                {tgLoading ? '…' : '🔄 Carica registrazioni'}
-              </button>
+              <AdminLoadButton onClick={loadTgRegs} disabled={tgLoading}>
+                {tgLoading ? '…' : 'Carica registrazioni'}
+              </AdminLoadButton>
 
               {/* Registrations table */}
               {tgRegs.length === 0 && !tgLoading && (
@@ -13493,7 +13506,7 @@ function AdminControlRoomPage({ teams }) {
                 Dashboard centrale per quota reale, extra budget biennale e iscrizione campionato. Le azioni massive restano idempotenti.
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button onClick={loadQuoteAdmin} style={{ padding: '7px 16px', borderRadius: 9, border: '1px solid #6366f130', background: '#6366f110', color: '#818cf8', fontSize: 12, fontWeight: 700 }}>📋 Carica quote</button>
+                <AdminLoadButton onClick={loadQuoteAdmin}>Carica quote</AdminLoadButton>
                 <button
                   onClick={() => {
                     const oggi = new Date().toLocaleDateString('it-IT');
@@ -13512,9 +13525,9 @@ function AdminControlRoomPage({ teams }) {
                   <div style={{ fontSize: 11, color: '#555', marginTop: 4 }}>Verifica chi è in regola e chi ha eventuali addebiti duplicati per la stagione {STAGIONE_CR}</div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button onClick={loadStatoIscrizione} disabled={isBusy} style={{ padding: '7px 16px', borderRadius: 9, border: '1px solid #6366f130', background: '#6366f110', color: '#818cf8', fontSize: 12, fontWeight: 700 }}>
-                    {busy === null && adminTabBusy === 'iscrizione_load' ? '⏳ Carico...' : '📋 Carica stato iscrizione'}
-                  </button>
+                  <AdminLoadButton onClick={loadStatoIscrizione} disabled={isBusy}>
+                    {busy === null && adminTabBusy === 'iscrizione_load' ? '⏳ Carico...' : 'Carica stato iscrizione'}
+                  </AdminLoadButton>
                   <button
                     onClick={() => runBulk(async () => {
                       const dup = await ripulisciDuplicatiIscrizione(STAGIONE_CR);
@@ -13626,7 +13639,7 @@ function AdminControlRoomPage({ teams }) {
           {tab === 'investimenti_admin' && (
             <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
               <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em' }}>📈 INVESTIMENTI — CONTROLLO ADMIN</div>
-              <button onClick={loadInvestimentiAdmin} style={{ alignSelf:'flex-start', padding:'7px 16px', borderRadius:9, border:'1px solid #6366f130', background:'#6366f110', color:'#818cf8', fontSize:12, fontWeight:700 }}>📋 Carica investimenti</button>
+              <AdminLoadButton onClick={loadInvestimentiAdmin}>Carica investimenti</AdminLoadButton>
               {investimentiAdmin && (() => {
                 const byTeam = {};
                 for (const inv of investimentiAdmin) {
@@ -13660,7 +13673,7 @@ function AdminControlRoomPage({ teams }) {
           {tab === 'obiettivi_admin' && (
             <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
               <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em' }}>🎯 OBIETTIVI — CONTROLLO COMPLETAMENTO / INCASSI / MODULI</div>
-              <button onClick={loadObiettiviAdmin} style={{ alignSelf:'flex-start', padding:'7px 16px', borderRadius:9, border:'1px solid #6366f130', background:'#6366f110', color:'#818cf8', fontSize:12, fontWeight:700 }}>📋 Carica obiettivi</button>
+              <AdminLoadButton onClick={loadObiettiviAdmin}>Carica obiettivi</AdminLoadButton>
               {obiettiviAdmin && <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))', gap:10 }}>
                 {(teams||[]).map(t => {
                   const card = obiettiviAdmin.allenatori.find(a => a.squadra === t.name);
@@ -13692,7 +13705,7 @@ function AdminControlRoomPage({ teams }) {
           {tab === 'vivaio_admin' && (
             <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
               <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em' }}>🌱 VIVAIO — SCADENZE E DECISIONI</div>
-              <button onClick={loadVivaioAdmin} style={{ alignSelf:'flex-start', padding:'7px 16px', borderRadius:9, border:'1px solid #6366f130', background:'#6366f110', color:'#818cf8', fontSize:12, fontWeight:700 }}>📋 Carica vivaio</button>
+              <AdminLoadButton onClick={loadVivaioAdmin}>Carica vivaio</AdminLoadButton>
 
               {/* ── COSTO VIVAIO ANNUALE (4M) — pagamento e controllo ── */}
               {status && (
@@ -13746,7 +13759,7 @@ function AdminControlRoomPage({ teams }) {
             <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
               <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em' }}>🔁 PRESTITI / RIENTRI / RESCISSIONI</div>
               <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                <button onClick={loadPrestitiAdmin} style={{ padding:'7px 16px', borderRadius:9, border:'1px solid #6366f130', background:'#6366f110', color:'#818cf8', fontSize:12, fontWeight:700 }}>📋 Carica prestiti</button>
+                <AdminLoadButton onClick={loadPrestitiAdmin}>Carica prestiti</AdminLoadButton>
                 <button onClick={() => runBulk(async()=>{
                     const rows = await getPrestitiScaduti();
                     const out=[];
@@ -14158,7 +14171,7 @@ function AdminControlRoomPage({ teams }) {
                 </button>
               </div>
 
-              <button
+              <AdminLoadButton
                 disabled={!!rivalitaBusy}
                 onClick={async () => {
                   setRivalitaBusy('load');
@@ -14167,10 +14180,9 @@ function AdminControlRoomPage({ teams }) {
                     setRivalitaData(data || []);
                   } catch(e) { alert(e.message); }
                   finally { setRivalitaBusy(null); }
-                }}
-                style={{ alignSelf: 'flex-start', padding: '7px 16px', borderRadius: 9, border: '1px solid #6366f130', background: '#6366f110', color: '#818cf8', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                {rivalitaBusy === 'load' ? '⏳ Caricamento…' : '📋 Carica dati rivalità'}
-              </button>
+                }}>
+                {rivalitaBusy === 'load' ? '⏳ Caricamento…' : 'Carica dati rivalità'}
+              </AdminLoadButton>
 
               {rivalitaData && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -14412,7 +14424,7 @@ function AdminControlRoomPage({ teams }) {
                 Distribuisce i premi in base alla classifica finale della stagione {STAGIONE_CR}.<br/>
                 Idempotente — salta le squadre già premiate.
               </div>
-              <button onClick={loadClassifica} style={{ alignSelf: 'flex-start', padding: '7px 16px', borderRadius: 9, border: '1px solid #f59e0b30', background: '#f59e0b10', color: '#f59e0b', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>📋 Carica classifica</button>
+              <AdminLoadButton onClick={loadClassifica} tone="amber">Carica classifica</AdminLoadButton>
               {classifica.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {classifica.map((sq, i) => {
@@ -14477,7 +14489,7 @@ function AdminControlRoomPage({ teams }) {
           {tab === 'audit' && (
             <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
               <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em' }}>🧾 AUDIT LOG — ULTIME AZIONI</div>
-              <button onClick={loadAuditAdmin} style={{ alignSelf:'flex-start', padding:'7px 16px', borderRadius:9, border:'1px solid #6366f130', background:'#6366f110', color:'#818cf8', fontSize:12, fontWeight:700 }}>📋 Carica log</button>
+              <AdminLoadButton onClick={loadAuditAdmin}>Carica log</AdminLoadButton>
               {auditAdmin && <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:520, overflowY:'auto' }}>
                 {auditAdmin.length === 0 ? <div style={{ color:'#666', fontSize:12 }}>Nessun log disponibile.</div> : auditAdmin.map(l => <div key={l.id} style={{ background:'#ffffff06', border:'1px solid #ffffff12', borderRadius:10, padding:'9px 12px' }}>
                   <div style={{ display:'flex', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
@@ -14505,9 +14517,9 @@ function AdminControlRoomPage({ teams }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: '0.1em' }}>👥 GESTIONE UTENTI</div>
-                  <button onClick={loadUtenti} disabled={utentiLoading} style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid #f59e0b30', background: '#f59e0b10', color: '#f59e0b', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                    {utentiLoading ? '...' : '🔄 Carica'}
-                  </button>
+                  <AdminLoadButton onClick={loadUtenti} disabled={utentiLoading} tone="amber">
+                    {utentiLoading ? '...' : 'Carica'}
+                  </AdminLoadButton>
                 </div>
 
                 {utenti.length === 0 && !utentiLoading && (
@@ -15802,8 +15814,8 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, 
 
         <div style={{ marginLeft:"auto", display:"flex", gap:6 }}>
           {isAdmin && <button onClick={() => onPin(notizia.id, !notizia.pinnata)} aria-label={notizia.pinnata ? "Rimuovi dagli in evidenza" : "Metti in evidenza"} title={notizia.pinnata ? "Rimuovi dagli in evidenza" : "Metti in evidenza"} style={{ padding:"5px 10px",borderRadius:8,border:"1px solid #ffffff10",background:"transparent",color:notizia.pinnata?"#f59e0b":"#444",fontSize:12,cursor:"pointer" }}>📌</button>}
-          {canEdit && <button onClick={() => onEdit(notizia)} aria-label="Modifica post" title="Modifica post" style={{ padding:"5px 10px",borderRadius:8,border:"1px solid #ffffff10",background:"transparent",color:"#444",fontSize:12,cursor:"pointer" }} onMouseEnter={e=>e.currentTarget.style.color="#818cf8"} onMouseLeave={e=>e.currentTarget.style.color="#444"}>✏️</button>}
-          {canDelete && <button onClick={() => onDelete(notizia.id)} aria-label="Elimina post" title="Elimina post" style={{ padding:"5px 10px",borderRadius:8,border:"1px solid #ffffff10",background:"transparent",color:"#444",fontSize:12,cursor:"pointer" }} onMouseEnter={e=>e.currentTarget.style.color="#ef4444"} onMouseLeave={e=>e.currentTarget.style.color="#444"}>🗑</button>}
+          {canEdit && <button onClick={() => onEdit(notizia)} aria-label="Modifica post" title="Modifica post" style={{ padding:"5px 10px",borderRadius:8,border:"1px solid #ffffff10",background:"transparent",color:"#444",cursor:"pointer",display:"inline-flex",alignItems:"center" }} onMouseEnter={e=>e.currentTarget.style.color="#818cf8"} onMouseLeave={e=>e.currentTarget.style.color="#444"}><IconEdit size={14} /></button>}
+          {canDelete && <button onClick={() => onDelete(notizia.id)} aria-label="Elimina post" title="Elimina post" style={{ padding:"5px 10px",borderRadius:8,border:"1px solid #ffffff10",background:"transparent",color:"#444",cursor:"pointer",display:"inline-flex",alignItems:"center" }} onMouseEnter={e=>e.currentTarget.style.color="#ef4444"} onMouseLeave={e=>e.currentTarget.style.color="#444"}><IconTrash size={14} /></button>}
         </div>
       </div>
 
