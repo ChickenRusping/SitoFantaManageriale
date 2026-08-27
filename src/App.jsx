@@ -3556,7 +3556,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
               { label:"Rig. sbagliati", val: popup.player.rigori_sbagliati },
             ].filter(s => s.val !== undefined && s.val !== null).map(s => (
               <div key={s.label} style={{ background:"#ffffff08",borderRadius:8,padding:"6px 4px",textAlign:"center" }}>
-                <div style={{ fontSize:14,fontWeight:800,color:"#e0e0e0",fontFamily:"'Bebas Neue',sans-serif" }}>{s.val || "—"}</div>
+                <div style={{ fontSize:14,fontWeight:800,color:"#e0e0e0",fontFamily:"'Bebas Neue',sans-serif" }}>{s.val}</div>
                 <div style={{ fontSize:7.5,color:"#666",letterSpacing:"0.03em",marginTop:1 }}>{s.label.toUpperCase()}</div>
               </div>
             ))}
