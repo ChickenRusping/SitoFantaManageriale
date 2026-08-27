@@ -8,27 +8,31 @@
 export { ROLE_COLORS, getRoleColor, getSCColor, getFPStatus, FP_THRESHOLDS } from './data.js';
 
 // ── Superfici (dark navy / charcoal) ────────────────────────────────────────
+// Valori allineati a quelli già usati ovunque nel resto dell'app (centinaia
+// di occorrenze in App.jsx) — non una palette nuova: qui si dichiara come
+// token quella già di fatto in uso, così i componenti condivisi non stonano
+// rispetto alle schermate non ancora convertite.
 export const SURFACE = {
-  bg:       '#0B0E14', // sfondo app
-  card:     '#11151D', // card standard
+  bg:       '#0d0f14', // sfondo app
+  card:     '#1a1d26', // card standard / popup
   card2:    '#171C26', // sheet/body sotto header
   elevated: '#1C2230', // elementi in rilievo dentro una card (chip, pill attiva)
   border:   'rgba(255,255,255,0.07)', // border quasi invisibile
 };
 
-// ── Brand (indigo/viola, primary globale — usato con parsimonia) ───────────
+// ── Brand (indigo, primary globale — già in uso in tutta l'app) ────────────
 export const BRAND = {
-  primary: '#6C6FE0',
-  primarySoft: '#6C6FE022',
+  primary: '#6366f1',
+  primarySoft: '#6366f122',
   gold: '#E8B84B', // piccolo accento premium, mai come primary
 };
 
 // ── Semantic (separati da brand e da colore squadra) ────────────────────────
 export const SEMANTIC = {
-  success: '#4ADE80',
-  warning: '#FBBF24',
-  danger:  '#F87171',
-  info:    '#60A5FA',
+  success: '#10b981',
+  warning: '#f59e0b',
+  danger:  '#ef4444',
+  info:    '#818cf8',
 };
 
 // ── Testo ────────────────────────────────────────────────────────────────
