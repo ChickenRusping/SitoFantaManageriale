@@ -10715,7 +10715,7 @@ function SvincolatiTable({ filtered, chiamateAttive, mySquadra, isAdmin, setShow
       <table style={{ width: "100%", minWidth: 720, borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
           <tr>
-            <SortTh col="ruolo"          label="Ruolo"  align="center" />
+            <SortTh col="ruolo"          label="Ruolo"  align="center" style={{ position: "sticky", left: 0, background: "#0d0f14", zIndex: 2 }} />
             <SortTh col="_anniNum"       label="Età"    align="center" />
             <SortTh col="nome"           label="Nome"   align="left"   />
             <SortTh col="squadra_serie_a" label="Squadra" align="left" />
@@ -10738,7 +10738,7 @@ function SvincolatiTable({ filtered, chiamateAttive, mySquadra, isAdmin, setShow
                 style={{ borderBottom: "1px solid #ffffff06", background: fuori ? "#ef444406" : giaChi ? "#f59e0b06" : p.isVivaio ? "#10b98106" : "transparent" }}
                 onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
                 onMouseLeave={e => e.currentTarget.style.background = fuori ? "#ef444406" : giaChi ? "#f59e0b06" : p.isVivaio ? "#10b98106" : "transparent"}>
-                <td style={{ padding: "7px 8px", textAlign: "center" }}>
+                <td style={{ padding: "7px 8px", textAlign: "center", position: "sticky", left: 0, background: fuori ? "#1a1214" : giaChi ? "#1a170f" : p.isVivaio ? "#0f1a15" : "#0d0f14", zIndex: 1 }}>
                   <span style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, borderRadius: 5, padding: "2px 5px", fontSize: 10, fontWeight: 700 }}>{p.ruolo}</span>
                 </td>
                 <td style={{ padding: "7px 8px", textAlign: "center", color: p.anni <= 21 ? "#a78bfa" : p.anni >= 31 ? "#f97316" : "#888" }}>{p.anni}</td>
@@ -10989,7 +10989,7 @@ function ListonePage({ teams, profile }) {
           <thead>
             <tr style={{ background: "#ffffff06" }}>
               {["Nome","Ruolo","Sq. Serie A","Proprietà","Quot","Salario","Clausola","Presenze","M.Voto","M.Fantavoto","Gol","Assist","Amm.","Esp.","Rig.parati","Rig.segn./sbagl."].map(h => (
-                <th key={h} style={{ textAlign: "left", padding: "8px 10px", color: "#666", borderBottom: "1px solid #ffffff12", whiteSpace: "nowrap", fontWeight: 700 }}>{h}</th>
+                <th key={h} style={{ textAlign: "left", padding: "8px 10px", color: "#666", borderBottom: "1px solid #ffffff12", whiteSpace: "nowrap", fontWeight: 700, ...(h === "Nome" ? { position: "sticky", left: 0, background: "#0d0f14", zIndex: 2 } : {}) }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -11004,7 +11004,7 @@ function ListonePage({ teams, profile }) {
                   style={{ borderBottom: "1px solid #ffffff08", opacity: p.fuori_lista ? 0.5 : 1, cursor: "pointer" }}
                   onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                  <td style={{ padding: "7px 10px", fontWeight: 700, color: "#ddd", whiteSpace: "nowrap" }}>{p.nome}{p.fuori_lista && <span style={{ marginLeft: 5, fontSize: 9, color: "#ef4444" }}>FUORI</span>}</td>
+                  <td style={{ padding: "7px 10px", fontWeight: 700, color: "#ddd", whiteSpace: "nowrap", position: "sticky", left: 0, background: "#0d0f14", zIndex: 1 }}>{p.nome}{p.fuori_lista && <span style={{ marginLeft: 5, fontSize: 9, color: "#ef4444" }}>FUORI</span>}</td>
                   <td style={{ padding: "7px 10px", color: "#aaa" }}>{p.ruolo || "—"}</td>
                   <td style={{ padding: "7px 10px", color: "#aaa" }}>{p.squadra_serie_a || "—"}</td>
                   <td style={{ padding: "7px 10px" }} onClick={e => apriSquadraProprietaria(p, e)}>
