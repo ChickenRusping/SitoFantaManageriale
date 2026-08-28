@@ -9285,6 +9285,11 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       label: a.giocatore, sub: `${a.vincitore} ← ${a.proprietario}`, importo: a.prezzo_finale,
       tipoLabel: 'Asta', raw: a,
     })),
+    ...asteSvinc.filter(a => a.stato === 'assegnata').map(a => ({
+      key: 'asv' + a.id, data: a.updated_at || a.created_at, icon: '📞',
+      label: a.giocatore, sub: `${a.vincitore} ← Svincolati${a.aperta_da ? ` (chiamato da ${a.aperta_da})` : ''}`, importo: a.prezzo_finale,
+      tipoLabel: 'Asta Svincolati', raw: a,
+    })),
     ...svincoliRecenti.map(s => ({
       key: 'sv' + s.id, data: s.timestamp, icon: '✂️',
       label: s.descrizione, sub: `Svincolo · ${s.squadra}`, importo: null,
