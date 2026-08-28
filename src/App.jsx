@@ -1550,6 +1550,10 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
         </div>
       </HeroSurface>
 
+      {/* Tutto il resto NON si restringe mai (flexShrink:0): solo l'hero sopra
+          assorbe la differenza (crescendo o restringendosi) fra lo spazio
+          disponibile e questo blocco a dimensione naturale. */}
+      <div style={{ flexShrink: 0 }}>
       {/* Calcolatore Guadagno Giornata — spostato qui da Squadre su richiesta:
           trigger compatto, il form si apre in popup/bottom sheet (vedi sopra
           nel componente) invece di espandersi inline. */}
