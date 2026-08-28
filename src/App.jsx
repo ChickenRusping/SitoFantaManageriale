@@ -1267,8 +1267,8 @@ function CalcolatoreGiornata({ profile, teams, navigate }) {
           </div>
           <IconChevronRight size={16} style={{ color: "#555", flexShrink: 0 }} />
         </div>
-        <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 14px", flexShrink: 0 }}>
-          <NotificationBell mySquadra={profile?.squadra} navigate={navigate} />
+        <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 18, flexShrink: 0, width: 52 }}>
+          <NotificationBell mySquadra={profile?.squadra} navigate={navigate} fill />
         </div>
       </div>
 
@@ -1477,7 +1477,7 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
   }, [team?.name]);
 
   useEffect(() => {
-    getNotizie(undefined, 2).then(setNews).catch(() => setNews([]));
+    getNotizie(undefined, 3).then(setNews).catch(() => setNews([]));
   }, []);
 
   if (!team) {
@@ -1494,7 +1494,7 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
   // Le 2 scadenze di Lega più vicine — stesso calendario/stessa funzione di
   // risoluzione già usati in Lega → Scadenze (getResolvedDeadlines, definita
   // a livello di modulo), nessuna logica duplicata o reinventata qui.
-  const prossimeScadenzeLega = getResolvedDeadlines(new Date()).filter(d => d.days >= 0).slice(0, 2);
+  const prossimeScadenzeLega = getResolvedDeadlines(new Date()).filter(d => d.days >= 0).slice(0, 3);
 
   // I contratti in scadenza compaiono in Home solo quando la scadenza reale
   // (31/05 — "Rinnovo/non rinnovo contratti", stesso calendario di cui sopra)
@@ -1510,27 +1510,27 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
 
   return (
     <div style={{ maxWidth: 640, margin: "0 auto" }}>
-      <HeroSurface onClick={() => navigate(`/presidente/${team.id}`)} style={{ marginBottom: 14, cursor: "pointer" }}>
+      <HeroSurface onClick={() => navigate(`/presidente/${team.id}`)} style={{ marginBottom: 14, cursor: "pointer", padding: "26px 22px", background: `linear-gradient(135deg, ${team.color}2e, ${SURFACE.card})` }}>
         {/* Identità: stemma a sinistra, testo a destra — riempie meglio la
             larghezza dell'hero invece della colonna centrata precedente.
             Tutta l'hero è cliccabile → porta alla pagina Rosa della squadra. */}
         <div style={{ display: "flex", alignItems: "center", gap: 16, textAlign: "left" }}>
-          <TeamAvatar team={team} size={84} />
+          <TeamAvatar team={team} size={92} />
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 24, letterSpacing: "0.5px", color: "#f0f0f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{team.name}</div>
-            {allenatoreNome && <div style={{ fontSize: 11.5, color: "#888", marginTop: 2 }}>All. {allenatoreNome}</div>}
+            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, letterSpacing: "0.5px", color: "#f0f0f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{team.name}</div>
+            {allenatoreNome && <div style={{ fontSize: 12.5, color: "#888", marginTop: 2 }}>All. {allenatoreNome}</div>}
             {posizione != null && (
-              <div style={{ display: "inline-block", marginTop: 8, fontSize: 11, fontWeight: 700, background: "#ffffff10", color: BRAND.gold, padding: "4px 12px", borderRadius: 999 }}>
+              <div style={{ display: "inline-block", marginTop: 8, fontSize: 12, fontWeight: 700, background: "#ffffff10", color: BRAND.gold, padding: "5px 13px", borderRadius: 999 }}>
                 {posizione}° in classifica
               </div>
             )}
           </div>
           <div style={{ textAlign: "right", flexShrink: 0 }}>
-            <div style={{ fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "#777" }}>Bilancio</div>
-            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, color: BRAND.gold, lineHeight: 1, marginTop: 4 }}>{team.bilancio.toFixed(2)}M</div>
+            <div style={{ fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", color: "#777" }}>Bilancio</div>
+            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 24, color: BRAND.gold, lineHeight: 1, marginTop: 4 }}>{team.bilancio.toFixed(2)}M</div>
           </div>
         </div>
-        <div style={{ marginTop: 18, textAlign: "left" }}>
+        <div style={{ marginTop: 20, textAlign: "left" }}>
           {salaryCapUsato != null ? (
             <ProgressBar label="Salary Cap" used={salaryCapUsato} limit={salaryCapLimite} overLimit={salaryCapSforato} formatValue={n => `${n.toFixed(2)}M`} />
           ) : (
@@ -5194,7 +5194,7 @@ const FINANZE_TABS = [
 ];
 
 function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0, salaryCapLimite = 75, salaryCapSforato, scEsenteGiuLug, giorniSCNeg, contrattiScadenza: contrattiScadenzaProp, rosaPlayers, pagandoStipendi, handlePagaStipendi, isAdmin, mySquadra, onRefresh, onBilancioChange }) {
-  const [finTab, setFinTab] = useState('bilancio');
+  const [finTab, setFinTab] = useState('home');
   const [showFasceTassa, setShowFasceTassa] = useState(false);
   const [showStipendiDettaglio, setShowStipendiDettaglio] = useState(false);
   const [showBiennioDettaglio, setShowBiennioDettaglio] = useState(false);
@@ -5245,15 +5245,135 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
     refreshStatoStipendiMese();
   }, [team.name, refreshStatoStipendiMese]);
 
-  // ── Movimenti (sotto-tab dedicata) — caricati per intero una volta sola,
-  // mostrati 25 alla volta ("Carica altri 25") per non allungare la pagina. ──
+  // ── Movimenti (sotto-tab dedicata) — spostata qui per intero dalla vecchia
+  // tab "Movimenti" a livello di Squadra (stessa identica logica di
+  // creazione/modifica/eliminazione, non solo la visualizzazione). Caricati
+  // per intero una volta sola, mostrati 25 alla volta ("Carica altri 25")
+  // per non allungare la pagina.
+  const canEditMovimenti = isAdmin || mySquadra === team.name;
   const [movimentiList, setMovimentiList] = useState([]);
   const [loadingMovimenti, setLoadingMovimenti] = useState(true);
   const [movimentiVisibili, setMovimentiVisibili] = useState(25);
-  useEffect(() => {
+  const [showMovForm, setShowMovForm] = useState(false);
+  const emptyMovForm = { descrizione: "", entrata: "", uscita: "", data: new Date().toISOString().slice(0, 10) };
+  const [movForm, setMovForm] = useState(emptyMovForm);
+  const [editingMovimento, setEditingMovimento] = useState(null);
+  const [movSort, setMovSort] = useState("data_desc");
+  const [movSearch, setMovSearch] = useState("");
+
+  const loadMovimenti = useCallback(async () => {
     setLoadingMovimenti(true);
-    getMovimenti(team.name).then(rows => { setMovimentiList(rows || []); setLoadingMovimenti(false); });
+    const data = await cachedFetch('movimenti_' + team.name, () => getMovimenti(team.name), 300000);
+    setMovimentiList(data || []);
+    setLoadingMovimenti(false);
   }, [team.name]);
+
+  useEffect(() => {
+    loadMovimenti();
+    const sub = subscribeMovimenti(team.name, loadMovimenti);
+    return () => supabase.removeChannel(sub);
+  }, [loadMovimenti, team.name]);
+
+  const valoreMovimento = (m) => Number(m?.entrata || 0) - Number(m?.uscita || 0);
+  const resetMovForm = () => {
+    setMovForm({ ...emptyMovForm, data: new Date().toISOString().slice(0, 10) });
+    setEditingMovimento(null);
+  };
+
+  function apriModificaMovimento(m) {
+    setEditingMovimento(m);
+    setMovForm({
+      descrizione: m.descrizione || "",
+      entrata: m.entrata ? String(m.entrata) : "",
+      uscita: m.uscita ? String(m.uscita) : "",
+      data: m.data || new Date().toISOString().slice(0, 10),
+    });
+    setShowMovForm(true);
+  }
+
+  async function salvaMovimento() {
+    if (!movForm.descrizione) return;
+    const entrata = movForm.entrata ? parseFloat(movForm.entrata) : null;
+    const uscita  = movForm.uscita  ? parseFloat(movForm.uscita)  : null;
+    if (entrata && uscita) { alert("Inserisci solo entrata oppure uscita, non entrambe."); return; }
+
+    const dettaglio = entrata ? `Entrata: +${entrata}M` : uscita ? `Uscita: −${uscita}M` : "Nessun importo";
+
+    if (editingMovimento) {
+      if (!window.confirm(`Modificare il movimento?\n\n"${editingMovimento.descrizione}"\n→ "${movForm.descrizione}"\n${dettaglio}`)) return;
+
+      await updateMovimento(editingMovimento.id, {
+        descrizione: movForm.descrizione,
+        entrata,
+        uscita,
+        data: movForm.data,
+      });
+
+      const vecchioValore = valoreMovimento(editingMovimento);
+      const nuovoValore = Number(entrata || 0) - Number(uscita || 0);
+      const delta = parseFloat((nuovoValore - vecchioValore).toFixed(2));
+      const nuovoBilancio = parseFloat((Number(team.bilancio ?? 0) + delta).toFixed(2));
+
+      await updateSquadra(team.name, { bilancio: nuovoBilancio });
+      await logAzione({
+        utente: isAdmin ? 'admin' : mySquadra,
+        squadra: team.name,
+        azione: 'movimento_modificato',
+        entita: 'movimenti',
+        entitaId: editingMovimento.id,
+        descrizione: `Movimento modificato: ${editingMovimento.descrizione} → ${movForm.descrizione}`,
+        dataPrima: editingMovimento,
+        dataDopo: { descrizione: movForm.descrizione, entrata, uscita, data: movForm.data },
+        rollbackPossibile: true,
+      }).catch(() => {});
+
+      if (onBilancioChange) onBilancioChange(nuovoBilancio);
+      setShowMovForm(false);
+      resetMovForm();
+      cacheInvalidate('movimenti_' + team.name);
+      await loadMovimenti();
+      if (onRefresh) onRefresh();
+      return;
+    }
+
+    if (!window.confirm(`Registrare il movimento?\n\n"${movForm.descrizione}"\n${dettaglio}`)) return;
+    await insertMovimento({
+      squadra: team.name,
+      descrizione: movForm.descrizione,
+      entrata, uscita,
+      data: movForm.data,
+    });
+    const nuovi = [...movimentiList, { entrata, uscita }];
+    const nuovoBilancio = parseFloat(nuovi.reduce((s, m) => s + (m.entrata || 0) - (m.uscita || 0), 0).toFixed(2));
+    await updateSquadra(team.name, { bilancio: nuovoBilancio });
+    sendTelegramNotification('movimento_privato', {
+      descrizione: movForm.descrizione,
+      entrata: entrata || null,
+      uscita: uscita || null,
+      bilancio: nuovoBilancio,
+    }, team.name);
+    if (onBilancioChange) onBilancioChange(nuovoBilancio);
+    setShowMovForm(false);
+    resetMovForm();
+    cacheInvalidate('movimenti_' + team.name);
+    await loadMovimenti();
+    if (onRefresh) onRefresh();
+  }
+
+  async function rimuoviMovimento(id) {
+    const mov = movimentiList.find(m => m.id === id);
+    if (!window.confirm(`Eliminare il movimento?\n\n"${mov?.descrizione || ''}"`)) return;
+    const rimanenti = movimentiList.filter(m => m.id !== id);
+    const nuovoBilancio = parseFloat(rimanenti.reduce((s, m) => s + (m.entrata || 0) - (m.uscita || 0), 0).toFixed(2));
+    try {
+      await updateSquadra(team.name, { bilancio: nuovoBilancio });
+      await deleteMovimento(id);
+      if (onBilancioChange) onBilancioChange(nuovoBilancio);
+      cacheInvalidate('movimenti_' + team.name);
+      await loadMovimenti();
+      if (onRefresh) onRefresh();
+    } catch(e) { alert(`Errore: ${e.message}`); }
+  }
 
   // Aggiorna bilancio_neg_dal/bilancio_neg_settimane (mai scritti altrimenti
   // da nessuna parte dell'app finora): idempotente, sicura da richiamare ogni
@@ -5363,7 +5483,23 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <PillNav tabs={FINANZE_TABS} active={finTab} onChange={setFinTab} />
+      {/* Mini-home con 4 bottoni, stesso pattern della home di Mercato:
+          landing con scelta della sotto-sezione invece di un nav sempre
+          fisso in cima, con "← Finanze" per tornare indietro. */}
+      {finTab === 'home' ? (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          {FINANZE_TABS.map(t => (
+            <button key={t.key} onClick={() => setFinTab(t.key)}
+              style={{ padding: "20px 14px", borderRadius: 14, border: "1px solid #ffffff12", background: "#ffffff08", color: "#f0f0f0", fontSize: 14, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <button onClick={() => setFinTab('home')} style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 999, border: "none", background: "#ffffff0a", color: "#888", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+          <IconBack size={14} /> Finanze
+        </button>
+      )}
 
       {finTab === 'bilancio' && (<>
       {/* ── 1. BILANCIO LIQUIDO + STATO ── */}
@@ -5617,39 +5753,132 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
       {/* ── 4. FAIR SPENDING (art. 7.3) ── */}
       <FairSpendingSection team={team} isAdmin={isAdmin} />
 
-      {/* ── Lista movimenti (25 alla volta) ── */}
+      {/* ── Movimenti — stessa identica logica (creazione/modifica/eliminazione)
+          spostata qui dalla vecchia tab "Movimenti" a livello di Squadra. ── */}
       <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 14, padding: 16 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.08em", marginBottom: 12 }}>📋 MOVIMENTI</div>
-        {loadingMovimenti ? (
-          <div style={{ fontSize: 12, color: "#555" }}>Caricamento...</div>
-        ) : movimentiList.length === 0 ? (
-          <div style={{ fontSize: 12, color: "#555", fontStyle: "italic" }}>Nessun movimento registrato</div>
-        ) : (
-          <>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {movimentiList.slice(0, movimentiVisibili).map(m => (
-                <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "#ffffff05", border: "1px solid #ffffff0f", borderRadius: 12, padding: "10px 12px" }}>
-                  <div style={{ width: 30, height: 30, borderRadius: "50%", background: m.entrata ? "#10b98118" : "#ef444418", color: m.entrata ? "#10b981" : "#ef4444", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900, flexShrink: 0 }}>
-                    {m.entrata ? "↑" : "↓"}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, color: "#ddd", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.descrizione}</div>
-                    <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>{new Date(m.data).toLocaleDateString("it-IT")}</div>
-                  </div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: m.entrata ? "#10b981" : "#ef4444", fontFamily: "'Bebas Neue',sans-serif", whiteSpace: "nowrap" }}>
-                    {m.entrata ? `+${m.entrata}M` : m.uscita ? `-${m.uscita}M` : "—"}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {movimentiList.length > movimentiVisibili && (
-              <button onClick={() => setMovimentiVisibili(v => v + 25)}
-                style={{ width: "100%", marginTop: 10, padding: "10px", borderRadius: 10, border: "1px solid #ffffff15", background: "#ffffff05", color: "#888", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                ▾ Carica altri {Math.min(25, movimentiList.length - movimentiVisibili)}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.08em" }}>📋 MOVIMENTI</div>
+          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+            <input
+              type="text"
+              placeholder="🔍 Cerca..."
+              value={movSearch}
+              onChange={e => setMovSearch(e.target.value)}
+              style={{ ...FIELD, width: 130 }}
+            />
+            {[
+              { asc: "data_asc", desc: "data_desc", labelAsc: "📅 Vecchi", labelDesc: "📅 Recenti" },
+              { asc: "imp_asc",  desc: "imp_desc",  labelAsc: "💰 ↑",       labelDesc: "💰 ↓" },
+            ].map(s => {
+              const active = movSort === s.asc || movSort === s.desc;
+              const isDesc = movSort === s.desc;
+              const label = active ? (isDesc ? s.labelDesc : s.labelAsc) : s.labelDesc;
+              return (
+                <button key={s.desc} onClick={() => setMovSort(active && isDesc ? s.asc : s.desc)} style={{ padding: "4px 10px", borderRadius: 7, border: "none", background: active ? "#6366f133" : "#ffffff0a", color: active ? "#818cf8" : "#666", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  {label}
+                </button>
+              );
+            })}
+            {canEditMovimenti && (
+              <button onClick={() => {
+                if (showMovForm) { setShowMovForm(false); resetMovForm(); }
+                else { resetMovForm(); setShowMovForm(true); }
+              }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: showMovForm ? "#ffffff12" : "linear-gradient(135deg,#6366f1,#a855f7)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                {showMovForm ? "✕" : "+ Mov"}
               </button>
             )}
-          </>
+          </div>
+        </div>
+
+        {showMovForm && (
+          <div style={{ background: "#ffffff08", border: "1px solid #6366f133", borderRadius: 12, padding: 14, marginBottom: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: editingMovimento ? "#f59e0b" : "#818cf8", letterSpacing: "0.06em" }}>
+                {editingMovimento ? "✏️ MODIFICA MOVIMENTO" : "➕ NUOVO MOVIMENTO"}
+              </div>
+              {editingMovimento && (
+                <button onClick={() => { setShowMovForm(false); resetMovForm(); }} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#ffffff10", color: "#888", fontSize: 10, cursor: "pointer" }}>
+                  Annulla modifica
+                </button>
+              )}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>DESCRIZIONE</div>
+                <input style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}
+                  placeholder="es. Vendita Barella" value={movForm.descrizione} onChange={e => setMovForm(f => ({ ...f, descrizione: e.target.value }))} />
+              </div>
+              <div>
+                <div style={{ fontSize: 10, color: "#10b981", marginBottom: 4 }}>ENTRATA (M)</div>
+                <input style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #10b98133", background: "#0d0f14", color: "#10b981", fontSize: 12 }}
+                  type="number" placeholder="0" value={movForm.entrata} onChange={e => setMovForm(f => ({ ...f, entrata: e.target.value, uscita: "" }))} />
+              </div>
+              <div>
+                <div style={{ fontSize: 10, color: "#ef4444", marginBottom: 4 }}>USCITA (M)</div>
+                <input style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #ef444433", background: "#0d0f14", color: "#ef4444", fontSize: 12 }}
+                  type="number" placeholder="0" value={movForm.uscita} onChange={e => setMovForm(f => ({ ...f, uscita: e.target.value, entrata: "" }))} />
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>DATA</div>
+                <input style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}
+                  type="date" value={movForm.data} onChange={e => setMovForm(f => ({ ...f, data: e.target.value }))} />
+              </div>
+            </div>
+            <button onClick={salvaMovimento} style={{ width: "100%", padding: "9px", borderRadius: 9, border: "none", background: "#6366f1", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              {editingMovimento ? "Salva modifiche →" : "Salva movimento →"}
+            </button>
+          </div>
         )}
+
+        {loadingMovimenti ? (
+          <div style={{ fontSize: 12, color: "#555" }}>Caricamento...</div>
+        ) : (() => {
+          const q = movSearch.trim().toLowerCase();
+          const filtered = q ? movimentiList.filter(m => (m.descrizione || "").toLowerCase().includes(q)) : movimentiList;
+          const sorted = [...filtered].sort((a, b) => {
+            const va = a.entrata ?? -(a.uscita ?? 0);
+            const vb = b.entrata ?? -(b.uscita ?? 0);
+            const da = new Date(a.data), db = new Date(b.data);
+            if (movSort === "data_desc") return db - da;
+            if (movSort === "data_asc")  return da - db;
+            if (movSort === "imp_desc")  return Math.abs(vb) - Math.abs(va);
+            if (movSort === "imp_asc")   return Math.abs(va) - Math.abs(vb);
+            return 0;
+          });
+          if (sorted.length === 0) return <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", padding: "16px 0", textAlign: "center" }}>{q ? "Nessun movimento trovato" : "Nessun movimento registrato"}</div>;
+          return (
+            <>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {sorted.slice(0, movimentiVisibili).map(m => (
+                  <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "#ffffff05", border: "1px solid #ffffff0f", borderRadius: 12, padding: "10px 12px" }}>
+                    <div style={{ width: 30, height: 30, borderRadius: "50%", background: m.entrata ? "#10b98118" : "#ef444418", color: m.entrata ? "#10b981" : "#ef4444", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900, flexShrink: 0 }}>
+                      {m.entrata ? "↑" : "↓"}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, color: "#ddd", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.descrizione}</div>
+                      <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>{new Date(m.data).toLocaleDateString("it-IT")}</div>
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: m.entrata ? "#10b981" : "#ef4444", fontFamily: "'Bebas Neue',sans-serif", whiteSpace: "nowrap" }}>
+                      {m.entrata ? `+${m.entrata}M` : m.uscita ? `-${m.uscita}M` : "—"}
+                    </div>
+                    {canEditMovimenti && (
+                      <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+                        <button onClick={() => apriModificaMovimento(m)} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#f59e0b18", color: "#f59e0b", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>✏️</button>
+                        <button onClick={() => rimuoviMovimento(m.id)} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#ef444418", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>✕</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {sorted.length > movimentiVisibili && (
+                <button onClick={() => setMovimentiVisibili(v => v + 25)}
+                  style={{ width: "100%", marginTop: 10, padding: "10px", borderRadius: 10, border: "1px solid #ffffff15", background: "#ffffff05", color: "#888", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  ▾ Carica altri {Math.min(25, sorted.length - movimentiVisibili)}
+                </button>
+              )}
+            </>
+          );
+        })()}
       </div>
       </>)}
 
@@ -7141,13 +7370,6 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
     window.addEventListener("resize", h);
     return () => window.removeEventListener("resize", h);
   }, []);
-  const [movimenti, setMovimenti] = useState([]);
-  const [showMovForm, setShowMovForm] = useState(false);
-  const emptyMovForm = { descrizione: "", entrata: "", uscita: "", data: new Date().toISOString().slice(0, 10) };
-  const [movForm, setMovForm] = useState(emptyMovForm);
-  const [editingMovimento, setEditingMovimento] = useState(null);
-  const [movSort, setMovSort] = useState("data_desc");
-  const [movSearch, setMovSearch] = useState("");
   const [rosaPlayers, setRosaPlayers] = useState([]);
   const [contrattiScadenza, setContrattiScadenza] = useState([]);
   const [pagandoStipendi, setPagandoStipendi] = useState(false);
@@ -7168,7 +7390,6 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
   const fpMax = Math.max(team.fairPlay1, team.fairPlay2);
   const fpStatus = getFPStatus(fpMax);
   const scColor = getSCColor(team.salaryUsed);
-  const canEditMovimenti = isAdmin || mySquadra === team.name;
 
   // Salary cap: stipendi rosa + 5M staff allenatore (se carta scelta)
   const salaryCapRosa = rosaPlayers.reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
@@ -7266,118 +7487,9 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
     finally { setPagandoStipendi(false); }
   }
 
-  const loadMovimenti = useCallback(async () => {
-    const data = await cachedFetch('movimenti_' + team.name, () => getMovimenti(team.name), 300000);
-    if (data) setMovimenti(data);
-  }, [team.name]);
-
   const loadAll = useCallback(async () => {
     await Promise.all([loadRosaStipendi(), loadContratti(), loadObiettivi()]);
   }, [loadRosaStipendi, loadContratti, loadObiettivi]);
-
-  useEffect(() => {
-    loadMovimenti();
-    const sub = subscribeMovimenti(team.name, loadMovimenti);
-    return () => supabase.removeChannel(sub);
-  }, [loadMovimenti, team.name]);
-
-  const valoreMovimento = (m) => Number(m?.entrata || 0) - Number(m?.uscita || 0);
-  const resetMovForm = () => {
-    setMovForm({ ...emptyMovForm, data: new Date().toISOString().slice(0, 10) });
-    setEditingMovimento(null);
-  };
-
-  function apriModificaMovimento(m) {
-    setEditingMovimento(m);
-    setMovForm({
-      descrizione: m.descrizione || "",
-      entrata: m.entrata ? String(m.entrata) : "",
-      uscita: m.uscita ? String(m.uscita) : "",
-      data: m.data || new Date().toISOString().slice(0, 10),
-    });
-    setShowMovForm(true);
-  }
-
-  async function salvaMovimento() {
-    if (!movForm.descrizione) return;
-    const entrata = movForm.entrata ? parseFloat(movForm.entrata) : null;
-    const uscita  = movForm.uscita  ? parseFloat(movForm.uscita)  : null;
-    if (entrata && uscita) { alert("Inserisci solo entrata oppure uscita, non entrambe."); return; }
-
-    const dettaglio = entrata ? `Entrata: +${entrata}M` : uscita ? `Uscita: −${uscita}M` : "Nessun importo";
-
-    if (editingMovimento) {
-      if (!window.confirm(`Modificare il movimento?\n\n"${editingMovimento.descrizione}"\n→ "${movForm.descrizione}"\n${dettaglio}`)) return;
-
-      await updateMovimento(editingMovimento.id, {
-        descrizione: movForm.descrizione,
-        entrata,
-        uscita,
-        data: movForm.data,
-      });
-
-      const vecchioValore = valoreMovimento(editingMovimento);
-      const nuovoValore = Number(entrata || 0) - Number(uscita || 0);
-      const delta = parseFloat((nuovoValore - vecchioValore).toFixed(2));
-      const nuovoBilancio = parseFloat((Number(bilancioLive ?? team.bilancio ?? 0) + delta).toFixed(2));
-
-      await updateSquadra(team.name, { bilancio: nuovoBilancio });
-      await logAzione({
-        utente: isAdmin ? 'admin' : mySquadra,
-        squadra: team.name,
-        azione: 'movimento_modificato',
-        entita: 'movimenti',
-        entitaId: editingMovimento.id,
-        descrizione: `Movimento modificato: ${editingMovimento.descrizione} → ${movForm.descrizione}`,
-        dataPrima: editingMovimento,
-        dataDopo: { descrizione: movForm.descrizione, entrata, uscita, data: movForm.data },
-        rollbackPossibile: true,
-      }).catch(() => {});
-
-      setBilancioLive(nuovoBilancio);
-      setShowMovForm(false);
-      resetMovForm();
-      cacheInvalidate('movimenti_' + team.name);
-      await loadMovimenti();
-      return;
-    }
-
-    if (!window.confirm(`Registrare il movimento?\n\n"${movForm.descrizione}"\n${dettaglio}`)) return;
-    await insertMovimento({
-      squadra: team.name,
-      descrizione: movForm.descrizione,
-      entrata, uscita,
-      data: movForm.data,
-    });
-    const nuovi = [...movimenti, { entrata, uscita }];
-    const nuovoBilancio = parseFloat(nuovi.reduce((s, m) => s + (m.entrata || 0) - (m.uscita || 0), 0).toFixed(2));
-    await updateSquadra(team.name, { bilancio: nuovoBilancio });
-    sendTelegramNotification('movimento_privato', {
-      descrizione: movForm.descrizione,
-      entrata: entrata || null,
-      uscita: uscita || null,
-      bilancio: nuovoBilancio,
-    }, team.name);
-    setBilancioLive(nuovoBilancio);
-    setShowMovForm(false);
-    resetMovForm();
-    cacheInvalidate('movimenti_' + team.name);
-    await loadMovimenti();
-  }
-
-  async function rimuoviMovimento(id) {
-    const mov = movimenti.find(m => m.id === id);
-    if (!window.confirm(`Eliminare il movimento?\n\n"${mov?.descrizione || ''}"`)) return;
-    const rimanenti = movimenti.filter(m => m.id !== id);
-    const nuovoBilancio = parseFloat(rimanenti.reduce((s, m) => s + (m.entrata || 0) - (m.uscita || 0), 0).toFixed(2));
-    try {
-      await updateSquadra(team.name, { bilancio: nuovoBilancio });
-      await deleteMovimento(id);
-      setBilancioLive(nuovoBilancio);
-      cacheInvalidate('movimenti_' + team.name);
-      await loadMovimenti();
-    } catch(e) { alert(`Errore: ${e.message}`); }
-  }
 
   // "Altro" diventa "Club" solo come etichetta visiva — la key resta "altro"
   // e AltroTab (bonus/allenatore/investimenti) non viene toccata: nessuna
@@ -7385,7 +7497,6 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
   const tabs = [
     { key: "rosa",      label: "Rosa"      },
     { key: "finanze",   label: "Finanze"   },
-    { key: "movimenti", label: "Movimenti" },
     { key: "altro",     label: "Club"      },
   ];
 
@@ -7475,122 +7586,6 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
               <AltroTab team={team} isAdmin={isAdmin} mySquadra={mySquadra} />
             )}
 
-            {tab === "movimenti" && (
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.08em" }}>📋 MOVIMENTI</div>
-                  <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                    <input
-                      type="text"
-                      placeholder="🔍 Cerca..."
-                      value={movSearch}
-                      onChange={e => setMovSearch(e.target.value)}
-                      style={{ ...FIELD, width: 130 }}
-                    />
-                    {[
-                      { asc: "data_asc", desc: "data_desc", labelAsc: "📅 Vecchi", labelDesc: "📅 Recenti" },
-                      { asc: "imp_asc",  desc: "imp_desc",  labelAsc: "💰 ↑",       labelDesc: "💰 ↓" },
-                    ].map(s => {
-                      const active = movSort === s.asc || movSort === s.desc;
-                      const isDesc = movSort === s.desc;
-                      const label = active ? (isDesc ? s.labelDesc : s.labelAsc) : s.labelDesc;
-                      return (
-                        <button key={s.desc} onClick={() => setMovSort(active && isDesc ? s.asc : s.desc)} style={{ padding: "4px 10px", borderRadius: 7, border: "none", background: active ? "#6366f133" : "#ffffff0a", color: active ? "#818cf8" : "#666", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                          {label}
-                        </button>
-                      );
-                    })}
-                    {canEditMovimenti && (
-                      <button onClick={() => {
-                        if (showMovForm) { setShowMovForm(false); resetMovForm(); }
-                        else { resetMovForm(); setShowMovForm(true); }
-                      }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: showMovForm ? "#ffffff12" : "linear-gradient(135deg,#6366f1,#a855f7)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                        {showMovForm ? "✕" : "+ Mov"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {showMovForm && (
-                  <div style={{ background: "#ffffff08", border: "1px solid #6366f133", borderRadius: 12, padding: 14, marginBottom: 14 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                      <div style={{ fontSize: 11, fontWeight: 800, color: editingMovimento ? "#f59e0b" : "#818cf8", letterSpacing: "0.06em" }}>
-                        {editingMovimento ? "✏️ MODIFICA MOVIMENTO" : "➕ NUOVO MOVIMENTO"}
-                      </div>
-                      {editingMovimento && (
-                        <button onClick={() => { setShowMovForm(false); resetMovForm(); }} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#ffffff10", color: "#888", fontSize: 10, cursor: "pointer" }}>
-                          Annulla modifica
-                        </button>
-                      )}
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-                      <div style={{ gridColumn: "1 / -1" }}>
-                        <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>DESCRIZIONE</div>
-                        <input style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}
-                          placeholder="es. Vendita Barella" value={movForm.descrizione} onChange={e => setMovForm(f => ({ ...f, descrizione: e.target.value }))} />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 10, color: "#10b981", marginBottom: 4 }}>ENTRATA (M)</div>
-                        <input style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #10b98133", background: "#0d0f14", color: "#10b981", fontSize: 12 }}
-                          type="number" placeholder="0" value={movForm.entrata} onChange={e => setMovForm(f => ({ ...f, entrata: e.target.value, uscita: "" }))} />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 10, color: "#ef4444", marginBottom: 4 }}>USCITA (M)</div>
-                        <input style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #ef444433", background: "#0d0f14", color: "#ef4444", fontSize: 12 }}
-                          type="number" placeholder="0" value={movForm.uscita} onChange={e => setMovForm(f => ({ ...f, uscita: e.target.value, entrata: "" }))} />
-                      </div>
-                      <div style={{ gridColumn: "1 / -1" }}>
-                        <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>DATA</div>
-                        <input style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}
-                          type="date" value={movForm.data} onChange={e => setMovForm(f => ({ ...f, data: e.target.value }))} />
-                      </div>
-                    </div>
-                    <button onClick={salvaMovimento} style={{ width: "100%", padding: "9px", borderRadius: 9, border: "none", background: "#6366f1", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                      {editingMovimento ? "Salva modifiche →" : "Salva movimento →"}
-                    </button>
-                  </div>
-                )}
-
-                {(() => {
-                  const q = movSearch.trim().toLowerCase();
-                  const filtered = q ? movimenti.filter(m => (m.descrizione || "").toLowerCase().includes(q)) : movimenti;
-                  const sorted = [...filtered].sort((a, b) => {
-                    const va = a.entrata ?? -(a.uscita ?? 0);
-                    const vb = b.entrata ?? -(b.uscita ?? 0);
-                    const da = new Date(a.data), db = new Date(b.data);
-                    if (movSort === "data_desc") return db - da;
-                    if (movSort === "data_asc")  return da - db;
-                    if (movSort === "imp_desc")  return Math.abs(vb) - Math.abs(va);
-                    if (movSort === "imp_asc")   return Math.abs(va) - Math.abs(vb);
-                    return 0;
-                  });
-                  return sorted.length === 0
-                    ? <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", padding: "16px 0", textAlign: "center" }}>{q ? "Nessun movimento trovato" : "Nessun movimento registrato"}</div>
-                    : <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {sorted.map(m => (
-                      <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "#ffffff05", border: "1px solid #ffffff0f", borderRadius: 12, padding: "10px 12px" }}>
-                        <div style={{ width: 30, height: 30, borderRadius: "50%", background: m.entrata ? "#10b98118" : "#ef444418", color: m.entrata ? "#10b981" : "#ef4444", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900, flexShrink: 0 }}>
-                          {m.entrata ? "↑" : "↓"}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 12, color: "#ddd", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.descrizione}</div>
-                          <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>{new Date(m.data).toLocaleDateString("it-IT")}</div>
-                        </div>
-                        <div style={{ fontSize: 15, fontWeight: 800, color: m.entrata ? "#10b981" : "#ef4444", fontFamily: "'Bebas Neue',sans-serif", whiteSpace: "nowrap" }}>
-                          {m.entrata ? `+${m.entrata}M` : m.uscita ? `-${m.uscita}M` : "—"}
-                        </div>
-                        {canEditMovimenti && (
-                          <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
-                            <button onClick={() => apriModificaMovimento(m)} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#f59e0b18", color: "#f59e0b", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>✏️</button>
-                            <button onClick={() => rimuoviMovimento(m.id)} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#ef444418", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>✕</button>
-                          </div>
-                        )}
-                      </div>
-                      ))}
-                    </div>;
-                })()}
-              </div>
-            )}
           </div>
         </div>
 
@@ -17091,7 +17086,7 @@ table{border-collapse:collapse;min-width:max-content}
 
 
 // ── Centro notifiche (campanella in header, globale) ──────────────────────────
-function NotificationBell({ mySquadra, navigate }) {
+function NotificationBell({ mySquadra, navigate, fill = false }) {
   const [notifiche, setNotifiche] = useState([]);
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState("private"); // 'private' | 'pubbliche'
@@ -17173,9 +17168,11 @@ function NotificationBell({ mySquadra, navigate }) {
   }
 
   return (
-    <div ref={ref} style={{ position: "relative" }}>
+    <div ref={ref} style={{ position: "relative", ...(fill ? { width: "100%", height: "100%" } : {}) }}>
       <button onClick={toggleOpen} title="Notifiche" aria-label={`Notifiche${nonLette.length > 0 ? ` — ${nonLette.length} non lette` : ''}`} aria-expanded={open}
-        style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #ffffff12", background: "transparent", color: "#555", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+        style={fill
+          ? { width: "100%", height: "100%", borderRadius: 18, border: "none", background: "transparent", color: "#888", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }
+          : { width: 28, height: 28, borderRadius: 7, border: "1px solid #ffffff12", background: "transparent", color: "#555", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
         🔔
         {nonLette.length > 0 && (
           <span style={{ position: "absolute", top: -4, right: -4, background: "#ef4444", color: "#fff", borderRadius: "50%", minWidth: 15, height: 15, padding: "0 3px", fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>
