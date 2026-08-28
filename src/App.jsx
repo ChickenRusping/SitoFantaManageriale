@@ -1510,8 +1510,8 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
   const haRichiesteAttenzione = nOfferte > 0 || alertContratti.length > 0;
 
   return (
-    <div style={{ maxWidth: 640, margin: "0 auto" }}>
-      <HeroSurface onClick={() => navigate(`/presidente/${team.id}`)} style={{ marginBottom: 14, cursor: "pointer", padding: "26px 22px", background: `linear-gradient(135deg, ${team.color}2e, ${SURFACE.card})` }}>
+    <div style={{ maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", minHeight: "calc(100dvh - 68px - env(safe-area-inset-bottom,0px) - 32px - env(safe-area-inset-top,0px))" }}>
+      <HeroSurface onClick={() => navigate(`/presidente/${team.id}`)} style={{ marginBottom: 14, cursor: "pointer", padding: "26px 22px", background: `linear-gradient(135deg, ${team.color}2e, ${SURFACE.card})`, flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
         {/* Identità: stemma a sinistra, testo a destra — riempie meglio la
             larghezza dell'hero invece della colonna centrata precedente.
             Tutta l'hero è cliccabile → porta alla pagina Rosa della squadra. */}
@@ -5491,7 +5491,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           {FINANZE_TABS.map(t => (
             <button key={t.key} onClick={() => setFinTab(t.key)}
-              style={{ padding: "20px 14px", borderRadius: 14, border: "1px solid #ffffff12", background: "#ffffff08", color: "#f0f0f0", fontSize: 14, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
+              style={{ padding: "20px 14px", borderRadius: 999, border: "1px solid #ffffff12", background: "#ffffff08", color: "#f0f0f0", fontSize: 14, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
               {t.label}
             </button>
           ))}
@@ -6036,7 +6036,7 @@ const CATALOGO_INVESTIMENTI = [
 const INVESTIMENTI_DA_CALCOLATORE_GIORNATA = ["Accordi TV", "Clean Sheet", "The MVP", "Abbonamenti Premium"];
 
 /* ─── ALLENATORE TAB ─────────────────────────────────────────────────────────── */
-function AltroTab({ team, isAdmin, mySquadra }) {
+function AltroTab({ team, isAdmin, mySquadra, clubIdentity, onRefreshIdentity }) {
 
 
   // ── BONUS TRATTATIVE ─────────────────────────────────────────────────────────
@@ -6554,19 +6554,36 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
     return { entrata: parseFloat(entrata.toFixed(2)), uscita: parseFloat(uscita.toFixed(2)) };
   }, [bonusData, team.name]);
 
-  // Sotto-navigazione "Club": organizza le stesse 3 sezioni già esistenti
-  // (nessuna funzione spostata o rimossa, solo raggruppata sotto un tab).
-  const [subTab, setSubTab] = useState('bonus');
+  // Sotto-navigazione "Club": mini-home con 4 bottoni (stesso pattern di
+  // Mercato/Finanze) invece del PillNav sempre visibile — "Descrizione"
+  // raccoglie quella che prima era la colonna laterale sempre visibile
+  // (stemma/maglie/palmarès/storia/rivalità/Telegram), non più una sidebar
+  // fissa ma una sua sotto-sezione dedicata.
+  const [subTab, setSubTab] = useState('home');
   const SUB_TABS = [
-    { key: 'bonus', label: 'Bonus' },
-    { key: 'allenatore', label: 'Allenatore' },
-    { key: 'investimenti', label: 'Investimenti' },
+    { key: 'bonus', label: '📊 Bonus' },
+    { key: 'allenatore', label: '🎩 Allenatore' },
+    { key: 'investimenti', label: '💼 Investimenti' },
+    { key: 'descrizione', label: '📋 Descrizione' },
   ];
 
   return (
     <div style={{ display:"flex",flexDirection:"column",gap:20 }}>
 
-      <PillNav tabs={SUB_TABS} active={subTab} onChange={setSubTab} />
+      {subTab === 'home' ? (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          {SUB_TABS.map(t => (
+            <button key={t.key} onClick={() => setSubTab(t.key)}
+              style={{ padding: "20px 14px", borderRadius: 999, border: "1px solid #ffffff12", background: "#ffffff08", color: "#f0f0f0", fontSize: 14, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <button onClick={() => setSubTab('home')} style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 999, border: "none", background: "#ffffff0a", color: "#888", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+          <IconBack size={14} /> Club
+        </button>
+      )}
 
       {/* ══ 1. BONUS TRATTATIVE ══ */}
       {subTab==='bonus' && (
@@ -7103,6 +7120,24 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
       </div>
       )}
 
+      {/* ══ 4. DESCRIZIONE — ex colonna laterale "Club Identity" (stemma,
+          maglie, palmarès, storia, rivalità, registrazione Telegram), ora
+          sotto-sezione dedicata invece di una sidebar sempre visibile. ══ */}
+      {subTab==='descrizione' && (
+        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+          <ClubIdentityRight
+            team={team}
+            clubIdentity={clubIdentity}
+            isAdmin={isAdmin}
+            mySquadra={mySquadra}
+            onRefresh={onRefreshIdentity}
+          />
+          {mySquadra === team.name && (
+            <TelegramRegistrationCard squadra={team.name} />
+          )}
+        </div>
+      )}
+
     </div>
   );
 }
@@ -7362,15 +7397,6 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
   const setTab = (newTab) => {
     navigate(`/presidente/${team.id}/${newTab}`, { replace: false });
   };
-  // Su mobile la Club Identity (stemma/maglie/palmarès/rivalità/Telegram) non
-  // deve comparire impilata sotto qualsiasi tab: appare solo dentro il tab
-  // "Club". Su desktop resta sempre visibile come colonna laterale, invariato.
-  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
-  useEffect(() => {
-    const h = () => setIsDesktop(window.innerWidth >= 768);
-    window.addEventListener("resize", h);
-    return () => window.removeEventListener("resize", h);
-  }, []);
   const [rosaPlayers, setRosaPlayers] = useState([]);
   const [contrattiScadenza, setContrattiScadenza] = useState([]);
   const [pagandoStipendi, setPagandoStipendi] = useState(false);
@@ -7540,16 +7566,17 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
         </div>
       </div>
 
-      {/* Two-column layout: tabs left, club identity right */}
+      {/* Layout a colonna singola: la Club Identity non è più una sidebar
+          sempre visibile, ora vive dentro Club → sotto-tab "Descrizione". */}
       <style>{`@media(max-width:768px){.pres-layout{flex-direction:column!important;align-items:stretch!important}.pres-left{width:100%!important;min-width:0!important}.pres-right{width:100%!important}}`}</style>
       <div className="pres-layout" style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
 
         {/* LEFT — tabs */}
         <div className="pres-left" style={{ flex: 1, minWidth: 0 }}>
           {/* Tab buttons */}
-          <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto", paddingBottom: 2 }}>
+          <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
             {tabs.map(t => (
-              <button key={t.key} onClick={() => setTab(t.key)} style={{ padding: "8px 16px", borderRadius: 999, border: "none", background: tab === t.key ? team.color + "22" : "#ffffff0a", color: tab === t.key ? team.color : "#888", fontSize: 12.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+              <button key={t.key} onClick={() => setTab(t.key)} style={{ flex: 1, padding: "8px 10px", borderRadius: 999, border: "none", background: tab === t.key ? team.color + "22" : "#ffffff0a", color: tab === t.key ? team.color : "#888", fontSize: 12.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
                 {t.label}
               </button>
             ))}
@@ -7584,29 +7611,11 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
             )}
 
             {tab === "altro" && (
-              <AltroTab team={team} isAdmin={isAdmin} mySquadra={mySquadra} />
+              <AltroTab team={team} isAdmin={isAdmin} mySquadra={mySquadra} clubIdentity={clubIdentity} onRefreshIdentity={loadClubIdentity} />
             )}
 
           </div>
         </div>
-
-        {/* RIGHT — club identity: sempre visibile su desktop (colonna
-            laterale), su mobile solo dentro il tab "Club" — vedi nota sopra. */}
-        {(isDesktop || tab === 'altro') && (
-        <div className="pres-right" style={{ width: 280, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>
-          <ClubIdentityRight
-            team={team}
-            clubIdentity={clubIdentity}
-            isAdmin={isAdmin}
-            mySquadra={mySquadra}
-            onRefresh={loadClubIdentity}
-          />
-          {/* Telegram self-registration — only for the team's own president */}
-          {mySquadra === team.name && (
-            <TelegramRegistrationCard squadra={team.name} />
-          )}
-        </div>
-        )}
       </div>
     </div>
   );
@@ -9481,7 +9490,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
               { key:"altro",      label:"⋯ Altro",        badge: 0, onClick:()=>setShowAltroMenu(true) },
             ].map(it => (
               <button key={it.key} onClick={it.onClick}
-                style={{ position:"relative", padding:"20px 14px", borderRadius:14, border:"1px solid #ffffff12", background:"#ffffff08", color:"#f0f0f0", fontSize:14, fontWeight:700, cursor:"pointer", textAlign:"center" }}>
+                style={{ position:"relative", padding:"20px 14px", borderRadius:999, border:"1px solid #ffffff12", background:"#ffffff08", color:"#f0f0f0", fontSize:14, fontWeight:700, cursor:"pointer", textAlign:"center" }}>
                 {it.label}
                 {it.badge>0 && <span style={{ position:"absolute", top:8, right:8, background:"#ef4444", color:"#fff", borderRadius:"50%", padding:"1px 6px", fontSize:9, fontWeight:900 }}>{it.badge}</span>}
               </button>
