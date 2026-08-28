@@ -1510,16 +1510,20 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
   const haRichiesteAttenzione = nOfferte > 0 || alertContratti.length > 0;
 
   return (
-    <div style={{ maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", minHeight: "calc(100dvh - 68px - env(safe-area-inset-bottom,0px) - 64px - env(safe-area-inset-top,0px))" }}>
-      <HeroSurface onClick={() => navigate(`/presidente/${team.id}`)} style={{ marginBottom: 14, cursor: "pointer", padding: "26px 22px", background: `linear-gradient(135deg, ${team.color}2e, ${SURFACE.card})`, flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+    <div style={{ maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", height: "calc(100dvh - 68px - env(safe-area-inset-bottom,0px) - 64px - env(safe-area-inset-top,0px))" }}>
+      <HeroSurface onClick={() => navigate(`/presidente/${team.id}`)} style={{ marginBottom: 14, cursor: "pointer", padding: "20px 20px", background: `linear-gradient(135deg, ${team.color}2e, ${SURFACE.card})`, flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "center", overflow: "hidden" }}>
         {/* Identità: stemma a sinistra, testo a destra — riempie meglio la
             larghezza dell'hero invece della colonna centrata precedente.
-            Tutta l'hero è cliccabile → porta alla pagina Rosa della squadra. */}
+            Tutta l'hero è cliccabile → porta alla pagina Rosa della squadra.
+            flex:1 + minHeight:0 + height (non minHeight) sul contenitore
+            esterno: così la card usa lo spazio residuo reale invece di
+            sforare quando il resto del contenuto (scadenze/news) è già
+            alto abbastanza da riempire lo schermo da solo. */}
         <div style={{ display: "flex", alignItems: "center", gap: 16, textAlign: "left" }}>
-          <TeamAvatar team={team} size={92} />
+          <TeamAvatar team={team} size={86} />
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, letterSpacing: "0.5px", color: "#f0f0f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{team.name}</div>
-            {allenatoreNome && <div style={{ fontSize: 12.5, color: "#888", marginTop: 2 }}>All. {allenatoreNome}</div>}
+            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 24, letterSpacing: "0.5px", color: "#f0f0f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{team.name}</div>
+            {allenatoreNome && <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>All. {allenatoreNome}</div>}
             {posizione != null && (
               <div style={{ display: "inline-block", marginTop: 8, fontSize: 12, fontWeight: 700, background: "#ffffff10", color: BRAND.gold, padding: "5px 13px", borderRadius: 999 }}>
                 {posizione}° in classifica
@@ -1528,7 +1532,7 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
           </div>
           <div style={{ textAlign: "right", flexShrink: 0 }}>
             <div style={{ fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", color: "#777" }}>Bilancio</div>
-            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 24, color: BRAND.gold, lineHeight: 1, marginTop: 4 }}>{team.bilancio.toFixed(2)}M</div>
+            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, color: BRAND.gold, lineHeight: 1, marginTop: 4 }}>{team.bilancio.toFixed(2)}M</div>
           </div>
         </div>
         <div style={{ marginTop: 20, textAlign: "left" }}>
