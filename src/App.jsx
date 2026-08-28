@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from "react";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams, Navigate } from "react-router-dom";
 
 // ─── STAGIONE / BIENNIO DINAMICI ─────────────────────────────────────────────
@@ -229,7 +229,7 @@ import { SURFACE, BRAND, SEMANTIC, FIELD } from "./design-system.js";
 import { IconHome, IconShield, IconTrophy, IconMarket, IconMore, IconAdmin, IconChevronRight, IconArchive, IconRefresh, IconPlus, IconEdit, IconTrash, IconClose, IconSearch, IconBack } from "./components/ui/Icons.jsx";
 import { ProgressBar } from "./components/ui/ProgressBar.jsx";
 import { HeroSurface } from "./components/ui/Surface.jsx";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, registraEventoGiornataInvestimento, getEffettiInvestimenti, getSquadreConSuperClub, getStatoGuadagniGiornata,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, registraEventoGiornataInvestimento, getEffettiInvestimenti, getSquadreConSuperClub, getStatoGuadagniGiornata,
   getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, usaContatoreInvestimento, registraEventoInvestimento, annullaEventoInvestimento, toggleTraguardoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
@@ -510,6 +510,12 @@ function FuoriListaBadge({ compact = false }) {
     </span>
   );
 }
+// "1° anno di contratto" invece di "C1" — stesso dato (anni_contratto), solo
+// più leggibile. Nessun valore reale: se manca, resta "—" come prima.
+function annoContrattoLabel(n) {
+  if (!n) return "—";
+  return `${n}° anno di contratto`;
+}
 
 // Mini-grafico del trend di quotazione di un giocatore (storico_quotazioni),
 // pensato per stare dentro un popup/modale già esistente senza appesantirlo:
@@ -582,6 +588,9 @@ function BilancioTrendChart({ team }) {
   // (i dati fino ad oggi restano scaricati per poter ricostruire correttamente
   // il bilancio a ritroso dal valore attuale — vedi commento più sotto).
   const [filtro, setFiltro] = useState({ from: '', to: '' });
+  // Le impostazioni periodo occupavano spazio fisso anche quando non servono:
+  // ora sono dietro un piccolo interruttore, chiuse di default.
+  const [showFiltro, setShowFiltro] = useState(false);
   const [inputFrom, setInputFrom] = useState('');
   const [inputTo, setInputTo] = useState('');
   const [primaData, setPrimaData] = useState(null);
@@ -605,9 +614,17 @@ function BilancioTrendChart({ team }) {
   // proporzionale a quanto lo svg è più largo del suo viewBox. Misuriamo la
   // larghezza renderizzata reale e la usiamo per compensare SOLO il testo
   // (vedi textScale/textTransform più sotto), lasciando intatta la curva.
-  useEffect(() => {
+  // useLayoutEffect (non useEffect) + lettura sincrona della larghezza reale
+  // prima del primo paint: con solo ResizeObserver (asincrono) c'era una
+  // finestra tra mount e primo callback in cui renderedW restava al default
+  // (600), quindi il testo veniva mostrato non compensato — visibile come
+  // "lettering stretchato" specialmente quando il container non è 600px.
+  useLayoutEffect(() => {
     const el = svgRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
+    if (!el) return;
+    const w0 = el.getBoundingClientRect().width;
+    if (w0) setRenderedW(w0);
+    if (typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(entries => {
       const w = entries[0]?.contentRect?.width;
       if (w) setRenderedW(w);
@@ -688,7 +705,7 @@ function BilancioTrendChart({ team }) {
   if (punti.length < 2) {
     return (
       <div style={{ marginTop: 10, padding: "12px 14px", background: "#ffffff05", border: "1px solid #ffffff10", borderRadius: 10 }}>
-        {controlliFiltro}
+        {showFiltro && controlliFiltro}
         <div style={{ fontSize: 12, color: "#666", textAlign: "center", padding: "12px 0" }}>Nessun dato nel periodo selezionato.</div>
       </div>
     );
@@ -748,11 +765,17 @@ function BilancioTrendChart({ team }) {
 
   return (
     <div style={{ marginTop: 10, padding: "12px 14px", background: "#ffffff05", border: "1px solid #ffffff10", borderRadius: 10 }}>
-      {controlliFiltro}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <span style={{ fontSize: 9, color: "#666", fontWeight: 700, letterSpacing: "0.06em" }}>📈 ANDAMENTO BILANCIO {filtroAttivo ? "(periodo personalizzato)" : "(stagione)"}</span>
-        <span style={{ fontSize: 12, fontWeight: 800, color }}>{trend > 0 ? "+" : ""}{trend.toFixed(1)}M nel periodo tracciato</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color }}>{trend > 0 ? "+" : ""}{trend.toFixed(1)}M nel periodo tracciato</span>
+          <button onClick={() => setShowFiltro(v => !v)} aria-label="Impostazioni periodo" title="Impostazioni periodo"
+            style={{ width: 22, height: 22, borderRadius: 7, border: "1px solid #ffffff15", background: showFiltro ? "#6366f122" : "#ffffff08", color: showFiltro ? "#a5b4fc" : "#888", fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            ⚙
+          </button>
+        </div>
       </div>
+      {showFiltro && controlliFiltro}
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H + 20}`} width="100%" height={150} preserveAspectRatio="none">
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -1987,7 +2010,7 @@ function TorneiSection({ isAdmin, forcedTab, dense = false, onToggleDense }) {
         <div style={{ display:'flex', gap:8, alignItems:'center' }}>
           {[['coppa','🏆 Coppa Italia'],['supercoppa','⭐ Supercoppa']].map(([k,l]) => (
             <button key={k} onClick={() => setTab(k)}
-              style={{ padding:'7px 16px', borderRadius:9, border:'none', background: tab===k?'#6366f125':'transparent', color: tab===k?'#818cf8':'#555', fontWeight:700, fontSize:12, cursor:'pointer', borderBottom: tab===k?'2px solid #6366f1':'2px solid transparent' }}>
+              style={{ padding:'8px 16px', borderRadius:999, border:'none', background: tab===k?'#6366f122':'#ffffff0a', color: tab===k?'#818cf8':'#888', fontWeight:700, fontSize:12.5, cursor:'pointer' }}>
               {l}
             </button>
           ))}
@@ -2462,10 +2485,10 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
         return (
           <div style={{ background:"#ffffff06", border:"1.5px solid #ffffff12", borderRadius:18, padding:18 }}>
             {/* Tab bar */}
-            <div style={{ display:"flex", gap:4, marginBottom:18, borderBottom:"1px solid #ffffff0a", paddingBottom:12, flexWrap:"wrap" }}>
+            <div style={{ display:"flex", gap:6, marginBottom:18, paddingBottom:2, flexWrap:"wrap" }}>
               {COMP_TABS.map(t => (
                 <button key={t.key} onClick={() => setCompTab(t.key)}
-                  style={{ padding:"6px 14px", borderRadius:8, border:"none", background: compTab===t.key?"#6366f125":"transparent", color: compTab===t.key?"#818cf8":"#555", fontWeight:700, fontSize:12, cursor:"pointer", borderBottom: compTab===t.key?"2px solid #6366f1":"2px solid transparent" }}>
+                  style={{ padding:"8px 16px", borderRadius:999, border:"none", background: compTab===t.key?"#6366f122":"#ffffff0a", color: compTab===t.key?"#818cf8":"#888", fontWeight:700, fontSize:12.5, cursor:"pointer" }}>
                   {t.label}
                 </button>
               ))}
@@ -3520,7 +3543,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                     <div key={p.id}
                       onClick={canClickPlayer?(e)=>openPopup(e,p,isOwn?'own':'other'):undefined}
                       style={{ display:"flex",alignItems:"center",gap:10,padding:"9px 2px",borderBottom:"1px solid #ffffff0a",background:sel?"#6366f118":"transparent",cursor:canClickPlayer?"pointer":"default" }}>
-                      <span style={{ background:rc.bg,color:rc.text,border:`1px solid ${rc.border}`,borderRadius:6,padding:"3px 6px",fontSize:9.5,fontWeight:700,fontFamily:"'IBM Plex Mono',monospace",flexShrink:0 }}>{p.ruolo}</span>
+                      <span style={{ background:rc.bg,color:rc.text,border:`1px solid ${rc.border}`,borderRadius:6,padding:"3px 6px",fontSize:9.5,fontWeight:700,fontFamily:"'IBM Plex Mono',monospace",flexShrink:0,minWidth:44,textAlign:"center",display:"inline-block",boxSizing:"border-box" }}>{p.ruolo}</span>
                       <div style={{ flex:1,minWidth:0 }}>
                         <div style={{ fontSize:12.5,fontWeight:700,color:fuori?"#ef4444":"#e8e8e8" }}>
                           {p.nome}
@@ -3540,7 +3563,9 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                               {Number(p.quot_reale)>Number(p.quot)?'↑':'↓'}{p.quot_reale}
                             </span>
                           )}
-                          {" "}· <span style={{ color:"#bbb",fontWeight:600 }}>{p._stipCorretto.toFixed(1)}M</span> · C{p.anni_contratto||"—"}
+                          {" "}· <span style={{ color:"#bbb",fontWeight:600 }}>{p._stipCorretto.toFixed(1)}M</span>
+                          {p.media_fantavoto != null && <> · MFV <span style={{ color:"#bbb",fontWeight:600 }}>{Number(p.media_fantavoto).toFixed(2)}</span></>}
+                          {" "}· {annoContrattoLabel(p.anni_contratto)}
                         </div>
                       </div>
                     </div>
@@ -3894,7 +3919,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
           <div style={{ marginTop:8 }}>
             {svincoli.map(s=>(
               <div key={s.id} style={{ display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid #ffffff08",flexWrap:"wrap",gap:4 }}>
-                <div><span style={{ fontSize:12,color:"#ddd",fontWeight:600 }}>{s.giocatore}</span><span style={{ fontSize:10,color:"#555",marginLeft:8 }}>{s.tipo==='ordinario'?'📋':'⭐'} {s.data_svincolo}</span></div>
+                <div><span style={{ fontSize:12,color:"#ddd",fontWeight:600 }}>{s.giocatore}</span><span style={{ fontSize:10,color:"#555",marginLeft:8 }}>{s.tipo==='ordinario'?'📋':s.estero?'✈️':'⭐'} {s.data_svincolo}</span></div>
                 <div>{s.costo_penale>0&&<span style={{ fontSize:11,color:"#ef4444" }}>-{s.costo_penale}M</span>}{s.indennizzo>0&&<span style={{ fontSize:11,color:"#10b981",marginLeft:6 }}>+{s.indennizzo}M</span>}</div>
               </div>
             ))}
@@ -4190,7 +4215,7 @@ function SvincoliTab({ team, isAdmin }) {
               <div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "#ddd" }}>{s.giocatore}</div>
                 <div style={{ fontSize: 10, color: "#666" }}>
-                  {s.tipo === 'ordinario' ? '📋 Ordinario' : s.tipo === 'straordinario_u21_nc' ? '🆓 U21 nc' : '⭐ Straordinario'}
+                  {s.tipo === 'ordinario' ? '📋 Ordinario' : s.tipo === 'straordinario_u21_nc' ? '🆓 U21 nc' : s.estero ? '✈️ Straordinario' : '⭐ Straordinario'}
                   {s.estero ? ' · estero' : ''} · {s.data_svincolo}
                 </div>
               </div>
@@ -4799,6 +4824,7 @@ function FairSpendingSection({ team, isAdmin }) {
   const [errore, setErrore]         = useState(null);
   const [showDetail, setShowDetail] = useState(false);
   const [override, setOverride]     = useState("");
+  const [showFasceFPF, setShowFasceFPF] = useState(false);
 
   // Calcola semestre internamente — non dipende da props esterne
   const sem = getSemestreCorrente();
@@ -4871,22 +4897,37 @@ function FairSpendingSection({ team, isAdmin }) {
               <span style={{ fontSize: 9, color: "#444" }}>Sovrascrive il calcolo</span>
             </div>
           )}
-          <div style={{ display: "flex", flexDirection: "column", gap: 3, marginBottom: 10 }}>
-            {[
+          {(() => {
+            const FPF_FASCE = [
               { soglia: "≤ 50M",  zona: "sicura", multa: "—",   pt: "—", euro: "—"  },
               { soglia: "50–55M", zona: "50-55",  multa: "10M", pt: "—", euro: "—"  },
               { soglia: "55–60M", zona: "55-60",  multa: "15M", pt: "2", euro: "—"  },
               { soglia: "> 60M",  zona: ">60",    multa: "20M", pt: "4", euro: "5€" },
-            ].map(r => {
-              const active = fairResult?.zona === r.zona;
-              return (
-                <div key={r.zona} style={{ display: "flex", gap: 6, padding: "4px 8px", borderRadius: 7, background: active ? "#ef444418" : "#ffffff05", border: `1px solid ${active ? "#ef444430" : "#ffffff08"}`, alignItems: "center" }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: active ? "#f0f0f0" : "#555", minWidth: 52 }}>{r.soglia}</span>
-                  <span style={{ flex: 1, fontSize: 10, color: active ? "#ef4444" : "#444" }}>{active && "▶ "}Multa {r.multa} · −{r.pt}pt · {r.euro}</span>
+            ];
+            const corrente = FPF_FASCE.find(r => r.zona === fairResult?.zona);
+            return (
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 11, color: "#888" }}>
+                  Fascia attuale: <b style={{ color: corrente?.zona === 'sicura' ? "#10b981" : "#ef4444" }}>{corrente?.soglia} · Multa {corrente?.multa} · −{corrente?.pt}pt · {corrente?.euro}</b>
+                  {" "}
+                  <span onClick={() => setShowFasceFPF(v => !v)} style={{ color: "#6366f1", cursor: "pointer", fontSize: 10 }}>{showFasceFPF ? "nascondi fasce" : "vedi tutte le fasce"}</span>
                 </div>
-              );
-            })}
-          </div>
+                {showFasceFPF && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3, marginTop: 8 }}>
+                    {FPF_FASCE.map(r => {
+                      const active = fairResult?.zona === r.zona;
+                      return (
+                        <div key={r.zona} style={{ display: "flex", gap: 6, padding: "4px 8px", borderRadius: 7, background: active ? "#ef444418" : "#ffffff05", border: `1px solid ${active ? "#ef444430" : "#ffffff08"}`, alignItems: "center" }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: active ? "#f0f0f0" : "#555", minWidth: 52 }}>{r.soglia}</span>
+                          <span style={{ flex: 1, fontSize: 10, color: active ? "#ef4444" : "#444" }}>{active && "▶ "}Multa {r.multa} · −{r.pt}pt · {r.euro}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           {fairResult?.zona === 'sicura'
             ? <div style={{ fontSize: 12, color: "#10b981", fontWeight: 600 }}>✅ Zona sicura — nessuna penalità</div>
             : <div style={{ background: "#ef444415", borderRadius: 10, padding: "10px 12px" }}>
@@ -4987,7 +5028,59 @@ function getMeseCorrenteRangeClient() {
   return { start, end, meseISO: start.slice(0, 7) };
 }
 
+// Fasce tassa settimanale (art. 7.1) — stesse soglie già usate da calcolaTassa
+// in supabase.js, qui solo per la visualizzazione "vedi tutte le fasce".
+const TASSA_FASCE = [
+  { r: "1–20M", p: "1%" }, { r: "21–40M", p: "2%" }, { r: "41–60M", p: "3%" },
+  { r: "61–80M", p: "5%" }, { r: "81–100M", p: "8%" }, { r: ">100M", p: "10%" },
+];
+
+// Popup di dettaglio riusabile (stesso pattern bottom-sheet/modale del
+// Calcolatore Guadagno Giornata e del Dettaglio giocatore) — usato per i
+// "cubetti cliccabili" di Finanze (Salary Cap, Fair Spending, Quote & Budget).
+function DetailSheet({ title, subtitle, isDesktop, onClose, children }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 998 }}>
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)" }} />
+      <div style={isDesktop
+        ? { position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 420, maxWidth: "92vw", maxHeight: "88vh", overflowY: "auto", background: "#1a1d26", border: "1.5px solid #ffffff18", borderRadius: 16, boxShadow: "0 8px 32px #00000099", padding: 20 }
+        : { position: "fixed", left: 0, right: 0, bottom: 0, width: "100%", background: "#1a1d26", borderRadius: "20px 20px 0 0", boxShadow: "0 -8px 32px #00000099", padding: "10px 18px 20px", maxHeight: "85vh", overflowY: "auto" }
+      }>
+        {!isDesktop && <div style={{ width: 36, height: 4, borderRadius: 99, background: "#ffffff20", margin: "0 auto 12px" }} />}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em" }}>{title}</div>
+            {subtitle && <div style={{ fontSize: 12, color: "#666", marginTop: 2 }}>{subtitle}</div>}
+          </div>
+          <button onClick={onClose} aria-label="Chiudi" style={{ background: "none", border: "none", color: "#555", fontSize: 18, cursor: "pointer", padding: "0 4px", lineHeight: 1 }}>✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Cubetto cliccabile per i riepiloghi Finanze (Salary Cap, Fair Spending,
+// Quote & Budget): mostra solo label+valore, il dettaglio va in un popup.
+function StatCubetto({ label, value, color = "#f0f0f0", onClick }) {
+  return (
+    <div onClick={onClick} style={{ background: "#ffffff06", border: "1px solid #ffffff12", borderRadius: 10, padding: "10px 12px", cursor: onClick ? "pointer" : "default" }}>
+      <div style={{ fontSize: 9, color: "#666", marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 15, fontWeight: 800, color, fontFamily: "'Bebas Neue',sans-serif" }}>{value}</div>
+    </div>
+  );
+}
+
 function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0, salaryCapLimite = 75, salaryCapSforato, scEsenteGiuLug, giorniSCNeg, contrattiScadenza: contrattiScadenzaProp, rosaPlayers, pagandoStipendi, handlePagaStipendi, isAdmin, mySquadra, onRefresh, onBilancioChange }) {
+  const [showFasceTassa, setShowFasceTassa] = useState(false);
+  const [showStipendiDettaglio, setShowStipendiDettaglio] = useState(false);
+  const [showBiennioDettaglio, setShowBiennioDettaglio] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
+  useEffect(() => {
+    const h = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
   const [contrattiScadenza, setContrattiScadenza] = useState(contrattiScadenzaProp || []);
   useEffect(() => { setContrattiScadenza(contrattiScadenzaProp || []); }, [contrattiScadenzaProp]);
 
@@ -5242,25 +5335,24 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
           <>
             {tassa.flat && <div style={{ fontSize: 11, color: "#818cf8", marginBottom: 8 }}>📌 Periodo giu–ago: tassazione flat 1% per tutti (art. 7.1.2)</div>}
             {!tassa.flat && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
-              {[
-                { r: "1–20M", p: "1%" }, { r: "21–40M", p: "2%" }, { r: "41–60M", p: "3%" },
-                { r: "61–80M", p: "5%" }, { r: "81–100M", p: "8%" }, { r: ">100M", p: "10%" },
-              ].map(f => {
-                const active = (bilancio > 0 && bilancio <= 20 && f.p==="1%") ||
-                               (bilancio > 20 && bilancio <= 40 && f.p==="2%") ||
-                               (bilancio > 40 && bilancio <= 60 && f.p==="3%") ||
-                               (bilancio > 60 && bilancio <= 80 && f.p==="5%") ||
-                               (bilancio > 80 && bilancio <= 100 && f.p==="8%") ||
-                               (bilancio > 100 && f.p==="10%");
-                return (
-                  <div key={f.r} style={{ textAlign: "center", background: active ? "#f59e0b18" : "#ffffff06", border: `1px solid ${active ? "#f59e0b44" : "#ffffff10"}`, borderRadius: 8, padding: "6px 4px" }}>
-                    <div style={{ fontSize: 9, color: active ? "#f59e0b" : "#555" }}>{f.r}</div>
-                    <div style={{ fontSize: 14, fontWeight: 900, color: active ? "#f59e0b" : "#444", fontFamily: "'Bebas Neue',sans-serif" }}>{f.p}</div>
-                  </div>
-                );
-              })}
-            </div>
+              <div style={{ fontSize: 11, color: "#888", marginBottom: 12 }}>
+                Fascia attuale: <b style={{ color: "#f59e0b" }}>{TASSA_FASCE.find(f => f.p === `${tassa.perc}%`)?.r || "—"} · {tassa.perc}%</b>
+                {" "}
+                <span onClick={() => setShowFasceTassa(v => !v)} style={{ color: "#6366f1", cursor: "pointer", fontSize: 10 }}>{showFasceTassa ? "nascondi fasce" : "vedi tutte le fasce"}</span>
+              </div>
+            )}
+            {showFasceTassa && !tassa.flat && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+                {TASSA_FASCE.map(f => {
+                  const active = f.p === `${tassa.perc}%`;
+                  return (
+                    <div key={f.r} style={{ textAlign: "center", background: active ? "#f59e0b18" : "#ffffff06", border: `1px solid ${active ? "#f59e0b44" : "#ffffff10"}`, borderRadius: 8, padding: "6px 4px" }}>
+                      <div style={{ fontSize: 9, color: active ? "#f59e0b" : "#555" }}>{f.r}</div>
+                      <div style={{ fontSize: 14, fontWeight: 900, color: active ? "#f59e0b" : "#444", fontFamily: "'Bebas Neue',sans-serif" }}>{f.p}</div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
             <div style={{ background: "#f59e0b10", borderRadius: 10, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <span style={{ fontSize: 12, color: "#888" }}>Tassa prossima domenica</span>
@@ -5277,18 +5369,6 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
             })()}
           </>
         )}
-        {/* Storico ultime tasse */}
-        {tasse.length > 0 && (
-          <div style={{ marginTop: 12, borderTop: "1px solid #ffffff08", paddingTop: 10 }}>
-            <div style={{ fontSize: 10, color: "#444", marginBottom: 6 }}>ULTIME TASSE</div>
-            {tasse.slice(0, 4).map(t => (
-              <div key={t.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#666", padding: "3px 0" }}>
-                <span>{t.data_controllo} · {t.percentuale}%</span>
-                <span style={{ color: "#f59e0b" }}>−{t.importo_tassa}M</span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* ── 3. SALARY CAP ── */}
@@ -5304,23 +5384,6 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
             ? <div style={{ marginTop: 4, fontSize: 11, color: "#ef4444", fontWeight: 700 }}>⛔ Sforato di {(salaryCapUsato - salaryCapLimite).toFixed(1)}M{scEsenteGiuLug ? " (esenzione giu/lug)" : ""}</div>
             : <div style={{ marginTop: 4, fontSize: 11, color: "#10b981" }}>✅ +{(salaryCapLimite - salaryCapUsato).toFixed(1)}M disponibile</div>}
         </div>
-        {/* Breakdown: rosa + staff allenatore */}
-        {scAllenatore > 0 && (
-          <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 12px", marginBottom: 10, display: "flex", flexDirection: "column", gap: 4 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#888" }}>
-              <span>Stipendi rosa</span>
-              <span>{salaryCapRosa.toFixed(1)}M</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#f59e0b" }}>
-              <span>👔 Staff allenatore (fisso)</span>
-              <span>+{scAllenatore.toFixed(1)}M</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 700, color: "#ccc", borderTop: "1px solid #ffffff10", paddingTop: 4 }}>
-              <span>Totale SC</span>
-              <span>{salaryCapUsato.toFixed(1)}M</span>
-            </div>
-          </div>
-        )}
         {salaryCapSforato && !scEsenteGiuLug && (
           <div style={{ background: "#ef444412", borderRadius: 10, padding: "10px 12px", fontSize: 11, color: "#ef4444", marginBottom: 12 }}>
             ⏱ SC negativo da <b>{giorniSCNeg}</b> giorn{giorniSCNeg === 1 ? "o" : "i"}
@@ -5328,8 +5391,20 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
             {giorniSCNeg >= 15 && <span> — penalità: <b>{giorniSCNeg * 2}gg</b> bloccato + <b>multa 5€</b></span>}
           </div>
         )}
-        <Row label="Rata mensile (1° del mese)" value={`−${(salaryCapUsato/12).toFixed(2)}M`} color="#f97316" large />
-        <Row label="Totale annuale stipendi" value={`−${salaryCapUsato.toFixed(1)}M`} color="#f97316" large />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+          <StatCubetto label="Totale stipendi" value={`−${salaryCapUsato.toFixed(1)}M`} color="#f97316" onClick={() => setShowStipendiDettaglio(true)} />
+          <StatCubetto label="Rata mensile (1° del mese)" value={`−${(salaryCapUsato/12).toFixed(2)}M`} color="#f97316" onClick={() => setShowStipendiDettaglio(true)} />
+        </div>
+        {showStipendiDettaglio && (
+          <DetailSheet title="💰 SALARY CAP — DETTAGLIO STIPENDI" subtitle={team.name} isDesktop={isDesktop} onClose={() => setShowStipendiDettaglio(false)}>
+            <Row label="Stipendi rosa" value={`${salaryCapRosa.toFixed(1)}M`} color="#ccc" />
+            {scAllenatore > 0 && <Row label="👔 Staff allenatore (fisso)" value={`+${scAllenatore.toFixed(1)}M`} color="#f59e0b" />}
+            <div style={{ height: 1, background: "#ffffff10", margin: "8px 0" }} />
+            <Row label="Totale stipendi (SC)" value={`${salaryCapUsato.toFixed(1)}M`} color="#f97316" large />
+            <Row label="Rata mensile (1° del mese)" value={`−${(salaryCapUsato/12).toFixed(2)}M`} color="#f97316" large />
+            <div style={{ marginTop: 10, fontSize: 11, color: "#888" }}>Salary Cap limite: {salaryCapLimite.toFixed(1)}M</div>
+          </DetailSheet>
+        )}
         {isAdmin && (
           stipendiMesePagati ? (
             <div style={{ width: "100%", marginTop: 12, padding: "9px", borderRadius: 9, border: "1px solid #10b98133", background: "#10b98112", color: "#10b981", fontSize: 12, fontWeight: 800, textAlign: "center" }}>
@@ -5393,19 +5468,24 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
 
         <div style={{ height: 1, background: "#ffffff10", marginBottom: 12 }} />
 
-        {/* Biennio barra */}
+        {/* Biennio: cubetto cliccabile — dettaglio nel popup */}
         <div style={{ marginBottom: 10 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ fontSize: 12, color: "#888" }}>Euro investiti nel biennio {BIENNIO_CORRENTE}</span>
-            <span style={{ fontSize: 13, fontWeight: 800, color: "#818cf8" }}>{team.euroBiennio || 0}€ / 10€</span>
-          </div>
-          <StatBar value={team.euroBiennio || 0} max={10} color="#6366f1" height={8} />
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-            <span style={{ fontSize: 10, color: "#555" }}>Questa stagione: {team.euroInvestiti || 0}€ → +{((team.euroInvestiti||0)*2.5).toFixed(1)}M</span>
-            <span style={{ fontSize: 10, color: euroDisponibili > 0 ? "#818cf8" : "#555" }}>Residuo: {euroDisponibili}€</span>
-          </div>
-          <div style={{ fontSize: 9, color: "#444", marginTop: 4 }}>Reset automatico al cambio biennio</div>
+          <StatCubetto label={`Euro investiti biennio ${BIENNIO_CORRENTE}`} value={`${team.euroBiennio || 0}€ / 10€`} color="#818cf8" onClick={() => setShowBiennioDettaglio(true)} />
         </div>
+        {showBiennioDettaglio && (
+          <DetailSheet title="💶 EURO INVESTITI BIENNIO" subtitle={team.name} isDesktop={isDesktop} onClose={() => setShowBiennioDettaglio(false)}>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontSize: 12, color: "#888" }}>Biennio {BIENNIO_CORRENTE}</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: "#818cf8" }}>{team.euroBiennio || 0}€ / 10€</span>
+              </div>
+              <StatBar value={team.euroBiennio || 0} max={10} color="#6366f1" height={8} />
+            </div>
+            <Row label="Questa stagione" value={`${team.euroInvestiti || 0}€ → +${((team.euroInvestiti||0)*2.5).toFixed(1)}M`} color="#ccc" />
+            <Row label="Residuo" value={`${euroDisponibili}€`} color={euroDisponibili > 0 ? "#818cf8" : "#555"} />
+            <div style={{ fontSize: 9, color: "#444", marginTop: 8 }}>Reset automatico al cambio biennio</div>
+          </DetailSheet>
+        )}
 
         {/* Milioni extra attivi (solo visualizzazione, ritiro rimosso dal regolamento) */}
         {mlnOttenuti > 0 && (
@@ -5768,8 +5848,6 @@ function AltroTab({ team, isAdmin, mySquadra }) {
   const [editId, setEditId] = useState(null);
   const [editVal, setEditVal] = useState("");
   const [moduliTracker, setModuliTracker] = useState([]);
-  const [giornataModulo, setGiornataModulo] = useState(1);
-  const [moduloScelto, setModuloScelto] = useState("");
   const canManageObiettivi = isAdmin || mySquadra === team.name;
 
   const loadAll = useCallback(async () => {
@@ -5891,22 +5969,6 @@ Gli obiettivi verranno azzerati.`;
     } catch(e){ alert(`Errore: ${e.message}`); }
     finally { setSavingAll(false); }
   }
-  async function salvaModuloTracker() {
-    if (!canManageObiettivi) return;
-    if (!giornataModulo || !moduloScelto) return;
-    setSavingAll(true);
-    try { await upsertModuloTracker(team.name, giornataModulo, moduloScelto, STAGIONE_CORRENTE); setModuloScelto(''); await loadAll(); }
-    catch(e){ alert(e.message); }
-    finally { setSavingAll(false); }
-  }
-  async function rimuoviModuloTracker(giornata) {
-    if (!canManageObiettivi) return;
-    setSavingAll(true);
-    try { await deleteModuloTracker(team.name, giornata, STAGIONE_CORRENTE); await loadAll(); }
-    catch(e){ alert(e.message); }
-    finally { setSavingAll(false); }
-  }
-
   const tipoInfo = {
     allenatore:{label:"🎯 Obiettivi Allenatore",color:"#6366f1",guadagno:2,desc:"2M + 1M SC a completamento"},
     ds:{label:"🏃 Direttore Sportivo",color:"#10b981",guadagno:5,desc:"5M al 31/05 · −2M se fallito"},
@@ -5923,6 +5985,12 @@ Gli obiettivi verranno azzerati.`;
   const [editGuad, setEditGuad] = useState(null);
   const [catFilter, setCatFilter] = useState("tutti");
   const [showCatalogo, setShowCatalogo] = useState(false);
+  const [isDesktopAltro, setIsDesktopAltro] = useState(() => window.innerWidth >= 768);
+  useEffect(() => {
+    const h = () => setIsDesktopAltro(window.innerWidth >= 768);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
   const canManageInv = isAdmin || mySquadra === team.name;
 
   const loadInv = useCallback(async () => {
@@ -6208,39 +6276,17 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
             )}
             </div>
 
-            <div style={{ background:"#ffffff06",border:"1.5px solid #ffffff12",borderRadius:12,padding:14,marginBottom:8 }}>
-              <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:10 }}>
-                <div>
-                  <div style={{ fontSize:10,fontWeight:700,color:"#a855f7",letterSpacing:"0.08em" }}>📋 TRACKER MODULI ALLENATORE</div>
-                  <div style={{ fontSize:10,color:moduliStats.ok?"#10b981":"#888",marginTop:2 }}>
-                    Moduli validi schierati: <b>{moduliStats.validi}</b>/27 · {allenatore.modulo1} / {allenatore.modulo2}
-                  </div>
+            {/* Moduli: solo un contatore — i dati arrivano già dal Calcolatore
+                Guadagno Giornata (campo "Modulo giocato"), niente più gestione
+                manuale duplicata qui. */}
+            <div style={{ background:"#ffffff06",border:"1.5px solid #ffffff12",borderRadius:12,padding:14,marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap" }}>
+              <div>
+                <div style={{ fontSize:10,fontWeight:700,color:"#a855f7",letterSpacing:"0.08em" }}>📋 MODULI SCHIERATI</div>
+                <div style={{ fontSize:10,color:moduliStats.ok?"#10b981":"#888",marginTop:2 }}>
+                  Moduli validi schierati: <b>{moduliStats.validi}</b>/27 · {allenatore.modulo1} / {allenatore.modulo2}
                 </div>
-                <Badge color={moduliStats.ok?"#10b981":"#f59e0b"}>{moduliStats.ok?"Vincolo raggiunto":"Da completare"}</Badge>
               </div>
-              {canManageObiettivi && (
-                <div style={{ display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginBottom:10 }}>
-                  <input type="number" min="1" max="38" value={giornataModulo} onChange={e=>setGiornataModulo(e.target.value)}
-                    style={{ width:70,padding:"6px 8px",borderRadius:8,border:"1px solid #ffffff18",background:"#0d0f14",color:"#f0f0f0",fontSize:12 }} />
-                  <select value={moduloScelto} onChange={e=>setModuloScelto(e.target.value)}
-                    style={{ flex:1,minWidth:150,padding:"6px 8px",borderRadius:8,border:"1px solid #ffffff18",background:"#0d0f14",color:"#f0f0f0",fontSize:12 }}>
-                    <option value="">Modulo giornata...</option>
-                    {[allenatore.modulo1, allenatore.modulo2, "3-5-2", "3-4-3", "3-4-1-2", "3-4-2-1", "3-5-1-1", "4-3-3", "4-3-1-2", "4-4-2", "4-4-1-1", "4-2-3-1", "4-1-4-1"].filter((v,i,a)=>v&&a.indexOf(v)===i).map(m=><option key={m} value={m}>{m}</option>)}
-                  </select>
-                  <button onClick={salvaModuloTracker} disabled={savingAll||!moduloScelto}
-                    style={{ padding:"6px 10px",borderRadius:8,border:"none",background:"#a855f722",color:"#c084fc",fontSize:11,fontWeight:800,cursor:"pointer" }}>Salva modulo</button>
-                </div>
-              )}
-              {moduliTracker.length===0 ? <div style={{ fontSize:11,color:"#555" }}>Nessun modulo registrato.</div> : (
-                <div style={{ display:"flex",gap:5,flexWrap:"wrap" }}>
-                  {moduliTracker.map(r=>{
-                    const valido = r.modulo===allenatore.modulo1 || r.modulo===allenatore.modulo2;
-                    return <span key={r.giornata} style={{ fontSize:10,padding:"4px 7px",borderRadius:7,border:`1px solid ${valido?"#10b98135":"#ffffff15"}`,background:valido?"#10b98112":"#ffffff08",color:valido?"#10b981":"#888" }}>
-                      G{r.giornata}: {r.modulo}{canManageObiettivi&&<button onClick={()=>rimuoviModuloTracker(r.giornata)} style={{ marginLeft:5,border:"none",background:"transparent",color:"#666",cursor:"pointer",padding:0 }}>×</button>}
-                    </span>;
-                  })}
-                </div>
-              )}
+              <Badge color={moduliStats.ok?"#10b981":"#f59e0b"}>{moduliStats.ok?"Vincolo raggiunto":"Da completare"}</Badge>
             </div>
 
             <div style={{ display:"flex",justifyContent:"flex-end",marginBottom:8 }}>
@@ -6586,11 +6632,11 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
         )}
         {canManageInv&&(
           <div style={{ marginTop:12 }}>
-            <button onClick={()=>setShowCatalogo(v=>!v)} style={{ padding:"7px 16px",borderRadius:8,border:"none",background:showCatalogo?"#ffffff12":"linear-gradient(135deg,#6366f1,#a855f7)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",marginBottom:showCatalogo?10:0 }}>
-              {showCatalogo?"✕ Chiudi catalogo":"+ Acquista investimento"}
+            <button onClick={()=>setShowCatalogo(true)} style={{ padding:"7px 16px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#6366f1,#a855f7)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer" }}>
+              + Acquista investimento
             </button>
-            {showCatalogo&&(
-              <>
+            {showCatalogo && (
+              <DetailSheet title="💼 CATALOGO INVESTIMENTI" subtitle={team.name} isDesktop={isDesktopAltro} onClose={()=>setShowCatalogo(false)}>
                 <div style={{ display:"flex",gap:4,marginBottom:10,flexWrap:"wrap" }}>
                   {cats.map(cat=><button key={cat} onClick={()=>setCatFilter(cat)} style={{ padding:"4px 10px",borderRadius:7,border:"none",background:catFilter===cat?"#6366f133":"#ffffff0a",color:catFilter===cat?"#818cf8":"#666",fontSize:11,fontWeight:700,cursor:"pointer" }}>{cat}</button>)}
                 </div>
@@ -6609,7 +6655,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                     </div>
                   );
                 })}
-              </>
+              </DetailSheet>
             )}
           </div>
         )}
@@ -7172,9 +7218,9 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
         {/* LEFT — tabs */}
         <div className="pres-left" style={{ flex: 1, minWidth: 0 }}>
           {/* Tab buttons */}
-          <div style={{ display: "flex", gap: 4, marginBottom: 14, overflowX: "auto", paddingBottom: 2 }}>
+          <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto", paddingBottom: 2 }}>
             {tabs.map(t => (
-              <button key={t.key} onClick={() => setTab(t.key)} style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: tab === t.key ? team.color + "33" : "#ffffff0a", color: tab === t.key ? team.color : "#888", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", borderBottom: tab === t.key ? `2px solid ${team.color}` : "2px solid transparent" }}>
+              <button key={t.key} onClick={() => setTab(t.key)} style={{ padding: "8px 16px", borderRadius: 999, border: "none", background: tab === t.key ? team.color + "22" : "#ffffff0a", color: tab === t.key ? team.color : "#888", fontSize: 12.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
                 {t.label}
               </button>
             ))}
@@ -7302,15 +7348,18 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
                     return 0;
                   });
                   return sorted.length === 0
-                    ? <div style={{ fontSize: 12, color: "#555", fontStyle: "italic" }}>{q ? "Nessun movimento trovato" : "Nessun movimento registrato"}</div>
-                    : sorted.map(m => (
-                      <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #ffffff08" }}>
-                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: m.entrata ? "#10b981" : "#ef4444", flexShrink: 0 }} />
+                    ? <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", padding: "16px 0", textAlign: "center" }}>{q ? "Nessun movimento trovato" : "Nessun movimento registrato"}</div>
+                    : <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {sorted.map(m => (
+                      <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "#ffffff05", border: "1px solid #ffffff0f", borderRadius: 12, padding: "10px 12px" }}>
+                        <div style={{ width: 30, height: 30, borderRadius: "50%", background: m.entrata ? "#10b98118" : "#ef444418", color: m.entrata ? "#10b981" : "#ef4444", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900, flexShrink: 0 }}>
+                          {m.entrata ? "↑" : "↓"}
+                        </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 12, color: "#ddd", fontWeight: 600 }}>{m.descrizione}</div>
+                          <div style={{ fontSize: 12, color: "#ddd", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.descrizione}</div>
                           <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>{new Date(m.data).toLocaleDateString("it-IT")}</div>
                         </div>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: m.entrata ? "#10b981" : "#ef4444", fontFamily: "'Bebas Neue',sans-serif", whiteSpace: "nowrap" }}>
+                        <div style={{ fontSize: 15, fontWeight: 800, color: m.entrata ? "#10b981" : "#ef4444", fontFamily: "'Bebas Neue',sans-serif", whiteSpace: "nowrap" }}>
                           {m.entrata ? `+${m.entrata}M` : m.uscita ? `-${m.uscita}M` : "—"}
                         </div>
                         {canEditMovimenti && (
@@ -7320,7 +7369,8 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
                           </div>
                         )}
                       </div>
-                    ));
+                      ))}
+                    </div>;
                 })()}
               </div>
             )}
@@ -14908,7 +14958,7 @@ function StoricoPage({ isAdmin, allClubIdentities = [] }) {
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
         {[{ key:'albo', label:"🏆 Albo d'Oro" }, { key:'regolamento', label:'📋 Regolamento' }, { key:'changelog', label:'📝 Changelog' }].map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: tab===t.key?'#f59e0b22':'#ffffff0a', color: tab===t.key?'#f59e0b':'#888', borderBottom: tab===t.key?'2px solid #f59e0b':'2px solid transparent' }}>{t.label}</button>
+          <button key={t.key} onClick={() => setTab(t.key)} style={{ padding: '8px 16px', borderRadius: 999, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 12.5, background: tab===t.key?'#f59e0b22':'#ffffff0a', color: tab===t.key?'#f59e0b':'#888' }}>{t.label}</button>
         ))}
       </div>
 
