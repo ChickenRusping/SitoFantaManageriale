@@ -526,7 +526,7 @@ function FuoriListaBadge({ compact = false }) {
 // più leggibile. Nessun valore reale: se manca, resta "—" come prima.
 function annoContrattoLabel(n) {
   if (!n) return "—";
-  return `${n}° anno di contratto`;
+  return `${n}°A`;
 }
 
 // Mini-grafico del trend di quotazione di un giocatore (storico_quotazioni),
@@ -1817,7 +1817,7 @@ function TeamGridCard({ team, isMine, onClick, scLive: scLiveProp, capLimite: ca
 /* ─── TORNEI SECTION ─────────────────────────────────────────────────────────── */
 
 // Dati iniziali hard-coded per la stagione 2026/27
-const _COPPA_SQUADRE_A = ["Borjcellona","Finocchiona","AK Toio","Balillareal"];
+const _COPPA_SQUADRE_A = ["Borjcellona","Finocchiona AC","AK Toio","Balillareal"];
 const _COPPA_SQUADRE_B = ["Agnus Dei FC","Alcool Campi","Wehrmacht FC","Shalpe 104"];
 function _emptyGirone(squadre) {
   return squadre.map(sq => ({ sq, g:0, v:0, n:0, p:0, gf:0, gs:0, dr:0, pt:0 }));
