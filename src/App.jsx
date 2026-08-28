@@ -1847,9 +1847,8 @@ function ScoreInput({ val, onChange }) {
   );
 }
 
-function GironeTable({ classifica, isAdmin, onEdit, dense = false }) {
+function GironeTable({ classifica, dense = false }) {
   const sorted = [...classifica].sort((a,b) => b.pt-a.pt || b.dr-a.dr || b.gf-a.gf);
-  const numInp = { width:28, padding:'3px 2px', borderRadius:5, border:'1px solid #ffffff18', background:'#ffffff08', color:'#f0f0f0', fontSize:11, fontWeight:600, textAlign:'center', outline:'none' };
   const cols = dense ? ['#','Squadra','V','N','P','Pt'] : ['#','Squadra','V','N','P','Gf','Gs','DR','Pt'];
   // Stessa identica costruzione (barra header colorata + righe zebrate +
   // table-layout fixed con larghezze %) della classifica Serie A, così le
@@ -1873,24 +1872,9 @@ function GironeTable({ classifica, isAdmin, onEdit, dense = false }) {
             <tr key={r.sq} style={{ borderBottom:'1px solid #ffffff08', background: zebra }}>
               <td style={{ padding: dense ? '7px 2px' : '7px 5px', textAlign:'center', fontSize:10, fontWeight:900, color }}>{i+1}</td>
               <td style={{ padding: dense ? '7px 4px' : '7px 5px', fontWeight:700, color:'#ddd', overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.sq}</td>
-              {isAdmin ? (
-                <>
-                  {(dense ? ['v','n','p'] : ['v','n','p','gf','gs']).map(f => (
-                    <td key={f} style={{ padding: dense ? '2px 1px' : '2px 3px', textAlign:'center' }}>
-                      <input type="number" min="0" value={r[f]??''} style={numInp}
-                        onChange={e => onEdit(r.sq, f, e.target.value === '' ? 0 : Number(e.target.value))} />
-                    </td>
-                  ))}
-                  {!dense && <td style={{ padding:'7px 5px', textAlign:'center', color: r.dr>0?'#10b981':r.dr<0?'#ef4444':'#555', fontWeight:600, fontSize:11 }}>{r.dr>0?'+':''}{r.dr}</td>}
-                  <td style={{ padding: dense ? '7px 2px' : '7px 5px', textAlign:'center', fontWeight:900, color, fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>{r.pt}</td>
-                </>
-              ) : (
-                <>
-                  {(dense ? [r.v,r.n,r.p] : [r.v,r.n,r.p,r.gf,r.gs]).map((v,k) => <td key={k} style={{ padding: dense ? '7px 2px' : '7px 5px', textAlign:'center', color:'#888' }}>{v}</td>)}
-                  {!dense && <td style={{ padding:'7px 5px', textAlign:'center', color: r.dr>0?'#10b981':r.dr<0?'#ef4444':'#555', fontWeight:600 }}>{r.dr>0?'+':''}{r.dr}</td>}
-                  <td style={{ padding: dense ? '7px 2px' : '7px 5px', textAlign:'center', fontWeight:900, color, fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>{r.pt}</td>
-                </>
-              )}
+              {(dense ? [r.v,r.n,r.p] : [r.v,r.n,r.p,r.gf,r.gs]).map((v,k) => <td key={k} style={{ padding: dense ? '7px 2px' : '7px 5px', textAlign:'center', color:'#888' }}>{v}</td>)}
+              {!dense && <td style={{ padding:'7px 5px', textAlign:'center', color: r.dr>0?'#10b981':r.dr<0?'#ef4444':'#555', fontWeight:600 }}>{r.dr>0?'+':''}{r.dr}</td>}
+              <td style={{ padding: dense ? '7px 2px' : '7px 5px', textAlign:'center', fontWeight:900, color, fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>{r.pt}</td>
             </tr>
           );
         })}
@@ -1959,6 +1943,10 @@ function TorneiSection({ isAdmin, forcedTab, dense = false, onToggleDense }) {
   const [superc, setSuperc] = useState(null);
   const [tab, setTab] = useState(forcedTab || 'coppa');
   const [saving, setSaving] = useState(false);
+  // Modifica gironi: stesso pattern "modale con tutte le righe" già usato
+  // per la classifica FantaSerie A, invece di celle sempre editabili.
+  const [showEditGironiModal, setShowEditGironiModal] = useState(false);
+  const [gironiDraft, setGironiDraft] = useState({});
 
   // Sync tab when parent switches via forcedTab prop
   useEffect(() => { if (forcedTab) setTab(forcedTab); }, [forcedTab]);
@@ -1980,15 +1968,36 @@ function TorneiSection({ isAdmin, forcedTab, dense = false, onToggleDense }) {
   async function saveCoppa(next) { setCoppa(next); setSaving(true); try { await setTorneo('coppa_italia_2627', next); } catch(e) { alert(`Errore salvataggio Coppa: ${e.message}`); } finally { setSaving(false); } }
   async function saveSuperc(next) { setSuperc(next); setSaving(true); try { await setTorneo('supercoppa_2627', next); } catch(e) { alert(`Errore salvataggio Supercoppa: ${e.message}`); } finally { setSaving(false); } }
 
-  function editGirone(gruppo, sq, field, val) {
+  function apriModalGironi() {
+    const draft = {};
+    ['A','B'].forEach(g => {
+      draft[g] = {};
+      coppa.gironi[g].classifica.forEach(r => {
+        draft[g][r.sq] = { v: r.v, n: r.n, p: r.p, gf: r.gf, gs: r.gs };
+      });
+    });
+    setGironiDraft(draft);
+    setShowEditGironiModal(true);
+  }
+
+  function setGironiField(g, sq, field, val) {
+    setGironiDraft(prev => ({ ...prev, [g]: { ...prev[g], [sq]: { ...prev[g][sq], [field]: val } } }));
+  }
+
+  function salvaGironi() {
     const next = JSON.parse(JSON.stringify(coppa));
-    const row = next.gironi[gruppo].classifica.find(r => r.sq === sq);
-    if (!row) return;
-    row[field] = val;
-    row.g = row.v + row.n + row.p;
-    row.pt = row.v * 3 + row.n;
-    row.dr = row.gf - row.gs;
-    // Propaga qualificate alle semifinali
+    ['A','B'].forEach(g => {
+      next.gironi[g].classifica.forEach(row => {
+        const d = gironiDraft[g]?.[row.sq];
+        if (!d) return;
+        row.v = Number(d.v) || 0; row.n = Number(d.n) || 0; row.p = Number(d.p) || 0;
+        row.gf = Number(d.gf) || 0; row.gs = Number(d.gs) || 0;
+        row.g = row.v + row.n + row.p;
+        row.pt = row.v * 3 + row.n;
+        row.dr = row.gf - row.gs;
+      });
+    });
+    // Propaga qualificate alle semifinali (stessa logica di editGirone)
     const sortG = g => [...next.gironi[g].classifica].sort((a,b) => b.pt-a.pt||b.dr-a.dr||b.gf-a.gf);
     const sA = sortG('A'), sB = sortG('B');
     next.semifinali[0].squadra_a = sA[0]?.sq||null;
@@ -1996,6 +2005,7 @@ function TorneiSection({ isAdmin, forcedTab, dense = false, onToggleDense }) {
     next.semifinali[1].squadra_a = sB[0]?.sq||null;
     next.semifinali[1].squadra_b = sA[1]?.sq||null;
     saveCoppa(next);
+    setShowEditGironiModal(false);
   }
 
   function updateSF(sfId, field, val) {
@@ -2049,15 +2059,16 @@ function TorneiSection({ isAdmin, forcedTab, dense = false, onToggleDense }) {
           <div style={card}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16, flexWrap:'wrap', gap:8 }}>
               <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em' }}>🏟 FASE A GIRONI · G10–G22</div>
-              {onToggleDense && <button onClick={onToggleDense} style={{ padding:"6px 14px",borderRadius:999,border:"none",background:"#ffffff0a",color:"#888",fontSize:11,fontWeight:700,cursor:"pointer" }}>{dense ? "↔ Estesa" : "↕ Compatta"}</button>}
+              <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                {onToggleDense && <button onClick={onToggleDense} style={{ padding:"6px 14px",borderRadius:999,border:"none",background:"#ffffff0a",color:"#888",fontSize:11,fontWeight:700,cursor:"pointer" }}>{dense ? "↔ Estesa" : "↕ Compatta"}</button>}
+                {isAdmin && <button onClick={apriModalGironi} style={{ padding:"6px 14px",borderRadius:8,border:"none",background:"#6366f120",color:"#818cf8",fontSize:11,fontWeight:700,cursor:"pointer" }}>✏️ Aggiorna</button>}
+              </div>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))', gap:20 }}>
               {['A','B'].map(g => (
                 <div key={g}>
                   <div style={{ fontSize:12, fontWeight:800, color:'#818cf8', marginBottom:8 }}>Girone {g}</div>
-                  <GironeTable classifica={coppa.gironi[g].classifica} isAdmin={isAdmin} dense={dense}
-                    onEdit={(sq, field, val) => editGirone(g, sq, field, val)} />
-                  {isAdmin && <div style={{ fontSize:9, color:'#444', marginTop:6 }}>V/N/P e G+/G− editabili · Pt e DR calcolati automaticamente</div>}
+                  <GironeTable classifica={coppa.gironi[g].classifica} dense={dense} />
                 </div>
               ))}
             </div>
@@ -2094,6 +2105,53 @@ function TorneiSection({ isAdmin, forcedTab, dense = false, onToggleDense }) {
             </div>
           </div>
         </>
+      )}
+
+      {/* ── MODAL MODIFICA GIRONI COPPA ITALIA (stesso pattern del modale
+          FantaSerie A: tutte le righe editabili insieme, un solo salvataggio) ── */}
+      {showEditGironiModal && (
+        <div style={{ position:"fixed",inset:0,background:"#000000cc",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,padding:16 }}
+          onClick={e => e.target===e.currentTarget && setShowEditGironiModal(false)}>
+          <div style={{ background:"#0d0f14",border:"1px solid #ffffff15",borderRadius:18,padding:24,width:"100%",maxWidth:680,maxHeight:"90vh",overflowY:"auto",display:"flex",flexDirection:"column",gap:16 }}>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
+              <div>
+                <div style={{ fontSize:13,fontWeight:800,color:"#f0f0f0" }}>✏️ Aggiorna Gironi Coppa Italia</div>
+                <div style={{ fontSize:10,color:"#555",marginTop:2 }}>Pt e DR calcolati automaticamente</div>
+              </div>
+              <button onClick={() => setShowEditGironiModal(false)} style={{ background:"transparent",border:"none",color:"#555",fontSize:18,cursor:"pointer",lineHeight:1 }}>✕</button>
+            </div>
+            {['A','B'].map(g => (
+              <div key={g} style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                <div style={{ fontSize:11, fontWeight:800, color:"#818cf8" }}>Girone {g}</div>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 44px 44px 44px 44px 44px 60px",gap:4,alignItems:"center",padding:"0 4px" }}>
+                  {["Squadra","V","N","P","Gf","Gs","Pt"].map((h,i) => (
+                    <div key={i} style={{ fontSize:9,fontWeight:700,color:"#555",textAlign:i>0?"center":"left",letterSpacing:"0.05em" }}>{h}</div>
+                  ))}
+                </div>
+                {coppa.gironi[g].classifica.map(row => {
+                  const d = gironiDraft[g]?.[row.sq] || {};
+                  const numInp = { padding:"5px 6px",borderRadius:7,border:"1px solid #ffffff15",background:"#ffffff08",color:"#f0f0f0",fontSize:12,fontWeight:600,textAlign:"center",width:"100%",outline:"none",boxSizing:"border-box" };
+                  const ptLive = (Number(d.v)||0) * 3 + (Number(d.n)||0);
+                  return (
+                    <div key={row.sq} style={{ display:"grid",gridTemplateColumns:"1fr 44px 44px 44px 44px 44px 44px",gap:4,alignItems:"center",background:"#ffffff04",borderRadius:10,padding:"8px 10px",border:"1px solid #ffffff08" }}>
+                      <div style={{ fontSize:11,fontWeight:700,color:"#ddd",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{row.sq}</div>
+                      <input type="number" min="0" style={numInp} value={d.v??''} onChange={e => setGironiField(g,row.sq,'v',e.target.value)} />
+                      <input type="number" min="0" style={numInp} value={d.n??''} onChange={e => setGironiField(g,row.sq,'n',e.target.value)} />
+                      <input type="number" min="0" style={numInp} value={d.p??''} onChange={e => setGironiField(g,row.sq,'p',e.target.value)} />
+                      <input type="number" min="0" style={numInp} value={d.gf??''} onChange={e => setGironiField(g,row.sq,'gf',e.target.value)} />
+                      <input type="number" min="0" style={numInp} value={d.gs??''} onChange={e => setGironiField(g,row.sq,'gs',e.target.value)} />
+                      <div style={{ textAlign:"center",fontSize:13,fontWeight:900,color:"#818cf8",fontFamily:"'Bebas Neue',sans-serif" }}>{ptLive}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+            <button onClick={salvaGironi} disabled={saving}
+              style={{ padding:"10px 0",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366f1,#a855f7)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",marginTop:4 }}>
+              {saving ? "⏳ Salvataggio…" : "✅ Salva gironi"}
+            </button>
+          </div>
+        </div>
       )}
 
       {tab === 'supercoppa' && (
