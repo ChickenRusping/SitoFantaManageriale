@@ -1603,6 +1603,7 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
         </div>
       ))}
       <div onClick={() => navigate('/news')} style={{ textAlign: "right", fontSize: 11.5, color: BRAND.primary, fontWeight: 700, cursor: "pointer", padding: "8px 2px" }}>Tutte le news →</div>
+      </div>
     </div>
   );
 }
