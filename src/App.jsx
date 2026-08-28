@@ -946,21 +946,26 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
   const posMap = {};
   [...classificaRicca].sort((a,b) => b.pt - a.pt || b.pt_totali - a.pt_totali).forEach((r, i) => { posMap[r.squadra] = i + 1; });
 
+  // Modalità compatta: pensata per stare intera su schermo mobile senza
+  // scroll orizzontale (come le classifiche di Leghe FC) — niente sticky
+  // column (non serve, non c'è overflow) e table-layout fixed con larghezze
+  // percentuali così le 6 colonne si dividono sempre il 100% disponibile.
+  const denseColWidths = { pos: "9%", squadra: "37%", stat: "13.5%" };
   return (
-    <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", minWidth: 560, borderCollapse: "collapse", fontSize: 12 }}>
+    <div style={{ overflowX: dense ? "visible" : "auto" }}>
+      <table style={{ width: "100%", minWidth: dense ? undefined : 560, tableLayout: dense ? "fixed" : "auto", borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
           <tr style={{ borderBottom: "1px solid #ffffff15" }}>
-            <th style={{ padding: "6px 8px", fontSize: 10, fontWeight: 700, color: "#555", position:"sticky", left:0, background:"#0d0f14", zIndex:2 }}>#</th>
-            <SortTh col="squadra"   label="Squadra"   align="left"   style={{ minWidth: dense ? 70 : 100, maxWidth: dense ? 90 : undefined, position:"sticky", left:28, background:"#0d0f14", zIndex:2 }} />
+            <th style={{ padding: dense ? "6px 2px" : "6px 8px", fontSize: 10, fontWeight: 700, color: "#555", width: dense ? denseColWidths.pos : undefined, ...(dense ? {} : { position:"sticky", left:0, background:"#0d0f14", zIndex:2 }) }}>#</th>
+            <SortTh col="squadra"   label="Squadra"   align="left"   style={dense ? { width: denseColWidths.squadra, padding: "6px 4px" } : { minWidth: 100, position:"sticky", left:28, background:"#0d0f14", zIndex:2 }} />
             {!dense && <SortTh col="g"         label="G"         align="center" />}
-            <SortTh col="v"         label="V"         align="center" />
-            <SortTh col="n"         label="N"         align="center" />
-            <SortTh col="p"         label="P"         align="center" />
+            <SortTh col="v"         label="V"         align="center" style={dense ? { width: denseColWidths.stat, padding: "6px 2px" } : {}} />
+            <SortTh col="n"         label="N"         align="center" style={dense ? { width: denseColWidths.stat, padding: "6px 2px" } : {}} />
+            <SortTh col="p"         label="P"         align="center" style={dense ? { width: denseColWidths.stat, padding: "6px 2px" } : {}} />
             {!dense && <SortTh col="gf"        label="G+"        align="center" />}
             {!dense && <SortTh col="gs"        label="G−"        align="center" />}
             {!dense && <SortTh col="dr"        label="DR"        align="center" />}
-            <SortTh col="pt"        label="Pt"        align="center" />
+            <SortTh col="pt"        label="Pt"        align="center" style={dense ? { width: denseColWidths.stat, padding: "6px 2px" } : {}} />
             {!dense && <SortTh col="pt_totali" label="Pt Tot"    align="center" />}
             {editMode && <th style={{ width: 60 }}></th>}
           </tr>
@@ -977,14 +982,14 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
                 onMouseEnter={e => { if (!isMe) e.currentTarget.style.background = "#ffffff05"; }}
                 onMouseLeave={e => { if (!isMe) e.currentTarget.style.background = isMe ? "#6366f110" : "transparent"; }}
               >
-                <td style={{ padding: "9px 4px", textAlign: "center", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif", fontSize: 15, color: rowColor || "#555", position:"sticky", left:0, background: isMe ? "#1a1d3a" : "#0d0f14", zIndex:1 }}>{pos}</td>
-                <td style={{ padding: "9px 6px", position:"sticky", left:28, background: isMe ? "#1a1d3a" : "#0d0f14", zIndex:1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    {row.team && <TeamAvatar team={row.team} size={22} />}
-                    <span style={{ fontSize: 11, fontWeight: isMe ? 800 : 600, color: isMe ? "#f0f0f0" : "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: dense ? 66 : 130 }}>
+                <td style={{ padding: dense ? "9px 2px" : "9px 4px", textAlign: "center", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif", fontSize: dense ? 13 : 15, color: rowColor || "#555", ...(dense ? {} : { position:"sticky", left:0, background: isMe ? "#1a1d3a" : "#0d0f14", zIndex:1 }) }}>{pos}</td>
+                <td style={{ padding: dense ? "9px 4px" : "9px 6px", overflow: "hidden", ...(dense ? {} : { position:"sticky", left:28, background: isMe ? "#1a1d3a" : "#0d0f14", zIndex:1 }) }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: dense ? 4 : 6, minWidth: 0 }}>
+                    {row.team && <TeamAvatar team={row.team} size={dense ? 18 : 22} />}
+                    <span style={{ fontSize: dense ? 10.5 : 11, fontWeight: isMe ? 800 : 600, color: isMe ? "#f0f0f0" : "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: dense ? 1 : undefined }}>
                       {row.squadra}
                     </span>
-                    {isMe && <span style={{ fontSize: 8, color: "#6366f1", flexShrink: 0, background: "#6366f120", border: "1px solid #6366f133", borderRadius: 3, padding: "1px 4px" }}>TU</span>}
+                    {isMe && !dense && <span style={{ fontSize: 8, color: "#6366f1", flexShrink: 0, background: "#6366f120", border: "1px solid #6366f133", borderRadius: 3, padding: "1px 4px" }}>TU</span>}
                   </div>
                 </td>
                 {isEditing ? (
@@ -1006,9 +1011,9 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
                 ) : (
                   <>
                     {!dense && <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.g}</td>}
-                    <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.v}</td>
-                    <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.n}</td>
-                    <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.p}</td>
+                    <td style={{ padding: dense ? "9px 2px" : "9px 8px", textAlign: "center", color: "#aaa", fontSize: dense ? 11.5 : 12 }}>{row.v}</td>
+                    <td style={{ padding: dense ? "9px 2px" : "9px 8px", textAlign: "center", color: "#aaa", fontSize: dense ? 11.5 : 12 }}>{row.n}</td>
+                    <td style={{ padding: dense ? "9px 2px" : "9px 8px", textAlign: "center", color: "#aaa", fontSize: dense ? 11.5 : 12 }}>{row.p}</td>
                     {!dense && <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.gf}</td>}
                     {!dense && <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.gs}</td>}
                     {!dense && (
@@ -1016,7 +1021,7 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
                       {row.dr > 0 ? "+" : ""}{row.dr}
                     </td>
                     )}
-                    <td style={{ padding: "9px 8px", textAlign: "center", fontSize: 14, fontWeight: 900, color: rowColor || "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif" }}>{row.pt}</td>
+                    <td style={{ padding: dense ? "9px 2px" : "9px 8px", textAlign: "center", fontSize: dense ? 13 : 14, fontWeight: 900, color: rowColor || "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif" }}>{row.pt}</td>
                     {!dense && <td style={{ padding: "9px 8px", textAlign: "center", fontSize: 12, color: "#888", fontWeight: 600 }}>{row.pt_totali}</td>}
                   </>
                 )}
@@ -1414,7 +1419,6 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
   const team = teams.find(t => t.name === mySquadra);
   const [allenatoreNome, setAllenatoreNome] = useState(null);
   const [posizione, setPosizione] = useState(null);
-  const [punti, setPunti] = useState(null);
   const [scBonusInvestimenti, setScBonusInvestimenti] = useState(0);
   const [contrattiScadenza, setContrattiScadenza] = useState([]);
   const [news, setNews] = useState([]);
@@ -1440,7 +1444,7 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
     });
     const loadClassifica = () => getClassifica().then(rows => {
       const idx = (rows || []).findIndex(r => r.squadra === team.name);
-      if (idx >= 0) { setPosizione(idx + 1); setPunti(rows[idx].pt); }
+      if (idx >= 0) { setPosizione(idx + 1); }
     });
     loadClassifica();
     const sub = subscribeClassifica(loadClassifica);
@@ -1492,13 +1496,13 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
             {allenatoreNome && <div style={{ fontSize: 11.5, color: "#888", marginTop: 2 }}>All. {allenatoreNome}</div>}
             {posizione != null && (
               <div style={{ display: "inline-block", marginTop: 8, fontSize: 11, fontWeight: 700, background: "#ffffff10", color: BRAND.gold, padding: "4px 12px", borderRadius: 999 }}>
-                {posizione}° in classifica{punti != null ? ` · ${punti}pt` : ""}
+                {posizione}° in classifica
               </div>
             )}
-            <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 10 }}>
-              <span style={{ fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "#777" }}>Bilancio</span>
-              <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, color: BRAND.gold, lineHeight: 1 }}>{team.bilancio.toFixed(1)}M</span>
-            </div>
+          </div>
+          <div style={{ textAlign: "right", flexShrink: 0 }}>
+            <div style={{ fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "#777" }}>Bilancio</div>
+            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, color: BRAND.gold, lineHeight: 1, marginTop: 4 }}>{team.bilancio.toFixed(1)}M</div>
           </div>
         </div>
         <div style={{ marginTop: 18, textAlign: "left" }}>
@@ -1739,7 +1743,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
 // rosa, n. U-21) per ognuna, nessun trattamento speciale per la propria.
 function TeamGridStat({ label, value, color }) {
   return (
-    <div>
+    <div style={{ textAlign: "center" }}>
       <div style={{ fontSize: 8.5, color: "#666", letterSpacing: "0.05em", marginBottom: 1 }}>{label}</div>
       <div style={{ fontSize: 13, fontWeight: 800, color, fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "0.3px" }}>{value}</div>
     </div>
@@ -1768,10 +1772,12 @@ function TeamGridCard({ team, isMine, onClick, scLive: scLiveProp, capLimite: ca
         <TeamAvatar team={team} size={34} />
         <div style={{ fontSize: 12.5, fontWeight: 800, color: "#f0f0f0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team.name}</div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px 6px" }}>
+      <div style={{ display: "flex", justifyContent: "space-evenly", marginBottom: 8 }}>
         <TeamGridStat label="BILANCIO" value={`${team.bilancio.toFixed(1)}M`} color={bilColor} />
-        <TeamGridStat label="SALARY CAP" value={`${scLive.toFixed(1)}/${capLimite.toFixed(1)}M`} color={scColor} />
+        <TeamGridStat label="SC" value={`${scLive.toFixed(1)}M`} color={scColor} />
         <TeamGridStat label="FPF" value={fpfDisplay} color={fpfColor} />
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-evenly" }}>
         <TeamGridStat label="ROSA" value={String(giocatori)} color={giocatori ? rosaColor : "#555"} />
         <TeamGridStat label="U-21" value={String(u21)} color={u21Color} />
       </div>
@@ -1836,11 +1842,15 @@ function GironeTable({ classifica, isAdmin, onEdit, dense = false }) {
   const sorted = [...classifica].sort((a,b) => b.pt-a.pt || b.dr-a.dr || b.gf-a.gf);
   const numInp = { width:28, padding:'3px 2px', borderRadius:5, border:'1px solid #ffffff18', background:'#ffffff08', color:'#f0f0f0', fontSize:11, fontWeight:600, textAlign:'center', outline:'none' };
   const cols = dense ? ['#','Squadra','V','N','P','Pt'] : ['#','Squadra','V','N','P','G+','G−','DR','Pt'];
+  // Stessa costruzione (table-layout fixed + larghezze %) della classifica
+  // Serie A in modalità compatta: sta intera su schermo senza scroll.
+  const denseColWidths = { pos: "9%", squadra: "37%", stat: "13.5%" };
   return (
-    <table style={{ width:'100%', borderCollapse:'collapse', fontSize:11 }}>
+    <table style={{ width:'100%', tableLayout: dense ? 'fixed' : 'auto', borderCollapse:'collapse', fontSize:11 }}>
       <thead>
         <tr>{cols.map((c,i) => (
-          <th key={i} style={{ padding:'4px 5px', color:'#555', fontWeight:700, fontSize:9, textAlign: i<=1?'left':'center', letterSpacing:'0.05em' }}>{c}</th>
+          <th key={i} style={{ padding: dense ? '4px 2px' : '4px 5px', color:'#555', fontWeight:700, fontSize:9, textAlign: i<=1?'left':'center', letterSpacing:'0.05em',
+            width: dense ? (i===0?denseColWidths.pos:i===1?denseColWidths.squadra:denseColWidths.stat) : undefined }}>{c}</th>
         ))}</tr>
       </thead>
       <tbody>
@@ -1848,24 +1858,24 @@ function GironeTable({ classifica, isAdmin, onEdit, dense = false }) {
           const color = i===0?'#10b981':i===1?'#f59e0b':'#666';
           return (
             <tr key={r.sq} style={{ borderBottom:'1px solid #ffffff06' }}>
-              <td style={{ padding:'5px', textAlign:'center', fontSize:10, fontWeight:900, color }}>{i+1}</td>
-              <td style={{ padding:'5px', fontWeight:700, color:'#ddd', overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth: dense ? 80 : 130 }}>{r.sq}</td>
+              <td style={{ padding: dense ? '5px 2px' : '5px', textAlign:'center', fontSize:10, fontWeight:900, color }}>{i+1}</td>
+              <td style={{ padding: dense ? '5px 4px' : '5px', fontWeight:700, color:'#ddd', overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.sq}</td>
               {isAdmin ? (
                 <>
                   {(dense ? ['v','n','p'] : ['v','n','p','gf','gs']).map(f => (
-                    <td key={f} style={{ padding:'2px 3px', textAlign:'center' }}>
+                    <td key={f} style={{ padding: dense ? '2px 1px' : '2px 3px', textAlign:'center' }}>
                       <input type="number" min="0" value={r[f]??''} style={numInp}
                         onChange={e => onEdit(r.sq, f, e.target.value === '' ? 0 : Number(e.target.value))} />
                     </td>
                   ))}
                   {!dense && <td style={{ padding:'5px', textAlign:'center', color: r.dr>0?'#10b981':r.dr<0?'#ef4444':'#555', fontWeight:600, fontSize:11 }}>{r.dr>0?'+':''}{r.dr}</td>}
-                  <td style={{ padding:'5px', textAlign:'center', fontWeight:900, color, fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>{r.pt}</td>
+                  <td style={{ padding: dense ? '5px 2px' : '5px', textAlign:'center', fontWeight:900, color, fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>{r.pt}</td>
                 </>
               ) : (
                 <>
-                  {(dense ? [r.v,r.n,r.p] : [r.v,r.n,r.p,r.gf,r.gs]).map((v,k) => <td key={k} style={{ padding:'5px', textAlign:'center', color:'#888' }}>{v}</td>)}
+                  {(dense ? [r.v,r.n,r.p] : [r.v,r.n,r.p,r.gf,r.gs]).map((v,k) => <td key={k} style={{ padding: dense ? '5px 2px' : '5px', textAlign:'center', color:'#888' }}>{v}</td>)}
                   {!dense && <td style={{ padding:'5px', textAlign:'center', color: r.dr>0?'#10b981':r.dr<0?'#ef4444':'#555', fontWeight:600 }}>{r.dr>0?'+':''}{r.dr}</td>}
-                  <td style={{ padding:'5px', textAlign:'center', fontWeight:900, color, fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>{r.pt}</td>
+                  <td style={{ padding: dense ? '5px 2px' : '5px', textAlign:'center', fontWeight:900, color, fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>{r.pt}</td>
                 </>
               )}
             </tr>
@@ -2401,10 +2411,10 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
     { key: 'premi',        label: '🏆 Premi' },
   ];
   const PREMI_TABS = [
-    { key: 'giornata',    label: '🏅 Giornata' },
+    { key: 'montepremi',  label: '💶 Montepremi' },
+    { key: 'giornata',    label: '🏅 Invernali' },
     { key: 'finali',      label: '🏆 Finali' },
     { key: 'coppa',       label: '🥇 Coppa Italia' },
-    { key: 'montepremi',  label: '💶 Montepremi' },
     { key: 'individuali', label: '🏅 Individuali' },
   ];
 
@@ -7195,18 +7205,24 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
         <button onClick={onBack} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#888", fontSize: 20, padding: 4, lineHeight: 1 }} title="Indietro">‹</button>
       </div>
-      <div style={{ background: "#ffffff08", borderRadius: 20, padding: "18px 16px", marginBottom: 14, textAlign: "center" }}>
-        <div style={{ display: "flex", justifyContent: "center" }}><TeamAvatar team={team} size={64} /></div>
-        <div style={{ fontSize: 19, fontWeight: 900, color: "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "0.5px", marginTop: 8 }}>{team.name}</div>
-        {allenatoreNome && <div style={{ fontSize: 11.5, color: "#888", marginTop: 2 }}>All. {allenatoreNome}</div>}
-        {posizioneLega != null && (
-          <div style={{ display: "inline-block", marginTop: 8, fontSize: 10.5, fontWeight: 700, background: "#ffffff10", color: "#E8B84B", padding: "4px 12px", borderRadius: 999 }}>
-            {posizioneLega}° in classifica
+      <div style={{ background: "#ffffff08", borderRadius: 20, padding: "18px 16px", marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, textAlign: "left" }}>
+          <TeamAvatar team={team} size={64} />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: 19, fontWeight: 900, color: "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "0.5px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{team.name}</div>
+            {allenatoreNome && <div style={{ fontSize: 11.5, color: "#888", marginTop: 2 }}>All. {allenatoreNome}</div>}
+            {posizioneLega != null && (
+              <div style={{ display: "inline-block", marginTop: 8, fontSize: 10.5, fontWeight: 700, background: "#ffffff10", color: "#E8B84B", padding: "4px 12px", borderRadius: 999 }}>
+                {posizioneLega}° in classifica
+              </div>
+            )}
           </div>
-        )}
-        <div style={{ marginTop: 16, textAlign: "left" }}>
-          <div style={{ fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "#777", textAlign: "center" }}>Bilancio</div>
-          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 24, color: team.bilancio < 10 ? "#f97316" : "#E8B84B", textAlign: "center", marginBottom: 12 }}>{team.bilancio.toFixed(1)}M</div>
+          <div style={{ textAlign: "right", flexShrink: 0 }}>
+            <div style={{ fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "#777" }}>Bilancio</div>
+            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, color: team.bilancio < 10 ? "#f97316" : "#E8B84B", lineHeight: 1, marginTop: 4 }}>{team.bilancio.toFixed(1)}M</div>
+          </div>
+        </div>
+        <div style={{ marginTop: 18, textAlign: "left" }}>
           <ProgressBar label="Salary Cap" used={salaryCapUsato} limit={salaryCapLimite} overLimit={salaryCapSforato} />
         </div>
       </div>
@@ -8439,7 +8455,17 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const [now, setNow] = useState(new Date());
   const [rispostaInCorso, setRispostaInCorso] = useState({});
   const [bonusByTrattativa, setBonusByTrattativa] = useState({});
-  const [expandedTrattative, setExpandedTrattative] = useState({});
+  // Popup dettaglio (trattativa in attesa / storico, operazione in home) —
+  // stesso pattern bottom-sheet/modale già usato altrove nell'app, al posto
+  // dei vecchi accordion "▾ Dettagli" che occupavano spazio in pagina.
+  const [detailTrattativa, setDetailTrattativa] = useState(null); // { t, withSalaryRecap }
+  const [detailOperazione, setDetailOperazione] = useState(null);
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
+  useEffect(() => {
+    const h = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
   const [storicoFilterSquadra, setStoricoFilterSquadra] = useState("tutte");
   const [storicoFilterTipo, setStoricoFilterTipo] = useState("tutti");
   const [storicoFilterStato, setStoricoFilterStato] = useState("tutti");
@@ -8495,9 +8521,10 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   // (gli svincoli non passano dalla tabella trattative/aste).
   const [svincoliRecenti, setSvincoliRecenti] = useState([]);
   useEffect(() => {
-    if (!mySquadra) return;
-    getAuditLog({ squadra: mySquadra, azione: 'svincolo', limit: 5 }).then(rows => setSvincoliRecenti(rows || []));
-  }, [mySquadra]);
+    // Nessun filtro squadra: "Ultime operazioni" in home Mercato mostra le
+    // ultime operazioni di TUTTA la lega, non solo della propria squadra.
+    getAuditLog({ azione: 'svincolo', limit: 8 }).then(rows => setSvincoliRecenti(rows || []));
+  }, []);
 
   // Badge sulla tab "Svincolati": quante aste in fase offerte hanno tra gli
   // interessati la mia squadra — stesso concetto delle "aste" pendenti sopra,
@@ -9171,23 +9198,27 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const astePending = aste.filter(a => a.stato === 'attiva');
   const asteChiuse  = aste.filter(a => a.stato !== 'attiva');
 
-  // ── Home Mercato: trattative in attesa di una mia risposta + ultime 5
-  // operazioni concluse (solo esiti positivi — mai rifiutate/perse/scadute). ──
+  // ── Home Mercato: trattative in attesa di una mia risposta + ultime 8
+  // operazioni concluse in TUTTA la lega (non solo della propria squadra —
+  // solo esiti positivi, mai rifiutate/perse/scadute). ──
   const trattativeDaRispondere = myTrattative.filter(t => t.stato === 'in attesa' && t.a_squadra === mySquadra);
   const ultimeOperazioni = [
-    ...myTrattative.filter(t => t.stato === 'completata').map(t => ({
+    ...trattative.filter(t => t.stato === 'completata').map(t => ({
       key: 'tr' + t.id, data: t.updated_at || t.created_at, icon: '🤝',
       label: t.giocatore, sub: `${t.a_squadra} → ${t.da_squadra}`, importo: t.prezzo,
+      tipoLabel: 'Trattativa', raw: t,
     })),
-    ...aste.filter(a => a.stato === 'assegnata' && a.vincitore === mySquadra).map(a => ({
+    ...aste.filter(a => a.stato === 'assegnata').map(a => ({
       key: 'as' + a.id, data: a.updated_at || a.created_at, icon: '🏷️',
-      label: a.giocatore, sub: `Asta vinta da ${a.proprietario}`, importo: a.prezzo_finale,
+      label: a.giocatore, sub: `${a.vincitore} ← ${a.proprietario}`, importo: a.prezzo_finale,
+      tipoLabel: 'Asta', raw: a,
     })),
     ...svincoliRecenti.map(s => ({
       key: 'sv' + s.id, data: s.timestamp, icon: '✂️',
-      label: s.descrizione, sub: 'Svincolo', importo: null,
+      label: s.descrizione, sub: `Svincolo · ${s.squadra}`, importo: null,
+      tipoLabel: 'Svincolo', raw: s,
     })),
-  ].sort((a, b) => new Date(b.data) - new Date(a.data)).slice(0, 5);
+  ].sort((a, b) => new Date(b.data) - new Date(a.data)).slice(0, 8);
 
   const sel = { ...FIELD, width: "100%" };
   const inp = { ...sel };
@@ -9280,13 +9311,14 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
               <div style={{ fontSize:10, fontWeight:700, color:"#777", letterSpacing:"0.08em", marginBottom:8 }}>ULTIME OPERAZIONI</div>
               <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
                 {ultimeOperazioni.map(op => (
-                  <div key={op.key} style={{ display:"flex", alignItems:"center", gap:10, background:"#ffffff06", border:"1px solid #ffffff0a", borderRadius:10, padding:"9px 12px" }}>
+                  <div key={op.key} onClick={() => setDetailOperazione(op)} style={{ display:"flex", alignItems:"center", gap:10, background:"#ffffff06", border:"1px solid #ffffff0a", borderRadius:10, padding:"9px 12px", cursor:"pointer" }}>
                     <span style={{ fontSize:14 }}>{op.icon}</span>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontSize:12.5, fontWeight:600, color:"#ddd", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{op.label}</div>
                       <div style={{ fontSize:10, color:"#777" }}>{op.sub}</div>
                     </div>
                     {op.importo != null && <span style={{ fontSize:12, fontWeight:800, color:"#10b981", fontFamily:"'Bebas Neue',sans-serif" }}>{op.importo}M</span>}
+                    <IconChevronRight size={14} style={{ color:"#555", flexShrink:0 }} />
                   </div>
                 ))}
               </div>
@@ -9825,8 +9857,6 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                     const bonusTotale = getBonusTotale(t.id);
                     const prezzoBase = Number(t.prezzo || 0);
                     const prezzoPotenziale = getPrezzoPotenziale(t);
-                    const expanded = !!expandedTrattative[t.id];
-                    const salaryRecap = getSalaryRecap(t);
                     const squadraCheRispondeOra = t.stato === 'controproposta' ? t.da_squadra : t.a_squadra;
                     const isRicevuta = squadraCheRispondeOra === mySquadra;
                     return (
@@ -9901,59 +9931,11 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
                         <button
                           type="button"
-                          onClick={() => setExpandedTrattative(prev => ({ ...prev, [t.id]: !prev[t.id] }))}
-                          style={{ marginBottom: 8, padding: "5px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: expanded ? "#6366f122" : "#ffffff08", color: expanded ? "#a5b4fc" : "#888", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                          onClick={() => setDetailTrattativa({ t, withSalaryRecap: true })}
+                          style={{ marginBottom: 8, padding: "5px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#ffffff08", color: "#888", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
                         >
-                          {expanded ? "▴ Nascondi dettagli" : "▾ Dettagli offerta"}
+                          ▾ Dettagli offerta
                         </button>
-
-                        {expanded && (
-                          <div style={{ background: "#0d0f1480", border: "1px solid #ffffff12", borderRadius: 10, padding: "10px 12px", marginBottom: 10 }}>
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 8, marginBottom: 10 }}>
-                              <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
-                                <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>{t.tipo === 'prestito_secco' ? 'ONEROSO' : (t.tipo === 'prestito_diritto' || t.tipo === 'prestito_obbligo') ? 'RISCATTO (a scadenza)' : 'PARTE FISSA'}</div>
-                                <div style={{ fontSize: 18, color: "#10b981", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(prezzoBase)}</div>
-                              </div>
-                              {(t.tipo === 'prestito_diritto' || t.tipo === 'prestito_obbligo') && (
-                                <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
-                                  <div style={{ fontSize: 9, color: "#f59e0b", fontWeight: 700, letterSpacing: "0.06em" }}>ONEROSO (subito)</div>
-                                  <div style={{ fontSize: 18, color: "#f59e0b", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(t.oneroso)}</div>
-                                </div>
-                              )}
-                              <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
-                                <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>BONUS POTENZIALI</div>
-                                <div style={{ fontSize: 18, color: bonusTotale > 0 ? "#f59e0b" : "#555", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(bonusTotale)}</div>
-                              </div>
-                              <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
-                                <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>TOTALE POTENZIALE</div>
-                                <div style={{ fontSize: 18, color: "#a5b4fc", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(prezzoPotenziale)}</div>
-                              </div>
-                            </div>
-
-                            {bonusRows.length > 0 ? (
-                              <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 10 }}>
-                                <div style={{ fontSize: 9, color: "#666", fontWeight: 800, letterSpacing: "0.08em" }}>DETTAGLIO BONUS</div>
-                                {bonusRows.map((b, idx) => (
-                                  <div key={b.id || idx} style={{ display: "flex", justifyContent: "space-between", gap: 8, background: "#ffffff05", borderRadius: 7, padding: "6px 8px", fontSize: 10, color: "#aaa" }}>
-                                    <span>🎯 {getLabelBonus(b.tipo_bonus)} ≥ {b.soglia}</span>
-                                    <span style={{ color: "#f59e0b", fontWeight: 800 }}>+{formatMln(b.valore_mln)} · {b.direzione === 'acquirente_paga' ? "paga l'acquirente" : 'paga il cedente'}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div style={{ fontSize: 10, color: "#555", marginBottom: 10 }}>Nessun bonus collegato a questa offerta.</div>
-                            )}
-
-                            <div style={{ background: "#10b98108", border: "1px solid #10b98122", borderRadius: 8, padding: "8px 10px" }}>
-                              <div style={{ fontSize: 9, color: "#10b981", fontWeight: 800, letterSpacing: "0.08em", marginBottom: 5 }}>IMPATTO SALARY CAP ACQUIRENTE</div>
-                              <div style={{ fontSize: 10, color: "#aaa", lineHeight: 1.6 }}>
-                                {salaryRecap.buyer?.name || t.da_squadra}: SC attuale {formatMln(salaryRecap.currentSC)} → nuovo stimato {formatMln(salaryRecap.newSC)}
-                                <br />
-                                Stipendio stimato giocatore: {formatMln(salaryRecap.newStip)} / anno · spazio residuo dopo acquisto: <b style={{ color: salaryRecap.freeAfter >= 0 ? "#10b981" : "#ef4444" }}>{formatMln(salaryRecap.freeAfter)}</b>
-                              </div>
-                            </div>
-                          </div>
-                        )}
 
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, width: "100%" }}>
                           {/* Countdown risposta 24h (art. 5.3) */}
@@ -10252,10 +10234,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
               const daTeam = teams.find(x => x.name === t.a_squadra);
               const aTeam  = teams.find(x => x.name === t.da_squadra);
               const bonusTotale = getBonusTotale(t.id);
-              const bonusRows = getBonusRows(t.id);
               const prezzoBase = Number(t.prezzo || 0);
               const prezzoPotenziale = getPrezzoPotenziale(t);
-              const expanded = !!expandedTrattative[t.id];
               return (
                 <div key={t.id} style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: "10px 14px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -10273,65 +10253,12 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                     <Badge color={statoColor[t.stato] || "#888"}>{t.stato}</Badge>
                     <button
                       type="button"
-                      onClick={() => setExpandedTrattative(prev => ({ ...prev, [t.id]: !prev[t.id] }))}
-                      style={{ padding: "4px 10px", borderRadius: 7, border: "1px solid #6366f130", background: expanded ? "#6366f122" : "#6366f110", color: "#a5b4fc", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                      {expanded ? "▴ Nascondi" : "▾ Dettagli"}
+                      onClick={() => setDetailTrattativa({ t, withSalaryRecap: false })}
+                      style={{ padding: "4px 10px", borderRadius: 7, border: "1px solid #6366f130", background: "#6366f110", color: "#a5b4fc", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                      ▾ Dettagli
                     </button>
                     {isAdmin && <button onClick={() => { if (window.confirm(`Eliminare la trattativa per ${t.giocatore}?`)) deleteTrattativa(t.id); }} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#ef444415", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>✕</button>}
                   </div>
-
-                  {expanded && (
-                    <div style={{ marginTop: 10, background: "#0d0f1480", border: "1px solid #ffffff12", borderRadius: 10, padding: "10px 12px" }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8, marginBottom: 10, fontSize: 11, color: "#aaa" }}>
-                        <div><span style={{ color: "#555" }}>Cedente:</span> {t.a_squadra}</div>
-                        <div><span style={{ color: "#555" }}>Acquirente:</span> {t.da_squadra}</div>
-                        <div><span style={{ color: "#555" }}>Tipo:</span> {tipoLabel[t.tipo] || t.tipo}</div>
-                        <div><span style={{ color: "#555" }}>Stato:</span> {t.stato}</div>
-                        {t.quot_giocatore > 0 && <div><span style={{ color: "#555" }}>Quotazione:</span> Q{t.quot_giocatore}</div>}
-                        {t.scadenza_prestito && <div><span style={{ color: "#555" }}>Scad. prestito:</span> {t.scadenza_prestito}</div>}
-                        {t.stipendio_a_chi && <div><span style={{ color: "#555" }}>Stipendio a:</span> {t.stipendio_a_chi}</div>}
-                        {t.giocatore_scambio && <div><span style={{ color: "#555" }}>Contropartita:</span> {t.giocatore_scambio}</div>}
-                        <div><span style={{ color: "#555" }}>Creata:</span> {new Date(t.created_at).toLocaleString("it-IT")}</div>
-                        {t.updated_at && <div><span style={{ color: "#555" }}>Aggiornata:</span> {new Date(t.updated_at).toLocaleString("it-IT")}</div>}
-                        {t.n_rifiuti > 0 && <div><span style={{ color: "#555" }}>Rifiuti/controfferte:</span> {t.n_rifiuti}</div>}
-                      </div>
-
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8, marginBottom: bonusRows.length > 0 ? 10 : 0 }}>
-                        <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
-                          <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>{t.tipo === 'prestito_secco' ? 'ONEROSO' : (t.tipo === 'prestito_diritto' || t.tipo === 'prestito_obbligo') ? 'RISCATTO (a scadenza)' : 'PARTE FISSA'}</div>
-                          <div style={{ fontSize: 16, color: "#10b981", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(prezzoBase)}</div>
-                        </div>
-                        {(t.tipo === 'prestito_diritto' || t.tipo === 'prestito_obbligo') && (
-                          <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
-                            <div style={{ fontSize: 9, color: "#f59e0b", fontWeight: 700, letterSpacing: "0.06em" }}>ONEROSO (subito)</div>
-                            <div style={{ fontSize: 16, color: "#f59e0b", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(t.oneroso)}</div>
-                          </div>
-                        )}
-                        <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
-                          <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>BONUS</div>
-                          <div style={{ fontSize: 16, color: bonusTotale > 0 ? "#f59e0b" : "#555", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(bonusTotale)}</div>
-                        </div>
-                        <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
-                          <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>TOTALE POTENZIALE</div>
-                          <div style={{ fontSize: 16, color: "#a5b4fc", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(prezzoPotenziale)}</div>
-                        </div>
-                      </div>
-
-                      {bonusRows.length > 0 && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                          <div style={{ fontSize: 9, color: "#666", fontWeight: 800, letterSpacing: "0.08em" }}>DETTAGLIO BONUS</div>
-                          {bonusRows.map((b, idx) => (
-                            <div key={b.id || idx} style={{ display: "flex", justifyContent: "space-between", gap: 8, background: "#ffffff05", borderRadius: 7, padding: "6px 8px", fontSize: 10, color: "#aaa" }}>
-                              <span>🎯 {getLabelBonus(b.tipo_bonus)} ≥ {b.soglia}{b.completato ? " · ✅ completato" : ""}</span>
-                              <span style={{ color: "#f59e0b", fontWeight: 800 }}>+{formatMln(b.valore_mln)} · {b.direzione === 'acquirente_paga' ? "paga l'acquirente" : 'paga il cedente'}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {t.note && <div style={{ fontSize: 11, color: "#888", marginTop: 8 }}>📝 {t.note}</div>}
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -10465,6 +10392,94 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
     </>
     }
+
+    {/* ── Popup dettaglio trattativa (in attesa + storico) ── */}
+    {detailTrattativa && (() => {
+      const { t, withSalaryRecap } = detailTrattativa;
+      const bonusRows = getBonusRows(t.id);
+      const bonusTotale = getBonusTotale(t.id);
+      const prezzoBase = Number(t.prezzo || 0);
+      const prezzoPotenziale = getPrezzoPotenziale(t);
+      const salaryRecap = withSalaryRecap ? getSalaryRecap(t) : null;
+      return (
+        <DetailSheet title={`🤝 ${t.giocatore}`} subtitle={`${t.a_squadra} → ${t.da_squadra}`} isDesktop={isDesktop} onClose={() => setDetailTrattativa(null)}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8, marginBottom: 10, fontSize: 11, color: "#aaa" }}>
+            <div><span style={{ color: "#555" }}>Cedente:</span> {t.a_squadra}</div>
+            <div><span style={{ color: "#555" }}>Acquirente:</span> {t.da_squadra}</div>
+            <div><span style={{ color: "#555" }}>Tipo:</span> {tipoLabel[t.tipo] || t.tipo}</div>
+            <div><span style={{ color: "#555" }}>Stato:</span> {t.stato}</div>
+            {t.quot_giocatore > 0 && <div><span style={{ color: "#555" }}>Quotazione:</span> Q{t.quot_giocatore}</div>}
+            {t.scadenza_prestito && <div><span style={{ color: "#555" }}>Scad. prestito:</span> {t.scadenza_prestito}</div>}
+            {t.stipendio_a_chi && <div><span style={{ color: "#555" }}>Stipendio a:</span> {t.stipendio_a_chi}</div>}
+            {t.giocatore_scambio && <div><span style={{ color: "#555" }}>Contropartita:</span> {t.giocatore_scambio}</div>}
+            <div><span style={{ color: "#555" }}>Creata:</span> {new Date(t.created_at).toLocaleString("it-IT")}</div>
+            {t.updated_at && <div><span style={{ color: "#555" }}>Aggiornata:</span> {new Date(t.updated_at).toLocaleString("it-IT")}</div>}
+            {t.n_rifiuti > 0 && <div><span style={{ color: "#555" }}>Rifiuti/controfferte:</span> {t.n_rifiuti}</div>}
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8, marginBottom: bonusRows.length > 0 ? 10 : 0 }}>
+            <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
+              <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>{t.tipo === 'prestito_secco' ? 'ONEROSO' : (t.tipo === 'prestito_diritto' || t.tipo === 'prestito_obbligo') ? 'RISCATTO (a scadenza)' : 'PARTE FISSA'}</div>
+              <div style={{ fontSize: 16, color: "#10b981", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(prezzoBase)}</div>
+            </div>
+            {(t.tipo === 'prestito_diritto' || t.tipo === 'prestito_obbligo') && (
+              <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
+                <div style={{ fontSize: 9, color: "#f59e0b", fontWeight: 700, letterSpacing: "0.06em" }}>ONEROSO (subito)</div>
+                <div style={{ fontSize: 16, color: "#f59e0b", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(t.oneroso)}</div>
+              </div>
+            )}
+            <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
+              <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>BONUS</div>
+              <div style={{ fontSize: 16, color: bonusTotale > 0 ? "#f59e0b" : "#555", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(bonusTotale)}</div>
+            </div>
+            <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 10px" }}>
+              <div style={{ fontSize: 9, color: "#555", fontWeight: 700, letterSpacing: "0.06em" }}>TOTALE POTENZIALE</div>
+              <div style={{ fontSize: 16, color: "#a5b4fc", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif" }}>{formatMln(prezzoPotenziale)}</div>
+            </div>
+          </div>
+
+          {bonusRows.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 10 }}>
+              <div style={{ fontSize: 9, color: "#666", fontWeight: 800, letterSpacing: "0.08em" }}>DETTAGLIO BONUS</div>
+              {bonusRows.map((b, idx) => (
+                <div key={b.id || idx} style={{ display: "flex", justifyContent: "space-between", gap: 8, background: "#ffffff05", borderRadius: 7, padding: "6px 8px", fontSize: 10, color: "#aaa" }}>
+                  <span>🎯 {getLabelBonus(b.tipo_bonus)} ≥ {b.soglia}{b.completato ? " · ✅ completato" : ""}</span>
+                  <span style={{ color: "#f59e0b", fontWeight: 800 }}>+{formatMln(b.valore_mln)} · {b.direzione === 'acquirente_paga' ? "paga l'acquirente" : 'paga il cedente'}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 10, color: "#555", marginBottom: 10 }}>Nessun bonus collegato a questa offerta.</div>
+          )}
+
+          {salaryRecap && (
+            <div style={{ background: "#10b98108", border: "1px solid #10b98122", borderRadius: 8, padding: "8px 10px" }}>
+              <div style={{ fontSize: 9, color: "#10b981", fontWeight: 800, letterSpacing: "0.08em", marginBottom: 5 }}>IMPATTO SALARY CAP ACQUIRENTE</div>
+              <div style={{ fontSize: 10, color: "#aaa", lineHeight: 1.6 }}>
+                {salaryRecap.buyer?.name || t.da_squadra}: SC attuale {formatMln(salaryRecap.currentSC)} → nuovo stimato {formatMln(salaryRecap.newSC)}
+                <br />
+                Stipendio stimato giocatore: {formatMln(salaryRecap.newStip)} / anno · spazio residuo dopo acquisto: <b style={{ color: salaryRecap.freeAfter >= 0 ? "#10b981" : "#ef4444" }}>{formatMln(salaryRecap.freeAfter)}</b>
+              </div>
+            </div>
+          )}
+
+          {t.note && <div style={{ fontSize: 11, color: "#888", marginTop: 8 }}>📝 {t.note}</div>}
+        </DetailSheet>
+      );
+    })()}
+
+    {/* ── Popup dettaglio operazione (Ultime Operazioni, home Mercato) ── */}
+    {detailOperazione && (
+      <DetailSheet title={`${detailOperazione.icon} ${detailOperazione.label}`} subtitle={detailOperazione.sub} isDesktop={isDesktop} onClose={() => setDetailOperazione(null)}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 12, color: "#aaa" }}>
+          <div><span style={{ color: "#555" }}>Tipo:</span> {detailOperazione.tipoLabel}</div>
+          {detailOperazione.importo != null && <div><span style={{ color: "#555" }}>Importo:</span> <b style={{ color: "#10b981" }}>{detailOperazione.importo}M</b></div>}
+          <div><span style={{ color: "#555" }}>Data:</span> {new Date(detailOperazione.data).toLocaleString("it-IT")}</div>
+          {detailOperazione.raw?.tipo && <div><span style={{ color: "#555" }}>Dettaglio:</span> {tipoLabel[detailOperazione.raw.tipo] || detailOperazione.raw.tipo}</div>}
+          {detailOperazione.raw?.note && <div><span style={{ color: "#555" }}>Note:</span> {detailOperazione.raw.note}</div>}
+        </div>
+      </DetailSheet>
+    )}
     </div>
   );
 }
