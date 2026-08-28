@@ -1510,7 +1510,7 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
   const haRichiesteAttenzione = nOfferte > 0 || alertContratti.length > 0;
 
   return (
-    <div style={{ maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", minHeight: "calc(100dvh - 68px - env(safe-area-inset-bottom,0px) - 32px - env(safe-area-inset-top,0px))" }}>
+    <div style={{ maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", minHeight: "calc(100dvh - 68px - env(safe-area-inset-bottom,0px) - 64px - env(safe-area-inset-top,0px))" }}>
       <HeroSurface onClick={() => navigate(`/presidente/${team.id}`)} style={{ marginBottom: 14, cursor: "pointer", padding: "26px 22px", background: `linear-gradient(135deg, ${team.color}2e, ${SURFACE.card})`, flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
         {/* Identità: stemma a sinistra, testo a destra — riempie meglio la
             larghezza dell'hero invece della colonna centrata precedente.
