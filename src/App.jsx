@@ -1610,6 +1610,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
 
   const [classifica, setClassifica] = useState([]);
   const [roseCountMap, setRoseCountMap] = useState({});
+  const [u21CountMap, setU21CountMap] = useState({});
   const [scLiveMap, setScLiveMap] = useState({});
   const [capLimiteMap, setCapLimiteMap] = useState({});
   const [editMode, setEditMode] = useState(false);
@@ -1662,19 +1663,21 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
         scAllenatoreMap[a.squadra] = Number(a.stipendio_sc || 0);
       });
 
-      const counts = {}, scs = {}, caps = {};
+      const counts = {}, u21s = {}, scs = {}, caps = {};
       teams.forEach(t => {
-        counts[t.name] = 0; scs[t.name] = 0;
+        counts[t.name] = 0; u21s[t.name] = 0; scs[t.name] = 0;
         caps[t.name] = 75 + Number(t.scBonusObiettivi || 0) + (squadreSuperClub.has(t.name) ? 3 : 0);
       });
       (rosaTutte || []).forEach(p => {
         if (p.in_vivaio || !(p.squadra in counts)) return;
         counts[p.squadra]++;
+        if (p.anni > 0 && p.anni <= 21) u21s[p.squadra]++;
         scs[p.squadra] += calcolaStipCorretto(p.quot, p.anni_contratto, p.anni);
       });
       teams.forEach(t => { scs[t.name] = parseFloat((scs[t.name] + (scAllenatoreMap[t.name] || 0)).toFixed(2)); });
 
       setRoseCountMap(counts);
+      setU21CountMap(u21s);
       setScLiveMap(scs);
       setCapLimiteMap(caps);
     });
@@ -1720,7 +1723,8 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 12 }}>
         {teams.map(team => {
           const liveCount = roseCountMap[team.name];
-          const teamLive = liveCount !== undefined ? { ...team, giocatori: liveCount } : team;
+          const liveU21 = u21CountMap[team.name];
+          const teamLive = liveCount !== undefined ? { ...team, giocatori: liveCount, u21: liveU21 !== undefined ? liveU21 : team.u21 } : team;
           return (
             <TeamGridCard
               key={team.id}
