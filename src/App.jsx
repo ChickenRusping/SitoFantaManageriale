@@ -9280,13 +9280,17 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       label: t.giocatore, sub: `${t.a_squadra} → ${t.da_squadra}`, importo: t.prezzo,
       tipoLabel: 'Trattativa', raw: t,
     })),
-    ...aste.filter(a => a.stato === 'assegnata').map(a => ({
+    ...aste.filter(a => a.stato === 'aggiudicata').map(a => ({
       key: 'as' + a.id, data: a.updated_at || a.created_at, icon: '🏷️',
       label: a.giocatore, sub: `${a.vincitore} ← ${a.proprietario}`, importo: a.prezzo_finale,
       tipoLabel: 'Asta', raw: a,
     })),
+    // Data dell'operazione = scadenza delle offerte (quando l'asta si è
+    // davvero conclusa), non created_at (quando è stata aperta) — altrimenti
+    // aste svincolati aperte prima ma chiuse dopo finiscono ordinate come se
+    // fossero più vecchie di operazioni successive alla loro reale chiusura.
     ...asteSvinc.filter(a => a.stato === 'assegnata').map(a => ({
-      key: 'asv' + a.id, data: a.updated_at || a.created_at, icon: '📞',
+      key: 'asv' + a.id, data: a.scadenza || a.created_at, icon: '📞',
       label: a.giocatore, sub: `${a.vincitore} ← Svincolati${a.aperta_da ? ` (chiamato da ${a.aperta_da})` : ''}`, importo: a.prezzo_finale,
       tipoLabel: 'Asta Svincolati', raw: a,
     })),
