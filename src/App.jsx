@@ -951,36 +951,41 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
   // column (non serve, non c'è overflow) e table-layout fixed con larghezze
   // percentuali così le 6 colonne si dividono sempre il 100% disponibile.
   const denseColWidths = { pos: "9%", squadra: "37%", stat: "13.5%" };
+  // Header a barra piena colorata + righe zebrate, stile Leghe FC (stesso
+  // identico trattamento in modalità compatta ed estesa, e riusato tale e
+  // quale in GironeTable per la Coppa Italia).
+  const headerBarStyle = { background: "#4338ca", color: "#e0e3ff", borderBottom: "none" };
   return (
-    <div style={{ overflowX: dense ? "visible" : "auto" }}>
+    <div style={{ borderRadius: 12, overflow: dense ? "hidden" : "auto", border: "1px solid #ffffff12" }}>
       <table style={{ width: "100%", minWidth: dense ? undefined : 560, tableLayout: dense ? "fixed" : "auto", borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
-          <tr style={{ borderBottom: "1px solid #ffffff15" }}>
-            <th style={{ padding: dense ? "6px 2px" : "6px 8px", fontSize: 10, fontWeight: 700, color: "#555", width: dense ? denseColWidths.pos : undefined, ...(dense ? {} : { position:"sticky", left:0, background:"#0d0f14", zIndex:2 }) }}>#</th>
-            <SortTh col="squadra"   label="Squadra"   align="left"   style={dense ? { width: denseColWidths.squadra, padding: "6px 4px" } : { minWidth: 100, position:"sticky", left:28, background:"#0d0f14", zIndex:2 }} />
-            {!dense && <SortTh col="g"         label="G"         align="center" />}
-            <SortTh col="v"         label="V"         align="center" style={dense ? { width: denseColWidths.stat, padding: "6px 2px" } : {}} />
-            <SortTh col="n"         label="N"         align="center" style={dense ? { width: denseColWidths.stat, padding: "6px 2px" } : {}} />
-            <SortTh col="p"         label="P"         align="center" style={dense ? { width: denseColWidths.stat, padding: "6px 2px" } : {}} />
-            {!dense && <SortTh col="gf"        label="G+"        align="center" />}
-            {!dense && <SortTh col="gs"        label="G−"        align="center" />}
-            {!dense && <SortTh col="dr"        label="DR"        align="center" />}
-            <SortTh col="pt"        label="Pt"        align="center" style={dense ? { width: denseColWidths.stat, padding: "6px 2px" } : {}} />
-            {!dense && <SortTh col="pt_totali" label="Pt Tot"    align="center" />}
-            {editMode && <th style={{ width: 60 }}></th>}
+          <tr>
+            <th style={{ ...headerBarStyle, padding: dense ? "8px 2px" : "8px 8px", fontSize: 10, fontWeight: 700, width: dense ? denseColWidths.pos : undefined, ...(dense ? {} : { position:"sticky", left:0, zIndex:2 }) }}>#</th>
+            <SortTh col="squadra"   label="Squadra"   align="left"   style={dense ? { ...headerBarStyle, width: denseColWidths.squadra, padding: "8px 4px" } : { ...headerBarStyle, minWidth: 100, position:"sticky", left:28, zIndex:2 }} />
+            {!dense && <SortTh col="g"         label="G"         align="center" style={headerBarStyle} />}
+            <SortTh col="v"         label="V"         align="center" style={dense ? { ...headerBarStyle, width: denseColWidths.stat, padding: "8px 2px" } : headerBarStyle} />
+            <SortTh col="n"         label="N"         align="center" style={dense ? { ...headerBarStyle, width: denseColWidths.stat, padding: "8px 2px" } : headerBarStyle} />
+            <SortTh col="p"         label="P"         align="center" style={dense ? { ...headerBarStyle, width: denseColWidths.stat, padding: "8px 2px" } : headerBarStyle} />
+            {!dense && <SortTh col="gf"        label="Gf"        align="center" style={headerBarStyle} />}
+            {!dense && <SortTh col="gs"        label="Gs"        align="center" style={headerBarStyle} />}
+            {!dense && <SortTh col="dr"        label="DR"        align="center" style={headerBarStyle} />}
+            <SortTh col="pt"        label="Pt"        align="center" style={dense ? { ...headerBarStyle, width: denseColWidths.stat, padding: "8px 2px" } : headerBarStyle} />
+            {!dense && <SortTh col="pt_totali" label="Pt Totali" align="center" style={headerBarStyle} />}
+            {editMode && <th style={{ ...headerBarStyle, width: 60 }}></th>}
           </tr>
         </thead>
         <tbody>
-          {sorted.map((row) => {
+          {sorted.map((row, idx) => {
             const pos = posMap[row.squadra];
             const rowColor = pos === 1 ? "#f59e0b" : pos === 2 ? "#9ca3af" : pos === 3 ? "#cd7f32" : null;
             const isMe = row.squadra === mySquadra;
             const isEditing = editRow?.squadra === row.squadra;
+            const zebra = idx % 2 === 1 ? "#ffffff05" : "transparent";
             return (
               <tr key={row.squadra}
-                style={{ borderBottom: "1px solid #ffffff08", background: isMe ? "#6366f110" : "transparent", transition: "background 0.1s" }}
-                onMouseEnter={e => { if (!isMe) e.currentTarget.style.background = "#ffffff05"; }}
-                onMouseLeave={e => { if (!isMe) e.currentTarget.style.background = isMe ? "#6366f110" : "transparent"; }}
+                style={{ borderBottom: "1px solid #ffffff08", background: isMe ? "#6366f118" : zebra, transition: "background 0.1s" }}
+                onMouseEnter={e => { if (!isMe) e.currentTarget.style.background = "#ffffff0a"; }}
+                onMouseLeave={e => { if (!isMe) e.currentTarget.style.background = isMe ? "#6366f118" : zebra; }}
               >
                 <td style={{ padding: dense ? "9px 2px" : "9px 4px", textAlign: "center", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif", fontSize: dense ? 13 : 15, color: rowColor || "#555", ...(dense ? {} : { position:"sticky", left:0, background: isMe ? "#1a1d3a" : "#0d0f14", zIndex:1 }) }}>{pos}</td>
                 <td style={{ padding: dense ? "9px 4px" : "9px 6px", overflow: "hidden", ...(dense ? {} : { position:"sticky", left:28, background: isMe ? "#1a1d3a" : "#0d0f14", zIndex:1 }) }}>
@@ -1845,25 +1850,29 @@ function ScoreInput({ val, onChange }) {
 function GironeTable({ classifica, isAdmin, onEdit, dense = false }) {
   const sorted = [...classifica].sort((a,b) => b.pt-a.pt || b.dr-a.dr || b.gf-a.gf);
   const numInp = { width:28, padding:'3px 2px', borderRadius:5, border:'1px solid #ffffff18', background:'#ffffff08', color:'#f0f0f0', fontSize:11, fontWeight:600, textAlign:'center', outline:'none' };
-  const cols = dense ? ['#','Squadra','V','N','P','Pt'] : ['#','Squadra','V','N','P','G+','G−','DR','Pt'];
-  // Stessa costruzione (table-layout fixed + larghezze %) della classifica
-  // Serie A in modalità compatta: sta intera su schermo senza scroll.
+  const cols = dense ? ['#','Squadra','V','N','P','Pt'] : ['#','Squadra','V','N','P','Gf','Gs','DR','Pt'];
+  // Stessa identica costruzione (barra header colorata + righe zebrate +
+  // table-layout fixed con larghezze %) della classifica Serie A, così le
+  // classifiche dei gironi di Coppa Italia condividono lo stesso stile.
   const denseColWidths = { pos: "9%", squadra: "37%", stat: "13.5%" };
+  const headerBarStyle = { background: "#4338ca", color: "#e0e3ff" };
   return (
+    <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid #ffffff12" }}>
     <table style={{ width:'100%', tableLayout: dense ? 'fixed' : 'auto', borderCollapse:'collapse', fontSize:11 }}>
       <thead>
         <tr>{cols.map((c,i) => (
-          <th key={i} style={{ padding: dense ? '4px 2px' : '4px 5px', color:'#555', fontWeight:700, fontSize:9, textAlign: i<=1?'left':'center', letterSpacing:'0.05em',
+          <th key={i} style={{ ...headerBarStyle, padding: dense ? '6px 2px' : '6px 5px', fontWeight:700, fontSize:9, textAlign: i<=1?'left':'center', letterSpacing:'0.05em',
             width: dense ? (i===0?denseColWidths.pos:i===1?denseColWidths.squadra:denseColWidths.stat) : undefined }}>{c}</th>
         ))}</tr>
       </thead>
       <tbody>
         {sorted.map((r,i) => {
           const color = i===0?'#10b981':i===1?'#f59e0b':'#666';
+          const zebra = i % 2 === 1 ? "#ffffff05" : "transparent";
           return (
-            <tr key={r.sq} style={{ borderBottom:'1px solid #ffffff06' }}>
-              <td style={{ padding: dense ? '5px 2px' : '5px', textAlign:'center', fontSize:10, fontWeight:900, color }}>{i+1}</td>
-              <td style={{ padding: dense ? '5px 4px' : '5px', fontWeight:700, color:'#ddd', overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.sq}</td>
+            <tr key={r.sq} style={{ borderBottom:'1px solid #ffffff08', background: zebra }}>
+              <td style={{ padding: dense ? '7px 2px' : '7px 5px', textAlign:'center', fontSize:10, fontWeight:900, color }}>{i+1}</td>
+              <td style={{ padding: dense ? '7px 4px' : '7px 5px', fontWeight:700, color:'#ddd', overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.sq}</td>
               {isAdmin ? (
                 <>
                   {(dense ? ['v','n','p'] : ['v','n','p','gf','gs']).map(f => (
@@ -1872,14 +1881,14 @@ function GironeTable({ classifica, isAdmin, onEdit, dense = false }) {
                         onChange={e => onEdit(r.sq, f, e.target.value === '' ? 0 : Number(e.target.value))} />
                     </td>
                   ))}
-                  {!dense && <td style={{ padding:'5px', textAlign:'center', color: r.dr>0?'#10b981':r.dr<0?'#ef4444':'#555', fontWeight:600, fontSize:11 }}>{r.dr>0?'+':''}{r.dr}</td>}
-                  <td style={{ padding: dense ? '5px 2px' : '5px', textAlign:'center', fontWeight:900, color, fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>{r.pt}</td>
+                  {!dense && <td style={{ padding:'7px 5px', textAlign:'center', color: r.dr>0?'#10b981':r.dr<0?'#ef4444':'#555', fontWeight:600, fontSize:11 }}>{r.dr>0?'+':''}{r.dr}</td>}
+                  <td style={{ padding: dense ? '7px 2px' : '7px 5px', textAlign:'center', fontWeight:900, color, fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>{r.pt}</td>
                 </>
               ) : (
                 <>
-                  {(dense ? [r.v,r.n,r.p] : [r.v,r.n,r.p,r.gf,r.gs]).map((v,k) => <td key={k} style={{ padding: dense ? '5px 2px' : '5px', textAlign:'center', color:'#888' }}>{v}</td>)}
-                  {!dense && <td style={{ padding:'5px', textAlign:'center', color: r.dr>0?'#10b981':r.dr<0?'#ef4444':'#555', fontWeight:600 }}>{r.dr>0?'+':''}{r.dr}</td>}
-                  <td style={{ padding: dense ? '5px 2px' : '5px', textAlign:'center', fontWeight:900, color, fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>{r.pt}</td>
+                  {(dense ? [r.v,r.n,r.p] : [r.v,r.n,r.p,r.gf,r.gs]).map((v,k) => <td key={k} style={{ padding: dense ? '7px 2px' : '7px 5px', textAlign:'center', color:'#888' }}>{v}</td>)}
+                  {!dense && <td style={{ padding:'7px 5px', textAlign:'center', color: r.dr>0?'#10b981':r.dr<0?'#ef4444':'#555', fontWeight:600 }}>{r.dr>0?'+':''}{r.dr}</td>}
+                  <td style={{ padding: dense ? '7px 2px' : '7px 5px', textAlign:'center', fontWeight:900, color, fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>{r.pt}</td>
                 </>
               )}
             </tr>
@@ -1887,6 +1896,7 @@ function GironeTable({ classifica, isAdmin, onEdit, dense = false }) {
         })}
       </tbody>
     </table>
+    </div>
   );
 }
 
