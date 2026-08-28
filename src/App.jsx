@@ -259,6 +259,18 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   getChangelog, upsertChangelogEntry, insertChangelogEntry, deleteChangelogEntry,
 } from "./supabase.js";
 
+// ─── LOCK BODY SCROLL (popup/bottom-sheet aperti) ───────────────────────────
+// Impedisce lo scroll del contenuto sotto un popup/modale mentre è aperto —
+// senza, su mobile il dito scrolla il popup E la pagina dietro insieme.
+function useLockBodyScroll(locked) {
+  useEffect(() => {
+    if (!locked) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [locked]);
+}
+
 // ─── SORTABLE TABLE HOOK ──────────────────────────────────────────────────────
 // Restituisce: { sorted, sortKey, sortDir, handleSort, SortTh }
 // SortTh: componente <th> cliccabile con freccia direzionale
@@ -957,20 +969,20 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
   const headerBarStyle = { background: "#4338ca", color: "#e0e3ff", borderBottom: "none" };
   return (
     <div style={{ borderRadius: 12, overflow: dense ? "hidden" : "auto", border: "1px solid #ffffff12" }}>
-      <table style={{ width: "100%", minWidth: dense ? undefined : 560, tableLayout: dense ? "fixed" : "auto", borderCollapse: "collapse", fontSize: 12 }}>
+      <table style={{ width: "100%", tableLayout: dense ? "fixed" : "auto", borderCollapse: "collapse", fontSize: 11 }}>
         <thead>
           <tr>
-            <th style={{ ...headerBarStyle, padding: dense ? "8px 2px" : "8px 8px", fontSize: 10, fontWeight: 700, width: dense ? denseColWidths.pos : undefined, ...(dense ? {} : { position:"sticky", left:0, zIndex:2 }) }}>#</th>
-            <SortTh col="squadra"   label="Squadra"   align="left"   style={dense ? { ...headerBarStyle, width: denseColWidths.squadra, padding: "8px 4px" } : { ...headerBarStyle, minWidth: 100, position:"sticky", left:28, zIndex:2 }} />
-            {!dense && <SortTh col="g"         label="G"         align="center" style={headerBarStyle} />}
-            <SortTh col="v"         label="V"         align="center" style={dense ? { ...headerBarStyle, width: denseColWidths.stat, padding: "8px 2px" } : headerBarStyle} />
-            <SortTh col="n"         label="N"         align="center" style={dense ? { ...headerBarStyle, width: denseColWidths.stat, padding: "8px 2px" } : headerBarStyle} />
-            <SortTh col="p"         label="P"         align="center" style={dense ? { ...headerBarStyle, width: denseColWidths.stat, padding: "8px 2px" } : headerBarStyle} />
-            {!dense && <SortTh col="gf"        label="Gf"        align="center" style={headerBarStyle} />}
-            {!dense && <SortTh col="gs"        label="Gs"        align="center" style={headerBarStyle} />}
-            {!dense && <SortTh col="dr"        label="DR"        align="center" style={headerBarStyle} />}
-            <SortTh col="pt"        label="Pt"        align="center" style={dense ? { ...headerBarStyle, width: denseColWidths.stat, padding: "8px 2px" } : headerBarStyle} />
-            {!dense && <SortTh col="pt_totali" label="Pt Totali" align="center" style={headerBarStyle} />}
+            <th style={{ ...headerBarStyle, padding: dense ? "6px 2px" : "6px 6px", fontSize: 9.5, fontWeight: 700, width: dense ? denseColWidths.pos : undefined }}>#</th>
+            <SortTh col="squadra"   label="Squadra"   align="left"   style={dense ? { ...headerBarStyle, width: denseColWidths.squadra, padding: "6px 4px", fontSize: 9.5 } : { ...headerBarStyle, padding: "6px 6px", fontSize: 9.5 }} />
+            {!dense && <SortTh col="g"         label="G"         align="center" style={{ ...headerBarStyle, padding: "6px 6px", fontSize: 9.5 }} />}
+            <SortTh col="v"         label="V"         align="center" style={dense ? { ...headerBarStyle, width: denseColWidths.stat, padding: "6px 2px", fontSize: 9.5 } : { ...headerBarStyle, padding: "6px 6px", fontSize: 9.5 }} />
+            <SortTh col="n"         label="N"         align="center" style={dense ? { ...headerBarStyle, width: denseColWidths.stat, padding: "6px 2px", fontSize: 9.5 } : { ...headerBarStyle, padding: "6px 6px", fontSize: 9.5 }} />
+            <SortTh col="p"         label="P"         align="center" style={dense ? { ...headerBarStyle, width: denseColWidths.stat, padding: "6px 2px", fontSize: 9.5 } : { ...headerBarStyle, padding: "6px 6px", fontSize: 9.5 }} />
+            {!dense && <SortTh col="gf"        label="Gf"        align="center" style={{ ...headerBarStyle, padding: "6px 6px", fontSize: 9.5 }} />}
+            {!dense && <SortTh col="gs"        label="Gs"        align="center" style={{ ...headerBarStyle, padding: "6px 6px", fontSize: 9.5 }} />}
+            {!dense && <SortTh col="dr"        label="DR"        align="center" style={{ ...headerBarStyle, padding: "6px 6px", fontSize: 9.5 }} />}
+            <SortTh col="pt"        label="Pt"        align="center" style={dense ? { ...headerBarStyle, width: denseColWidths.stat, padding: "6px 2px", fontSize: 9.5 } : { ...headerBarStyle, padding: "6px 6px", fontSize: 9.5 }} />
+            {!dense && <SortTh col="pt_totali" label="Pt Totali" align="center" style={{ ...headerBarStyle, padding: "6px 6px", fontSize: 9.5 }} />}
             {editMode && <th style={{ ...headerBarStyle, width: 60 }}></th>}
           </tr>
         </thead>
@@ -987,11 +999,11 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
                 onMouseEnter={e => { if (!isMe) e.currentTarget.style.background = "#ffffff0a"; }}
                 onMouseLeave={e => { if (!isMe) e.currentTarget.style.background = isMe ? "#6366f118" : zebra; }}
               >
-                <td style={{ padding: dense ? "9px 2px" : "9px 4px", textAlign: "center", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif", fontSize: dense ? 13 : 15, color: rowColor || "#555", ...(dense ? {} : { position:"sticky", left:0, background: isMe ? "#1a1d3a" : "#0d0f14", zIndex:1 }) }}>{pos}</td>
-                <td style={{ padding: dense ? "9px 4px" : "9px 6px", overflow: "hidden", ...(dense ? {} : { position:"sticky", left:28, background: isMe ? "#1a1d3a" : "#0d0f14", zIndex:1 }) }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: dense ? 4 : 6, minWidth: 0 }}>
-                    {row.team && <TeamAvatar team={row.team} size={dense ? 18 : 22} />}
-                    <span style={{ fontSize: dense ? 10.5 : 11, fontWeight: isMe ? 800 : 600, color: isMe ? "#f0f0f0" : "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: dense ? 1 : undefined }}>
+                <td style={{ padding: dense ? "7px 2px" : "7px 6px", textAlign: "center", fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif", fontSize: dense ? 13 : 13, color: rowColor || "#555" }}>{pos}</td>
+                <td style={{ padding: dense ? "7px 4px" : "7px 6px", overflow: "hidden" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: dense ? 4 : 5, minWidth: 0 }}>
+                    {row.team && <TeamAvatar team={row.team} size={dense ? 18 : 20} />}
+                    <span style={{ fontSize: dense ? 10.5 : 11.5, fontWeight: isMe ? 800 : 700, color: isMe ? "#f0f0f0" : "#ddd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: dense ? 1 : undefined }}>
                       {row.squadra}
                     </span>
                     {isMe && !dense && <span style={{ fontSize: 8, color: "#6366f1", flexShrink: 0, background: "#6366f120", border: "1px solid #6366f133", borderRadius: 3, padding: "1px 4px" }}>TU</span>}
@@ -1015,19 +1027,19 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
                   </>
                 ) : (
                   <>
-                    {!dense && <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.g}</td>}
-                    <td style={{ padding: dense ? "9px 2px" : "9px 8px", textAlign: "center", color: "#aaa", fontSize: dense ? 11.5 : 12 }}>{row.v}</td>
-                    <td style={{ padding: dense ? "9px 2px" : "9px 8px", textAlign: "center", color: "#aaa", fontSize: dense ? 11.5 : 12 }}>{row.n}</td>
-                    <td style={{ padding: dense ? "9px 2px" : "9px 8px", textAlign: "center", color: "#aaa", fontSize: dense ? 11.5 : 12 }}>{row.p}</td>
-                    {!dense && <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.gf}</td>}
-                    {!dense && <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.gs}</td>}
+                    {!dense && <td style={{ padding: "7px 6px", textAlign: "center", color: "#888", fontSize: 11.5 }}>{row.g}</td>}
+                    <td style={{ padding: dense ? "7px 2px" : "7px 6px", textAlign: "center", color: "#888", fontSize: 11.5 }}>{row.v}</td>
+                    <td style={{ padding: dense ? "7px 2px" : "7px 6px", textAlign: "center", color: "#888", fontSize: 11.5 }}>{row.n}</td>
+                    <td style={{ padding: dense ? "7px 2px" : "7px 6px", textAlign: "center", color: "#888", fontSize: 11.5 }}>{row.p}</td>
+                    {!dense && <td style={{ padding: "7px 6px", textAlign: "center", color: "#888", fontSize: 11.5 }}>{row.gf}</td>}
+                    {!dense && <td style={{ padding: "7px 6px", textAlign: "center", color: "#888", fontSize: 11.5 }}>{row.gs}</td>}
                     {!dense && (
-                    <td style={{ padding: "9px 8px", textAlign: "center", color: row.dr > 0 ? "#10b981" : row.dr < 0 ? "#ef4444" : "#888", fontSize: 12, fontWeight: 600 }}>
+                    <td style={{ padding: "7px 6px", textAlign: "center", color: row.dr > 0 ? "#10b981" : row.dr < 0 ? "#ef4444" : "#888", fontSize: 11.5, fontWeight: 600 }}>
                       {row.dr > 0 ? "+" : ""}{row.dr}
                     </td>
                     )}
-                    <td style={{ padding: dense ? "9px 2px" : "9px 8px", textAlign: "center", fontSize: dense ? 13 : 14, fontWeight: 900, color: rowColor || "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif" }}>{row.pt}</td>
-                    {!dense && <td style={{ padding: "9px 8px", textAlign: "center", fontSize: 12, color: "#888", fontWeight: 600 }}>{row.pt_totali}</td>}
+                    <td style={{ padding: dense ? "7px 2px" : "7px 6px", textAlign: "center", fontSize: 13, fontWeight: 900, color: rowColor || "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif" }}>{row.pt}</td>
+                    {!dense && <td style={{ padding: "7px 6px", textAlign: "center", fontSize: 11.5, color: "#888", fontWeight: 600 }}>{row.pt_totali}</td>}
                   </>
                 )}
                 {editMode && (
@@ -1048,7 +1060,7 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
 }
 
 /* ─── CALCOLATORE GIORNATA ──────────────────────────────────────────────────── */
-function CalcolatoreGiornata({ profile, teams }) {
+function CalcolatoreGiornata({ profile, teams, navigate }) {
   const mySquadra = profile?.squadra;
   const myTeam = teams?.find(t => t.name === mySquadra);
 
@@ -1062,6 +1074,7 @@ function CalcolatoreGiornata({ profile, teams }) {
   const [salvatoMsg, setSalvatoMsg] = useState(null);
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
+  useLockBodyScroll(open);
   // Su mobile il form si apre come bottom sheet, su desktop come popup
   // centrato — stesso pattern già usato per il popup Dettaglio giocatore.
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
@@ -1243,13 +1256,20 @@ function CalcolatoreGiornata({ profile, teams }) {
   return (
     <>
       {/* Trigger compatto — sempre visibile, apre il form in un popup/bottom
-          sheet invece di espandersi inline (riduce lo scrolling verticale). */}
-      <div onClick={() => setOpen(true)} style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 18, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 18px", cursor: "pointer" }}>
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em" }}>⚽ CALCOLATORE GUADAGNO GIORNATA</div>
-          {myTeam && <div style={{ fontSize: 12, color: "#666", marginTop: 2 }}>{myTeam.name}</div>}
+          sheet invece di espandersi inline (riduce lo scrolling verticale).
+          La campanella notifiche (rimossa dalla vecchia top bar mobile) vive
+          ora qui, sulla stessa riga, stessa altezza. */}
+      <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+        <div onClick={() => setOpen(true)} style={{ flex: 1, minWidth: 0, background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 18, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", cursor: "pointer" }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em" }}>⚽ CALCOLATORE GUADAGNO GIORNATA</div>
+            {myTeam && <div style={{ fontSize: 12, color: "#666", marginTop: 2 }}>{myTeam.name}</div>}
+          </div>
+          <IconChevronRight size={16} style={{ color: "#555", flexShrink: 0 }} />
         </div>
-        <IconChevronRight size={16} style={{ color: "#555" }} />
+        <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 14px", flexShrink: 0 }}>
+          <NotificationBell mySquadra={profile?.squadra} navigate={navigate} />
+        </div>
       </div>
 
       {open && (
@@ -1507,12 +1527,12 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
           </div>
           <div style={{ textAlign: "right", flexShrink: 0 }}>
             <div style={{ fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "#777" }}>Bilancio</div>
-            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, color: BRAND.gold, lineHeight: 1, marginTop: 4 }}>{team.bilancio.toFixed(1)}M</div>
+            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, color: BRAND.gold, lineHeight: 1, marginTop: 4 }}>{team.bilancio.toFixed(2)}M</div>
           </div>
         </div>
         <div style={{ marginTop: 18, textAlign: "left" }}>
           {salaryCapUsato != null ? (
-            <ProgressBar label="Salary Cap" used={salaryCapUsato} limit={salaryCapLimite} overLimit={salaryCapSforato} />
+            <ProgressBar label="Salary Cap" used={salaryCapUsato} limit={salaryCapLimite} overLimit={salaryCapSforato} formatValue={n => `${n.toFixed(2)}M`} />
           ) : (
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#7D879B", marginBottom: 4 }}>
@@ -1529,7 +1549,7 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
           trigger compatto, il form si apre in popup/bottom sheet (vedi sopra
           nel componente) invece di espandersi inline. */}
       <div style={{ marginBottom: 14 }}>
-        <CalcolatoreGiornata profile={profile} teams={teams} />
+        <CalcolatoreGiornata profile={profile} teams={teams} navigate={navigate} />
       </div>
 
       {haRichiesteAttenzione && (
@@ -1562,7 +1582,7 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
             <div style={{ fontSize: 12.5, fontWeight: 600, color: "#ddd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.label}</div>
             <div style={{ fontSize: 10, color: "#777", marginTop: 1 }}>{d.dateStr}</div>
           </div>
-          <span style={{ fontSize: 12, fontWeight: 800, color: d.days <= 7 ? SEMANTIC.warning : "#888", fontFamily: "'Bebas Neue',sans-serif", flexShrink: 0, marginLeft: 8 }}>{d.days === 0 ? "OGGI" : `${d.days}gg`}</span>
+          <span style={{ fontSize: 20, fontWeight: 800, color: d.days <= 7 ? SEMANTIC.warning : "#888", fontFamily: "'Bebas Neue',sans-serif", flexShrink: 0, marginLeft: 8 }}>{d.days === 0 ? "OGGI" : `${d.days}gg`}</span>
         </div>
       ))}
 
@@ -1847,20 +1867,21 @@ function ScoreInput({ val, onChange }) {
   );
 }
 
-function GironeTable({ classifica, dense = false }) {
+function GironeTable({ classifica, teams = TEAMS, dense = false }) {
   const sorted = [...classifica].sort((a,b) => b.pt-a.pt || b.dr-a.dr || b.gf-a.gf);
   const cols = dense ? ['#','Squadra','V','N','P','Pt'] : ['#','Squadra','V','N','P','Gf','Gs','DR','Pt'];
-  // Stessa identica costruzione (barra header colorata + righe zebrate +
-  // table-layout fixed con larghezze %) della classifica Serie A, così le
-  // classifiche dei gironi di Coppa Italia condividono lo stesso stile.
+  // Stesso identico stile (barra header colorata + righe zebrate + colonne
+  // strette e compatte, con stemma squadra) della classifica Serie A — stessi
+  // px e stesso font in entrambe le modalità, così le classifiche dei gironi
+  // di Coppa Italia sono indistinguibili in stile da quella principale.
   const denseColWidths = { pos: "9%", squadra: "37%", stat: "13.5%" };
   const headerBarStyle = { background: "#4338ca", color: "#e0e3ff" };
   return (
-    <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid #ffffff12" }}>
+    <div style={{ borderRadius: 12, overflow: dense ? "hidden" : "auto", border: "1px solid #ffffff12" }}>
     <table style={{ width:'100%', tableLayout: dense ? 'fixed' : 'auto', borderCollapse:'collapse', fontSize:11 }}>
       <thead>
         <tr>{cols.map((c,i) => (
-          <th key={i} style={{ ...headerBarStyle, padding: dense ? '6px 2px' : '6px 5px', fontWeight:700, fontSize:9, textAlign: i<=1?'left':'center', letterSpacing:'0.05em',
+          <th key={i} style={{ ...headerBarStyle, padding: dense ? '6px 2px' : '6px 6px', fontWeight:700, fontSize:9.5, textAlign: i<=1?'left':'center', letterSpacing:'0.05em',
             width: dense ? (i===0?denseColWidths.pos:i===1?denseColWidths.squadra:denseColWidths.stat) : undefined }}>{c}</th>
         ))}</tr>
       </thead>
@@ -1868,13 +1889,19 @@ function GironeTable({ classifica, dense = false }) {
         {sorted.map((r,i) => {
           const color = i===0?'#10b981':i===1?'#f59e0b':'#666';
           const zebra = i % 2 === 1 ? "#ffffff05" : "transparent";
+          const team = teams.find(t => t.name === r.sq);
           return (
             <tr key={r.sq} style={{ borderBottom:'1px solid #ffffff08', background: zebra }}>
-              <td style={{ padding: dense ? '7px 2px' : '7px 5px', textAlign:'center', fontSize:10, fontWeight:900, color }}>{i+1}</td>
-              <td style={{ padding: dense ? '7px 4px' : '7px 5px', fontWeight:700, color:'#ddd', overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.sq}</td>
-              {(dense ? [r.v,r.n,r.p] : [r.v,r.n,r.p,r.gf,r.gs]).map((v,k) => <td key={k} style={{ padding: dense ? '7px 2px' : '7px 5px', textAlign:'center', color:'#888' }}>{v}</td>)}
-              {!dense && <td style={{ padding:'7px 5px', textAlign:'center', color: r.dr>0?'#10b981':r.dr<0?'#ef4444':'#555', fontWeight:600 }}>{r.dr>0?'+':''}{r.dr}</td>}
-              <td style={{ padding: dense ? '7px 2px' : '7px 5px', textAlign:'center', fontWeight:900, color, fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>{r.pt}</td>
+              <td style={{ padding: dense ? '7px 2px' : '7px 6px', textAlign:'center', fontSize:10, fontWeight:900, color }}>{i+1}</td>
+              <td style={{ padding: dense ? '7px 4px' : '7px 6px', overflow:"hidden" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:5, minWidth:0 }}>
+                  {team && <TeamAvatar team={team} size={dense ? 18 : 20} />}
+                  <span style={{ fontWeight:700, color:'#ddd', fontSize: dense ? 10.5 : 11.5, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0 }}>{r.sq}</span>
+                </div>
+              </td>
+              {(dense ? [r.v,r.n,r.p] : [r.v,r.n,r.p,r.gf,r.gs]).map((v,k) => <td key={k} style={{ padding: dense ? '7px 2px' : '7px 6px', textAlign:'center', color:'#888', fontSize: dense ? 11.5 : 11.5 }}>{v}</td>)}
+              {!dense && <td style={{ padding:'7px 6px', textAlign:'center', color: r.dr>0?'#10b981':r.dr<0?'#ef4444':'#555', fontWeight:600, fontSize:11.5 }}>{r.dr>0?'+':''}{r.dr}</td>}
+              <td style={{ padding: dense ? '7px 2px' : '7px 6px', textAlign:'center', fontWeight:900, color, fontFamily:"'Bebas Neue',sans-serif", fontSize:13 }}>{r.pt}</td>
             </tr>
           );
         })}
@@ -1938,7 +1965,7 @@ function BracketSFCoppa({ sf, isAdmin, onChange }) {
   );
 }
 
-function TorneiSection({ isAdmin, forcedTab, dense = false, onToggleDense }) {
+function TorneiSection({ isAdmin, teams = TEAMS, forcedTab, dense = false, onToggleDense }) {
   const [coppa, setCoppa] = useState(null);
   const [superc, setSuperc] = useState(null);
   const [tab, setTab] = useState(forcedTab || 'coppa');
@@ -1946,6 +1973,7 @@ function TorneiSection({ isAdmin, forcedTab, dense = false, onToggleDense }) {
   // Modifica gironi: stesso pattern "modale con tutte le righe" già usato
   // per la classifica FantaSerie A, invece di celle sempre editabili.
   const [showEditGironiModal, setShowEditGironiModal] = useState(false);
+  useLockBodyScroll(showEditGironiModal);
   const [gironiDraft, setGironiDraft] = useState({});
 
   // Sync tab when parent switches via forcedTab prop
@@ -2068,7 +2096,7 @@ function TorneiSection({ isAdmin, forcedTab, dense = false, onToggleDense }) {
               {['A','B'].map(g => (
                 <div key={g}>
                   <div style={{ fontSize:12, fontWeight:800, color:'#818cf8', marginBottom:8 }}>Girone {g}</div>
-                  <GironeTable classifica={coppa.gironi[g].classifica} dense={dense} />
+                  <GironeTable classifica={coppa.gironi[g].classifica} teams={teams} dense={dense} />
                 </div>
               ))}
             </div>
@@ -2216,6 +2244,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
   // ── Classifica ──────────────────────────────────────────────────────────────
   const [classifica, setClassifica] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);
+  useLockBodyScroll(showEditModal);
   const [editDraft, setEditDraft] = useState({});
   const [saving, setSaving] = useState(false);
   const [compTab, setCompTab] = useState('serie_a');
@@ -2225,7 +2254,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
   const [vistaCompatta, setVistaCompatta] = useState(true);
   // Premi divisi in sotto-tab (stesso PillNav di Competizioni/Scadenze/Premi)
   // per non dover scrollare tutte le categorie una sotto l'altra.
-  const [premiSubTab, setPremiSubTab] = useState('giornata');
+  const [premiSubTab, setPremiSubTab] = useState('montepremi');
   useEffect(() => {
     cachedFetch('classifica', () => getClassifica(), 600000).then(d => setClassifica(d || []));
     const sub = subscribeClassifica(() => {
@@ -2599,7 +2628,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
 
             {/* FantaCoppa Italia + FantaSupercoppa */}
             {(compTab === 'coppa' || compTab === 'supercoppa') && (
-              <TorneiSection isAdmin={isAdmin} forcedTab={compTab === 'coppa' ? 'coppa' : 'supercoppa'} dense={vistaCompatta} onToggleDense={() => setVistaCompatta(v => !v)} />
+              <TorneiSection isAdmin={isAdmin} teams={teams} forcedTab={compTab === 'coppa' ? 'coppa' : 'supercoppa'} dense={vistaCompatta} onToggleDense={() => setVistaCompatta(v => !v)} />
             )}
           </div>
         );
@@ -2652,7 +2681,8 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
         </div>
       )}
 
-      {/* ── 4. ROSE NON REGOLARI ── */}
+      {/* ── 4. ROSE NON REGOLARI (solo nella sotto-tab Competizioni) ── */}
+      {legaTab==='competizioni' && (
       <div style={{ background: roseIrregolari.length>0?"#ef444408":"#ffffff06", border:`1.5px solid ${roseIrregolari.length>0?"#ef444430":"#ffffff12"}`, borderRadius:16, padding:18 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8, marginBottom:roseIrregolari.length>0?14:(isAdmin?10:0) }}>
           <div style={{ fontSize:11, fontWeight:700, color:roseIrregolari.length>0?"#ef4444":"#10b981", letterSpacing:"0.1em" }}>
@@ -2685,6 +2715,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
           );
         })}
       </div>
+      )}
 
       {/* ── 4. PREMI ── */}
       {legaTab==='premi' && (
@@ -3195,6 +3226,7 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
   const [contatori, setContatori] = useState(null);
   const [loading, setLoading] = useState(true);
   const [popup, setPopup] = useState(null); // { player, mode:'own'|'other', anchorRef }
+  useLockBodyScroll(!!popup);
   const [saving, setSaving] = useState(false);
   const [tipoSvincolo, setTipoSvincolo] = useState('ordinario');
   const [prestitiCeduti, setPrestitiCeduti] = useState([]);
@@ -3645,7 +3677,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                               {Number(p.quot_reale)>Number(p.quot)?'↑':'↓'}{p.quot_reale}
                             </span>
                           )}
-                          {" "}· <span style={{ color:"#bbb",fontWeight:600 }}>{p._stipCorretto.toFixed(1)}M</span>
+                          {" "}· <span style={{ color:"#bbb",fontWeight:600 }}>{p._stipCorretto.toFixed(2)}M</span>
                           {p.media_fantavoto != null && <> · MFV <span style={{ color:"#bbb",fontWeight:600 }}>{Number(p.media_fantavoto).toFixed(2)}</span></>}
                           {" "}· {annoContrattoLabel(p.anni_contratto)}
                         </div>
@@ -4502,7 +4534,7 @@ function ClausoleTab({ team, isAdmin }) {
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <div style={{ fontSize: 11, color: "#6366f1" }}>Q{p.quot}</div>
-                      {p.stip > 0 && <div style={{ fontSize: 10, color: "#888" }}>stip: {Number(p.stip).toFixed(1)}M</div>}
+                      {p.stip > 0 && <div style={{ fontSize: 10, color: "#888" }}>stip: {Number(p.stip).toFixed(2)}M</div>}
                     </div>
                   </div>
                   {/* Rescissione anticipata — chi riceve paga 25%Q (art. 5.8.1) */}
@@ -4536,7 +4568,7 @@ function ClausoleTab({ team, isAdmin }) {
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <div style={{ fontSize: 11, color: "#6366f1" }}>Q{p.quot}</div>
-                      {p.stip_prestito_cedente > 0 && <div style={{ fontSize: 10, color: "#f97316" }}>stip tuo: {Number(p.stip_prestito_cedente).toFixed(1)}M</div>}
+                      {p.stip_prestito_cedente > 0 && <div style={{ fontSize: 10, color: "#f97316" }}>stip tuo: {Number(p.stip_prestito_cedente).toFixed(2)}M</div>}
                     </div>
                   </div>
                   {/* Cedente paga 50%Q per rescissione (art. 5.8.1) */}
@@ -5121,6 +5153,7 @@ const TASSA_FASCE = [
 // Calcolatore Guadagno Giornata e del Dettaglio giocatore) — usato per i
 // "cubetti cliccabili" di Finanze (Salary Cap, Fair Spending, Quote & Budget).
 function DetailSheet({ title, subtitle, isDesktop, onClose, children }) {
+  useLockBodyScroll(true);
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 998 }}>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)" }} />
@@ -5153,7 +5186,15 @@ function StatCubetto({ label, value, color = "#f0f0f0", onClick }) {
   );
 }
 
+const FINANZE_TABS = [
+  { key: 'bilancio',  label: '💵 Bilancio' },
+  { key: 'stipendi',  label: '💰 Stipendi' },
+  { key: 'movimenti', label: '📋 Movimenti' },
+  { key: 'quote',     label: '💶 Quote & Budget' },
+];
+
 function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0, salaryCapLimite = 75, salaryCapSforato, scEsenteGiuLug, giorniSCNeg, contrattiScadenza: contrattiScadenzaProp, rosaPlayers, pagandoStipendi, handlePagaStipendi, isAdmin, mySquadra, onRefresh, onBilancioChange }) {
+  const [finTab, setFinTab] = useState('bilancio');
   const [showFasceTassa, setShowFasceTassa] = useState(false);
   const [showStipendiDettaglio, setShowStipendiDettaglio] = useState(false);
   const [showBiennioDettaglio, setShowBiennioDettaglio] = useState(false);
@@ -5203,6 +5244,16 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
     getFairSpending(team.name).then(setFairSpending);
     refreshStatoStipendiMese();
   }, [team.name, refreshStatoStipendiMese]);
+
+  // ── Movimenti (sotto-tab dedicata) — caricati per intero una volta sola,
+  // mostrati 25 alla volta ("Carica altri 25") per non allungare la pagina. ──
+  const [movimentiList, setMovimentiList] = useState([]);
+  const [loadingMovimenti, setLoadingMovimenti] = useState(true);
+  const [movimentiVisibili, setMovimentiVisibili] = useState(25);
+  useEffect(() => {
+    setLoadingMovimenti(true);
+    getMovimenti(team.name).then(rows => { setMovimentiList(rows || []); setLoadingMovimenti(false); });
+  }, [team.name]);
 
   // Aggiorna bilancio_neg_dal/bilancio_neg_settimane (mai scritti altrimenti
   // da nessuna parte dell'app finora): idempotente, sicura da richiamare ogni
@@ -5312,7 +5363,9 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PillNav tabs={FINANZE_TABS} active={finTab} onChange={setFinTab} />
 
+      {finTab === 'bilancio' && (<>
       {/* ── 1. BILANCIO LIQUIDO + STATO ── */}
       <div style={{ background: bilancio < 0 ? "#ef444410" : bilancio < 8 ? "#f9731610" : "#ffffff08", border: `1.5px solid ${bilancio < 0 ? "#ef444433" : bilancio < 8 ? "#f9731633" : "#ffffff12"}`, borderRadius: 14, padding: 16 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.08em", marginBottom: 12 }}>💵 BILANCIO LIQUIDO</div>
@@ -5452,19 +5505,21 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
           </>
         )}
       </div>
+      </>)}
 
+      {finTab === 'stipendi' && (<>
       {/* ── 3. SALARY CAP ── */}
       <div style={{ background: salaryCapSforato ? "#ef444408" : "#ffffff06", border: `1.5px solid ${salaryCapSforato ? "#ef444430" : "#ffffff12"}`, borderRadius: 14, padding: 16 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: salaryCapSforato ? "#ef4444" : "#888", letterSpacing: "0.08em", marginBottom: 14 }}>💰 SALARY CAP — STIPENDI</div>
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
             <span style={{ fontSize: 12, color: "#888" }}>Salary Cap usato (live)</span>
-            <span style={{ fontSize: 13, fontWeight: 800, color: salaryCapSforato ? "#ef4444" : "#10b981" }}>{salaryCapUsato.toFixed(1)}M / {salaryCapLimite.toFixed(1)}M</span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: salaryCapSforato ? "#ef4444" : "#10b981" }}>{salaryCapUsato.toFixed(2)}M / {salaryCapLimite.toFixed(2)}M</span>
           </div>
           <StatBar value={Math.min(salaryCapUsato, salaryCapLimite)} max={salaryCapLimite} color={salaryCapSforato ? "#ef4444" : "#10b981"} height={10} />
           {salaryCapSforato
-            ? <div style={{ marginTop: 4, fontSize: 11, color: "#ef4444", fontWeight: 700 }}>⛔ Sforato di {(salaryCapUsato - salaryCapLimite).toFixed(1)}M{scEsenteGiuLug ? " (esenzione giu/lug)" : ""}</div>
-            : <div style={{ marginTop: 4, fontSize: 11, color: "#10b981" }}>✅ +{(salaryCapLimite - salaryCapUsato).toFixed(1)}M disponibile</div>}
+            ? <div style={{ marginTop: 4, fontSize: 11, color: "#ef4444", fontWeight: 700 }}>⛔ Sforato di {(salaryCapUsato - salaryCapLimite).toFixed(2)}M{scEsenteGiuLug ? " (esenzione giu/lug)" : ""}</div>
+            : <div style={{ marginTop: 4, fontSize: 11, color: "#10b981" }}>✅ +{(salaryCapLimite - salaryCapUsato).toFixed(2)}M disponibile</div>}
         </div>
         {salaryCapSforato && !scEsenteGiuLug && (
           <div style={{ background: "#ef444412", borderRadius: 10, padding: "10px 12px", fontSize: 11, color: "#ef4444", marginBottom: 12 }}>
@@ -5474,17 +5529,17 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
           </div>
         )}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-          <StatCubetto label="Totale stipendi" value={`−${salaryCapUsato.toFixed(1)}M`} color="#f97316" onClick={() => setShowStipendiDettaglio(true)} />
+          <StatCubetto label="Totale stipendi" value={`−${salaryCapUsato.toFixed(2)}M`} color="#f97316" onClick={() => setShowStipendiDettaglio(true)} />
           <StatCubetto label="Rata mensile (1° del mese)" value={`−${(salaryCapUsato/12).toFixed(2)}M`} color="#f97316" onClick={() => setShowStipendiDettaglio(true)} />
         </div>
         {showStipendiDettaglio && (
           <DetailSheet title="💰 SALARY CAP — DETTAGLIO STIPENDI" subtitle={team.name} isDesktop={isDesktop} onClose={() => setShowStipendiDettaglio(false)}>
-            <Row label="Stipendi rosa" value={`${salaryCapRosa.toFixed(1)}M`} color="#ccc" />
-            {scAllenatore > 0 && <Row label="👔 Staff allenatore (fisso)" value={`+${scAllenatore.toFixed(1)}M`} color="#f59e0b" />}
+            <Row label="Stipendi rosa" value={`${salaryCapRosa.toFixed(2)}M`} color="#ccc" />
+            {scAllenatore > 0 && <Row label="👔 Staff allenatore (fisso)" value={`+${scAllenatore.toFixed(2)}M`} color="#f59e0b" />}
             <div style={{ height: 1, background: "#ffffff10", margin: "8px 0" }} />
-            <Row label="Totale stipendi (SC)" value={`${salaryCapUsato.toFixed(1)}M`} color="#f97316" large />
+            <Row label="Totale stipendi (SC)" value={`${salaryCapUsato.toFixed(2)}M`} color="#f97316" large />
             <Row label="Rata mensile (1° del mese)" value={`−${(salaryCapUsato/12).toFixed(2)}M`} color="#f97316" large />
-            <div style={{ marginTop: 10, fontSize: 11, color: "#888" }}>Salary Cap limite: {salaryCapLimite.toFixed(1)}M</div>
+            <div style={{ marginTop: 10, fontSize: 11, color: "#888" }}>Salary Cap limite: {salaryCapLimite.toFixed(2)}M</div>
           </DetailSheet>
         )}
         {isAdmin && (
@@ -5500,9 +5555,105 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
         )}
       </div>
 
+      {/* ── 6. CONTRATTI IN SCADENZA (fine 2° anno — rinnovo biennale) ──
+          La scelta (conferma/non conferma) è un'indicazione di volontà, non
+          un'azione automatica: viene solo salvata (rinnovo_confermato) e resa
+          effettiva più tardi da "Aggiorna contratti annuali" in Control Room
+          (invariato). Disponibile da esprimere solo nel mese di maggio — la
+          stessa finestra è applicata anche lato server in
+          confermRinnovoBiennale, così non è aggirabile dalla sola UI. */}
+      {contrattiScadenza.length > 0 && new Date().getMonth() === 4 && (
+        <div style={{ background: "#f59e0b08", border: "1.5px solid #f59e0b25", borderRadius: 14, padding: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4, flexWrap: "wrap", gap: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", letterSpacing: "0.08em" }}>📋 RINNOVO BIENNALE — CONFERMA ENTRO 31/05</div>
+            <div style={{ display: "flex", gap: 4 }}>
+              {[["ruolo","Ruolo"],["nome","Nome"],["quot","Q"]].map(([v,l]) => (
+                <button key={v} onClick={() => setContrattiSort(v)}
+                  style={{ padding: "3px 8px", borderRadius: 6, border: `1px solid ${contrattiSort===v?"#f59e0b60":"#ffffff15"}`, background: contrattiSort===v?"#f59e0b18":"transparent", color: contrattiSort===v?"#f59e0b":"#555", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ fontSize: 10, color: "#666", marginBottom: 12 }}>
+            Questi giocatori sono al <b style={{ color: "#aaa" }}>2° anno di contratto</b>. Devi decidere entro il 31/05 (art. 4.8):<br/>
+            • <b style={{ color: "#10b981" }}>Conferma rinnovo</b> → il giocatore resta in rosa, stipendio +20%<br/>
+            • <b style={{ color: "#ef4444" }}>Non confermare</b> → il giocatore viene svincolato automaticamente il 01/06
+          </div>
+          {[...contrattiScadenza].sort((a, b) => {
+            if (contrattiSort === "nome") return (a.nome||"").localeCompare(b.nome||"");
+            if (contrattiSort === "quot") return (b.quot||0) - (a.quot||0);
+            // ruolo: sort by role category order
+            const roleOrder = (r) => { const f=(r||"").split(";")[0].trim(); if(f==="Por")return 0; if(["Dc","Dd","Ds","B"].includes(f))return 1; if(["E","M","C"].includes(f))return 2; if(["T","W"].includes(f))return 3; return 4; };
+            return roleOrder(a.ruolo) - roleOrder(b.ruolo) || (a.nome||"").localeCompare(b.nome||"");
+          }).map(p => (
+            <ContrattoRinnovoRow key={p.id} p={p} team={team} isAdmin={isAdmin} mySquadra={mySquadra} onToggle={handleToggleRinnovo} />
+          ))}
+        </div>
+      )}
+
+      {/* ── 7. AGGIORNAMENTO STIPENDI 01/01 (art. 4.5) ── */}
+      <AggiornamentoStipendiSection team={team} rosaPlayers={rosaPlayers} isAdmin={isAdmin} onRefresh={onRefresh} />
+
+      {/* ── 8. DA CEDERE ENTRO LA PRIMA GIORNATA DI SERIE A (rinnovati al ribasso 22-30aa) ── */}
+      {rosaPlayers.filter(p => p.da_cedere).length > 0 && (
+        <div style={{ background: "#ef444408", border: "1.5px solid #ef444425", borderRadius: 14, padding: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", letterSpacing: "0.08em", marginBottom: 8 }}>🔴 DA CEDERE/SVINCOLARE ENTRO LA 1ª GIORNATA DI SERIE A · 22/08 (art. 4.5)</div>
+          <div style={{ fontSize: 10, color: "#666", marginBottom: 10 }}>Giocatori 22-30aa rinnovati al ribasso — pena: 5M + svincolo ordinario forzato se non ceduti</div>
+          {rosaPlayers.filter(p => p.da_cedere).map(p => (
+            <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #ffffff08" }}>
+              <div>
+                <span style={{ fontSize: 12, color: "#f0f0f0", fontWeight: 600 }}>{p.nome}</span>
+                <span style={{ fontSize: 10, color: "#888", marginLeft: 8 }}>{p.anni}aa · Q{p.quot} · {Number(p.stip).toFixed(2)}M</span>
+              </div>
+              <DaCedereBadge />
+            </div>
+          ))}
+        </div>
+      )}
+      </>)}
+
+      {finTab === 'movimenti' && (<>
       {/* ── 4. FAIR SPENDING (art. 7.3) ── */}
       <FairSpendingSection team={team} isAdmin={isAdmin} />
 
+      {/* ── Lista movimenti (25 alla volta) ── */}
+      <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 14, padding: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.08em", marginBottom: 12 }}>📋 MOVIMENTI</div>
+        {loadingMovimenti ? (
+          <div style={{ fontSize: 12, color: "#555" }}>Caricamento...</div>
+        ) : movimentiList.length === 0 ? (
+          <div style={{ fontSize: 12, color: "#555", fontStyle: "italic" }}>Nessun movimento registrato</div>
+        ) : (
+          <>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {movimentiList.slice(0, movimentiVisibili).map(m => (
+                <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "#ffffff05", border: "1px solid #ffffff0f", borderRadius: 12, padding: "10px 12px" }}>
+                  <div style={{ width: 30, height: 30, borderRadius: "50%", background: m.entrata ? "#10b98118" : "#ef444418", color: m.entrata ? "#10b981" : "#ef4444", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900, flexShrink: 0 }}>
+                    {m.entrata ? "↑" : "↓"}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, color: "#ddd", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.descrizione}</div>
+                    <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>{new Date(m.data).toLocaleDateString("it-IT")}</div>
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: m.entrata ? "#10b981" : "#ef4444", fontFamily: "'Bebas Neue',sans-serif", whiteSpace: "nowrap" }}>
+                    {m.entrata ? `+${m.entrata}M` : m.uscita ? `-${m.uscita}M` : "—"}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {movimentiList.length > movimentiVisibili && (
+              <button onClick={() => setMovimentiVisibili(v => v + 25)}
+                style={{ width: "100%", marginTop: 10, padding: "10px", borderRadius: 10, border: "1px solid #ffffff15", background: "#ffffff05", color: "#888", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                ▾ Carica altri {Math.min(25, movimentiList.length - movimentiVisibili)}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+      </>)}
+
+      {finTab === 'quote' && (<>
       {/* ── 5. QUOTE & BIENNIO 2025-27 ── */}
       <div style={{ background: "#6366f108", border: "1.5px solid #6366f125", borderRadius: 14, padding: 16 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: "#818cf8", letterSpacing: "0.08em", marginBottom: 14 }}>💶 QUOTE & BUDGET BIENNIO {BIENNIO_CORRENTE}</div>
@@ -5604,64 +5755,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
           <div style={{ fontSize: 10, color: "#444" }}>Investimento extra budget: finestra aperta entro 14/08 ogni stagione</div>
         )}
       </div>
-
-      {/* ── 6. CONTRATTI IN SCADENZA (fine 2° anno — rinnovo biennale) ──
-          La scelta (conferma/non conferma) è un'indicazione di volontà, non
-          un'azione automatica: viene solo salvata (rinnovo_confermato) e resa
-          effettiva più tardi da "Aggiorna contratti annuali" in Control Room
-          (invariato). Disponibile da esprimere solo nel mese di maggio — la
-          stessa finestra è applicata anche lato server in
-          confermRinnovoBiennale, così non è aggirabile dalla sola UI. */}
-      {contrattiScadenza.length > 0 && new Date().getMonth() === 4 && (
-        <div style={{ background: "#f59e0b08", border: "1.5px solid #f59e0b25", borderRadius: 14, padding: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4, flexWrap: "wrap", gap: 8 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", letterSpacing: "0.08em" }}>📋 RINNOVO BIENNALE — CONFERMA ENTRO 31/05</div>
-            <div style={{ display: "flex", gap: 4 }}>
-              {[["ruolo","Ruolo"],["nome","Nome"],["quot","Q"]].map(([v,l]) => (
-                <button key={v} onClick={() => setContrattiSort(v)}
-                  style={{ padding: "3px 8px", borderRadius: 6, border: `1px solid ${contrattiSort===v?"#f59e0b60":"#ffffff15"}`, background: contrattiSort===v?"#f59e0b18":"transparent", color: contrattiSort===v?"#f59e0b":"#555", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                  {l}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div style={{ fontSize: 10, color: "#666", marginBottom: 12 }}>
-            Questi giocatori sono al <b style={{ color: "#aaa" }}>2° anno di contratto</b>. Devi decidere entro il 31/05 (art. 4.8):<br/>
-            • <b style={{ color: "#10b981" }}>Conferma rinnovo</b> → il giocatore resta in rosa, stipendio +20%<br/>
-            • <b style={{ color: "#ef4444" }}>Non confermare</b> → il giocatore viene svincolato automaticamente il 01/06
-          </div>
-          {[...contrattiScadenza].sort((a, b) => {
-            if (contrattiSort === "nome") return (a.nome||"").localeCompare(b.nome||"");
-            if (contrattiSort === "quot") return (b.quot||0) - (a.quot||0);
-            // ruolo: sort by role category order
-            const roleOrder = (r) => { const f=(r||"").split(";")[0].trim(); if(f==="Por")return 0; if(["Dc","Dd","Ds","B"].includes(f))return 1; if(["E","M","C"].includes(f))return 2; if(["T","W"].includes(f))return 3; return 4; };
-            return roleOrder(a.ruolo) - roleOrder(b.ruolo) || (a.nome||"").localeCompare(b.nome||"");
-          }).map(p => (
-            <ContrattoRinnovoRow key={p.id} p={p} team={team} isAdmin={isAdmin} mySquadra={mySquadra} onToggle={handleToggleRinnovo} />
-          ))}
-        </div>
-      )}
-
-      {/* ── 7. AGGIORNAMENTO STIPENDI 01/01 (art. 4.5) ── */}
-      <AggiornamentoStipendiSection team={team} rosaPlayers={rosaPlayers} isAdmin={isAdmin} onRefresh={onRefresh} />
-
-      {/* ── 8. DA CEDERE ENTRO LA PRIMA GIORNATA DI SERIE A (rinnovati al ribasso 22-30aa) ── */}
-      {rosaPlayers.filter(p => p.da_cedere).length > 0 && (
-        <div style={{ background: "#ef444408", border: "1.5px solid #ef444425", borderRadius: 14, padding: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", letterSpacing: "0.08em", marginBottom: 8 }}>🔴 DA CEDERE/SVINCOLARE ENTRO LA 1ª GIORNATA DI SERIE A · 22/08 (art. 4.5)</div>
-          <div style={{ fontSize: 10, color: "#666", marginBottom: 10 }}>Giocatori 22-30aa rinnovati al ribasso — pena: 5M + svincolo ordinario forzato se non ceduti</div>
-          {rosaPlayers.filter(p => p.da_cedere).map(p => (
-            <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #ffffff08" }}>
-              <div>
-                <span style={{ fontSize: 12, color: "#f0f0f0", fontWeight: 600 }}>{p.nome}</span>
-                <span style={{ fontSize: 10, color: "#888", marginLeft: 8 }}>{p.anni}aa · Q{p.quot} · {Number(p.stip).toFixed(2)}M</span>
-              </div>
-              <DaCedereBadge />
-            </div>
-          ))}
-        </div>
-      )}
-
+      </>)}
     </div>
   );
 }
@@ -5718,6 +5812,7 @@ function AltroTab({ team, isAdmin, mySquadra }) {
   // ── BONUS TRATTATIVE ─────────────────────────────────────────────────────────
   const [bonusData, setBonusData] = useState([]);
   const [noteTrattative, setNoteTrattative] = useState([]);
+  const [riscattoTrattative, setRiscattoTrattative] = useState([]);
   const [loadingBonus, setLoadingBonus] = useState(true);
   const [bonusSectionOpen, setBonusSectionOpen] = useState(true);
   const [bonusGiocatoreAperto, setBonusGiocatoreAperto] = useState(null);
@@ -5736,15 +5831,20 @@ function AltroTab({ team, isAdmin, mySquadra }) {
         // davvero. Stessa convenzione già usata altrove per "trattativa conclusa"
         // (vedi checkECompletaBonus/_liquidaBonusPendentiAllaRivendita).
         const { data: tratt, error: trattErr } = await supabase.from('trattative')
-          .select('id,giocatore,da_squadra,a_squadra,stato,note')
+          .select('id,giocatore,da_squadra,a_squadra,stato,note,tipo,prezzo,oneroso')
           .or(`da_squadra.eq.${team.name},a_squadra.eq.${team.name}`)
           .in('stato', ['completata', 'accettata', 'clausola_eseguita']);
 
         if (trattErr) throw trattErr;
         if (!tratt?.length) {
-          if (!cancelled) { setBonusData([]); setNoteTrattative([]); }
+          if (!cancelled) { setBonusData([]); setNoteTrattative([]); setRiscattoTrattative([]); }
           return;
         }
+
+        // Diritto/obbligo di riscatto: valore (t.prezzo) da pagare a scadenza
+        // per i prestiti con diritto/obbligo — mostrato accanto ai bonus dello
+        // stesso giocatore, non solo nel popup dettaglio trattativa.
+        const riscatti = tratt.filter(tr => tr.tipo === 'prestito_diritto' || tr.tipo === 'prestito_obbligo');
 
         const results = [];
         // Note scritte a mano nella trattativa (accordi non modellati come bonus
@@ -5787,10 +5887,10 @@ function AltroTab({ team, isAdmin, mySquadra }) {
           }
         }
 
-        if (!cancelled) { setBonusData(results); setNoteTrattative(note); }
+        if (!cancelled) { setBonusData(results); setNoteTrattative(note); setRiscattoTrattative(riscatti); }
       } catch (e) {
         console.warn('Errore caricamento bonus trattative:', e?.message || e);
-        if (!cancelled) { setBonusData([]); setNoteTrattative([]); }
+        if (!cancelled) { setBonusData([]); setNoteTrattative([]); setRiscattoTrattative([]); }
       } finally {
         if (!cancelled) setLoadingBonus(false);
       }
@@ -6189,11 +6289,22 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
     return map;
   }, [noteTrattative]);
 
-  // Elenco giocatori da mostrare: unione di chi ha bonus strutturati e chi ha
-  // solo una nota scritta a mano nella trattativa (senza bonus formali).
+  // Diritto/obbligo di riscatto, raggruppato per giocatore.
+  const riscattoPerGiocatore = useMemo(() => {
+    const map = {};
+    for (const tr of riscattoTrattative) {
+      if (!map[tr.giocatore]) map[tr.giocatore] = [];
+      map[tr.giocatore].push(tr);
+    }
+    return map;
+  }, [riscattoTrattative]);
+
+  // Elenco giocatori da mostrare: unione di chi ha bonus strutturati, chi ha
+  // solo una nota scritta a mano nella trattativa (senza bonus formali) e chi
+  // ha un diritto/obbligo di riscatto da mostrare.
   const giocatoriBonusENote = useMemo(() => {
-    return [...new Set([...Object.keys(bonusPerGiocatore), ...Object.keys(notePerGiocatore)])];
-  }, [bonusPerGiocatore, notePerGiocatore]);
+    return [...new Set([...Object.keys(bonusPerGiocatore), ...Object.keys(notePerGiocatore), ...Object.keys(riscattoPerGiocatore)])];
+  }, [bonusPerGiocatore, notePerGiocatore, riscattoPerGiocatore]);
 
   // Recap potenziale: solo bonus ancora pendenti (non già completati/predetti
   // dal valore live), sommati per direzione rispetto a QUESTA squadra —
@@ -6235,7 +6346,7 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
           style={{ display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", marginBottom: bonusSectionOpen ? 12 : 0, userSelect:"none" }}>
           <div style={{ fontSize:11,fontWeight:700,color:"#818cf8",letterSpacing:"0.1em", display:"flex", alignItems:"center", gap:6 }}>
             📊 BONUS TRATTATIVE
-            {(bonusData.length + noteTrattative.length) > 0 && <span style={{ fontSize:9, color:"#818cf8", background:"#6366f118", border:"1px solid #6366f130", borderRadius:999, padding:"1px 7px" }}>{bonusData.length + noteTrattative.length}</span>}
+            {(bonusData.length + noteTrattative.length + riscattoTrattative.length) > 0 && <span style={{ fontSize:9, color:"#818cf8", background:"#6366f118", border:"1px solid #6366f130", borderRadius:999, padding:"1px 7px" }}>{bonusData.length + noteTrattative.length + riscattoTrattative.length}</span>}
           </div>
           <span style={{ fontSize:11, color:"#666" }}>{bonusSectionOpen ? "▴ Chiudi" : "▾ Apri"}</span>
         </div>
@@ -6258,12 +6369,14 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
           {giocatoriBonusENote.map(giocatore=>{
             const items = bonusPerGiocatore[giocatore] || [];
             const notes = notePerGiocatore[giocatore] || [];
+            const riscatti = riscattoPerGiocatore[giocatore] || [];
             const aperto = bonusGiocatoreAperto === giocatore;
             const tuttiCompletati = items.length>0 && items.every(({bonus,valoreAttuale})=>bonus.completato||(valoreAttuale??0)>=Number(bonus.soglia));
             const nCompletati = items.filter(({bonus,valoreAttuale})=>bonus.completato||(valoreAttuale??0)>=Number(bonus.soglia)).length;
             const etichette = [
               items.length>0 ? `${items.length} bonus${nCompletati>0?` · ${nCompletati} completat${nCompletati===1?"o":"i"}`:""}` : null,
               notes.length>0 ? `${notes.length} nota${notes.length===1?"":"e"}` : null,
+              riscatti.length>0 ? `${riscatti.length} riscatto${riscatti.length===1?"":"i"}` : null,
             ].filter(Boolean).join(" · ");
             return (
               <div key={giocatore} style={{ background:"#ffffff08",border:`1.5px solid ${tuttiCompletati?"#10b98130":"#ffffff12"}`,borderRadius:12,overflow:"hidden" }}>
@@ -6283,6 +6396,22 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                         <div style={{ fontSize:11,color:"#ccc" }}>{tr.note}</div>
                       </div>
                     ))}
+                    {riscatti.map(tr=>{
+                      // Convenzione trattative: da_squadra = acquirente (paga il riscatto
+                      // a scadenza), a_squadra = cedente (lo incassa).
+                      const ioPago = tr.da_squadra === team.name;
+                      return (
+                        <div key={"riscatto"+tr.id} style={{ background:"#6366f10a",border:"1.5px solid #6366f125",borderRadius:10,padding:"10px 12px" }}>
+                          <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap" }}>
+                            <div>
+                              <div style={{ fontSize:11,color:"#818cf8",fontWeight:700 }}>💰 {tr.tipo==='prestito_obbligo'?'Obbligo':'Diritto'} di riscatto · {ioPago?"⬆️ Tu paghi":"⬇️ Tu ricevi"}</div>
+                              <div style={{ fontSize:9,color:"#555",marginTop:2 }}>({tr.a_squadra} → {tr.da_squadra}) · a scadenza prestito</div>
+                            </div>
+                            <div style={{ fontSize:16,fontWeight:900,color:ioPago?"#ef4444":"#10b981",fontFamily:"'Bebas Neue',sans-serif",flexShrink:0 }}>{ioPago?"-":"+"}{Number(tr.prezzo||0).toFixed(2)}M</div>
+                          </div>
+                        </div>
+                      );
+                    })}
                     {items.map(({bonus,trattativa,valoreAttuale})=>{
                       const soglia=Number(bonus.soglia),val=valoreAttuale??0;
                       const pct=soglia>0?Math.min(100,Math.round((val/soglia)*100)):0;
@@ -7291,11 +7420,11 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
           </div>
           <div style={{ textAlign: "right", flexShrink: 0 }}>
             <div style={{ fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "#777" }}>Bilancio</div>
-            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, color: team.bilancio < 10 ? "#f97316" : "#E8B84B", lineHeight: 1, marginTop: 4 }}>{team.bilancio.toFixed(1)}M</div>
+            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, color: team.bilancio < 10 ? "#f97316" : "#E8B84B", lineHeight: 1, marginTop: 4 }}>{team.bilancio.toFixed(2)}M</div>
           </div>
         </div>
         <div style={{ marginTop: 18, textAlign: "left" }}>
-          <ProgressBar label="Salary Cap" used={salaryCapUsato} limit={salaryCapLimite} overLimit={salaryCapSforato} />
+          <ProgressBar label="Salary Cap" used={salaryCapUsato} limit={salaryCapLimite} overLimit={salaryCapSforato} formatValue={n => `${n.toFixed(2)}M`} />
         </div>
       </div>
 
@@ -8476,6 +8605,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const [tab, setTab] = useState("trattative");
   const [mercatoSection, setMercatoSection] = useState(() => new URLSearchParams(location.search).get("section") || "home");
   const [showAltroMenu, setShowAltroMenu] = useState(false);
+  useLockBodyScroll(showAltroMenu);
   // Se si arriva da un link tipo "/mercato?section=svincolati" mentre la pagina
   // Mercato è già montata (es. click su un giocatore dal Listone), la sezione
   // va sincronizzata anche dopo il mount, non solo allo stato iniziale.
@@ -16939,31 +17069,7 @@ table{border-collapse:collapse;min-width:max-content}
         </div>
       ) : (
         <div style={{ paddingBottom:"calc(68px + env(safe-area-inset-bottom,0px))" }}>
-          {!pathname.startsWith('/presidente') && (
-            <div style={{ borderBottom:"1px solid #ffffff0e",background:"#0d0f14f0",backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:100,padding:"env(safe-area-inset-top,0px) 16px 0" }}>
-              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",height:50 }}>
-                <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                  <img loading="lazy" decoding="async" src="/icon-192.png" alt="logo" style={{ width:28,height:28,borderRadius:8,objectFit:"cover",flexShrink:0 }} />
-                  <div style={{ minWidth:0 }}>
-                    <div style={{ fontSize:14,fontWeight:900,color:"#f0f0f0",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:"1.5px",lineHeight:1 }}>FantaManager</div>
-                    <div style={{ fontSize:9,color:"#555",lineHeight:1.2 }}>{stagioneLabel}</div>
-                  </div>
-                </div>
-                <div style={{ display:"flex",gap:6,alignItems:"center" }}>
-                  <NotificationBell mySquadra={mySquadra} navigate={navigate} />
-                  {profile && (
-                    <div onClick={()=>navigate('/profilo')} style={{ cursor:"pointer",display:"flex",alignItems:"center" }}>
-                      {profile.avatar_url
-                        ? <img loading="lazy" decoding="async" src={profile.avatar_url} alt="" style={{ width:28,height:28,borderRadius:7,objectFit:"cover",outline:pathname==='/profilo'?"2px solid #f59e0b":"1px solid #ffffff18" }} />
-                        : <div style={{ width:28,height:28,borderRadius:7,background:pathname==='/profilo'?"#f59e0b22":"#ffffff10",border:pathname==='/profilo'?"1px solid #f59e0b44":"1px solid #ffffff18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13 }}>👤</div>
-                      }
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-          <div style={{ padding:"16px 14px",position:"relative" }}>
+          <div style={{ padding:"calc(16px + env(safe-area-inset-top,0px)) 14px 16px",position:"relative" }}>
             {pageContent}
           </div>
           <div style={{ position:"fixed",bottom:0,left:0,right:0,background:"#13151cee",backdropFilter:"blur(16px)",borderTop:"1px solid #ffffff10",display:"flex",flexDirection:"column",zIndex:200,paddingBottom:"env(safe-area-inset-bottom,0px)" }}><div style={{ display:"flex",height:68 }}>
