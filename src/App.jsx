@@ -1124,12 +1124,13 @@ function CalcolatoreGiornata({ profile, teams, navigate }) {
   const guadagnoGolSegnati = Math.min(Number(golSegnati) || 0, 7);
 
   // Guadagno gol subiti
-  const tabellaGolSubiti = { 0: 0.5, 1: -0.25, 2: -0.5, 3: -0.75, 4: -1, 5: -1.25, 6: -1.5, 7: -1.75, 8: -2 };
+  const tabellaGolSubiti = { 0: 0.25, 1: -0.25, 2: -0.5, 3: -0.75, 4: -1, 5: -1.25, 6: -1.5, 7: -1.75, 8: -2 };
   const guadagnoGolSubiti = tabellaGolSubiti[Math.min(Number(golSubiti) || 0, 8)] ?? -2;
 
-  // Guadagno risultato
+  // Guadagno risultato — sconfitta ora guadagna come il pareggio (stessa
+  // formula, incluso il bonus vs rivale), non più 0.
   const guadagnoRisultato = risultato === "V" ? (rivale ? 1 : 0.5)
-                           : risultato === "P" ? (rivale ? 0.5 : 0.25)
+                           : (risultato === "P" || risultato === "S") ? (rivale ? 0.5 : 0.25)
                            : 0;
 
   // Costo giocatori (segno: negativo = costo, positivo = rimborso/multa)
