@@ -226,7 +226,7 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 
 import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
 import { SURFACE, BRAND, SEMANTIC, FIELD } from "./design-system.js";
-import { IconHome, IconShield, IconTrophy, IconMarket, IconMore, IconAdmin, IconChevronRight, IconArchive, IconRefresh, IconPlus, IconEdit, IconTrash, IconClose, IconSearch } from "./components/ui/Icons.jsx";
+import { IconHome, IconShield, IconTrophy, IconMarket, IconMore, IconAdmin, IconChevronRight, IconArchive, IconRefresh, IconPlus, IconEdit, IconTrash, IconClose, IconSearch, IconBack } from "./components/ui/Icons.jsx";
 import { ProgressBar } from "./components/ui/ProgressBar.jsx";
 import { HeroSurface } from "./components/ui/Surface.jsx";
 import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, deleteModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, registraEventoGiornataInvestimento, getEffettiInvestimenti, getSquadreConSuperClub, getStatoGuadagniGiornata,
@@ -917,7 +917,7 @@ function TeamCard({ team, onClick, scLive: scLiveProp, capLimite: capLimiteProp,
 }
 
 /* ─── CLASSIFICA TABLE ───────────────────────────────────────────────────────── */
-function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEditRow, salvaRiga, saving, inp }) {
+function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEditRow, salvaRiga, saving, inp, dense = false }) {
   const { sorted, SortTh } = useSortableTable(classificaRicca, "pt", "desc");
   // Calcola posizione basata sull'ordine originale (pt desc, pt_totali desc)
   const posMap = {};
@@ -929,16 +929,16 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
         <thead>
           <tr style={{ borderBottom: "1px solid #ffffff15" }}>
             <th style={{ padding: "6px 8px", fontSize: 10, fontWeight: 700, color: "#555", position:"sticky", left:0, background:"#0d0f14", zIndex:2 }}>#</th>
-            <SortTh col="squadra"   label="Squadra"   align="left"   style={{ minWidth: 100, position:"sticky", left:28, background:"#0d0f14", zIndex:2 }} />
-            <SortTh col="g"         label="G"         align="center" />
+            <SortTh col="squadra"   label="Squadra"   align="left"   style={{ minWidth: dense ? 70 : 100, maxWidth: dense ? 90 : undefined, position:"sticky", left:28, background:"#0d0f14", zIndex:2 }} />
+            {!dense && <SortTh col="g"         label="G"         align="center" />}
             <SortTh col="v"         label="V"         align="center" />
             <SortTh col="n"         label="N"         align="center" />
             <SortTh col="p"         label="P"         align="center" />
-            <SortTh col="gf"        label="G+"        align="center" />
-            <SortTh col="gs"        label="G−"        align="center" />
-            <SortTh col="dr"        label="DR"        align="center" />
+            {!dense && <SortTh col="gf"        label="G+"        align="center" />}
+            {!dense && <SortTh col="gs"        label="G−"        align="center" />}
+            {!dense && <SortTh col="dr"        label="DR"        align="center" />}
             <SortTh col="pt"        label="Pt"        align="center" />
-            <SortTh col="pt_totali" label="Pt Tot"    align="center" />
+            {!dense && <SortTh col="pt_totali" label="Pt Tot"    align="center" />}
             {editMode && <th style={{ width: 60 }}></th>}
           </tr>
         </thead>
@@ -958,10 +958,10 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
                 <td style={{ padding: "9px 6px", position:"sticky", left:28, background: isMe ? "#1a1d3a" : "#0d0f14", zIndex:1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     {row.team && <TeamAvatar team={row.team} size={22} />}
-                    <span style={{ fontSize: 11, fontWeight: isMe ? 800 : 600, color: isMe ? "#f0f0f0" : "#ccc", wordBreak: "break-word" }}>
+                    <span style={{ fontSize: 11, fontWeight: isMe ? 800 : 600, color: isMe ? "#f0f0f0" : "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: dense ? 66 : 130 }}>
                       {row.squadra}
-                      {isMe && <span style={{ fontSize: 8, color: "#6366f1", marginLeft: 5, background: "#6366f120", border: "1px solid #6366f133", borderRadius: 3, padding: "1px 4px" }}>TU</span>}
                     </span>
+                    {isMe && <span style={{ fontSize: 8, color: "#6366f1", flexShrink: 0, background: "#6366f120", border: "1px solid #6366f133", borderRadius: 3, padding: "1px 4px" }}>TU</span>}
                   </div>
                 </td>
                 {isEditing ? (
@@ -982,17 +982,19 @@ function ClassificaTable({ classificaRicca, mySquadra, editMode, editRow, setEdi
                   </>
                 ) : (
                   <>
-                    <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.g}</td>
+                    {!dense && <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.g}</td>}
                     <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.v}</td>
                     <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.n}</td>
                     <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.p}</td>
-                    <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.gf}</td>
-                    <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.gs}</td>
+                    {!dense && <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.gf}</td>}
+                    {!dense && <td style={{ padding: "9px 8px", textAlign: "center", color: "#aaa", fontSize: 12 }}>{row.gs}</td>}
+                    {!dense && (
                     <td style={{ padding: "9px 8px", textAlign: "center", color: row.dr > 0 ? "#10b981" : row.dr < 0 ? "#ef4444" : "#888", fontSize: 12, fontWeight: 600 }}>
                       {row.dr > 0 ? "+" : ""}{row.dr}
                     </td>
+                    )}
                     <td style={{ padding: "9px 8px", textAlign: "center", fontSize: 14, fontWeight: 900, color: rowColor || "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif" }}>{row.pt}</td>
-                    <td style={{ padding: "9px 8px", textAlign: "center", fontSize: 12, color: "#888", fontWeight: 600 }}>{row.pt_totali}</td>
+                    {!dense && <td style={{ padding: "9px 8px", textAlign: "center", fontSize: 12, color: "#888", fontWeight: 600 }}>{row.pt_totali}</td>}
                   </>
                 )}
                 {editMode && (
@@ -1470,11 +1472,13 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
                 {posizione}° in classifica{punti != null ? ` · ${punti}pt` : ""}
               </div>
             )}
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 10 }}>
+              <span style={{ fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "#777" }}>Bilancio</span>
+              <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, color: BRAND.gold, lineHeight: 1 }}>{team.bilancio.toFixed(1)}M</span>
+            </div>
           </div>
         </div>
         <div style={{ marginTop: 18, textAlign: "left" }}>
-          <div style={{ fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "#777", textAlign: "center" }}>Bilancio</div>
-          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, color: BRAND.gold, textAlign: "center", marginBottom: 14 }}>{team.bilancio.toFixed(1)}M</div>
           {salaryCapUsato != null ? (
             <ProgressBar label="Salary Cap" used={salaryCapUsato} limit={salaryCapLimite} overLimit={salaryCapSforato} />
           ) : (
@@ -1576,25 +1580,23 @@ function AltroHubPage({ navigate, isAdmin, profile }) {
 
 function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
   const mySquadra = profile?.squadra;
-  const myTeam = teams.find(t => t.name === mySquadra);
 
   const [classifica, setClassifica] = useState([]);
-  const [myRosa, setMyRosa] = useState([]);
-  const [myAllenatore, setMyAllenatore] = useState(null);
   const [roseCountMap, setRoseCountMap] = useState({});
   const [scLiveMap, setScLiveMap] = useState({});
   const [capLimiteMap, setCapLimiteMap] = useState({});
-  const [allenatoriMap, setAllenatoriMap] = useState({});
   const [editMode, setEditMode] = useState(false);
   const [editRow, setEditRow] = useState(null); // { squadra, g, v, n, p, gf, gs, dr, pt, pt_totali }
   const [saving, setSaving] = useState(false);
 
+  // Griglia unica per tutte le squadre (nessuna divisione tua rosa / altre):
+  // 2 colonne anche sul mobile più stretto per vedere tutti gli 8 badge in
+  // un'unica schermata con meno scroll verticale, di più su schermi larghi.
   const [cols, setCols] = useState(() => {
     const w = window.innerWidth;
     if (w >= 1400) return 4;
     if (w >= 1000) return 3;
-    if (w >= 600)  return 2;
-    return 1;
+    return 2;
   });
 
   useEffect(() => {
@@ -1602,8 +1604,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
       const w = window.innerWidth;
       if (w >= 1400) setCols(4);
       else if (w >= 1000) setCols(3);
-      else if (w >= 600)  setCols(2);
-      else setCols(1);
+      else setCols(2);
     };
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
@@ -1614,15 +1615,6 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
     const sub = subscribeClassifica(() => getClassifica().then(d => setClassifica(d)));
     return () => supabase.removeChannel(sub);
   }, []);
-
-  useEffect(() => {
-    if (!mySquadra) return;
-    cachedFetch('rosa_' + mySquadra, () => getRosa(mySquadra), 600000).then(d => setMyRosa(d || []));
-  }, [mySquadra]);
-  // Allenatore: aggiornato quando allenatoriMap è popolato
-  useEffect(() => {
-    if (mySquadra && allenatoriMap[mySquadra] !== undefined) setMyAllenatore(allenatoriMap[mySquadra] || null);
-  }, [mySquadra, allenatoriMap]);
 
   // Batch load: rosa counts + scLive (rosa + staff allenatore) + allenatori.
   // Un'unica query per tutte le rose (niente N+1 per squadra) + una per gli allenatori.
@@ -1638,10 +1630,8 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
       getSquadreConSuperClub(STAGIONE_CORRENTE),
     ]).then(([rosaTutte, allCoaches, squadreSuperClub]) => {
       const scAllenatoreMap = {};
-      const allMap = {};
       (allCoaches || []).forEach(a => {
         if (!a.squadra) return;
-        allMap[a.squadra] = a.nome;
         scAllenatoreMap[a.squadra] = Number(a.stipendio_sc || 0);
       });
 
@@ -1660,7 +1650,6 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
       setRoseCountMap(counts);
       setScLiveMap(scs);
       setCapLimiteMap(caps);
-      setAllenatoriMap(allMap);
     });
   }, [teamNamesKey]);
 
@@ -1693,107 +1682,76 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
     }
   }
 
-  // Mini-rosa summary: conta per ruolo (vivaio escluso — art. 3.4)
-  const rosaAttiva = myRosa.filter(p => !p.in_vivaio);
-  const ruoliCount = { Por: 0, Dif: 0, Cen: 0, Tre: 0, Att: 0 };
-  rosaAttiva.forEach(p => {
-    const r = p.ruolo || '';
-    const roles = r.split(';').map(x => x.trim());
-    const first = roles[0];
-    if (first === 'Por') ruoliCount.Por++;
-    else if (['Dc','Dd','Ds','B'].includes(first)) ruoliCount.Dif++;
-    else if (['E','M','C'].includes(first)) ruoliCount.Cen++;
-    else if (['T','W'].includes(first)) ruoliCount.Tre++;
-    else ruoliCount.Att++;
-  });
-  // Riusa scLiveMap (rosa + staff allenatore) calcolato nel batch load, invece di
-  // ricomputare qui solo la parte rosa (mancava il peso della carta allenatore).
-  const scUsato = scLiveMap[mySquadra] ?? myRosa.filter(p=>!p.in_vivaio).reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
-  const scLimite = capLimiteMap[mySquadra] ?? (75 + Number(myTeam?.scBonusObiettivi || 0));
-  // FPF = netto speso semestre corrente, calcolato centralmente e passato via myTeam.fpf
-  const fpf = myTeam?.fpf ?? null;
-  const fpfDisplay = fpf !== null ? `${fpf.toFixed(1)}M` : "—";
-  const fpfColor = fpf === null ? "#555" : fpf > 60 ? "#ef4444" : fpf > 55 ? "#f97316" : fpf > 50 ? "#f59e0b" : "#10b981";
-
   const inp = { padding: "4px 6px", borderRadius: 5, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 11, width: "100%" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
 
-      {/* ── 1. LA TUA ROSA ── */}
-      {myTeam && (
-        <div
-          onClick={() => onSelectTeam(myTeam)}
-          style={{ background: `linear-gradient(135deg, ${myTeam.color}18, #ffffff06)`, border: `1.5px solid ${myTeam.color}44`, borderRadius: 18, padding: "18px 22px", cursor: "pointer", transition: "border-color 0.15s" }}
-          onMouseEnter={e => e.currentTarget.style.borderColor = myTeam.color + "88"}
-          onMouseLeave={e => e.currentTarget.style.borderColor = myTeam.color + "44"}
-        >
-          <div style={{ fontSize: 10, fontWeight: 700, color: myTeam.color, letterSpacing: "0.12em", marginBottom: 12 }}>⚽ LA TUA ROSA</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14, flexWrap: "wrap" }}>
-            <TeamAvatar team={myTeam} size={52} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 20, fontWeight: 900, color: "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "1px" }}>{myTeam.name}</div>
-              <div style={{ fontSize: 12, color: "#888" }}>{myAllenatore || "—"}</div>
-            </div>
-            {/* Bilancio + SC + FPF */}
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
-              {[
-                { label: "BILANCIO", value: `${myTeam.bilancio?.toFixed(2)}M`, color: myTeam.bilancio < 10 ? "#f97316" : "#10b981" },
-                { label: "SALARY CAP", value: `${scUsato.toFixed(1)} / ${scLimite.toFixed(1)}M`, color: scUsato > scLimite ? "#ef4444" : scUsato > scLimite - 10 ? "#f59e0b" : "#10b981" },
-                { label: "FPF", value: fpfDisplay, color: fpfColor },
-              ].map(s => (
-                <div key={s.label} style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 8, color: "#555", letterSpacing: "0.06em", marginBottom: 1 }}>{s.label}</div>
-                  <div style={{ fontSize: 15, fontWeight: 900, color: s.color, fontFamily: "'Bebas Neue',sans-serif", lineHeight: 1 }}>{s.value}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Stats bar — ruoli + U21 + 31+ */}
-          <div className="grid-stats-8" style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 6 }}>
-            {[
-              { label: "ROSA",      value: rosaAttiva.length, color: rosaAttiva.length < 25 || rosaAttiva.length > 30 ? "#ef4444" : "#10b981" },
-              { label: "POR",       value: ruoliCount.Por, color: "#f59e0b" },
-              { label: "DIFESA",    value: ruoliCount.Dif, color: "#10b981" },
-              { label: "CENTRO",    value: ruoliCount.Cen, color: "#3b82f6" },
-              { label: "TREQUARTI", value: ruoliCount.Tre, color: "#a78bfa" },
-              { label: "ATTACCO",   value: ruoliCount.Att, color: "#ef4444" },
-              { label: "U-21",      value: rosaAttiva.filter(p => p.anni > 0 && p.anni <= 21).length, color: "#c4b5fd" },
-              { label: "31+",       value: rosaAttiva.filter(p => p.anni >= 31).length, color: "#fb923c" },
-            ].map(s => (
-              <div key={s.label} style={{ textAlign: "center", background: "#ffffff08", borderRadius: 10, padding: "7px 3px" }}>
-                <div style={{ fontSize: 7, color: "#555", letterSpacing: "0.04em", marginBottom: 3 }}>{s.label}</div>
-                <div style={{ fontSize: 16, fontWeight: 900, color: s.color, fontFamily: "'Bebas Neue',sans-serif" }}>{s.value}</div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ fontSize: 11, color: "#666" }}>
-              {myTeam.mercatoBloccato && <span style={{ color: "#ef4444" }}>🔒 mercato bloccato</span>}
-            </div>
-            <span style={{ fontSize: 12, color: myTeam.color, fontWeight: 600 }}>Vai alla pagina →</span>
-          </div>
-        </div>
-      )}
-
-      {/* Calcolatore Giornata spostato in Home (sotto l'hero) — vedi HomePage. */}
-
-      {/* ── 3. TUTTE LE SQUADRE (esclusa la propria, già in cima) ── */}
-      <div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em", marginBottom: 14 }}>🏟️ TUTTE LE SQUADRE</div>
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 14 }}>
-          {teams
-            .filter(t => t.name !== mySquadra)
-            .map(team => {
-              const liveCount = roseCountMap[team.name];
-              const teamLive = liveCount !== undefined ? { ...team, giocatori: liveCount } : team;
-              return <TeamCard key={team.id} team={teamLive} onClick={() => onSelectTeam(team)} scLive={scLiveMap[team.name]} capLimite={capLimiteMap[team.name]} allenatore={allenatoriMap[team.name] ?? null} />;
-            })}
-        </div>
+      {/* Tutte le squadre equiparate — stessa card, stessi 5 dati essenziali
+          (bilancio, salary cap, fpf, rosa, U-21), nessuna divisione tra la
+          propria squadra e le altre: click su un badge → pagina presidente. */}
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 12 }}>
+        {teams.map(team => {
+          const liveCount = roseCountMap[team.name];
+          const teamLive = liveCount !== undefined ? { ...team, giocatori: liveCount } : team;
+          return (
+            <TeamGridCard
+              key={team.id}
+              team={teamLive}
+              isMine={team.name === mySquadra}
+              onClick={() => onSelectTeam(team)}
+              scLive={scLiveMap[team.name]}
+              capLimite={capLimiteMap[team.name]}
+            />
+          );
+        })}
       </div>
 
+    </div>
+  );
+}
+
+// Card compatta usata per tutte le 8 squadre nella griglia di Squadre — stessi
+// 5 dati essenziali (bilancio, salary cap usato/limite, fpf, n. giocatori in
+// rosa, n. U-21) per ognuna, nessun trattamento speciale per la propria.
+function TeamGridStat({ label, value, color }) {
+  return (
+    <div>
+      <div style={{ fontSize: 8.5, color: "#666", letterSpacing: "0.05em", marginBottom: 1 }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: 800, color, fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "0.3px" }}>{value}</div>
+    </div>
+  );
+}
+function TeamGridCard({ team, isMine, onClick, scLive: scLiveProp, capLimite: capLimiteProp }) {
+  const scLive = scLiveProp ?? team.salaryUsed ?? 0;
+  const capLimite = capLimiteProp ?? (75 + Number(team.scBonusObiettivi || 0));
+  const fpf = team.fpf ?? null;
+  const fpfDisplay = fpf !== null ? `${fpf.toFixed(1)}M` : "—";
+  const fpfColor = fpf === null ? "#555" : fpf > 60 ? "#ef4444" : fpf > 55 ? "#f97316" : fpf > 50 ? "#f59e0b" : "#10b981";
+  const scColor = scLive > capLimite ? "#ef4444" : scLive > capLimite - 5 ? "#f59e0b" : "#10b981";
+  const giocatori = team.giocatori || 0;
+  const u21 = team.u21 || 0;
+  const rosaColor = giocatori > 30 || giocatori < 25 ? "#ef4444" : "#888";
+  const u21Required = giocatori >= 30 ? 3 : giocatori >= 29 ? 2 : giocatori >= 28 ? 1 : 0;
+  const u21Color = u21Required === 0 ? "#888" : u21 >= u21Required ? "#10b981" : "#ef4444";
+  const bilColor = team.bilancio >= 10 ? "#10b981" : team.bilancio >= 5 ? "#f59e0b" : "#ef4444";
+
+  return (
+    <div onClick={onClick}
+      style={{ background: isMine ? `linear-gradient(135deg, ${team.color}18, #ffffff08)` : "#ffffff08", border: `1.5px solid ${isMine ? team.color + "55" : "#ffffff12"}`, borderRadius: 14, padding: "12px 14px", cursor: "pointer", transition: "border-color 0.15s" }}
+      onMouseEnter={e => e.currentTarget.style.borderColor = team.color + "88"}
+      onMouseLeave={e => e.currentTarget.style.borderColor = isMine ? team.color + "55" : "#ffffff12"}>
+      <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
+        <TeamAvatar team={team} size={34} />
+        <div style={{ fontSize: 12.5, fontWeight: 800, color: "#f0f0f0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{team.name}</div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px 6px" }}>
+        <TeamGridStat label="BILANCIO" value={`${team.bilancio.toFixed(1)}M`} color={bilColor} />
+        <TeamGridStat label="SALARY CAP" value={`${scLive.toFixed(1)}/${capLimite.toFixed(1)}M`} color={scColor} />
+        <TeamGridStat label="FPF" value={fpfDisplay} color={fpfColor} />
+        <TeamGridStat label="ROSA" value={String(giocatori)} color={giocatori ? rosaColor : "#555"} />
+        <TeamGridStat label="U-21" value={String(u21)} color={u21Color} />
+      </div>
     </div>
   );
 }
@@ -1851,13 +1809,14 @@ function ScoreInput({ val, onChange }) {
   );
 }
 
-function GironeTable({ classifica, isAdmin, onEdit }) {
+function GironeTable({ classifica, isAdmin, onEdit, dense = false }) {
   const sorted = [...classifica].sort((a,b) => b.pt-a.pt || b.dr-a.dr || b.gf-a.gf);
   const numInp = { width:28, padding:'3px 2px', borderRadius:5, border:'1px solid #ffffff18', background:'#ffffff08', color:'#f0f0f0', fontSize:11, fontWeight:600, textAlign:'center', outline:'none' };
+  const cols = dense ? ['#','Squadra','V','N','P','Pt'] : ['#','Squadra','V','N','P','G+','G−','DR','Pt'];
   return (
     <table style={{ width:'100%', borderCollapse:'collapse', fontSize:11 }}>
       <thead>
-        <tr>{['#','Squadra','V','N','P','G+','G−','DR','Pt'].map((c,i) => (
+        <tr>{cols.map((c,i) => (
           <th key={i} style={{ padding:'4px 5px', color:'#555', fontWeight:700, fontSize:9, textAlign: i<=1?'left':'center', letterSpacing:'0.05em' }}>{c}</th>
         ))}</tr>
       </thead>
@@ -1867,22 +1826,22 @@ function GironeTable({ classifica, isAdmin, onEdit }) {
           return (
             <tr key={r.sq} style={{ borderBottom:'1px solid #ffffff06' }}>
               <td style={{ padding:'5px', textAlign:'center', fontSize:10, fontWeight:900, color }}>{i+1}</td>
-              <td style={{ padding:'5px', fontWeight:700, color:'#ddd', wordBreak:'break-word', maxWidth:130 }}>{r.sq}</td>
+              <td style={{ padding:'5px', fontWeight:700, color:'#ddd', overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth: dense ? 80 : 130 }}>{r.sq}</td>
               {isAdmin ? (
                 <>
-                  {['v','n','p','gf','gs'].map(f => (
+                  {(dense ? ['v','n','p'] : ['v','n','p','gf','gs']).map(f => (
                     <td key={f} style={{ padding:'2px 3px', textAlign:'center' }}>
                       <input type="number" min="0" value={r[f]??''} style={numInp}
                         onChange={e => onEdit(r.sq, f, e.target.value === '' ? 0 : Number(e.target.value))} />
                     </td>
                   ))}
-                  <td style={{ padding:'5px', textAlign:'center', color: r.dr>0?'#10b981':r.dr<0?'#ef4444':'#555', fontWeight:600, fontSize:11 }}>{r.dr>0?'+':''}{r.dr}</td>
+                  {!dense && <td style={{ padding:'5px', textAlign:'center', color: r.dr>0?'#10b981':r.dr<0?'#ef4444':'#555', fontWeight:600, fontSize:11 }}>{r.dr>0?'+':''}{r.dr}</td>}
                   <td style={{ padding:'5px', textAlign:'center', fontWeight:900, color, fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>{r.pt}</td>
                 </>
               ) : (
                 <>
-                  {[r.v,r.n,r.p,r.gf,r.gs].map((v,k) => <td key={k} style={{ padding:'5px', textAlign:'center', color:'#888' }}>{v}</td>)}
-                  <td style={{ padding:'5px', textAlign:'center', color: r.dr>0?'#10b981':r.dr<0?'#ef4444':'#555', fontWeight:600 }}>{r.dr>0?'+':''}{r.dr}</td>
+                  {(dense ? [r.v,r.n,r.p] : [r.v,r.n,r.p,r.gf,r.gs]).map((v,k) => <td key={k} style={{ padding:'5px', textAlign:'center', color:'#888' }}>{v}</td>)}
+                  {!dense && <td style={{ padding:'5px', textAlign:'center', color: r.dr>0?'#10b981':r.dr<0?'#ef4444':'#555', fontWeight:600 }}>{r.dr>0?'+':''}{r.dr}</td>}
                   <td style={{ padding:'5px', textAlign:'center', fontWeight:900, color, fontFamily:"'Bebas Neue',sans-serif", fontSize:14 }}>{r.pt}</td>
                 </>
               )}
@@ -1948,7 +1907,7 @@ function BracketSFCoppa({ sf, isAdmin, onChange }) {
   );
 }
 
-function TorneiSection({ isAdmin, forcedTab }) {
+function TorneiSection({ isAdmin, forcedTab, dense = false, onToggleDense }) {
   const [coppa, setCoppa] = useState(null);
   const [superc, setSuperc] = useState(null);
   const [tab, setTab] = useState(forcedTab || 'coppa');
@@ -2041,12 +2000,15 @@ function TorneiSection({ isAdmin, forcedTab }) {
         <>
           {/* Gironi */}
           <div style={card}>
-            <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em', marginBottom:16 }}>🏟 FASE A GIRONI · G10–G22</div>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16, flexWrap:'wrap', gap:8 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'#888', letterSpacing:'0.1em' }}>🏟 FASE A GIRONI · G10–G22</div>
+              {onToggleDense && <button onClick={onToggleDense} style={{ padding:"6px 14px",borderRadius:999,border:"none",background:"#ffffff0a",color:"#888",fontSize:11,fontWeight:700,cursor:"pointer" }}>{dense ? "↔ Estesa" : "↕ Compatta"}</button>}
+            </div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))', gap:20 }}>
               {['A','B'].map(g => (
                 <div key={g}>
                   <div style={{ fontSize:12, fontWeight:800, color:'#818cf8', marginBottom:8 }}>Girone {g}</div>
-                  <GironeTable classifica={coppa.gironi[g].classifica} isAdmin={isAdmin}
+                  <GironeTable classifica={coppa.gironi[g].classifica} isAdmin={isAdmin} dense={dense}
                     onEdit={(sq, field, val) => editGirone(g, sq, field, val)} />
                   {isAdmin && <div style={{ fontSize:9, color:'#444', marginTop:6 }}>V/N/P e G+/G− editabili · Pt e DR calcolati automaticamente</div>}
                 </div>
@@ -2152,6 +2114,13 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
   const [editDraft, setEditDraft] = useState({});
   const [saving, setSaving] = useState(false);
   const [compTab, setCompTab] = useState('serie_a');
+  // Vista compatta/estesa condivisa da classifica Serie A e gironi Coppa
+  // Italia — stesso interruttore ovunque per coerenza, nessuna logica di
+  // classifica toccata: nasconde solo colonne G/G+/G−/DR/Pt Tot.
+  const [vistaCompatta, setVistaCompatta] = useState(true);
+  // Premi divisi in sotto-tab (stesso PillNav di Competizioni/Scadenze/Premi)
+  // per non dover scrollare tutte le categorie una sotto l'altra.
+  const [premiSubTab, setPremiSubTab] = useState('giornata');
   useEffect(() => {
     cachedFetch('classifica', () => getClassifica(), 600000).then(d => setClassifica(d || []));
     const sub = subscribeClassifica(() => {
@@ -2408,6 +2377,13 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
     { key: 'scadenze',     label: '📅 Scadenze' },
     { key: 'premi',        label: '🏆 Premi' },
   ];
+  const PREMI_TABS = [
+    { key: 'giornata',    label: '🏅 Giornata' },
+    { key: 'finali',      label: '🏆 Finali' },
+    { key: 'coppa',       label: '🥇 Coppa Italia' },
+    { key: 'montepremi',  label: '💶 Montepremi' },
+    { key: 'individuali', label: '🏅 Individuali' },
+  ];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
@@ -2418,7 +2394,12 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
       {legaTab==='scadenze' && (
       <div style={{ background:"#ffffff06",border:"1.5px solid #ffffff12",borderRadius:16,padding:18 }}>
         <div style={{ fontSize:11,fontWeight:700,color:"#888",letterSpacing:"0.1em",marginBottom:16 }}>📅 SCADENZE</div>
-        <style>{`@media(max-width:768px){.dl-cols{flex-direction:column!important;align-items:stretch!important}.dl-sep{display:none!important}}`}</style>
+        {/* Su mobile lo stack diventa verticale: senza questo override il
+            "flex: 0 0 230px" della colonna sinistra (pensato come LARGHEZZA
+            fissa nel layout a righe) viene reinterpretato come ALTEZZA fissa
+            nel layout a colonne, creando un vuoto enorme sotto le "3 passate"
+            prima delle "prossime" — bug puramente di layout, nessun dato perso. */}
+        <style>{`@media(max-width:768px){.dl-cols{flex-direction:column!important;align-items:stretch!important}.dl-cols>div:first-child{flex:none!important}.dl-sep{display:none!important}}`}</style>
         <div className="dl-cols" style={{ display:"flex",gap:16,alignItems:"flex-start" }}>
           <div style={{ flex:"0 0 230px",minWidth:0 }}>
             <div style={{ fontSize:10,fontWeight:700,color:"#555",letterSpacing:"0.1em",marginBottom:8 }}>ULTIME 3 PASSATE</div>
@@ -2498,17 +2479,22 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
                     <div style={{ fontSize:11, fontWeight:700, color:"#888", letterSpacing:"0.1em" }}>CLASSIFICA</div>
                     {classifica[0]?.updated_at && <div style={{ fontSize:9, color:"#444", marginTop:2 }}>Agg.: {new Date(classifica[0].updated_at).toLocaleDateString("it-IT",{day:"2-digit",month:"short",year:"numeric"})}</div>}
                   </div>
-                  {isAdmin && <button onClick={apriModal} style={{ padding:"6px 14px",borderRadius:8,border:"none",background:"#6366f120",color:"#818cf8",fontSize:11,fontWeight:700,cursor:"pointer" }}>✏️ Aggiorna</button>}
+                  <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                    <button onClick={() => setVistaCompatta(v => !v)} style={{ padding:"6px 14px",borderRadius:999,border:"none",background:"#ffffff0a",color:"#888",fontSize:11,fontWeight:700,cursor:"pointer" }}>
+                      {vistaCompatta ? "↔ Estesa" : "↕ Compatta"}
+                    </button>
+                    {isAdmin && <button onClick={apriModal} style={{ padding:"6px 14px",borderRadius:8,border:"none",background:"#6366f120",color:"#818cf8",fontSize:11,fontWeight:700,cursor:"pointer" }}>✏️ Aggiorna</button>}
+                  </div>
                 </div>
                 <div style={{ overflowX:"auto" }}>
-                  <ClassificaTable classificaRicca={classificaRicca} mySquadra={null} editMode={false} editRow={null} setEditRow={()=>{}} salvaRiga={()=>{}} saving={false} inp={{}} />
+                  <ClassificaTable classificaRicca={classificaRicca} mySquadra={null} editMode={false} editRow={null} setEditRow={()=>{}} salvaRiga={()=>{}} saving={false} inp={{}} dense={vistaCompatta} />
                 </div>
               </div>
             )}
 
             {/* FantaCoppa Italia + FantaSupercoppa */}
             {(compTab === 'coppa' || compTab === 'supercoppa') && (
-              <TorneiSection isAdmin={isAdmin} forcedTab={compTab === 'coppa' ? 'coppa' : 'supercoppa'} />
+              <TorneiSection isAdmin={isAdmin} forcedTab={compTab === 'coppa' ? 'coppa' : 'supercoppa'} dense={vistaCompatta} onToggleDense={() => setVistaCompatta(v => !v)} />
             )}
           </div>
         );
@@ -2599,8 +2585,12 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
       {legaTab==='premi' && (
       <div style={{ background:"#ffffff06",border:"1.5px solid #ffffff12",borderRadius:16,padding:18 }}>
         <div style={{ fontSize:11,fontWeight:700,color:"#888",letterSpacing:"0.1em",marginBottom:16 }}>🏆 PREMI · {STAGIONE_CORRENTE}</div>
+        <div style={{ marginBottom:14 }}>
+          <PillNav tabs={PREMI_TABS} active={premiSubTab} onChange={setPremiSubTab} />
+        </div>
         <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
           {/* 19a */}
+          {premiSubTab==='giornata' && (
           <div style={{ background:"#6366f108",border:"1.5px solid #6366f120",borderRadius:12,padding:14 }}>
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:6 }}>
               <div style={{ fontSize:10,fontWeight:700,color:"#818cf8" }}>🏅 PREMI 19ª GIORNATA</div>
@@ -2616,7 +2606,9 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
               </div>
             );})}
           </div>
+          )}
           {/* Finali */}
+          {premiSubTab==='finali' && (
           <div style={{ background:"#f59e0b08",border:"1.5px solid #f59e0b20",borderRadius:12,padding:14 }}>
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:6 }}>
               <div style={{ fontSize:10,fontWeight:700,color:"#f59e0b" }}>🏆 PREMI FINALI</div>
@@ -2632,7 +2624,9 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
               </div>
             );})}
           </div>
+          )}
           {/* Coppa Italia */}
+          {premiSubTab==='coppa' && (
           <div style={{ background:"#10b98108",border:"1.5px solid #10b98120",borderRadius:12,padding:14 }}>
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:6 }}>
               <div style={{ fontSize:10,fontWeight:700,color:"#10b981" }}>🥇 PREMI COPPA ITALIA (art. 12.3)</div>
@@ -2655,7 +2649,9 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
               </div>
             ))}
           </div>
+          )}
           {/* Montepremi € */}
+          {premiSubTab==='montepremi' && (
           <div style={{ background:"#ffffff06",border:"1.5px solid #ffffff10",borderRadius:12,padding:14 }}>
             <div style={{ fontSize:10,fontWeight:700,color:"#888",marginBottom:8 }}>💶 MONTEPREMI €</div>
             <input style={{ ...inp,width:"100%",marginBottom:8 }} type="number" placeholder="Inserisci €" value={montepremi||""} onChange={e=>setMontepremi(parseFloat(e.target.value)||0)}/>
@@ -2666,7 +2662,9 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
               </div>
             ))}
           </div>
+          )}
           {/* Premi Individuali */}
+          {premiSubTab==='individuali' && (
           <div style={{ background:"#a855f708",border:"1.5px solid #a855f725",borderRadius:12,padding:14 }}>
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:6 }}>
               <div style={{ fontSize:10,fontWeight:700,color:"#a855f7" }}>🏅 PREMI INDIVIDUALI (art. 12.4–12.5)</div>
@@ -2692,6 +2690,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
               );
             })}
           </div>
+          )}
         </div>
       </div>
       )}
@@ -8337,7 +8336,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const location = useLocation();
   const navigate = useNavigate();
   const [tab, setTab] = useState("trattative");
-  const [mercatoSection, setMercatoSection] = useState(() => new URLSearchParams(location.search).get("section") || "mercato");
+  const [mercatoSection, setMercatoSection] = useState(() => new URLSearchParams(location.search).get("section") || "home");
+  const [showAltroMenu, setShowAltroMenu] = useState(false);
   // Se si arriva da un link tipo "/mercato?section=svincolati" mentre la pagina
   // Mercato è già montata (es. click su un giocatore dal Listone), la sezione
   // va sincronizzata anche dopo il mount, non solo allo stato iniziale.
@@ -8439,6 +8439,15 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const mySquadra = profile?.squadra;
   const squadraMittente = isAdmin ? (form.squadraMittente || mySquadra) : mySquadra;
   const mercato = getMercatoStatus();
+
+  // Svincoli recenti della propria squadra — per l'home Mercato ("ultime
+  // operazioni concluse"), unica fonte che li registra oggi è l'audit log
+  // (gli svincoli non passano dalla tabella trattative/aste).
+  const [svincoliRecenti, setSvincoliRecenti] = useState([]);
+  useEffect(() => {
+    if (!mySquadra) return;
+    getAuditLog({ squadra: mySquadra, azione: 'svincolo', limit: 5 }).then(rows => setSvincoliRecenti(rows || []));
+  }, [mySquadra]);
 
   // Badge sulla tab "Svincolati": quante aste in fase offerte hanno tra gli
   // interessati la mia squadra — stesso concetto delle "aste" pendenti sopra,
@@ -9112,6 +9121,24 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const astePending = aste.filter(a => a.stato === 'attiva');
   const asteChiuse  = aste.filter(a => a.stato !== 'attiva');
 
+  // ── Home Mercato: trattative in attesa di una mia risposta + ultime 5
+  // operazioni concluse (solo esiti positivi — mai rifiutate/perse/scadute). ──
+  const trattativeDaRispondere = myTrattative.filter(t => t.stato === 'in attesa' && t.a_squadra === mySquadra);
+  const ultimeOperazioni = [
+    ...myTrattative.filter(t => t.stato === 'completata').map(t => ({
+      key: 'tr' + t.id, data: t.updated_at || t.created_at, icon: '🤝',
+      label: t.giocatore, sub: `${t.a_squadra} → ${t.da_squadra}`, importo: t.prezzo,
+    })),
+    ...aste.filter(a => a.stato === 'assegnata' && a.vincitore === mySquadra).map(a => ({
+      key: 'as' + a.id, data: a.updated_at || a.created_at, icon: '🏷️',
+      label: a.giocatore, sub: `Asta vinta da ${a.proprietario}`, importo: a.prezzo_finale,
+    })),
+    ...svincoliRecenti.map(s => ({
+      key: 'sv' + s.id, data: s.timestamp, icon: '✂️',
+      label: s.descrizione, sub: 'Svincolo', importo: null,
+    })),
+  ].sort((a, b) => new Date(b.data) - new Date(a.data)).slice(0, 5);
+
   const sel = { ...FIELD, width: "100%" };
   const inp = { ...sel };
 
@@ -9135,39 +9162,92 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
         </div>
       )}
 
-      {/* ── Navigazione primaria: Trattative · Aste · Trasferimenti ──
-          Stesso stato (mercatoSection/tab) di prima, riorganizzato: prima
-          erano 6 pill dello stesso peso, ora le 3 attività principali sono
-          in primo piano e il resto (Svincolati/Listone/Confronta/Storico)
-          diventa strumenti secondari nella riga sotto. */}
-      <div style={{ display:"flex",gap:8,alignSelf:"flex-start",maxWidth:"100%",overflowX:"auto",WebkitOverflowScrolling:"touch" }}>
-        {[
-          { key:"trattative", label:"🤝 Trattative", active: mercatoSection==="mercato"&&tab==="trattative", badge: tutteTrattative.filter(t=>t.stato==='in attesa').length, onClick:()=>{setMercatoSection("mercato");setTab("trattative");} },
-          { key:"aste",       label:"🏷️ Aste",       active: mercatoSection==="mercato"&&tab==="aste",       badge: astePending.length,                                       onClick:()=>{setMercatoSection("mercato");setTab("aste");} },
-          { key:"trasferimenti", label:"🔁 Trasferimenti", active: mercatoSection==="trasferimenti", badge: 0, onClick:()=>setMercatoSection("trasferimenti") },
-        ].map(it => (
-          <button key={it.key} onClick={it.onClick}
-            style={{ padding:"10px 20px",borderRadius:11,border:"none",background:it.active?"#6366f1":"#ffffff0a",color:it.active?"#fff":"#888",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0 }}>
-            {it.label}
-            {it.badge>0 && <span style={{ background:"#ef4444",color:"#fff",borderRadius:"50%",padding:"1px 6px",fontSize:9,marginLeft:6,fontWeight:900 }}>{it.badge}</span>}
-          </button>
-        ))}
-      </div>
+      {/* ── Home Mercato: landing con 4 bottoni, notifiche pendenti e ultime
+          operazioni — da qualunque sotto-sezione si torna qui con "← Indietro"
+          invece di avere la nav primaria sempre fissa in cima. */}
+      {mercatoSection === "home" ? (
+        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+          {(trattativeDaRispondere.length > 0 || astePending.length > 0) && (
+            <div style={{ background:"#f59e0b0c", border:"1px solid #f59e0b30", borderRadius:14, padding:"12px 16px", display:"flex", flexDirection:"column", gap:6 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:"#f59e0b", letterSpacing:"0.08em" }}>⚠ RICHIEDE ATTENZIONE</div>
+              {trattativeDaRispondere.length > 0 && (
+                <div onClick={()=>{setMercatoSection("mercato");setTab("trattative");}} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer", fontSize:13 }}>
+                  <span>{trattativeDaRispondere.length} trattativ{trattativeDaRispondere.length===1?"a":"e"} in attesa di risposta</span>
+                  <IconChevronRight size={14} style={{ color:"#888" }} />
+                </div>
+              )}
+              {astePending.length > 0 && (
+                <div onClick={()=>{setMercatoSection("mercato");setTab("aste");}} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer", fontSize:13 }}>
+                  <span>{astePending.length} asta/e in corso</span>
+                  <IconChevronRight size={14} style={{ color:"#888" }} />
+                </div>
+              )}
+            </div>
+          )}
 
-      {/* ── Strumenti secondari ── */}
-      <div style={{ display:"flex",gap:16,flexWrap:"wrap" }}>
-        {[
-          { key:"svincolati",         label:"🔍 Svincolati",          onClick:()=>setMercatoSection("svincolati"),         badge: svincoliOffertePendenti, active: mercatoSection==="svincolati" },
-          { key:"listone",            label:"📋 Listone",             onClick:()=>setMercatoSection("listone"),            badge: 0, active: mercatoSection==="listone" },
-          { key:"compara-rose",       label:"⚖️ Confronta rose",      onClick:()=>setMercatoSection("compara-rose"),       badge: 0, active: mercatoSection==="compara-rose" },
-          { key:"compara-giocatori",  label:"🆚 Confronta giocatori", onClick:()=>setMercatoSection("compara-giocatori"),  badge: 0, active: mercatoSection==="compara-giocatori" },
-          { key:"storico",            label:"📜 Storico",             onClick:()=>{setMercatoSection("mercato");setTab("storico");}, badge: 0, active: mercatoSection==="mercato"&&tab==="storico" },
-        ].map(it => (
-          <span key={it.key} onClick={it.onClick} style={{ cursor:"pointer",fontSize:11.5,fontWeight:it.active?700:500,color:it.active?"#818cf8":"#666" }}>
-            {it.label}{it.badge>0 && ` (${it.badge})`}
-          </span>
-        ))}
-      </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+            {[
+              { key:"trattative", label:"🤝 Trattative", badge: tutteTrattative.filter(t=>t.stato==='in attesa').length, onClick:()=>{setMercatoSection("mercato");setTab("trattative");} },
+              { key:"aste",       label:"🏷️ Aste",       badge: astePending.length, onClick:()=>{setMercatoSection("mercato");setTab("aste");} },
+              { key:"svincolati", label:"🔍 Svincolati",  badge: svincoliOffertePendenti, onClick:()=>setMercatoSection("svincolati") },
+              { key:"altro",      label:"⋯ Altro",        badge: 0, onClick:()=>setShowAltroMenu(true) },
+            ].map(it => (
+              <button key={it.key} onClick={it.onClick}
+                style={{ position:"relative", padding:"20px 14px", borderRadius:14, border:"1px solid #ffffff12", background:"#ffffff08", color:"#f0f0f0", fontSize:14, fontWeight:700, cursor:"pointer", textAlign:"center" }}>
+                {it.label}
+                {it.badge>0 && <span style={{ position:"absolute", top:8, right:8, background:"#ef4444", color:"#fff", borderRadius:"50%", padding:"1px 6px", fontSize:9, fontWeight:900 }}>{it.badge}</span>}
+              </button>
+            ))}
+          </div>
+
+          {showAltroMenu && (
+            <div style={{ position:"fixed", inset:0, zIndex:998 }}>
+              <div onClick={()=>setShowAltroMenu(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)" }} />
+              <div style={{ position:"fixed", left:0, right:0, bottom:0, background:"#1a1d26", borderRadius:"20px 20px 0 0", boxShadow:"0 -8px 32px #00000099", padding:"10px 18px 24px", maxWidth:480, margin:"0 auto" }}>
+                <div style={{ width:36, height:4, borderRadius:99, background:"#ffffff20", margin:"0 auto 14px" }} />
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:"#888", letterSpacing:"0.08em" }}>ALTRO</div>
+                  <button onClick={()=>setShowAltroMenu(false)} aria-label="Chiudi" style={{ background:"none", border:"none", color:"#555", fontSize:18, cursor:"pointer" }}>✕</button>
+                </div>
+                {[
+                  { key:"trasferimenti", label:"🏷️ Lista Cedibili", onClick:()=>setMercatoSection("trasferimenti") },
+                  { key:"listone",            label:"📋 Listone",             onClick:()=>setMercatoSection("listone") },
+                  { key:"compara-rose",       label:"⚖️ Confronta rose",      onClick:()=>setMercatoSection("compara-rose") },
+                  { key:"compara-giocatori",  label:"🆚 Confronta giocatori", onClick:()=>setMercatoSection("compara-giocatori") },
+                  { key:"storico",            label:"📜 Storico",             onClick:()=>{setMercatoSection("mercato");setTab("storico");} },
+                ].map(it => (
+                  <div key={it.key} onClick={()=>{it.onClick();setShowAltroMenu(false);}}
+                    style={{ padding:"13px 10px", borderBottom:"1px solid #ffffff0a", fontSize:14, color:"#ddd", cursor:"pointer" }}>
+                    {it.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {ultimeOperazioni.length > 0 && (
+            <div>
+              <div style={{ fontSize:10, fontWeight:700, color:"#777", letterSpacing:"0.08em", marginBottom:8 }}>ULTIME OPERAZIONI</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                {ultimeOperazioni.map(op => (
+                  <div key={op.key} style={{ display:"flex", alignItems:"center", gap:10, background:"#ffffff06", border:"1px solid #ffffff0a", borderRadius:10, padding:"9px 12px" }}>
+                    <span style={{ fontSize:14 }}>{op.icon}</span>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:12.5, fontWeight:600, color:"#ddd", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{op.label}</div>
+                      <div style={{ fontSize:10, color:"#777" }}>{op.sub}</div>
+                    </div>
+                    {op.importo != null && <span style={{ fontSize:12, fontWeight:800, color:"#10b981", fontFamily:"'Bebas Neue',sans-serif" }}>{op.importo}M</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <button onClick={()=>setMercatoSection("home")} style={{ alignSelf:"flex-start", display:"flex", alignItems:"center", gap:6, padding:"7px 14px", borderRadius:999, border:"none", background:"#ffffff0a", color:"#888", fontSize:12, fontWeight:700, cursor:"pointer" }}>
+          <IconBack size={14} /> Mercato
+        </button>
+      )}
 
       {mercatoSection === "svincolati" && <SvincolatiPage profile={profile} isAdmin={isAdmin} teams={teams} />}
       {mercatoSection === "listone" && <ListonePage teams={teams} profile={profile} />}
@@ -9184,7 +9264,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
         <div>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8, marginBottom:14 }}>
             <div>
-              <h1 style={{ fontSize: 20, fontWeight: 900, color: "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "1px" }}>🏷️ LISTA TRASFERIMENTI</h1>
+              <h1 style={{ fontSize: 20, fontWeight: 900, color: "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "1px" }}>🏷️ LISTA CEDIBILI</h1>
               <p style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Giocatori dichiarati cedibili dai presidenti — puramente informativo, nessuna regola collegata.</p>
             </div>
             <button onClick={loadCedibili} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #f59e0b30", background: "#f59e0b10", color: "#f59e0b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>🔄 Aggiorna</button>
