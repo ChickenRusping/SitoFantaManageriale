@@ -1027,6 +1027,14 @@ function CalcolatoreGiornata({ profile, teams }) {
   const [salvatoMsg, setSalvatoMsg] = useState(null);
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
+  // Su mobile il form si apre come bottom sheet, su desktop come popup
+  // centrato — stesso pattern già usato per il popup Dettaglio giocatore.
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
+  useEffect(() => {
+    const h = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
   const [allenatoreGiornata, setAllenatoreGiornata] = useState(null);
   const [moduloGiornata, setModuloGiornata] = useState(""); // "" = Nessuno (obbligatorio sceglierne uno)
   // Investimenti il cui guadagno dipende da questa giornata (Accordi TV, Clean
@@ -1198,25 +1206,32 @@ function CalcolatoreGiornata({ profile, teams }) {
   };
 
   return (
-    <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 18, overflow: "hidden" }}>
-      {/* Header cliccabile */}
-      <div onClick={() => setOpen(v => !v)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 18px", cursor: "pointer" }}>
+    <>
+      {/* Trigger compatto — sempre visibile, apre il form in un popup/bottom
+          sheet invece di espandersi inline (riduce lo scrolling verticale). */}
+      <div onClick={() => setOpen(true)} style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 18, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 18px", cursor: "pointer" }}>
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em" }}>⚽ CALCOLATORE GUADAGNO GIORNATA</div>
           {myTeam && <div style={{ fontSize: 12, color: "#666", marginTop: 2 }}>{myTeam.name}</div>}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {totale !== 0 && open && (
-            <span style={{ fontSize: 16, fontWeight: 900, color, fontFamily: "'Bebas Neue',sans-serif" }}>
-              {totale >= 0 ? "+" : ""}{totale}M
-            </span>
-          )}
-          <span style={{ color: "#555", fontSize: 16 }}>{open ? "▲" : "▼"}</span>
-        </div>
+        <IconChevronRight size={16} style={{ color: "#555" }} />
       </div>
 
       {open && (
-        <div style={{ padding: "0 18px 18px" }}>
+      <div style={{ position: "fixed", inset: 0, zIndex: 998 }}>
+        <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)" }} />
+        <div style={isDesktop
+          ? { position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 480, maxWidth: "92vw", maxHeight: "88vh", overflowY: "auto", background: "#1a1d26", border: "1.5px solid #ffffff18", borderRadius: 16, boxShadow: "0 8px 32px #00000099", padding: 20 }
+          : { position: "fixed", left: 0, right: 0, bottom: 0, width: "100%", background: "#1a1d26", borderRadius: "20px 20px 0 0", boxShadow: "0 -8px 32px #00000099", padding: "10px 18px 20px", maxHeight: "85vh", overflowY: "auto" }
+        }>
+          {!isDesktop && <div style={{ width: 36, height: 4, borderRadius: 99, background: "#ffffff20", margin: "0 auto 12px" }} />}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em" }}>⚽ CALCOLATORE GUADAGNO GIORNATA</div>
+              {myTeam && <div style={{ fontSize: 12, color: "#666", marginTop: 2 }}>{myTeam.name}</div>}
+            </div>
+            <button onClick={() => setOpen(false)} aria-label="Chiudi" style={{ background: "none", border: "none", color: "#555", fontSize: 18, cursor: "pointer", padding: "0 4px", lineHeight: 1 }}>✕</button>
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
 
             {/* Giornata */}
@@ -1358,8 +1373,9 @@ function CalcolatoreGiornata({ profile, teams }) {
             <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", textAlign: "center" }}>Effettua il login per salvare</div>
           )}
         </div>
+      </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -1369,7 +1385,7 @@ function CalcolatoreGiornata({ profile, teams }) {
    progress bar, "Richiede attenzione" solo se esistono eventi reali, e
    ultime news. Nessuna funzione "prossimo incontro"/formazione: non esistono
    nell'app e non vengono introdotte qui. */
-function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate }) {
+function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, profile }) {
   const team = teams.find(t => t.name === mySquadra);
   const [allenatoreNome, setAllenatoreNome] = useState(null);
   const [posizione, setPosizione] = useState(null);
@@ -1440,15 +1456,22 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate }) 
 
   return (
     <div style={{ maxWidth: 640, margin: "0 auto" }}>
-      <HeroSurface style={{ marginBottom: 14 }}>
-        <TeamAvatar team={team} size={72} />
-        <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 22, letterSpacing: "0.5px", color: "#f0f0f0", marginTop: 10 }}>{team.name}</div>
-        {allenatoreNome && <div style={{ fontSize: 11.5, color: "#888", marginTop: 2 }}>All. {allenatoreNome}</div>}
-        {posizione != null && (
-          <div style={{ display: "inline-block", marginTop: 8, fontSize: 11, fontWeight: 700, background: "#ffffff10", color: BRAND.gold, padding: "4px 12px", borderRadius: 999 }}>
-            {posizione}° in classifica{punti != null ? ` · ${punti}pt` : ""}
+      <HeroSurface onClick={() => navigate(`/presidente/${team.id}`)} style={{ marginBottom: 14, cursor: "pointer" }}>
+        {/* Identità: stemma a sinistra, testo a destra — riempie meglio la
+            larghezza dell'hero invece della colonna centrata precedente.
+            Tutta l'hero è cliccabile → porta alla pagina Rosa della squadra. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16, textAlign: "left" }}>
+          <TeamAvatar team={team} size={84} />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 24, letterSpacing: "0.5px", color: "#f0f0f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{team.name}</div>
+            {allenatoreNome && <div style={{ fontSize: 11.5, color: "#888", marginTop: 2 }}>All. {allenatoreNome}</div>}
+            {posizione != null && (
+              <div style={{ display: "inline-block", marginTop: 8, fontSize: 11, fontWeight: 700, background: "#ffffff10", color: BRAND.gold, padding: "4px 12px", borderRadius: 999 }}>
+                {posizione}° in classifica{punti != null ? ` · ${punti}pt` : ""}
+              </div>
+            )}
           </div>
-        )}
+        </div>
         <div style={{ marginTop: 18, textAlign: "left" }}>
           <div style={{ fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "#777", textAlign: "center" }}>Bilancio</div>
           <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 26, color: BRAND.gold, textAlign: "center", marginBottom: 14 }}>{team.bilancio.toFixed(1)}M</div>
@@ -1465,6 +1488,13 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate }) 
           )}
         </div>
       </HeroSurface>
+
+      {/* Calcolatore Guadagno Giornata — spostato qui da Squadre su richiesta:
+          trigger compatto, il form si apre in popup/bottom sheet (vedi sopra
+          nel componente) invece di espandersi inline. */}
+      <div style={{ marginBottom: 14 }}>
+        <CalcolatoreGiornata profile={profile} teams={teams} />
+      </div>
 
       {haRichiesteAttenzione && (
         <div style={{ background: SEMANTIC.warning + "12", borderLeft: `3px solid ${SEMANTIC.warning}`, borderRadius: 12, padding: "12px 14px", marginBottom: 12 }}>
@@ -1748,8 +1778,7 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
         </div>
       )}
 
-      {/* ── 2. CALCOLATORE GIORNATA ── */}
-      <CalcolatoreGiornata profile={profile} teams={teams} />
+      {/* Calcolatore Giornata spostato in Home (sotto l'hero) — vedi HomePage. */}
 
       {/* ── 3. TUTTE LE SQUADRE (esclusa la propria, già in cima) ── */}
       <div>
