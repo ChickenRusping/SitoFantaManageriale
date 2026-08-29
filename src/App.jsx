@@ -1478,7 +1478,7 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
   }, [team?.name]);
 
   useEffect(() => {
-    getNotizie(undefined, 3).then(setNews).catch(() => setNews([]));
+    getNotizie(undefined, 2).then(setNews).catch(() => setNews([]));
   }, []);
 
   if (!team) {
@@ -1495,7 +1495,7 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
   // Le 2 scadenze di Lega più vicine — stesso calendario/stessa funzione di
   // risoluzione già usati in Lega → Scadenze (getResolvedDeadlines, definita
   // a livello di modulo), nessuna logica duplicata o reinventata qui.
-  const prossimeScadenzeLega = getResolvedDeadlines(new Date()).filter(d => d.days >= 0).slice(0, 3);
+  const prossimeScadenzeLega = getResolvedDeadlines(new Date()).filter(d => d.days >= 0).slice(0, 2);
 
   // I contratti in scadenza compaiono in Home solo quando la scadenza reale
   // (31/05 — "Rinnovo/non rinnovo contratti", stesso calendario di cui sopra)
