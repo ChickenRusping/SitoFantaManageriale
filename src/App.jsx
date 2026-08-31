@@ -229,8 +229,8 @@ import { SURFACE, BRAND, SEMANTIC, FIELD } from "./design-system.js";
 import { IconHome, IconShield, IconTrophy, IconMarket, IconMore, IconAdmin, IconChevronRight, IconArchive, IconRefresh, IconPlus, IconEdit, IconTrash, IconClose, IconSearch, IconBack } from "./components/ui/Icons.jsx";
 import { ProgressBar } from "./components/ui/ProgressBar.jsx";
 import { HeroSurface } from "./components/ui/Surface.jsx";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getListaDesideri, insertListaDesiderio, updateListaDesiderioNote, deleteListaDesiderio, subscribeListaDesideri, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, registraEventoGiornataInvestimento, getEffettiInvestimenti, getSquadreConSuperClub, getStatoGuadagniGiornata,
-  getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, usaContatoreInvestimento, registraEventoInvestimento, annullaEventoInvestimento, toggleTraguardoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getListaDesideri, insertListaDesiderio, updateListaDesiderioNote, deleteListaDesiderio, subscribeListaDesideri, notificaListaDesideri, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, registraEventoGiornataInvestimento, getEffettiInvestimenti, getSquadreConSuperClub, getStatoGuadagniGiornata,
+  getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, usaContatoreInvestimento, registraEventoInvestimento, annullaEventoInvestimento, toggleTraguardoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, deleteSvincolato, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
   getBonusTrattativa, getBonusTrattativeBatch, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -9881,10 +9881,10 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                     {rosaTarget
                       .slice()
                       .sort((a, b) => {
-                        const ruoli = ['P','D','Ds','E','M','T','W','A','Pc'];
-                        const ia = ruoli.findIndex(r => (a.ruolo || '').startsWith(r));
-                        const ib = ruoli.findIndex(r => (b.ruolo || '').startsWith(r));
-                        return ia - ib || a.nome.localeCompare(b.nome);
+                        const roleOrder = ["Por","Dc","Dd","Ds","B","E","M","C","T","W","A","Pc"];
+                        const ia = roleOrder.indexOf((a.ruolo || '').split(";")[0]);
+                        const ib = roleOrder.indexOf((b.ruolo || '').split(";")[0]);
+                        return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.nome.localeCompare(b.nome);
                       })
                       .map(p => {
                         const rc = getRoleColor(p.ruolo);
@@ -10299,10 +10299,10 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                 {myRosa
                   .slice()
                   .sort((a, b) => {
-                    const ruoli = ['P','D','Ds','E','M','T','W','A','Pc'];
-                    const ia = ruoli.findIndex(r => (a.ruolo || '').startsWith(r));
-                    const ib = ruoli.findIndex(r => (b.ruolo || '').startsWith(r));
-                    return ia - ib || a.nome.localeCompare(b.nome);
+                    const roleOrder = ["Por","Dc","Dd","Ds","B","E","M","C","T","W","A","Pc"];
+                    const ia = roleOrder.indexOf((a.ruolo || '').split(";")[0]);
+                    const ib = roleOrder.indexOf((b.ruolo || '').split(";")[0]);
+                    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.nome.localeCompare(b.nome);
                   })
                   .map(p => {
                     const rc = getRoleColor(p.ruolo);
@@ -11127,92 +11127,47 @@ function RisultatoAstaCard({ asta, isAdmin }) {
 
 // ── SvincolatiPage principale ─────────────────────────────────────────────────
 // ── SvincolatiTable ───────────────────────────────────────────────────────────
-function SvincolatiTable({ filtered, chiamateAttive, mySquadra, isAdmin, setShowCallForm, onEditAdmin }) {
-  const rich = (filtered || []).map(p => ({
-    ...p,
-    _quotNum:  Number(p.quot  || 0),
-    _stipNum:  Number(p.stip  || 0),
-    _clausNum: Number(p.clausola || 0),
-    _anniNum:  Number(p.anni  || 0),
-    _mvNum:    Number(p.media_voto || 0),
-    _mfvNum:   Number(p.media_fantavoto || 0),
-  }));
-  const { sorted, SortTh } = useSortableTable(rich, "_quotNum", "desc");
-  const finestra = getFinestraChiamateEffettiva();
+// Elenco svincolati in stile "Lista Premium" della Rosa: righe compatte con
+// badge ruolo, nome, e sottotitolo con squadra/quot/stip/clausola/medie. Il
+// tap sull'intera riga apre il popup azioni (chiamata, vivaio, desideri),
+// invece di un bottone dedicato per colonna.
+function SvincolatiTable({ filtered, chiamateAttive, onOpenPlayer }) {
+  const sorted = [...(filtered || [])].sort((a, b) => Number(b.quot || 0) - Number(a.quot || 0));
+
+  if (sorted.length === 0) {
+    return <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", textAlign: "center", padding: 24 }}>Nessun giocatore trovato con questi filtri.</div>;
+  }
 
   return (
-    <div style={{ overflowX: "auto" }}>
-      {/* Badge finestra */}
-      <div style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 10, padding: "3px 10px", borderRadius: 20, background: finestra.aperta ? "#10b98118" : "#ffffff08", color: finestra.aperta ? "#10b981" : "#555", border: `1px solid ${finestra.aperta ? "#10b98130" : "#ffffff10"}`, fontWeight: 600 }}>
-          {finestra.messaggio}
-        </span>
-        {isAdmin && !finestra.aperta && finestra.modalita !== 'chiuso' && <span style={{ fontSize: 9, color: "#6366f1" }}>Admin: puoi chiamare sempre</span>}
-      </div>
-
-      <table style={{ width: "100%", minWidth: 720, borderCollapse: "collapse", fontSize: 12 }}>
-        <thead>
-          <tr>
-            <SortTh col="ruolo"          label="Ruolo"  align="center" style={{ position: "sticky", left: 0, background: "#0d0f14", zIndex: 2 }} />
-            <SortTh col="_anniNum"       label="Età"    align="center" />
-            <SortTh col="nome"           label="Nome"   align="left"   />
-            <SortTh col="squadra_serie_a" label="Squadra" align="left" />
-            <SortTh col="_quotNum"       label="Q"      align="center" />
-            <SortTh col="_stipNum"       label="Stip."  align="center" />
-            <SortTh col="_clausNum"      label="Claus." align="center" />
-            <SortTh col="_mvNum"         label="M.Voto"  align="center" />
-            <SortTh col="_mfvNum"        label="M.Fantav." align="center" />
-            <th style={{ padding: "6px 8px", fontSize: 10, color: "#555", borderBottom: "1px solid #ffffff12" }}></th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((p, i) => {
-            const rc = getRoleColor(p.ruolo);
-            const giaChi = chiamateAttive.some(c => c.giocatore === p.nome);
-            const fuori  = p.fuoriLista || p.fuori_lista;
-            const canCall = isAdmin || finestra.aperta;
-            return (
-              <tr key={i}
-                style={{ borderBottom: "1px solid #ffffff06", background: fuori ? "#ef444406" : giaChi ? "#f59e0b06" : p.isVivaio ? "#10b98106" : "transparent" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
-                onMouseLeave={e => e.currentTarget.style.background = fuori ? "#ef444406" : giaChi ? "#f59e0b06" : p.isVivaio ? "#10b98106" : "transparent"}>
-                <td style={{ padding: "7px 8px", textAlign: "center", position: "sticky", left: 0, background: fuori ? "#1a1214" : giaChi ? "#1a170f" : p.isVivaio ? "#0f1a15" : "#0d0f14", zIndex: 1 }}>
-                  <span style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, borderRadius: 5, padding: "2px 5px", fontSize: 10, fontWeight: 700 }}>{p.ruolo}</span>
-                </td>
-                <td style={{ padding: "7px 8px", textAlign: "center", color: p.anni <= 21 ? "#a78bfa" : p.anni >= 31 ? "#f97316" : "#888" }}>{p.anni}</td>
-                <td style={{ padding: "7px 8px", color: fuori ? "#ef4444" : "#e0e0e0", fontWeight: 600 }}>
-                  {p.nome}
-                  {p.isVivaio && <span style={{ marginLeft: 5, fontSize: 9, background: "#10b98120", color: "#10b981", border: "1px solid #10b98140", borderRadius: 4, padding: "1px 4px", fontWeight: 700 }}>🌱</span>}
-                  {fuori && <FuoriListaBadge compact />}
-                  {giaChi && <span style={{ marginLeft: 5, fontSize: 9, background: "#f59e0b18", color: "#f59e0b", border: "1px solid #f59e0b40", borderRadius: 4, padding: "1px 4px" }}>📞</span>}
-                  {!fuori && p.anni <= 21 && !p.isVivaio && <U21Badge compact />}
-                  {!fuori && p.anni >= 31 && <Over31Badge compact />}
-                </td>
-                <td style={{ padding: "7px 8px", color: "#888" }}>{p.squadra_serie_a || "—"}</td>
-                <td style={{ padding: "7px 8px", textAlign: "center", fontWeight: 800, color: p.quot >= 20 ? "#f59e0b" : "#ccc", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14 }}>{p.quot}</td>
-                <td style={{ padding: "7px 8px", textAlign: "center", color: "#aaa" }}>{p.stip}M</td>
-                <td style={{ padding: "7px 8px", textAlign: "center", color: "#666" }}>{Number(p.clausola || 0).toFixed(1)}M</td>
-                <td style={{ padding: "7px 8px", textAlign: "center", color: p.media_voto >= 6.5 ? "#10b981" : p.media_voto >= 6 ? "#f59e0b" : "#888" }}>{p.media_voto > 0 ? Number(p.media_voto).toFixed(2) : "—"}</td>
-                <td style={{ padding: "7px 8px", textAlign: "center", color: p.media_fantavoto >= 7 ? "#10b981" : p.media_fantavoto >= 6 ? "#f59e0b" : "#888" }}>{p.media_fantavoto > 0 ? Number(p.media_fantavoto).toFixed(2) : "—"}</td>
-                <td style={{ padding: "7px 8px", textAlign: "center" }}>
-                  <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
-                    <button
-                      onClick={() => canCall && setShowCallForm(p)}
-                      disabled={!canCall}
-                      title={!canCall ? finestra.messaggio : ""}
-                      style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: giaChi ? "#f59e0b22" : canCall ? "#ffffff0f" : "#ffffff05", color: giaChi ? "#f59e0b" : canCall ? "#888" : "#333", fontSize: 10, fontWeight: 700, cursor: canCall ? "pointer" : "not-allowed", whiteSpace: "nowrap" }}>
-                      {giaChi ? "📞" : canCall ? "📞 Chiama" : "🔒"}
-                    </button>
-                    {isAdmin && onEditAdmin && (
-                      <button onClick={() => onEditAdmin(p)} style={{ padding: "4px 7px", borderRadius: 6, border: "none", background: "#6366f118", color: "#818cf8", fontSize: 10, cursor: "pointer" }}>✏️</button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div>
+      {sorted.map(p => {
+        const rc = getRoleColor(p.ruolo);
+        const giaChi = chiamateAttive.some(c => c.giocatore === p.nome);
+        const fuori = p.fuoriLista || p.fuori_lista;
+        return (
+          <div key={p.id || p.nome} onClick={() => onOpenPlayer(p)}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 4px", borderBottom: "1px solid #ffffff0a", cursor: "pointer" }}
+            onMouseEnter={e => e.currentTarget.style.background = "#ffffff06"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+            <span style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, borderRadius: 6, padding: "3px 6px", fontSize: 9.5, fontWeight: 700, flexShrink: 0, minWidth: 42, textAlign: "center" }}>{p.ruolo}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: fuori ? "#ef4444" : "#e8e8e8" }}>
+                {p.nome}
+                {p.isVivaio && <span style={{ marginLeft: 5, fontSize: 9, background: "#10b98120", color: "#10b981", border: "1px solid #10b98140", borderRadius: 4, padding: "1px 4px", fontWeight: 700 }}>🌱</span>}
+                {fuori && <FuoriListaBadge compact />}
+                {giaChi && <span style={{ marginLeft: 5, fontSize: 9, background: "#f59e0b18", color: "#f59e0b", border: "1px solid #f59e0b40", borderRadius: 4, padding: "1px 4px" }}>📞</span>}
+                {!fuori && p.anni <= 21 && <U21Badge compact />}
+                {!fuori && p.anni >= 31 && <Over31Badge compact />}
+              </div>
+              <div style={{ fontSize: 10.5, color: "#888", marginTop: 1 }}>
+                {p.squadra_serie_a || "—"} · Q<span style={{ color: "#f59e0b", fontWeight: 700 }}>{p.quot}</span> · {Number(p.stip || 0).toFixed(2)}M · claus. {Number(p.clausola || 0).toFixed(1)}M
+                {p.media_voto > 0 && <> · MV {Number(p.media_voto).toFixed(2)}</>}
+                {p.media_fantavoto > 0 && <> · MFV {Number(p.media_fantavoto).toFixed(2)}</>}
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -11676,8 +11631,6 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
   const [callTeam, setCallTeam]       = useState(profile?.squadra || TEAMS[0].name);
   const [callVivaio, setCallVivaio]   = useState(false);
   const [investimenti, setInvestimenti] = useState([]);
-  const [editSvincolato, setEditSvincolato] = useState(null);
-  const [importando, setImportando]   = useState(false);
   const [chiamando, setChiamando]     = useState(false);
   const [now, setNow]                 = useState(new Date());
   const [chiamateAttiveAperto, setChiamateAttiveAperto] = useState(true);
@@ -11809,6 +11762,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
         quotazione: player.quot,
         squadra,
       });
+      notificaListaDesideri(player.nome, squadra, `${squadra} lo ha chiamato dagli svincolati`);
       setShowCallForm(null);
       setCallVivaio(false);
       await loadAll();
@@ -11817,43 +11771,6 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
     } finally {
       setChiamando(false);
     }
-  }
-
-  // Import Excel svincolati
-  async function handleImportExcel(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    setImportando(true);
-    try {
-      const XLSX = await import("https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs");
-      const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf);
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws);
-      const n = await importSvincolatiDaArray(rows, STAGIONE_CORRENTE);
-      cacheInvalidate('svincolati_');
-      alert(`✅ Importati ${n} svincolati`);
-      await loadAll();
-    } catch(err) { alert("Errore: " + err.message); }
-    finally { setImportando(false); e.target.value = ""; }
-  }
-
-  async function salvaEditSvincol() {
-    if (!editSvincolato) return;
-    try {
-      await updateSvincolatoStats(editSvincolato.id, {
-        partite: Number(editSvincolato.partite||0),
-        media_voto: Number(editSvincolato.media_voto||0),
-        media_fantavoto: Number(editSvincolato.media_fantavoto||0),
-        gol: Number(editSvincolato.gol||0),
-        assist: Number(editSvincolato.assist||0),
-        quot: Number(editSvincolato.quot||0),
-        fuori_lista: Boolean(editSvincolato.fuori_lista),
-      });
-      cacheInvalidate('svincolati_');
-      setEditSvincolato(null);
-      await loadAll();
-    } catch(e) { alert(`Errore: ${e.message}`); }
   }
 
   // Filtri lista
@@ -11868,7 +11785,6 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
 
   const finestra = getFinestraChiamateEffettiva();
   const inpStyle = { padding: "8px 12px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 13 };
-  const inpSm = { padding: "4px 6px", borderRadius: 6, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 11 };
 
   const filtered = svincolatiDB.filter(p => {
     if (ruoloFilter === "⚠️ Fuori Lista") return p.fuori_lista;
@@ -12069,19 +11985,13 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
             {Object.keys(gruppoRuoli).map(k => <option key={k}>{k}</option>)}
           </select>
           <button onClick={() => setSoloVivaio(v => !v)}
-            style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${soloVivaio ? "#10b98160" : "#ffffff18"}`, background: soloVivaio ? "#10b98118" : "transparent", color: soloVivaio ? "#10b981" : "#666", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            style={{ padding: "8px 14px", borderRadius: 999, border: `1px solid ${soloVivaio ? "#10b98160" : "#ffffff18"}`, background: soloVivaio ? "#10b98118" : "transparent", color: soloVivaio ? "#10b981" : "#666", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
             🌱 Solo Vivaio
           </button>
           <button onClick={() => setNascondiFuori(v => !v)}
-            style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${nascondiFuori ? "#ef444460" : "#ffffff18"}`, background: nascondiFuori ? "#ef444418" : "transparent", color: nascondiFuori ? "#ef4444" : "#666", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            style={{ padding: "8px 14px", borderRadius: 999, border: `1px solid ${nascondiFuori ? "#ef444460" : "#ffffff18"}`, background: nascondiFuori ? "#ef444418" : "transparent", color: nascondiFuori ? "#ef4444" : "#666", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
             {nascondiFuori ? "⚠️ Mostra Fuori Lista" : "✕ Nascondi Fuori Lista"}
           </button>
-          {isAdmin && (
-            <label style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #ffffff18", background: "#ffffff08", color: "#888", fontSize: 11, cursor: "pointer" }}>
-              {importando ? "⏳ Import..." : "📥 Import Excel"}
-              <input type="file" accept=".xlsx,.xls" style={{ display: "none" }} onChange={handleImportExcel} disabled={importando} />
-            </label>
-          )}
         </div>
 
         {/* Info colonne */}
@@ -12090,14 +12000,11 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
           <span>📞 = In lista chiamate attive</span>
         </div>
 
-        {/* Tabella */}
+        {/* Elenco */}
         <SvincolatiTable
           filtered={filtered}
           chiamateAttive={chiamate.filter(c => c.stato !== 'conclusa')}
-          mySquadra={mySquadra}
-          isAdmin={isAdmin}
-          setShowCallForm={setShowCallForm}
-          onEditAdmin={isAdmin ? (p) => setEditSvincolato({ ...p }) : null}
+          onOpenPlayer={setShowCallForm}
         />
       </div>
 
@@ -12180,26 +12087,6 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
         </div>
       )}
 
-      {/* ── EDIT SVINCOLATO (admin) ── */}
-      {editSvincolato && isAdmin && (
-        <div style={{ background: "#6366f108", border: "1px solid #6366f130", borderRadius: 14, padding: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#818cf8", marginBottom: 12 }}>✏️ Modifica {editSvincolato.nome}</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px,1fr))", gap: 8, marginBottom: 12 }}>
-            {[["Quota","quot"],["Partite","partite"],["Media Voto","media_voto"],["Media FV","media_fantavoto"],["Gol","gol"],["Assist","assist"]].map(([l,k]) => (
-              <div key={k}>
-                <div style={{ fontSize: 9, color: "#555", marginBottom: 3 }}>{l}</div>
-                <input type="number" step="0.01" value={editSvincolato[k]||0}
-                  onChange={e => setEditSvincolato(s => ({...s, [k]: e.target.value}))}
-                  style={{ ...inpSm, width: "100%" }} />
-              </div>
-            ))}
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={salvaEditSvincol} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "#10b981", color: "#000", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💾 Salva</button>
-            <button onClick={() => setEditSvincolato(null)} style={{ padding: "6px 10px", borderRadius: 8, border: "none", background: "#ffffff10", color: "#888", fontSize: 12, cursor: "pointer" }}>✕</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
