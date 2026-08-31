@@ -262,12 +262,32 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
 // ─── LOCK BODY SCROLL (popup/bottom-sheet aperti) ───────────────────────────
 // Impedisce lo scroll del contenuto sotto un popup/modale mentre è aperto —
 // senza, su mobile il dito scrolla il popup E la pagina dietro insieme.
+// Il solo "overflow:hidden" su body non basta su iOS Safari: la pagina resta
+// comunque trascinabile/scrollabile col dito (bug noto del rubber-band
+// scrolling), quindi in più si blocca la pagina in posizione fissa mentre un
+// popup è aperto, e si ripristina esattamente lo scroll di partenza alla
+// chiusura — stessa tecnica usata per i bottom-sheet nativi.
 function useLockBodyScroll(locked) {
   useEffect(() => {
     if (!locked) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    const scrollY = window.scrollY;
+    const body = document.body;
+    const prev = { position: body.style.position, top: body.style.top, left: body.style.left, right: body.style.right, width: body.style.width, overflow: body.style.overflow };
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+    return () => {
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.left = prev.left;
+      body.style.right = prev.right;
+      body.style.width = prev.width;
+      body.style.overflow = prev.overflow;
+      window.scrollTo(0, scrollY);
+    };
   }, [locked]);
 }
 
@@ -3748,7 +3768,11 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
           click). Mobile: stesso contenuto, ma diventa una vera bottom sheet
           — ancorata in basso, sempre raggiungibile col pollice, come
           richiesto — nessuna azione/funzione qui dentro è stata toccata. */}
-      {popup&&(
+      {popup&&(<>
+        {/* Backdrop: intercetta tap/scroll sullo sfondo (mancava del tutto
+            prima — su desktop resta trasparente per non coprire la tabella,
+            su mobile scurisce come ogni altro popup dell'app). */}
+        <div onClick={()=>setPopup(null)} style={{ position:"fixed", inset:0, zIndex:9998, background: isDesktop ? "transparent" : "rgba(0,0,0,0.55)" }} />
         <div
           onClick={e=>e.stopPropagation()}
           onTouchEnd={e=>e.stopPropagation()}
@@ -4000,7 +4024,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
             </div>
           )}
         </div>
-      )}
+      </>)}
 
       {/* ── Vivaio ── */}
       {(vivaio.length>0||isAdmin||mySquadra===teamName)&&(
