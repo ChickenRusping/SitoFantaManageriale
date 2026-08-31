@@ -11498,6 +11498,8 @@ function ListaDesideriPage({ teams, profile, isAdmin }) {
   const [listone, setListone] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [noteDraft, setNoteDraft] = useState({});
+  const [search, setSearch] = useState("");
+  const [aggiungendo, setAggiungendo] = useState(null); // nome del giocatore in corso di aggiunta
 
   const loadDesideri = useCallback(() => {
     if (!mySquadra) return;
@@ -11533,6 +11535,23 @@ function ListaDesideriPage({ teams, profile, isAdmin }) {
     else setPlayerPopup({ svincolato: d.giocatore });
   }
 
+  const giaInLista = useMemo(() => new Set(desideri.map(d => d.giocatore)), [desideri]);
+  const risultatiRicerca = useMemo(() => {
+    if (!listone || !search.trim()) return [];
+    const q = search.toLowerCase();
+    return listone.filter(p => (p.nome || "").toLowerCase().includes(q) && !giaInLista.has(p.nome)).slice(0, 12);
+  }, [listone, search, giaInLista]);
+
+  async function aggiungi(p) {
+    setAggiungendo(p.nome);
+    try {
+      await insertListaDesiderio(mySquadra, p.nome, "");
+      loadDesideri();
+      setSearch("");
+    } catch (err) { alert(err.message); }
+    finally { setAggiungendo(null); }
+  }
+
   async function rimuovi(id, e) {
     e.stopPropagation();
     if (!confirm("Rimuovere questo giocatore dalla lista desideri?")) return;
@@ -11551,12 +11570,41 @@ function ListaDesideriPage({ teams, profile, isAdmin }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div>
         <div style={{ fontSize: 22, fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif", color: "#f0f0f0" }}>⭐ LISTA DESIDERI</div>
-        <div style={{ fontSize: 12, color: "#666" }}>Visibile solo a te · {desideri.length} giocator{desideri.length === 1 ? "e" : "i"} · aggiungili dal 📋 Listone toccando la ★</div>
+        <div style={{ fontSize: 12, color: "#666" }}>Visibile solo a te · {desideri.length} giocator{desideri.length === 1 ? "e" : "i"}</div>
+      </div>
+
+      <div style={{ position: "relative" }}>
+        <input type="text" placeholder="🔍 Cerca un giocatore da aggiungere..." value={search} onChange={e => setSearch(e.target.value)}
+          style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", borderRadius: 12, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 13 }} />
+        {risultatiRicerca.length > 0 && (
+          <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, background: "#14161c", border: "1px solid #ffffff18", borderRadius: 12, maxHeight: 300, overflowY: "auto", zIndex: 20, boxShadow: "0 8px 24px #00000060" }}>
+            {risultatiRicerca.map(p => {
+              const team = teams?.find(t => stessaSquadra(t.name, p.fanta_squadra || ""));
+              return (
+                <div key={p.id || p.nome} onClick={() => aggiungendo ? null : aggiungi(p)}
+                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", cursor: aggiungendo ? "wait" : "pointer", borderBottom: "1px solid #ffffff08" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  {team && <TeamAvatar team={team} size={20} />}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: "#f0f0f0" }}>{p.nome}</div>
+                    <div style={{ fontSize: 10, color: "#888" }}>{p.ruolo || "—"} · {p.fanta_squadra || "Svincolato"} · Q{p.quot ?? "—"}</div>
+                  </div>
+                  <span style={{ fontSize: 16, color: "#f59e0b" }}>{aggiungendo === p.nome ? "⏳" : "+"}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {search.trim() && risultatiRicerca.length === 0 && (
+          <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, background: "#14161c", border: "1px solid #ffffff18", borderRadius: 12, padding: "10px 14px", fontSize: 12, color: "#666", fontStyle: "italic", zIndex: 20 }}>
+            Nessun giocatore trovato (o già in lista).
+          </div>
+        )}
       </div>
 
       {desideri.length === 0 ? (
         <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 10, padding: 20, textAlign: "center" }}>
-          Nessun giocatore in lista. Vai sul 📋 Listone e tocca la ★ accanto a un giocatore per aggiungerlo.
+          Nessun giocatore in lista. Usa la ricerca qui sopra per aggiungerne uno.
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
