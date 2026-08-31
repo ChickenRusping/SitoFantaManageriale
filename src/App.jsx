@@ -11496,8 +11496,6 @@ function ListaDesideriPage({ teams, profile, isAdmin }) {
   const [desideri, setDesideri] = useState([]);
   const [loading, setLoading] = useState(true);
   const [listone, setListone] = useState(null);
-  const [expandedId, setExpandedId] = useState(null);
-  const [noteDraft, setNoteDraft] = useState({});
   const [search, setSearch] = useState("");
   const [aggiungendo, setAggiungendo] = useState(null); // nome del giocatore in corso di aggiunta
 
@@ -11558,11 +11556,6 @@ function ListaDesideriPage({ teams, profile, isAdmin }) {
     try { await deleteListaDesiderio(id); loadDesideri(); } catch (err) { alert(err.message); }
   }
 
-  async function salvaNota(id, e) {
-    e.stopPropagation();
-    try { await updateListaDesiderioNote(id, noteDraft[id] ?? ""); loadDesideri(); } catch (err) { alert(err.message); }
-  }
-
   if (!mySquadra) return <div style={{ fontSize: 13, color: "#666", padding: 20 }}>Disponibile solo per i presidenti di squadra.</div>;
   if (loading) return <div style={{ fontSize: 13, color: "#666", padding: 20 }}>Caricamento...</div>;
 
@@ -11611,63 +11604,19 @@ function ListaDesideriPage({ teams, profile, isAdmin }) {
           {desideri.map(d => {
             const riga = trovaRigaListone(d.giocatore);
             const team = trovaSquadra(riga);
-            const expanded = expandedId === d.id;
             return (
-              <div key={d.id} style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, overflow: "hidden" }}>
-                <div onClick={() => apriAzioni(d)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", cursor: "pointer" }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#f0f0f0" }}>{d.giocatore}</div>
-                    <div style={{ fontSize: 11, color: "#888", marginTop: 2, display: "flex", alignItems: "center", gap: 5 }}>
-                      {riga?.ruolo && <span>{riga.ruolo} ·</span>}
-                      {team ? (<><TeamAvatar team={team} size={14} /> {team.name}</>) : riga ? <span style={{ color: "#10b981" }}>Svincolato</span> : <span style={{ color: "#666" }}>Non nel listone</span>}
-                    </div>
+              <div key={d.id} onClick={() => apriAzioni(d)}
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, cursor: "pointer" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#f0f0f0" }}>{d.giocatore}</div>
+                  <div style={{ fontSize: 11, color: "#888", marginTop: 2, display: "flex", alignItems: "center", gap: 5 }}>
+                    {riga?.ruolo && <span>{riga.ruolo} ·</span>}
+                    {team ? (<><TeamAvatar team={team} size={14} /> {team.name}</>) : riga ? <span style={{ color: "#10b981" }}>Svincolato</span> : <span style={{ color: "#666" }}>Non nel listone</span>}
+                    {d.note && <span style={{ color: "#666", fontStyle: "italic" }}>· 📝</span>}
                   </div>
-                  {riga?.quot != null && <span style={{ fontSize: 13, fontWeight: 800, color: "#f59e0b" }}>{riga.quot}</span>}
-                  <button onClick={e => { e.stopPropagation(); setExpandedId(expanded ? null : d.id); }}
-                    style={{ background: "none", border: "none", color: "#888", fontSize: 14, cursor: "pointer", padding: 4 }} title="Statistiche">📊</button>
-                  <button onClick={e => rimuovi(d.id, e)} style={{ background: "none", border: "none", color: "#ef4444", fontSize: 14, cursor: "pointer", padding: 4 }} title="Rimuovi dalla lista">🗑</button>
                 </div>
-
-                {expanded && (
-                  <div onClick={e => e.stopPropagation()} style={{ padding: "0 14px 14px", borderTop: "1px solid #ffffff0a" }}>
-                    {riga ? (
-                      <>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginTop: 12 }}>
-                          {[
-                            { label: "Presenze", val: riga.partite_voto ?? 0 },
-                            { label: "M.Voto", val: riga.media_voto ?? 0 },
-                            { label: "M.Fantavoto", val: riga.media_fantavoto ?? 0 },
-                            { label: "Gol", val: riga.gol_fatti ?? 0 },
-                            { label: "Assist", val: riga.assist ?? 0 },
-                            { label: "Amm.", val: riga.ammonizioni ?? 0 },
-                            { label: "Esp.", val: riga.espulsioni ?? 0 },
-                            { label: "Clausola", val: riga.clausola ?? "—" },
-                          ].map(s => (
-                            <div key={s.label} style={{ background: "#ffffff05", borderRadius: 8, padding: "6px 8px", textAlign: "center" }}>
-                              <div style={{ fontSize: 9, color: "#666" }}>{s.label}</div>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: "#ddd" }}>{s.val}</div>
-                            </div>
-                          ))}
-                        </div>
-                        <GraficoQuotazione nome={d.giocatore} quotRosa={riga.quot} />
-                      </>
-                    ) : (
-                      <div style={{ fontSize: 11, color: "#666", fontStyle: "italic", marginTop: 10 }}>Giocatore non trovato nel listone (nome cambiato o rimosso).</div>
-                    )}
-
-                    <div style={{ marginTop: 12 }}>
-                      <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>NOTA PERSONALE</div>
-                      <textarea
-                        value={noteDraft[d.id] ?? d.note ?? ""}
-                        onChange={e => setNoteDraft(f => ({ ...f, [d.id]: e.target.value }))}
-                        onBlur={e => salvaNota(d.id, e)}
-                        placeholder="Es. offrire in prestito, aspettare fine stagione..."
-                        rows={2}
-                        style={{ width: "100%", background: "#0d0f14", border: "1px solid #ffffff18", borderRadius: 8, color: "#ddd", fontSize: 12, padding: "8px 10px", resize: "vertical", fontFamily: "inherit" }}
-                      />
-                    </div>
-                  </div>
-                )}
+                {riga?.quot != null && <span style={{ fontSize: 13, fontWeight: 800, color: "#f59e0b" }}>{riga.quot}</span>}
+                <button onClick={e => rimuovi(d.id, e)} style={{ background: "none", border: "none", color: "#ef4444", fontSize: 14, cursor: "pointer", padding: 4 }} title="Rimuovi dalla lista">🗑</button>
               </div>
             );
           })}
@@ -11720,6 +11669,7 @@ function GiocatoreAltruiPopup({ team, playerNome, mySquadra, navigate, onClose }
   const [saving, setSaving] = useState(false);
   const [offerMode, setOfferMode] = useState('cessione');
   const [desideri, setDesideri] = useState([]);
+  const [noteDraft, setNoteDraft] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -11745,6 +11695,11 @@ function GiocatoreAltruiPopup({ team, playerNome, mySquadra, navigate, onClose }
       loadDesideri();
     } catch (e) { alert(e.message); }
   }
+  async function salvaNota() {
+    if (!desiderioAttuale) return;
+    try { await updateListaDesiderioNote(desiderioAttuale.id, noteDraft ?? ""); loadDesideri(); }
+    catch (e) { alert(e.message); }
+  }
 
   async function handleRichiamaCedente(p) {
     const quotBase = Number(p.quot_reale ?? p.quot);
@@ -11768,9 +11723,23 @@ function GiocatoreAltruiPopup({ team, playerNome, mySquadra, navigate, onClose }
   return (
     <DetailSheet title={player.nome} subtitle={`Q${player.quot} · ${player.ruolo} · ${player.anni}aa · ${calcolaStipCorretto(Number(player.quot||0),Number(player.anni_contratto||0),Number(player.anni||0)).toFixed(2)}M`} isDesktop={isDesktop} onClose={onClose}>
       {mySquadra && (
-        <button onClick={toggleDesiderio} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontSize: 12, color: desiderioAttuale ? "#f59e0b" : "#888", padding: 0, marginBottom: 12 }}>
+        <button onClick={toggleDesiderio} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontSize: 12, color: desiderioAttuale ? "#f59e0b" : "#888", padding: 0, marginBottom: desiderioAttuale ? 8 : 12 }}>
           <span style={{ fontSize: 16 }}>{desiderioAttuale ? "★" : "☆"}</span> {desiderioAttuale ? "Nella lista desideri" : "Aggiungi a lista desideri"}
         </button>
+      )}
+
+      {desiderioAttuale && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 9, color: "#666", marginBottom: 4, letterSpacing: "0.06em" }}>NOTA PERSONALE</div>
+          <textarea
+            value={noteDraft ?? desiderioAttuale.note ?? ""}
+            onChange={e => setNoteDraft(e.target.value)}
+            onBlur={salvaNota}
+            placeholder="Es. offrire in prestito, aspettare fine stagione..."
+            rows={2}
+            style={{ width: "100%", background: "#0d0f14", border: "1px solid #ffffff18", borderRadius: 8, color: "#ddd", fontSize: 12, padding: "8px 10px", resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }}
+          />
+        </div>
       )}
 
       {player.quot_reale && Number(player.quot_reale) !== Number(player.quot) && (
@@ -11865,6 +11834,7 @@ function SvincolatoAzionePopup({ playerNome, mySquadra, isAdmin, onClose }) {
   const [callVivaio, setCallVivaio] = useState(false);
   const [callTeam, setCallTeam] = useState(mySquadra || TEAMS[0].name);
   const [desideri, setDesideri] = useState([]);
+  const [noteDraft, setNoteDraft] = useState(null);
   const vivaioAperto = isVivaioAcquistiAperti();
   const finestra = getFinestraChiamateEffettiva();
 
@@ -11892,6 +11862,12 @@ function SvincolatoAzionePopup({ playerNome, mySquadra, isAdmin, onClose }) {
       else await insertListaDesiderio(mySquadra, playerNome, "");
       loadDesideri();
     } catch (e) { alert(e.message); }
+  }
+
+  async function salvaNota() {
+    if (!desiderioAttuale) return;
+    try { await updateListaDesiderioNote(desiderioAttuale.id, noteDraft ?? ""); loadDesideri(); }
+    catch (e) { alert(e.message); }
   }
 
   async function chiama() {
@@ -11924,6 +11900,37 @@ function SvincolatoAzionePopup({ playerNome, mySquadra, isAdmin, onClose }) {
             <span style={{ fontSize: 16 }}>{desiderioAttuale ? "★" : "☆"}</span> {desiderioAttuale ? "Nella lista desideri" : "Aggiungi a lista desideri"}
           </button>
         )}
+
+        {desiderioAttuale && (
+          <div>
+            <div style={{ fontSize: 9, color: "#666", marginBottom: 4, letterSpacing: "0.06em" }}>NOTA PERSONALE</div>
+            <textarea
+              value={noteDraft ?? desiderioAttuale.note ?? ""}
+              onChange={e => setNoteDraft(e.target.value)}
+              onBlur={salvaNota}
+              placeholder="Es. offrire in prestito, aspettare fine stagione..."
+              rows={2}
+              style={{ width: "100%", background: "#0d0f14", border: "1px solid #ffffff18", borderRadius: 8, color: "#ddd", fontSize: 12, padding: "8px 10px", resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }}
+            />
+          </div>
+        )}
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6 }}>
+          {[
+            { label: "Presenze", val: player.partite },
+            { label: "Media voto", val: player.media_voto ? Number(player.media_voto).toFixed(2) : null },
+            { label: "Media fantav.", val: player.media_fantavoto ? Number(player.media_fantavoto).toFixed(2) : null },
+            { label: "Gol", val: player.gol },
+            { label: "Assist", val: player.assist },
+            { label: "Ammonizioni", val: player.ammonizioni },
+            { label: "Espulsioni", val: player.espulsioni },
+          ].filter(s => s.val !== undefined && s.val !== null).map(s => (
+            <div key={s.label} style={{ background: "#ffffff08", borderRadius: 8, padding: "6px 4px", textAlign: "center" }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#e0e0e0", fontFamily: "'Bebas Neue',sans-serif" }}>{s.val}</div>
+              <div style={{ fontSize: 7.5, color: "#666", letterSpacing: "0.03em", marginTop: 1 }}>{s.label.toUpperCase()}</div>
+            </div>
+          ))}
+        </div>
 
         <GraficoQuotazione nome={player.nome} />
 
