@@ -257,6 +257,7 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   getStagioniPassate, upsertStagione, deleteStagione, uploadMaglia,
   getRegolamentoArticoli, upsertRegolamentoArticolo, insertRegolamentoArticolo, deleteRegolamentoArticolo,
   getChangelog, upsertChangelogEntry, insertChangelogEntry, deleteChangelogEntry,
+  getOggiLocale,
 } from "./supabase.js";
 
 // ─── LOCK BODY SCROLL (popup/bottom-sheet aperti) ───────────────────────────
@@ -7072,7 +7073,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
   // + SuperClub (investimento: +3M al Salary Cap per la stagione).
   const salaryCapLimite = 75 + Number(team.scBonusObiettivi || 0) + scBonusInvestimenti;
   const salaryCapSforato = salaryCapUsato > salaryCapLimite;
-  const oggi = new Date().toISOString().slice(0, 10);
+  const oggi = getOggiLocale();
   const mese = new Date().getMonth();
   const scEsenteGiuLug = mese === 5 || mese === 6;
 
