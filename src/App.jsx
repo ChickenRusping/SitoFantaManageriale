@@ -8752,6 +8752,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const [form, setForm] = useState(emptyForm);
   const [rosaTarget, setRosaTarget] = useState([]);
   const [loadingRosa, setLoadingRosa] = useState(false);
+  const [showPlayerPicker, setShowPlayerPicker] = useState(false);
   const [playerSearch, setPlayerSearch] = useState("");
   const [playerSearchResults, setPlayerSearchResults] = useState([]);
   const [loadingPlayerSearch, setLoadingPlayerSearch] = useState(false);
@@ -8760,6 +8761,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const emptyAstaForm = { giocatore: "", quot: "", tipo_asta: "rialzo", note: "" };
   const [astaForm, setAstaForm] = useState(emptyAstaForm);
   const [myRosa, setMyRosa] = useState([]);
+  const [showAstaPlayerPicker, setShowAstaPlayerPicker] = useState(false);
   const [salvandoTrattativa, setSalvandoTrattativa] = useState(false);
 
   const mySquadra = profile?.squadra;
@@ -9777,38 +9779,12 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
             </div>
           ); })()}
 
-          <button onClick={() => setShowForm(v => !v)} style={{ alignSelf: "flex-start", padding: "9px 18px", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#6366f1,#a855f7)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-            {showForm ? "✕ Annulla" : "+ Nuova trattativa"}
+          <button onClick={() => setShowForm(true)} style={{ alignSelf: "flex-start", padding: "9px 18px", borderRadius: 999, border: "none", background: "linear-gradient(135deg,#6366f1,#a855f7)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            + Nuova trattativa
           </button>
 
-
           {showForm && (
-            <div style={{ background: "#ffffff08", border: "1.5px solid #6366f130", borderRadius: 16, padding: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.1em", marginBottom: 16 }}>📤 NUOVA TRATTATIVA</div>
-
-              {/* STEP 0 — Solo admin: scegli la squadra mittente */}
-              {isAdmin && (
-                <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 10, color: "#666", marginBottom: 6 }}>SQUADRA MITTENTE</div>
-                  <select
-                    style={sel}
-                    value={squadraMittente || ""}
-                    onChange={e => {
-                      const nuovaMittente = e.target.value;
-                      setForm(f => ({
-                        ...f,
-                        squadraMittente: nuovaMittente,
-                        ...(f.squadraTarget === nuovaMittente ? { squadraTarget: "", giocatoreId: "", giocatoreNome: "", quot: 0, prezzo: "" } : {}),
-                      }));
-                      if (form.squadraTarget === nuovaMittente) setRosaTarget([]);
-                    }}
-                  >
-                    {teams.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
-                  </select>
-                  <div style={{ fontSize: 10, color: "#555", marginTop: 5 }}>Predefinita: la squadra associata al tuo profilo.</div>
-                </div>
-              )}
-
+            <DetailSheet title="NUOVA TRATTATIVA" isDesktop={isDesktop} onClose={() => setShowForm(false)}>
 
               {/* RICERCA RAPIDA GIOCATORE */}
               <div style={{ marginBottom: 16, background: "#ffffff05", border: "1px solid #ffffff10", borderRadius: 12, padding: "12px 14px" }}>
@@ -9872,7 +9848,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {teams.filter(t => t.name !== squadraMittente).map(t => (
                     <button key={t.name} onClick={() => onSquadraTargetChange(t.name)} style={{
-                      padding: "6px 12px", borderRadius: 8, border: `1px solid ${form.squadraTarget === t.name ? t.color : "#ffffff15"}`,
+                      padding: "6px 12px", borderRadius: 999, border: `1px solid ${form.squadraTarget === t.name ? t.color : "#ffffff15"}`,
                       background: form.squadraTarget === t.name ? t.color + "22" : "transparent",
                       color: form.squadraTarget === t.name ? t.color : "#888",
                       fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 7,
@@ -9881,36 +9857,55 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                 </div>
               </div>
 
-              {/* STEP 2 — Scegli giocatore */}
+              {/* STEP 2 — Scegli giocatore: un bottone apre un sotto-popup con
+                  l'elenco della rosa ordinato per ruolo, invece di un <select>. */}
               {form.squadraTarget && (
                 <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 10, color: "#666", marginBottom: 6 }}>2. GIOCATORE {form.giocatoreNome && <span style={{ color: "#10b981" }}>· selezionato: {form.giocatoreNome}</span>}</div>
+                  <div style={{ fontSize: 10, color: "#666", marginBottom: 6 }}>2. GIOCATORE</div>
                   {loadingRosa
                     ? <div style={{ fontSize: 12, color: "#555" }}>Caricamento rosa…</div>
                     : (
-                      <select style={sel} value={form.giocatoreId} onChange={e => onGiocatoreChange(e.target.value)}>
-                        <option value="">— Seleziona giocatore —</option>
-                        {rosaTarget
-                          .slice()
-                          .sort((a, b) => {
-                            const ruoli = ['P','D','Ds','E','M','T','W','A','Pc'];
-                            const ia = ruoli.findIndex(r => (a.ruolo || '').startsWith(r));
-                            const ib = ruoli.findIndex(r => (b.ruolo || '').startsWith(r));
-                            return ia - ib || a.nome.localeCompare(b.nome);
-                          })
-                          .map(p => {
-                            const passaggi = Number(p.passaggi_sessione || 0);
-                            const soloP = false; // art. 5.6 aggiornato: nessun tipo forzato
-                            return (
-                              <option key={p.id} value={p.id}>
-                                {p.ruolo} {p.nome} — Q{p.quot} · stip {p.stip}M{passaggi >= 2 ? ` 🔒 limite sessione (${passaggi}/2 pass.)` : passaggi === 1 ? ` ⚠️ ultimo passaggio (1/2)` : ''}
-                              </option>
-                            );
-                          })}
-                      </select>
+                      <button type="button" onClick={() => setShowPlayerPicker(true)}
+                        style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 12, border: `1px solid ${form.giocatoreNome ? "#6366f155" : "#ffffff18"}`, background: form.giocatoreNome ? "#6366f112" : "#ffffff06", color: form.giocatoreNome ? "#f0f0f0" : "#888", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                        <span>{form.giocatoreNome || "Seleziona giocatore dalla rosa"}</span>
+                        <IconChevronRight size={14} style={{ color: "#666", flexShrink: 0 }} />
+                      </button>
                     )
                   }
                 </div>
+              )}
+
+              {showPlayerPicker && (
+                <DetailSheet title="SCEGLI GIOCATORE" subtitle={form.squadraTarget} isDesktop={isDesktop} onClose={() => setShowPlayerPicker(false)}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 440, overflowY: "auto" }}>
+                    {rosaTarget
+                      .slice()
+                      .sort((a, b) => {
+                        const ruoli = ['P','D','Ds','E','M','T','W','A','Pc'];
+                        const ia = ruoli.findIndex(r => (a.ruolo || '').startsWith(r));
+                        const ib = ruoli.findIndex(r => (b.ruolo || '').startsWith(r));
+                        return ia - ib || a.nome.localeCompare(b.nome);
+                      })
+                      .map(p => {
+                        const rc = getRoleColor(p.ruolo);
+                        const passaggi = Number(p.passaggi_sessione || 0);
+                        return (
+                          <button key={p.id} type="button" onClick={() => { onGiocatoreChange(p.id); setShowPlayerPicker(false); }}
+                            style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 12, border: "1px solid #ffffff12", background: "#ffffff06", cursor: "pointer", textAlign: "left" }}>
+                            <span style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, borderRadius: 999, padding: "3px 9px", fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{p.ruolo}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: "#f0f0f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.nome}</div>
+                              <div style={{ fontSize: 10, color: "#888" }}>
+                                Q{p.quot} · stip {p.stip}M
+                                {passaggi >= 2 ? " · 🔒 limite sessione (2/2)" : passaggi === 1 ? " · ⚠️ ultimo passaggio (1/2)" : ""}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    {rosaTarget.length === 0 && <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", textAlign: "center", padding: 24 }}>Nessun giocatore in questa rosa.</div>}
+                  </div>
+                </DetailSheet>
               )}
 
               {/* STEP 3 — Tipo e prezzo */}
@@ -9946,7 +9941,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                             {tipi.map(([v, l]) => (
                               <button key={v} onClick={() => setForm(f => ({ ...f, tipo: v, prezzo: v === 'clausola' ? String(valoreClausola(f.quot)) : f.prezzo }))}
-                                style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${form.tipo === v ? "#6366f1" : "#ffffff15"}`, background: form.tipo === v ? "#6366f122" : "transparent", color: form.tipo === v ? "#818cf8" : "#888", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                                style={{ padding: "6px 14px", borderRadius: 999, border: `1px solid ${form.tipo === v ? "#6366f1" : "#ffffff15"}`, background: form.tipo === v ? "#6366f122" : "transparent", color: form.tipo === v ? "#818cf8" : "#888", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                                 {l}
                               </button>
                             ))}
@@ -10018,7 +10013,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                       <div style={{ fontSize: 10, color: "#666", letterSpacing: "0.08em", fontWeight: 700 }}>4. BONUS (opz.)</div>
                       <button type="button"
                         onClick={() => setForm(f => ({ ...f, bonusRows: [...f.bonusRows, { tipo_bonus: 'gol_fatti', soglia: '', valore_mln: '', direzione: 'acquirente_paga' }] }))}
-                        style={{ padding: "4px 12px", borderRadius: 7, border: "1px solid #6366f144", background: "#6366f118", color: "#818cf8", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                        style={{ padding: "5px 14px", borderRadius: 999, border: "1px solid #6366f144", background: "#6366f118", color: "#818cf8", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
                         + Aggiungi bonus
                       </button>
                     </div>
@@ -10088,7 +10083,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                   </button>
                 </>
               )}
-            </div>
+            </DetailSheet>
           )}
 
           {/* Lista trattative in attesa */}
@@ -10121,7 +10116,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                     const squadraCheRispondeOra = t.stato === 'controproposta' ? t.da_squadra : t.a_squadra;
                     const isRicevuta = squadraCheRispondeOra === mySquadra;
                     return (
-                      <div key={t.id} style={{ background: urgente ? "#ef444410" : "#ffffff08", border: `1px solid ${urgente ? "#ef444430" : "#ffffff10"}`, borderRadius: 12, padding: "12px 14px", marginBottom: 8 }}>
+                      <div key={t.id} onClick={() => setDetailTrattativa({ t, withSalaryRecap: true })} style={{ background: urgente ? "#ef444410" : "#ffffff08", border: `1px solid ${urgente ? "#ef444430" : "#ffffff10"}`, borderRadius: 12, padding: "12px 14px", marginBottom: 8, cursor: "pointer" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
                           {daTeam && <TeamAvatar team={daTeam} size={28} />}
                           <div style={{ fontSize: 11, color: "#666" }}>→</div>
@@ -10169,7 +10164,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                           const isAcquirente = t.da_squadra === mySquadra;
                           if (!stato.clausolaAttivabile || !t.quot_giocatore || !isAcquirente) return null;
                           return (
-                            <div style={{ background: "#f59e0b0a", border: "1px solid #f59e0b25", borderRadius: 9, padding: "8px 12px", marginBottom: 8 }}>
+                            <div onClick={e => e.stopPropagation()} style={{ background: "#f59e0b0a", border: "1px solid #f59e0b25", borderRadius: 9, padding: "8px 12px", marginBottom: 8 }}>
                               <div style={{ fontSize: 10, color: "#f59e0b", fontWeight: 700, marginBottom: 4 }}>
                                 ⚡ Clausola rescissoria attivabile
                                 {Number(t.n_rifiuti||0) >= 2 ? ` (${t.n_rifiuti} rifiuti/controfferte)` : " (48h trascorse)"}
@@ -10183,22 +10178,14 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                                 try {
                                   await rispondi({ ...t, tipo: 'clausola', prezzo: prezzoClaus }, 'accettata');
                                 } catch(e) { alert(e.message); }
-                              }} style={{ padding: "5px 14px", borderRadius: 7, border: "none", background: "#f59e0b", color: "#000", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>
+                              }} style={{ padding: "5px 14px", borderRadius: 999, border: "none", background: "#f59e0b", color: "#000", fontSize: 11, fontWeight: 800, cursor: "pointer" }}>
                                 ⚡ Acquista con clausola
                               </button>
                             </div>
                           );
                         })()}
 
-                        <button
-                          type="button"
-                          onClick={() => setDetailTrattativa({ t, withSalaryRecap: true })}
-                          style={{ marginBottom: 8, padding: "5px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#ffffff08", color: "#888", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
-                        >
-                          ▾ Dettagli offerta
-                        </button>
-
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, width: "100%" }}>
+                        <div onClick={e => e.stopPropagation()} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, width: "100%" }}>
                           {/* Countdown risposta 24h (art. 5.3) */}
                           <div style={{ minWidth: 140 }}>
                             <div style={{ fontSize: 10, color: urgente ? "#ef4444" : "#555" }}>
@@ -10270,39 +10257,32 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
           {(isAdmin || mySquadra) && (
-            <button onClick={() => setShowAstaForm(v => !v)} style={{ alignSelf: "flex-start", padding: "9px 18px", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#f59e0b,#f97316)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-              {showAstaForm ? "✕ Annulla" : "🏷️ Indici asta"}
+            <button onClick={() => setShowAstaForm(true)} style={{ alignSelf: "flex-start", padding: "9px 18px", borderRadius: 999, border: "none", background: "linear-gradient(135deg,#f59e0b,#f97316)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              🏷️ Indici asta
             </button>
           )}
 
           {showAstaForm && (
-            <div style={{ background: "#ffffff08", border: "1.5px solid #f59e0b30", borderRadius: 16, padding: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", letterSpacing: "0.1em", marginBottom: 16 }}>🏷️ NUOVA ASTA (art. 5.11)</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+            <DetailSheet title="🏷️ NUOVA ASTA" subtitle="art. 5.11" isDesktop={isDesktop} onClose={() => setShowAstaForm(false)}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 12 }}>
                 <div>
-                  <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>GIOCATORE</div>
-                  <select style={inp} value={astaForm.giocatore} onChange={e => {
-                    const p = myRosa.find(x => x.nome === e.target.value);
-                    setAstaForm(f => ({ ...f, giocatore: e.target.value, quot: p ? String(p.quot) : f.quot }));
-                  }}>
-                    <option value="">— Seleziona —</option>
-                    {myRosa.map(p => <option key={p.id} value={p.nome}>{p.nome} (Q{p.quot})</option>)}
-                  </select>
-                </div>
-                <div>
-                  <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>QUOTAZIONE</div>
-                  <input style={inp} type="number" step="0.5" placeholder="es. 20" value={astaForm.quot} onChange={e => setAstaForm(f => ({ ...f, quot: e.target.value }))} />
+                  <div style={{ fontSize: 10, color: "#666", marginBottom: 6 }}>GIOCATORE</div>
+                  <button type="button" onClick={() => setShowAstaPlayerPicker(true)}
+                    style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 12, border: `1px solid ${astaForm.giocatore ? "#f59e0b55" : "#ffffff18"}`, background: astaForm.giocatore ? "#f59e0b12" : "#ffffff06", color: astaForm.giocatore ? "#f0f0f0" : "#888", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                    <span>{astaForm.giocatore ? `${astaForm.giocatore} · Q${astaForm.quot}` : "Seleziona giocatore dalla tua rosa"}</span>
+                    <IconChevronRight size={14} style={{ color: "#666", flexShrink: 0 }} />
+                  </button>
                 </div>
                 <div style={{ gridColumn: "1 / -1" }}>
                   <div style={{ fontSize: 10, color: "#666", marginBottom: 6 }}>TIPO ASTA</div>
-                  <div style={{ display: "flex", gap: 10 }}>
+                  <div style={{ display: "flex", gap: 8 }}>
                     {[["rialzo","📈 A rialzo (parte da quot/2, +0.1M per offerta, scade 2h dopo ultima offerta)"],["discesa","📉 A discesa (parte da quot, -0.25M ogni 30min, min quot/2)"]].map(([v, l]) => (
-                      <button key={v} onClick={() => setAstaForm(f => ({ ...f, tipo_asta: v }))} style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: `1px solid ${astaForm.tipo_asta === v ? "#f59e0b" : "#ffffff15"}`, background: astaForm.tipo_asta === v ? "#f59e0b15" : "transparent", color: astaForm.tipo_asta === v ? "#f59e0b" : "#666", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{l}</button>
+                      <button key={v} onClick={() => setAstaForm(f => ({ ...f, tipo_asta: v }))} style={{ flex: 1, padding: "8px 10px", borderRadius: 999, border: `1px solid ${astaForm.tipo_asta === v ? "#f59e0b" : "#ffffff15"}`, background: astaForm.tipo_asta === v ? "#f59e0b15" : "transparent", color: astaForm.tipo_asta === v ? "#f59e0b" : "#666", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{l}</button>
                     ))}
                   </div>
                 </div>
                 {astaForm.quot && (
-                  <div style={{ gridColumn: "1 / -1", background: "#ffffff06", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#888" }}>
+                  <div style={{ background: "#ffffff06", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#888" }}>
                     {astaForm.tipo_asta === 'rialzo'
                       ? `📈 Parte da ${(parseFloat(astaForm.quot)/2).toFixed(2)}M · si aggiudica 2h dopo l'ultima offerta`
                       : `📉 Parte da ${parseFloat(astaForm.quot).toFixed(2)}M · scende a ${(parseFloat(astaForm.quot)/2).toFixed(2)}M · chiunque può comprare in qualsiasi momento`}
@@ -10310,7 +10290,36 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                 )}
               </div>
               <button onClick={salvaAsta} disabled={loading} style={{ width: "100%", padding: "11px", borderRadius: 10, border: "none", background: loading ? "#8a670f" : "#f59e0b", color: "#000", fontSize: 14, fontWeight: 700, cursor: loading ? "wait" : "pointer" }}>{loading ? "⏳ Attendere..." : "Avvia asta →"}</button>
-            </div>
+            </DetailSheet>
+          )}
+
+          {showAstaPlayerPicker && (
+            <DetailSheet title="SCEGLI GIOCATORE" subtitle="dalla tua rosa" isDesktop={isDesktop} onClose={() => setShowAstaPlayerPicker(false)}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 440, overflowY: "auto" }}>
+                {myRosa
+                  .slice()
+                  .sort((a, b) => {
+                    const ruoli = ['P','D','Ds','E','M','T','W','A','Pc'];
+                    const ia = ruoli.findIndex(r => (a.ruolo || '').startsWith(r));
+                    const ib = ruoli.findIndex(r => (b.ruolo || '').startsWith(r));
+                    return ia - ib || a.nome.localeCompare(b.nome);
+                  })
+                  .map(p => {
+                    const rc = getRoleColor(p.ruolo);
+                    return (
+                      <button key={p.id} type="button" onClick={() => { setAstaForm(f => ({ ...f, giocatore: p.nome, quot: String(p.quot) })); setShowAstaPlayerPicker(false); }}
+                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 12, border: "1px solid #ffffff12", background: "#ffffff06", cursor: "pointer", textAlign: "left" }}>
+                        <span style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, borderRadius: 999, padding: "3px 9px", fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{p.ruolo}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "#f0f0f0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.nome}</div>
+                          <div style={{ fontSize: 10, color: "#888" }}>Q{p.quot}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                {myRosa.length === 0 && <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", textAlign: "center", padding: 24 }}>Nessun giocatore in rosa.</div>}
+              </div>
+            </DetailSheet>
           )}
 
           {/* Aste attive */}
@@ -10498,7 +10507,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
               const prezzoBase = Number(t.prezzo || 0);
               const prezzoPotenziale = getPrezzoPotenziale(t);
               return (
-                <div key={t.id} style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: "10px 14px" }}>
+                <div key={t.id} onClick={() => setDetailTrattativa({ t, withSalaryRecap: false })} style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, padding: "10px 14px", cursor: "pointer" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                     {daTeam && <TeamAvatar team={daTeam} size={24} />}
                     <span style={{ fontSize: 10, color: "#555" }}>→</span>
@@ -10512,13 +10521,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                       {bonusTotale > 0 && <div style={{ fontSize: 9, color: "#666", fontFamily: "system-ui" }}>tot. {formatMln(prezzoPotenziale)}</div>}
                     </div>
                     <Badge color={statoColor[t.stato] || "#888"}>{t.stato}</Badge>
-                    <button
-                      type="button"
-                      onClick={() => setDetailTrattativa({ t, withSalaryRecap: false })}
-                      style={{ padding: "4px 10px", borderRadius: 7, border: "1px solid #6366f130", background: "#6366f110", color: "#a5b4fc", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                      ▾ Dettagli
-                    </button>
-                    {isAdmin && <button onClick={() => { if (window.confirm(`Eliminare la trattativa per ${t.giocatore}?`)) deleteTrattativa(t.id); }} style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "#ef444415", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>✕</button>}
+                    {isAdmin && <button onClick={e => { e.stopPropagation(); if (window.confirm(`Eliminare la trattativa per ${t.giocatore}?`)) deleteTrattativa(t.id); }} style={{ padding: "3px 8px", borderRadius: 999, border: "none", background: "#ef444415", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>✕</button>}
                   </div>
                 </div>
               );
