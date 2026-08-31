@@ -271,6 +271,16 @@ function useLockBodyScroll(locked) {
   }, [locked]);
 }
 
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
+  useEffect(() => {
+    const h = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  return isDesktop;
+}
+
 // ─── SORTABLE TABLE HOOK ──────────────────────────────────────────────────────
 // Restituisce: { sorted, sortKey, sortDir, handleSort, SortTh }
 // SortTh: componente <th> cliccabile con freccia direzionale
@@ -6180,6 +6190,7 @@ function AltroTab({ team, isAdmin, mySquadra, clubIdentity, onRefreshIdentity })
 
   // ── ALLENATORE ───────────────────────────────────────────────────────────────
   const [coachPreview, setCoachPreview] = useState(null); // nome allenatore di cui mostrare obiettivi
+  useLockBodyScroll(!!coachPreview);
 
   const OBIETTIVI_ALLENATORI = {
     "Guardiola": {
@@ -8701,6 +8712,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   // dei vecchi accordion "▾ Dettagli" che occupavano spazio in pagina.
   const [detailTrattativa, setDetailTrattativa] = useState(null); // { t, withSalaryRecap }
   const [detailOperazione, setDetailOperazione] = useState(null);
+  const [playerPopup, setPlayerPopup] = useState(null); // { team, nome } | { svincolato: nome } — Cedibili
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
   useEffect(() => {
     const h = () => setIsDesktop(window.innerWidth >= 768);
@@ -9585,8 +9597,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       )}
 
       {mercatoSection === "svincolati" && <SvincolatiPage profile={profile} isAdmin={isAdmin} teams={teams} />}
-      {mercatoSection === "listone" && <ListonePage teams={teams} profile={profile} />}
-      {mercatoSection === "lista-desideri" && <ListaDesideriPage teams={teams} profile={profile} />}
+      {mercatoSection === "listone" && <ListonePage teams={teams} profile={profile} isAdmin={isAdmin} />}
+      {mercatoSection === "lista-desideri" && <ListaDesideriPage teams={teams} profile={profile} isAdmin={isAdmin} />}
       {mercatoSection === "compara-rose" && <CompareRosePage teams={teams} />}
       {mercatoSection === "compara-giocatori" && <ComparePlayersPage teams={teams} />}
 
@@ -9628,7 +9640,11 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
               const rc = getRoleColor(p.ruolo);
               return (
                 <div key={p.id}
-                  onClick={() => team && navigate(`/presidente/${team.id}/rosa?player=${encodeURIComponent(p.nome)}`)}
+                  onClick={() => {
+                    if (!team) return;
+                    if (stessaSquadra(team.name, mySquadra)) navigate(`/presidente/${team.id}/rosa?player=${encodeURIComponent(p.nome)}`);
+                    else setPlayerPopup({ team, nome: p.nome });
+                  }}
                   style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 4px", borderBottom:"1px solid #ffffff0a", cursor: team ? "pointer" : "default" }}
                   onMouseEnter={e=>e.currentTarget.style.background="#ffffff06"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                   <span style={{ background:rc.bg, color:rc.text, border:`1px solid ${rc.border}`, borderRadius:999, padding:"3px 9px", fontSize:9.5, fontWeight:700, flexShrink:0, minWidth:42, textAlign:"center" }}>{p.ruolo}</span>
@@ -10710,6 +10726,13 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
         </div>
       </DetailSheet>
     )}
+
+    {playerPopup?.team && (
+      <GiocatoreAltruiPopup team={playerPopup.team} playerNome={playerPopup.nome} mySquadra={mySquadra} navigate={navigate} onClose={() => setPlayerPopup(null)} />
+    )}
+    {playerPopup?.svincolato && (
+      <SvincolatoAzionePopup playerNome={playerPopup.svincolato} mySquadra={mySquadra} isAdmin={isAdmin} onClose={() => setPlayerPopup(null)} />
+    )}
     </div>
   );
 }
@@ -11206,9 +11229,10 @@ function ConflittiListonePage({ teams }) {
   );
 }
 
-function ListonePage({ teams, profile }) {
+function ListonePage({ teams, profile, isAdmin }) {
   const navigate = useNavigate();
   const mySquadra = profile?.squadra;
+  const [playerPopup, setPlayerPopup] = useState(null); // { team, nome } | { svincolato: nome }
   const [listone, setListone] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -11308,14 +11332,18 @@ function ListonePage({ teams, profile }) {
     return teams?.find(t => stessaSquadra(t.name, p.fanta_squadra)) || null;
   }
 
-  // Click su un giocatore: apre lo stesso identico menù azioni che si otterrebbe
-  // cliccandolo nella sua pagina di origine (rosa propria/altrui, o svincolati).
+  // Click su un giocatore: stesso identico popup azioni che si otterrebbe
+  // cliccandolo nella sua pagina di origine — ma aperto qui, senza
+  // reindirizzare altrove (eccetto per un giocatore della propria squadra,
+  // dove serve comunque la pagina Rosa completa per gestirlo).
   function apriAzioniGiocatore(p) {
     const team = trovaSquadra(p);
-    if (team) {
+    if (team && stessaSquadra(team.name, mySquadra)) {
       navigate(`/presidente/${team.id}/rosa?player=${encodeURIComponent(p.nome)}`);
+    } else if (team) {
+      setPlayerPopup({ team, nome: p.nome });
     } else {
-      navigate(`/mercato?section=svincolati&player=${encodeURIComponent(p.nome)}`);
+      setPlayerPopup({ svincolato: p.nome });
     }
   }
 
@@ -11422,6 +11450,13 @@ function ListonePage({ teams, profile }) {
           ▾ Mostra altri {Math.min(50, filtrati.length - visibleCount)} giocatori
         </button>
       )}
+
+      {playerPopup?.team && (
+        <GiocatoreAltruiPopup team={playerPopup.team} playerNome={playerPopup.nome} mySquadra={mySquadra} navigate={navigate} onClose={() => setPlayerPopup(null)} />
+      )}
+      {playerPopup?.svincolato && (
+        <SvincolatoAzionePopup playerNome={playerPopup.svincolato} mySquadra={mySquadra} isAdmin={isAdmin} onClose={() => setPlayerPopup(null)} />
+      )}
     </div>
   );
 }
@@ -11430,9 +11465,10 @@ function ListonePage({ teams, profile }) {
 // obiettivo di mercato, con nota libera. Lo stato (proprietario attuale) non
 // viene salvato ma ricalcolato ogni volta dal listone, così resta sempre aggiornato
 // anche se il giocatore cambia squadra o viene svincolato nel frattempo.
-function ListaDesideriPage({ teams, profile }) {
+function ListaDesideriPage({ teams, profile, isAdmin }) {
   const navigate = useNavigate();
   const mySquadra = profile?.squadra;
+  const [playerPopup, setPlayerPopup] = useState(null); // { team, nome } | { svincolato: nome }
   const [desideri, setDesideri] = useState([]);
   const [loading, setLoading] = useState(true);
   const [listone, setListone] = useState(null);
@@ -11463,13 +11499,14 @@ function ListaDesideriPage({ teams, profile }) {
     return teams?.find(t => stessaSquadra(t.name, riga.fanta_squadra)) || null;
   }
 
-  // Stesso routing di ListonePage.apriAzioniGiocatore: apre il menù azioni del
-  // giocatore nella sua rosa attuale, oppure la schermata di chiamata svincolati.
+  // Stesso identico popup azioni che si otterrebbe cliccando il giocatore
+  // nella sua rosa attuale, o nella schermata svincolati — aperto qui,
+  // senza reindirizzare.
   function apriAzioni(d) {
     const riga = trovaRigaListone(d.giocatore);
     const team = trovaSquadra(riga);
-    if (team) navigate(`/presidente/${team.id}/rosa?player=${encodeURIComponent(d.giocatore)}`);
-    else navigate(`/mercato?section=svincolati&player=${encodeURIComponent(d.giocatore)}`);
+    if (team) setPlayerPopup({ team, nome: d.giocatore });
+    else setPlayerPopup({ svincolato: d.giocatore });
   }
 
   async function rimuovi(id, e) {
@@ -11564,7 +11601,312 @@ function ListaDesideriPage({ teams, profile }) {
           })}
         </div>
       )}
+
+      {playerPopup?.team && (
+        <GiocatoreAltruiPopup team={playerPopup.team} playerNome={playerPopup.nome} mySquadra={mySquadra} navigate={navigate} onClose={() => setPlayerPopup(null)} />
+      )}
+      {playerPopup?.svincolato && (
+        <SvincolatoAzionePopup playerNome={playerPopup.svincolato} mySquadra={mySquadra} isAdmin={isAdmin} onClose={() => setPlayerPopup(null)} />
+      )}
     </div>
+  );
+}
+
+// Chiamata di interesse per uno svincolato: estratta come funzione a sé
+// stante (non un hook/componente) così può essere invocata sia dalla pagina
+// Svincolati che da un popup giocatore aperto altrove (Listone, Lista
+// Desideri, ecc.) senza duplicare la logica di validazione/notifica.
+async function eseguiChiamataSvincolato(player, squadra, perVivaio, isAdmin) {
+  if (perVivaio && !isVivaioAcquistiAperti()) throw new Error('Le chiamate per il vivaio sono consentite solo dal 01/09 al 31/05.');
+  const finestra = getFinestraChiamateEffettiva();
+  if (finestra.modalita === 'chiuso') throw new Error(finestra.messaggio);
+  if (!finestra.aperta && !isAdmin) throw new Error(finestra.messaggio);
+  const chiamateEsistenti = await getChiamate();
+  const giaChiamato = (chiamateEsistenti || []).some(c =>
+    c.giocatore === player.nome && c.squadra === squadra && c.stato !== 'conclusa'
+  );
+  if (giaChiamato) throw new Error("Hai già manifestato interesse per questo giocatore");
+  await insertChiamata({
+    giocatore: player.nome, ruolo: player.ruolo, quot: player.quot,
+    anni: player.anni || 0, squadra_serie_a: player.squadra_serie_a || '',
+    squadra, per_vivaio: perVivaio,
+  });
+  sendTelegramNotification('chiamata_svincolati', { giocatore: player.nome, quotazione: player.quot, squadra });
+  notificaListaDesideri(player.nome, squadra, `${squadra} lo ha chiamato dagli svincolati`);
+}
+
+// Popup "giocatore in un'altra rosa", riutilizzabile da qualunque pagina
+// (Listone, Lista Desideri, Cedibili) SENZA navigare via alla pagina Rosa:
+// carica al volo la riga rosa del proprietario e mostra lo stesso contenuto
+// (stats, stato prestito, scelta tipo offerta) del popup mode:'other' di
+// RosaVivaiTab. L'unica navigazione resta l'invio effettivo di un'offerta,
+// che deve comunque atterrare sul form di Mercato.
+function GiocatoreAltruiPopup({ team, playerNome, mySquadra, navigate, onClose }) {
+  const isDesktop = useIsDesktop();
+  const [player, setPlayer] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [offerMode, setOfferMode] = useState('cessione');
+  const [desideri, setDesideri] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getRosa(team.name).then(rows => {
+      if (cancelled) return;
+      setPlayer((rows || []).find(r => r.nome === playerNome) || null);
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [team.name, playerNome]);
+
+  const loadDesideri = useCallback(() => {
+    if (!mySquadra) return;
+    getListaDesideri(mySquadra).then(setDesideri);
+  }, [mySquadra]);
+  useEffect(() => { loadDesideri(); }, [loadDesideri]);
+  const desiderioAttuale = desideri.find(d => d.giocatore === playerNome);
+  async function toggleDesiderio() {
+    if (!mySquadra) return;
+    try {
+      if (desiderioAttuale) await deleteListaDesiderio(desiderioAttuale.id);
+      else await insertListaDesiderio(mySquadra, playerNome, "");
+      loadDesideri();
+    } catch (e) { alert(e.message); }
+  }
+
+  async function handleRichiamaCedente(p) {
+    const quotBase = Number(p.quot_reale ?? p.quot);
+    const ind = parseFloat((quotBase * 0.5).toFixed(2));
+    if (!window.confirm(`Richiamare ${p.nome} da ${p.squadra}?\n\nPaghi ${ind}M (50% Q reale) di indennizzo. Rientrerà tra 7 giorni se il mercato è aperto, altrimenti al primo giorno di mercato disponibile (art. 5.8.2).`)) return;
+    setSaving(true);
+    try { await eseguiRescissioneAnticipataPrestito(p.id, 'cedente'); onClose(); }
+    catch(e) { alert(`Errore: ${e.message}`); }
+    finally { setSaving(false); }
+  }
+
+  if (loading) {
+    return <DetailSheet title={playerNome} isDesktop={isDesktop} onClose={onClose}><div style={{ fontSize: 12, color: "#666" }}>Caricamento...</div></DetailSheet>;
+  }
+  if (!player) {
+    return <DetailSheet title={playerNome} isDesktop={isDesktop} onClose={onClose}><div style={{ fontSize: 12, color: "#666" }}>Giocatore non trovato nella rosa di {team.name}.</div></DetailSheet>;
+  }
+
+  const rc = getRoleColor(player.ruolo);
+
+  return (
+    <DetailSheet title={player.nome} subtitle={`Q${player.quot} · ${player.ruolo} · ${player.anni}aa · ${calcolaStipCorretto(Number(player.quot||0),Number(player.anni_contratto||0),Number(player.anni||0)).toFixed(2)}M`} isDesktop={isDesktop} onClose={onClose}>
+      {mySquadra && (
+        <button onClick={toggleDesiderio} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontSize: 12, color: desiderioAttuale ? "#f59e0b" : "#888", padding: 0, marginBottom: 12 }}>
+          <span style={{ fontSize: 16 }}>{desiderioAttuale ? "★" : "☆"}</span> {desiderioAttuale ? "Nella lista desideri" : "Aggiungi a lista desideri"}
+        </button>
+      )}
+
+      {player.quot_reale && Number(player.quot_reale) !== Number(player.quot) && (
+        <div style={{ marginBottom: 12, fontSize: 10, background: "#f9731615", border: "1px solid #f9731630", borderRadius: 6, padding: "3px 8px", color: "#f97316", fontWeight: 600 }}>
+          ⚠️ Quot. reale aggiornata: <b>Q{player.quot_reale}</b> → stip. trasferimento <b>{(player.quot_reale/5).toFixed(2)}M</b>
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 12 }}>
+        <span style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, borderRadius: 6, padding: "3px 7px", fontSize: 10, fontWeight: 700 }}>{player.ruolo}</span>
+        {player.squadra_serie_a && <span style={{ background: "#ffffff0a", color: "#aaa", borderRadius: 6, padding: "3px 7px", fontSize: 10, fontWeight: 600 }}>{player.squadra_serie_a}</span>}
+        <span style={{ background: "#ffffff0a", color: "#aaa", borderRadius: 6, padding: "3px 7px", fontSize: 10, fontWeight: 600 }}>Clausola {player.clausola ?? "—"}M</span>
+        {player.fuori_lista && <FuoriListaBadge />}
+        {player.da_cedere && <DaCedereBadge compact />}
+        {player.cedibile_stato && <CedibileBadge stato={player.cedibile_stato} compact />}
+        {player.anni > 0 && player.anni <= 21 && <U21Badge />}
+        {player.anni >= 31 && <Over31Badge />}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6, marginBottom: 14 }}>
+        {[
+          { label: "Presenze", val: player.partite },
+          { label: "Media voto", val: player.media_voto ? Number(player.media_voto).toFixed(2) : null },
+          { label: "Media fantav.", val: player.media_fantavoto ? Number(player.media_fantavoto).toFixed(2) : null },
+          { label: "Gol", val: player.gol },
+          { label: "Assist", val: player.assist },
+          { label: "Ammonizioni", val: player.ammonizioni },
+          { label: "Espulsioni", val: player.espulsioni },
+        ].filter(s => s.val !== undefined && s.val !== null).map(s => (
+          <div key={s.label} style={{ background: "#ffffff08", borderRadius: 8, padding: "6px 4px", textAlign: "center" }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#e0e0e0", fontFamily: "'Bebas Neue',sans-serif" }}>{s.val}</div>
+            <div style={{ fontSize: 7.5, color: "#666", letterSpacing: "0.03em", marginTop: 1 }}>{s.label.toUpperCase()}</div>
+          </div>
+        ))}
+      </div>
+
+      <GraficoQuotazione nome={player.nome} quotRosa={player.quot} />
+
+      <div style={{ fontSize: 10, fontWeight: 700, color: "#666", letterSpacing: "0.1em", margin: "14px 0 8px" }}>AZIONI</div>
+
+      {player.in_prestito ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ background: "#6366f112", border: "1px solid #6366f130", borderRadius: 9, padding: "9px 12px", fontSize: 11, color: "#a5b4fc", lineHeight: 1.5 }}>
+            🔄 In prestito da <b>{player.squadra_originale}</b>{player.scadenza_prestito ? <> · scad. <b>{player.scadenza_prestito}</b></> : null}
+            <br/>Finché è in prestito non può essere oggetto di trattative né svincolato (art. 5.7/5.8).
+          </div>
+          {mySquadra === player.squadra_originale ? (
+            player.rescissione_prestito_attiva ? (
+              <div style={{ fontSize: 11, color: "#f59e0b" }}>⏳ Rientro già programmato per il {player.rescissione_prestito_scadenza || "—"}.</div>
+            ) : (
+              <button onClick={() => handleRichiamaCedente(player)} disabled={saving}
+                style={{ padding: "9px", borderRadius: 9, border: "1px solid #f97316aa", background: "#f9731618", color: "#f97316", fontSize: 12, fontWeight: 700, cursor: saving ? "wait" : "pointer" }}>
+                {saving ? "⏳ Attendere..." : `↩ Richiama alla base (paga ${parseFloat((Number(player.quot_reale ?? player.quot)*0.5).toFixed(2))}M — 50%Q reale)`}
+              </button>
+            )
+          ) : (
+            <div style={{ fontSize: 11, color: "#555", fontStyle: "italic" }}>Nessuna azione disponibile: solo {player.squadra} o {player.squadra_originale} possono decidere su questo prestito.</div>
+          )}
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontSize: 10, color: "#818cf8" }}>MANDA OFFERTA — ti reindirizzerà a Mercato</div>
+          {[
+            { val: 'cessione', label: '💰 Acquisto diretto', desc: `Min ${(player.quot/2).toFixed(1)}M` },
+            { val: 'clausola', label: '⚡ Clausola rescissoria', desc: `${(player.quot*1.75).toFixed(1)}M` },
+            { val: 'prestito', label: '🔄 Proponi prestito', desc: '50–150% Q come costo di riscatto' },
+          ].map(opt => (
+            <button key={opt.val} onClick={() => setOfferMode(opt.val)}
+              style={{ textAlign: "left", padding: "8px 12px", borderRadius: 8, border: `1px solid ${offerMode === opt.val ? "#6366f1" : "#ffffff15"}`, background: offerMode === opt.val ? "#6366f118" : "transparent", color: offerMode === opt.val ? "#818cf8" : "#888", fontSize: 11, cursor: "pointer" }}>
+              <div style={{ fontWeight: 700 }}>{opt.label}</div>
+              <div style={{ fontSize: 9, color: "#555", marginTop: 2 }}>{opt.desc}</div>
+            </button>
+          ))}
+          <button onClick={() => { onClose(); navigate(`/mercato?player=${encodeURIComponent(player.nome)}&squadra=${encodeURIComponent(team.name)}&tipo=${offerMode}&quot=${player.quot}`); }}
+            style={{ padding: "9px", borderRadius: 9, border: "none", background: "linear-gradient(135deg,#6366f1,#a855f7)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            → Vai a Mercato
+          </button>
+        </div>
+      )}
+    </DetailSheet>
+  );
+}
+
+// Popup "chiama uno svincolato", riutilizzabile allo stesso modo di
+// GiocatoreAltruiPopup — stesso contenuto del modal di SvincolatiPage,
+// senza dover navigare via da Listone/Lista Desideri per aprirlo.
+function SvincolatoAzionePopup({ playerNome, mySquadra, isAdmin, onClose }) {
+  const isDesktop = useIsDesktop();
+  const [player, setPlayer] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [chiamando, setChiamando] = useState(false);
+  const [callVivaio, setCallVivaio] = useState(false);
+  const [callTeam, setCallTeam] = useState(mySquadra || TEAMS[0].name);
+  const [desideri, setDesideri] = useState([]);
+  const vivaioAperto = isVivaioAcquistiAperti();
+  const finestra = getFinestraChiamateEffettiva();
+
+  useEffect(() => {
+    let cancelled = false;
+    cachedFetch('svincolati_' + STAGIONE_CORRENTE, () => getSvincolatiDB(STAGIONE_CORRENTE), 600000).then(list => {
+      if (cancelled) return;
+      const p = (list || []).find(x => x.nome === playerNome);
+      setPlayer(p ? { ...p, isVivaio: p.anni <= 23 && p.quot <= 3 && (p.partite === 0 || p.partite == null) } : null);
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [playerNome]);
+
+  const loadDesideri = useCallback(() => {
+    if (!mySquadra) return;
+    getListaDesideri(mySquadra).then(setDesideri);
+  }, [mySquadra]);
+  useEffect(() => { loadDesideri(); }, [loadDesideri]);
+  const desiderioAttuale = desideri.find(d => d.giocatore === playerNome);
+  async function toggleDesiderio() {
+    if (!mySquadra) return;
+    try {
+      if (desiderioAttuale) await deleteListaDesiderio(desiderioAttuale.id);
+      else await insertListaDesiderio(mySquadra, playerNome, "");
+      loadDesideri();
+    } catch (e) { alert(e.message); }
+  }
+
+  async function chiama() {
+    const squadra = isAdmin ? callTeam : mySquadra;
+    if (!squadra) return;
+    if (!window.confirm(`Manifestare interesse per ${player.nome} (Q${player.quot})${callVivaio ? ' per il vivaio' : ''}?`)) return;
+    setChiamando(true);
+    try {
+      await eseguiChiamataSvincolato(player, squadra, callVivaio, isAdmin);
+      onClose();
+    } catch (e) {
+      alert(`❌ Chiamata NON registrata: ${e.message}`);
+    } finally {
+      setChiamando(false);
+    }
+  }
+
+  if (loading) {
+    return <DetailSheet title={playerNome} isDesktop={isDesktop} onClose={onClose}><div style={{ fontSize: 12, color: "#666" }}>Caricamento...</div></DetailSheet>;
+  }
+  if (!player) {
+    return <DetailSheet title={playerNome} isDesktop={isDesktop} onClose={onClose}><div style={{ fontSize: 12, color: "#666" }}>Giocatore non trovato tra gli svincolati.</div></DetailSheet>;
+  }
+
+  return (
+    <DetailSheet title={`📞 ${player.nome}`} subtitle={`Q${player.quot} · ${player.ruolo} · ${player.anni}aa`} isDesktop={isDesktop} onClose={onClose}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {mySquadra && (
+          <button onClick={toggleDesiderio} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontSize: 12, color: desiderioAttuale ? "#f59e0b" : "#888", padding: 0 }}>
+            <span style={{ fontSize: 16 }}>{desiderioAttuale ? "★" : "☆"}</span> {desiderioAttuale ? "Nella lista desideri" : "Aggiungi a lista desideri"}
+          </button>
+        )}
+
+        <GraficoQuotazione nome={player.nome} />
+
+        <div>
+          <div style={{ fontSize: 10, color: "#555", marginBottom: 4 }}>SQUADRA INTERESSATA</div>
+          {isAdmin
+            ? <select style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 13, width: "100%" }} value={callTeam} onChange={e => setCallTeam(e.target.value)}>
+                {TEAMS.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+              </select>
+            : <span style={{ fontSize: 13, color: "#f59e0b", fontWeight: 700 }}>{mySquadra || "—"}</span>}
+        </div>
+
+        {player.isVivaio && (
+          <div>
+            <div style={{ fontSize: 10, color: "#555", marginBottom: 6 }}>DESTINAZIONE</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setCallVivaio(false)}
+                style={{ flex: 1, padding: "9px", borderRadius: 9, border: `1.5px solid ${!callVivaio ? "#f59e0b" : "#ffffff15"}`, background: !callVivaio ? "#f59e0b18" : "#ffffff08", color: !callVivaio ? "#f59e0b" : "#666", fontSize: 12, fontWeight: !callVivaio ? 700 : 400, cursor: "pointer" }}>
+                ⚽ Rosa
+              </button>
+              <button onClick={() => vivaioAperto && setCallVivaio(true)} disabled={!vivaioAperto}
+                title={vivaioAperto ? "Inserisci nel vivaio" : "Vivaio disponibile dal 01/09 al 31/05"}
+                style={{ flex: 1, padding: "9px", borderRadius: 9, border: `1.5px solid ${callVivaio ? "#10b981" : "#ffffff15"}`, background: callVivaio ? "#10b98118" : "#ffffff08", color: callVivaio ? "#10b981" : "#666", fontSize: 12, fontWeight: callVivaio ? 700 : 400, cursor: vivaioAperto ? "pointer" : "not-allowed", opacity: vivaioAperto ? 1 : 0.45 }}>
+                🌱 Vivaio{!vivaioAperto ? " (dal 01/09)" : ""}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div style={{ fontSize: 10, color: "#666", background: "#ffffff06", borderRadius: 8, padding: "10px 12px", lineHeight: 1.8 }}>
+          {(() => {
+            const scInt = calcolaScadenzaInteresse();
+            const minOfferta = parseFloat((player.quot * 0.75).toFixed(2));
+            return <>
+              📅 Interesse aperto fino a: <b style={{ color: "#f59e0b" }}>{scInt.toLocaleString("it-IT", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</b><br/>
+              🏷️ Se più interessati → asta busta chiusa<br/>
+              <span style={{ color: "#10b981" }}>✓ Se solo tu → giocatore a <b>¾Q = {minOfferta}M</b> automaticamente</span>
+            </>;
+          })()}
+        </div>
+
+        <div style={{ fontSize: 10, padding: "5px 12px", borderRadius: 20, background: finestra.aperta ? "#10b98112" : "#ffffff08", color: finestra.aperta ? "#10b981" : "#555", border: `1px solid ${finestra.aperta ? "#10b98130" : "#ffffff10"}`, fontWeight: 600, alignSelf: "flex-start" }}>
+          {finestra.messaggio}
+        </div>
+
+        {mySquadra || isAdmin ? (
+          <button onClick={chiama} disabled={chiamando}
+            style={{ padding: "11px", borderRadius: 10, border: "none", background: chiamando ? "#8a670f" : "#f59e0b", color: "#000", fontSize: 13, fontWeight: 700, cursor: chiamando ? "wait" : "pointer" }}>
+            {chiamando ? "⏳ Attendere..." : "✓ Manifesta interesse"}
+          </button>
+        ) : (
+          <div style={{ fontSize: 11, color: "#555", fontStyle: "italic" }}>Solo i presidenti possono chiamare uno svincolato.</div>
+        )}
+      </div>
+    </DetailSheet>
   );
 }
 
@@ -11581,6 +11923,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
   const [aste, setAste]               = useState([]);
   const [loading, setLoading]         = useState(true);
   const [showCallForm, setShowCallForm] = useState(null);
+  useLockBodyScroll(!!showCallForm);
   const [callTeam, setCallTeam]       = useState(profile?.squadra || TEAMS[0].name);
   const [callVivaio, setCallVivaio]   = useState(false);
   const [investimenti, setInvestimenti] = useState([]);
@@ -11689,33 +12032,12 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
   );
 
   async function chiamaGiocatore(player, perVivaio = false) {
-    if (perVivaio && !isVivaioAcquistiAperti()) { alert('⛔ Le chiamate per il vivaio sono consentite solo dal 01/09 al 31/05.'); return; }
-    const finestra = getFinestraChiamateEffettiva();
-    if (finestra.modalita === 'chiuso') { alert(`⛔ ${finestra.messaggio}`); return; }
-    if (!finestra.aperta && !isAdmin) {
-      alert(`⛔ Finestra chiusa\n\n${finestra.messaggio}`); return;
-    }
     const squadra = isAdmin ? callTeam : mySquadra;
-    const giaChiamato = chiamate.some(c =>
-      c.giocatore === player.nome && c.squadra === squadra && c.stato !== 'conclusa'
-    );
-    if (giaChiamato) { alert("Hai già manifestato interesse per questo giocatore"); return; }
     if (!window.confirm(`Manifestare interesse per ${player.nome} (Q${player.quot})${perVivaio ? ' per il vivaio' : ''}?`)) return;
 
     setChiamando(true);
     try {
-      await insertChiamata({
-        giocatore: player.nome, ruolo: player.ruolo, quot: player.quot,
-        anni: player.anni || 0, squadra_serie_a: player.squadra_serie_a || '',
-        squadra, per_vivaio: perVivaio,
-      });
-      // Notify channel about the chiamata
-      sendTelegramNotification('chiamata_svincolati', {
-        giocatore: player.nome,
-        quotazione: player.quot,
-        squadra,
-      });
-      notificaListaDesideri(player.nome, squadra, `${squadra} lo ha chiamato dagli svincolati`);
+      await eseguiChiamataSvincolato(player, squadra, perVivaio, isAdmin);
       setShowCallForm(null);
       setCallVivaio(false);
       await loadAll();
@@ -16049,6 +16371,7 @@ function resolveNewsImageSrc(raw, thumbParallel) {
 function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, teams, profile }) {
   const [expanded, setExpanded] = useState(false);
   const [imgOpen, setImgOpen] = useState(null);
+  useLockBodyScroll(!!imgOpen);
   const [showComments, setShowComments] = useState(false);
   const [commenti, setCommenti] = useState([]);
   const [loadingComm, setLoadingComm] = useState(false);
