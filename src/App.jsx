@@ -224,16 +224,16 @@ async function cachedFetch(key, fetcher, ttl = 600000) {
 }
 
 
-import { TEAMS, getFPStatus, getSCColor, getRoleColor, FREE_AGENTS } from "./data.js";
+import { TEAMS, getRoleColor, FREE_AGENTS } from "./data.js";
 import { SURFACE, BRAND, SEMANTIC, FIELD } from "./design-system.js";
 import { IconHome, IconShield, IconTrophy, IconMarket, IconMore, IconAdmin, IconChevronRight, IconArchive, IconRefresh, IconPlus, IconEdit, IconTrash, IconClose, IconSearch, IconBack } from "./components/ui/Icons.jsx";
 import { ProgressBar } from "./components/ui/ProgressBar.jsx";
 import { HeroSurface } from "./components/ui/Surface.jsx";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getListaDesideri, insertListaDesiderio, updateListaDesiderioNote, deleteListaDesiderio, subscribeListaDesideri, notificaListaDesideri, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, registraEventoGiornataInvestimento, getEffettiInvestimenti, getSquadreConSuperClub, getStatoGuadagniGiornata,
-  getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, usaContatoreInvestimento, registraEventoInvestimento, annullaEventoInvestimento, toggleTraguardoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, deleteSvincolato, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, calcolaScadenzaInteresse, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, getObiettivi, subscribeObiettivi, getListaDesideri, insertListaDesiderio, updateListaDesiderioNote, deleteListaDesiderio, subscribeListaDesideri, notificaListaDesideri, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, getDomenicaCorrente, getFasciaBilancioNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, registraEventoGiornataInvestimento, getEffettiInvestimenti, getSquadreConSuperClub, getStatoGuadagniGiornata,
+  getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, usaContatoreInvestimento, registraEventoInvestimento, annullaEventoInvestimento, toggleTraguardoInvestimento, deleteInvestimento, getPenalita, insertPenalita, deletePenalita, applicaMulta, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, applicaIscrizioneCampionato, investiEuroExtra, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, logAzione, getAuditLog, effettuaRollback, getVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, getSvincolatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, checkScadenzeAste, subscribeAsteSvincolati, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
-  getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
-  getBonusTrattativa, getBonusTrattativeBatch, insertBonusTrattativa, deleteBonusTrattativa, checkECompletaBonus, getLabelBonus,
+  getListone, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
+  getBonusTrattativa, getBonusTrattativeBatch, insertBonusTrattativa, checkECompletaBonus, getLabelBonus,
   getNotizie, insertNotizia, updateNotizia, deleteNotizia, togglePinnata, toggleReaction, uploadNotiziaImmagine, subscribeNotizie,
   getCommenti, insertCommento, updateCommento, deleteCommento, subscribeCommenti,
   calcolaStatoTrattativaMercato, applicaPenalitaRitardoAuto,
@@ -414,10 +414,6 @@ function calcolaStipCorretto(quot, anniContratto, anni) {
   return parseFloat((base * 0.9).toFixed(2)); // anno 4+: Bonus Fedeltà
 }
 
-function inizioGiorno(date = new Date()) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
 function isPeriodoSvincoliConsentito(date = new Date()) {
   const m = date.getMonth();
   return !(m === 5 || m === 6); // giugno, luglio
@@ -568,7 +564,6 @@ function GraficoQuotazione({ nome, quotRosa }) {
 
   useEffect(() => {
     let cancelled = false;
-    setStorico(null);
     if (!nome) return;
     getStoricoQuotazioni(nome).then(d => { if (!cancelled) setStorico(d || []); });
     return () => { cancelled = true; };
@@ -726,11 +721,18 @@ function BilancioTrendChart({ team }) {
     padding: "3px 10px", cursor: "pointer",
   });
 
+  // new Date(oggiStr) invece di Date.now(): stessa "data di oggi" già usata
+  // sopra per i limiti degli input, senza chiamare una funzione impura
+  // durante il render (regola react-hooks/purity).
+  const oggiMs = new Date(`${oggiStr}T00:00:00`).getTime();
+  const dataPreset30 = clampData(new Date(oggiMs - 30 * 86400000).toISOString().slice(0, 10));
+  const dataPreset90 = clampData(new Date(oggiMs - 90 * 86400000).toISOString().slice(0, 10));
+
   const controlliFiltro = (
     <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
       <span style={{ fontSize: 9, color: "#666", fontWeight: 700, letterSpacing: "0.06em" }}>PERIODO</span>
-      <button onClick={() => applicaPreset(30)} style={presetBtnStyle(filtro.from === clampData(new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)) && !filtro.to)}>Ultimo mese</button>
-      <button onClick={() => applicaPreset(90)} style={presetBtnStyle(filtro.from === clampData(new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10)) && !filtro.to)}>Ultimi 3 mesi</button>
+      <button onClick={() => applicaPreset(30)} style={presetBtnStyle(filtro.from === dataPreset30 && !filtro.to)}>Ultimo mese</button>
+      <button onClick={() => applicaPreset(90)} style={presetBtnStyle(filtro.from === dataPreset90 && !filtro.to)}>Ultimi 3 mesi</button>
       <button onClick={resetFiltro} style={presetBtnStyle(!filtroAttivo)}>Stagione</button>
       <span style={{ fontSize: 11, color: "#444" }}>|</span>
       <input type="date" value={inputFrom} onChange={e => setInputFrom(e.target.value)}
@@ -1150,7 +1152,6 @@ function CalcolatoreGiornata({ profile, teams, navigate }) {
   });
 
   // ── Tabella guadagni gol segnati (art. 8.1) ──────────────────────────────
-  const tabellaGolSegnati = [0,1,2,3,4,5,6,7];
   const guadagnoGolSegnati = Math.min(Number(golSegnati) || 0, 7);
 
   // Guadagno gol subiti
@@ -1670,17 +1671,13 @@ function AltroHubPage({ navigate, isAdmin, profile }) {
   );
 }
 
-function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
+function SquadrePage({ onSelectTeam, teams = TEAMS, profile }) {
   const mySquadra = profile?.squadra;
 
-  const [classifica, setClassifica] = useState([]);
   const [roseCountMap, setRoseCountMap] = useState({});
   const [u21CountMap, setU21CountMap] = useState({});
   const [scLiveMap, setScLiveMap] = useState({});
   const [capLimiteMap, setCapLimiteMap] = useState({});
-  const [editMode, setEditMode] = useState(false);
-  const [editRow, setEditRow] = useState(null); // { squadra, g, v, n, p, gf, gs, dr, pt, pt_totali }
-  const [saving, setSaving] = useState(false);
 
   // Griglia unica per tutte le squadre (nessuna divisione tua rosa / altre):
   // 2 colonne anche sul mobile più stretto per vedere tutti gli 8 badge in
@@ -1701,12 +1698,6 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
     };
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
-  }, []);
-
-  useEffect(() => {
-    getClassifica().then(d => setClassifica(d));
-    const sub = subscribeClassifica(() => getClassifica().then(d => setClassifica(d)));
-    return () => supabase.removeChannel(sub);
   }, []);
 
   // Batch load: rosa counts + scLive (rosa + staff allenatore) + allenatori.
@@ -1747,37 +1738,6 @@ function SquadrePage({ onSelectTeam, teams = TEAMS, profile, isAdmin }) {
       setCapLimiteMap(caps);
     });
   }, [teamNamesKey]);
-
-  // Merge classifica con colori/loghi delle squadre
-  const classificaRicca = classifica.map(c => {
-    const team = teams.find(t => t.name === c.squadra);
-    return { ...c, team };
-  }).sort((a, b) => b.pt - a.pt || b.pt_totali - a.pt_totali);
-
-  async function salvaRiga() {
-    if (!editRow) return;
-    setSaving(true);
-    try {
-      const aggiornamenti = {
-        g: Number(editRow.g), v: Number(editRow.v), n: Number(editRow.n),
-        p: Number(editRow.p), gf: Number(editRow.gf), gs: Number(editRow.gs),
-        dr: Number(editRow.gf) - Number(editRow.gs),
-        pt: Number(editRow.pt), pt_totali: Number(editRow.pt_totali),
-      };
-      // Salva snapshot prima del cambio
-      const rigaPrima = classifica.find(c => c.squadra === editRow.squadra);
-      await updateClassificaSquadra(editRow.squadra, aggiornamenti);
-      await logAzione({ utente: 'admin', squadra: editRow.squadra, azione: 'classifica_modifica', entita: 'classifica', descrizione: `Classifica aggiornata: ${editRow.squadra} → Pt:${editRow.pt} PtTot:${editRow.pt_totali}`, dataPrima: { riga: rigaPrima }, dataDopo: { riga: { ...rigaPrima, ...aggiornamenti } }, rollbackPossibile: true });
-      setEditRow(null);
-      setEditMode(false);
-    } catch(e) {
-      alert(`Errore: ${e.message}`);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const inp = { padding: "4px 6px", borderRadius: 5, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 11, width: "100%" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
@@ -2884,23 +2844,6 @@ function DeadlinePage() {
     return () => clearInterval(t);
   }, []);
 
-  function parseDate(str) {
-    // Formato "DD MMM YYYY" o "DD/MM/YYYY"
-    const mesi = { "Gen":0,"Feb":1,"Mar":2,"Apr":3,"Mag":4,"Giu":5,"Lug":6,"Ago":7,"Set":8,"Ott":9,"Nov":10,"Dic":11 };
-    const parts = str.split(" ");
-    if (parts.length === 3 && mesi[parts[1]] !== undefined) {
-      return new Date(parseInt(parts[2]), mesi[parts[1]], parseInt(parts[0]), 23, 59, 0);
-    }
-    return null;
-  }
-
-  function getDaysLeft(dateStr) {
-    const d = parseDate(dateStr);
-    if (!d) return null;
-    const diff = d - now;
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
-  }
-
   function getStatus(days) {
     if (days === null) return { color: "#555", label: "—", bg: "#ffffff08", border: "#ffffff0a" };
     if (days < 0)      return { color: "#444", label: "Scaduta", bg: "#ffffff05", border: "#ffffff08" };
@@ -3566,7 +3509,6 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
   const needsDecisioneVivaio = (p) => Boolean(p.vivaio_decisione_richiesta) || (p.vivaio_presenze||0)>=2 || (Number(p.quot_iniziale_vivaio || p.quot || 0) > 0 && Number(p.quot || 0) - Number(p.quot_iniziale_vivaio || p.quot || 0) >= 2);
   const decisioneScadenzaLabel = (p) => p.vivaio_decisione_scadenza ? new Date(p.vivaio_decisione_scadenza).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : 'entro 3 giorni';
   const alertProm=vivaio.filter(needsDecisioneVivaio);
-  const now=new Date(); const isVivaioPeriod=now.getMonth()>=8; // from Sept 1
 
   if(loading)return <div style={{fontSize:12,color:"#555",padding:12}}>Caricamento rosa...</div>;
 
@@ -3843,7 +3785,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
             ))}
           </div>
 
-          <GraficoQuotazione nome={popup.player.nome} quotRosa={popup.player.quot} />
+          <GraficoQuotazione key={popup.player.nome} nome={popup.player.nome} quotRosa={popup.player.quot} />
 
           <div style={{ fontSize:10,fontWeight:700,color:"#666",letterSpacing:"0.1em",margin:"14px 0 8px" }}>AZIONI</div>
 
@@ -4118,329 +4060,6 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
           </div>
         </details>
       )}
-    </div>
-  );
-}
-
-
-/* ─── SVINCOLI TAB ──────────────────────────────────────────────────────────── */
-function SvincoliTab({ team, isAdmin }) {
-  const [rosa, setRosa] = useState([]);
-  const [svincoli, setSvincoli] = useState([]);
-  const [contatori, setContatori] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(null); // player selezionato per svincolo
-  const [tipoSvincolo, setTipoSvincolo] = useState('ordinario');
-  const [estero, setEstero] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const loadAll = useCallback(async () => {
-    const [r, s, c] = await Promise.all([
-      getRosa(team.name),
-      getSvincoli(team.name),
-      getStagioneSvincoli(team.name),
-    ]);
-    setRosa(r || []);
-    setSvincoli(s || []);
-    setContatori(c);
-    setLoading(false);
-  }, [team.name]);
-
-  useEffect(() => { loadAll(); }, [loadAll]);
-
-  // ── Calcolo costo/indennizzo preview ─────────────────────────────────────
-  function calcolaPreview(player, tipo, estero) {
-    if (!player) return null;
-    const quot = Number(player.quot || 0);
-    const stip = calcolaStipCorretto(player.quot, player.anni_contratto, player.anni);
-    const oggi = new Date();
-    const isU21 = player.anni > 0 && player.anni <= 21;
-
-    if (tipo === 'ordinario') {
-      const penale = quot <= 10 ? 0.5 : quot <= 20 ? 1 : quot <= 30 ? 1.5 : 2;
-      const mesi = contaMensilitaResidueDaPagare(oggi);
-      const costoStip = parseFloat((mesi * stip / 12).toFixed(2));
-      return {
-        label: "Costo totale",
-        value: parseFloat((penale + costoStip).toFixed(2)),
-        color: "#ef4444",
-        dettaglio: `Penale ${penale}M + ${mesi} mensilità residue fino al 01/06 (${costoStip}M)`,
-        positivo: false,
-      };
-    }
-    if (tipo === 'straordinario_u21_nc') {
-      return { label: "Costo/Guadagno", value: 0, color: "#888", dettaglio: "Svincolo U21 non conteggiato — costo e guadagno 0", positivo: true };
-    }
-    // Straordinario
-    const ind = estero ? parseFloat((quot * 0.75).toFixed(2)) : parseFloat((quot * 0.5).toFixed(2));
-    const mesiRimb = contaMensilitaRimborsabili(player, oggi);
-    const rimb = parseFloat((mesiRimb * stip / 12).toFixed(2));
-    const totale = parseFloat((ind + rimb).toFixed(2));
-    return {
-      label: "Indennizzo + rimborso",
-      value: totale,
-      color: "#10b981",
-      dettaglio: `Indennizzo ${ind}M${estero ? ' (estero ¾)' : ' (½)'} + ${mesiRimb} mens. rimborsate (${rimb}M)`,
-      positivo: true,
-    };
-  }
-
-  // ── Validazioni ───────────────────────────────────────────────────────────
-  function getValidazioni(player, tipo) {
-    if (!player || !contatori) return [];
-    const warnings = [];
-    const oggi = new Date();
-    const periodoStraord = getPeriodoStraordinariSvincoli(oggi);
-    // Svincolo straordinario "estero": sempre possibile, nessun vincolo di
-    // finestra di mercato né di 30 giorni dall'acquisto (valido per tutti).
-    const isStraordEstero = (tipo === 'straordinario' || tipo === 'straordinario_u21') && estero;
-
-    // Vincolo 30 giorni dall'acquisto (art. 6.2)
-    if (!isStraordEstero && player.data_acquisto) {
-      const gg = Math.floor((oggi - new Date(player.data_acquisto)) / 86400000);
-      if (gg < 30) warnings.push({ tipo: 'error', testo: `Non svincolabile: acquistato ${gg} giorni fa (min. 30gg)` });
-    }
-
-    // Impossibile giu-lug per tutti i tipi (art. 6.1)
-    if (!isStraordEstero && !isPeriodoSvincoliConsentito(oggi))
-      warnings.push({ tipo: 'error', testo: 'Svincoli non consentiti a giugno/luglio: ammessi solo dal 01/08 al 31/05' });
-
-    // Max straordinari e finestre valide (art. 6.1)
-    if (tipo === 'straordinario' || tipo === 'straordinario_u21') {
-      if (!isStraordEstero && !periodoStraord)
-        warnings.push({ tipo: 'error', testo: 'Straordinari consentiti solo nel mercato estivo (01/06-15/09) o invernale (01/01-15/02)' });
-      if (!estero && periodoStraord === 'estivo' && contatori.count_straord_estivi >= 5)
-        warnings.push({ tipo: 'error', testo: `Esauriti svincoli straordinari estivi (5/5)` });
-      if (!estero && periodoStraord === 'invernale' && contatori.count_straord_invernali >= 4)
-        warnings.push({ tipo: 'error', testo: `Esauriti svincoli straordinari invernali (4/4)` });
-    }
-
-    // Max 14 totali (art. 6.5) — gli svincoli esteri non contano più (scorporati dal conteggio)
-    if (!estero && tipo !== 'straordinario_u21_nc' && contatori.count_totale >= 14)
-      warnings.push({ tipo: 'warning', testo: `Oltre 14 svincoli stagione: penale +2M aggiuntivi` });
-    if (!estero && tipo !== 'straordinario_u21_nc' && contatori.count_totale === 13)
-      warnings.push({ tipo: 'warning', testo: `Attenzione: questo sarà il 14° svincolo stagionale` });
-
-    return warnings;
-  }
-
-  async function confermaVincolo() {
-    if (!showForm) return;
-    const validazioni = getValidazioni(showForm, tipoSvincolo);
-    if (validazioni.some(v => v.tipo === 'error')) return;
-
-    const penaleExtra = tipoSvincolo !== 'straordinario_u21_nc' && contatori?.count_totale >= 14 ? 2 : 0;
-
-    const msg = `Confermi lo svincolo di ${showForm.nome}?\n` +
-      (penaleExtra > 0 ? `⚠️ Penale extra +${penaleExtra}M (oltre 14 svincoli)\n` : '') +
-      `Questa azione è irreversibile.`;
-    if (!window.confirm(msg)) return;
-
-    setSaving(true);
-    try {
-      // Bilancio attuale della squadra
-      const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', team.name).single();
-      const bil = sq?.bilancio || 0;
-
-      await eseguiSvincolo({
-        squadra: team.name,
-        player: showForm,
-        tipo: tipoSvincolo,
-        estero,
-        bilancioAttuale: bil,
-      });
-
-      await logAzione({ utente: 'admin/presidente', squadra: team.name, azione: 'svincolo', entita: 'rosa', entitaId: showForm.id, descrizione: `Svincolo (${tipoSvincolo}): ${showForm.nome} Q${showForm.quot}${estero ? ' [estero]' : ''}`, dataPrima: { bilancio: bil, giocatore: showForm }, rollbackPossibile: false });
-
-
-      setShowForm(null);
-      setEstero(false);
-      setTipoSvincolo('ordinario');
-      await loadAll();
-    } catch (e) {
-      alert(`Errore: ${e.message}`);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  // ── Checks riacquisto 60gg ────────────────────────────────────────────────
-  function isRiacquistabile(nomeGiocatore) {
-    if (!contatori?.svincolati_history) return true;
-    const rec = contatori.svincolati_history.find(h => h.nome === nomeGiocatore);
-    if (!rec) return true;
-    return new Date() >= new Date(rec.riacquistabile_dal);
-  }
-
-  const preview = calcolaPreview(showForm, tipoSvincolo, estero);
-  const validazioni = getValidazioni(showForm, tipoSvincolo);
-  const canConfermare = validazioni.filter(v => v.tipo === 'error').length === 0;
-
-  // Conteggio straordinari stagione
-  const oggi = new Date();
-  const periodoStraordCorrente = getPeriodoStraordinariSvincoli(oggi);
-  const isEstate = periodoStraordCorrente === 'estivo';
-  const maxStraord = isEstate ? 5 : 4;
-  const usatiStraord = isEstate ? (contatori?.count_straord_estivi || 0) : (contatori?.count_straord_invernali || 0);
-
-  const tipoOptions = [
-    { val: 'ordinario', label: '📋 Ordinario', desc: 'Penale + stipendi residui' },
-    { val: 'straordinario', label: '⭐ Straordinario', desc: `Indennizzo ¼ + rimborso · ${usatiStraord}/${maxStraord} usati` },
-    ...(showForm?.anni > 0 && showForm?.anni <= 21 ? [
-      { val: 'straordinario_u21', label: '⭐ Straord. U21 (conteggiato)', desc: 'Come straordinario normale' },
-      { val: 'straordinario_u21_nc', label: '🆓 U21 non conteggiato', desc: 'Costo e guadagno 0, illimitato' },
-    ] : []),
-  ];
-
-  if (loading) return <div style={{ fontSize: 12, color: "#555", padding: 20 }}>Caricamento...</div>;
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-      {/* ── Contatori stagione ── */}
-      <div className="grid-stats-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-        {[
-          { label: "TOTALE STAGIONE", value: `${contatori?.count_totale || 0} / 14`, color: (contatori?.count_totale || 0) >= 14 ? "#ef4444" : (contatori?.count_totale || 0) >= 12 ? "#f59e0b" : "#10b981" },
-          { label: `STRAORD. ${isEstate ? 'ESTIVI' : 'INVERNALI'}`, value: `${usatiStraord} / ${maxStraord}`, color: usatiStraord >= maxStraord ? "#ef4444" : usatiStraord >= maxStraord - 1 ? "#f59e0b" : "#888" },
-          { label: "ORDINARI", value: String(contatori?.count_ordinari || 0), color: "#888" },
-        ].map(s => (
-          <div key={s.label} style={{ background: "#ffffff08", borderRadius: 10, padding: "10px 12px", textAlign: "center" }}>
-            <div style={{ fontSize: 8, color: "#555", letterSpacing: "0.06em", marginBottom: 4 }}>{s.label}</div>
-            <div style={{ fontSize: 18, fontWeight: 900, color: s.color, fontFamily: "'Bebas Neue',sans-serif" }}>{s.value}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Warning giu/lug ── */}
-      {(oggi.getMonth() === 5 || oggi.getMonth() === 6) && (
-        <div style={{ background: "#f59e0b0a", border: "1px solid #f59e0b30", borderRadius: 10, padding: "10px 14px", fontSize: 11, color: "#f59e0b" }}>
-          ⚠️ Svincoli sospesi a giugno/luglio (art. 6.1)
-        </div>
-      )}
-
-      {/* ── Form svincolo ── */}
-      {(isAdmin || true) && (
-        <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 14, padding: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.08em", marginBottom: 12 }}>✂️ NUOVO SVINCOLO</div>
-
-          {/* Selezione giocatore */}
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 10, color: "#666", marginBottom: 6 }}>SELEZIONA GIOCATORE</div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {rosa.sort((a,b) => b.quot - a.quot).map(p => {
-                const sel = showForm?.id === p.id;
-                const noRiacq = !isRiacquistabile(p.nome);
-                const rc = getRoleColor(p.ruolo);
-                return (
-                  <button key={p.id} onClick={() => { setShowForm(sel ? null : p); setTipoSvincolo('ordinario'); setEstero(false); }}
-                    style={{ padding: "5px 10px", borderRadius: 8, border: `1px solid ${sel ? "#ef4444" : "#ffffff15"}`, background: sel ? "#ef444418" : "#ffffff08", color: sel ? "#ef4444" : noRiacq ? "#555" : "#ccc", fontSize: 11, cursor: noRiacq ? "not-allowed" : "pointer", opacity: noRiacq ? 0.5 : 1 }}
-                    title={noRiacq ? "Svincolo bloccato (30gg dall'acquisto)" : ""}>
-                    <span style={{ fontSize: 9, color: rc.text, marginRight: 4 }}>{p.ruolo}</span>
-                    {p.nome} <span style={{ color: "#555" }}>Q{p.quot}</span>
-                    {p.anni <= 21 && <span style={{ color: "#a78bfa", marginLeft: 3 }}>U21</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Tipo svincolo + dettagli */}
-          {showForm && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div>
-                <div style={{ fontSize: 10, color: "#666", marginBottom: 6 }}>TIPO SVINCOLO</div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {tipoOptions.map(t => (
-                    <button key={t.val} onClick={() => setTipoSvincolo(t.val)}
-                      style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${tipoSvincolo === t.val ? "#6366f1" : "#ffffff15"}`, background: tipoSvincolo === t.val ? "#6366f122" : "transparent", color: tipoSvincolo === t.val ? "#818cf8" : "#666", fontSize: 11, fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
-                      <div>{t.label}</div>
-                      <div style={{ fontSize: 9, color: "#555", fontWeight: 400 }}>{t.desc}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Opzione estero per straordinario */}
-              {(tipoSvincolo === 'straordinario' || tipoSvincolo === 'straordinario_u21') && (
-                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12, color: "#ccc" }}>
-                  <input type="checkbox" checked={estero} onChange={e => setEstero(e.target.checked)} />
-                  Giocatore trasferito all'estero (indennizzo ½ anziché ¼)
-                </label>
-              )}
-
-              {/* Preview costi */}
-              {preview && (
-                <div style={{ background: preview.positivo ? "#10b98112" : "#ef444412", border: `1px solid ${preview.positivo ? "#10b98133" : "#ef444430"}`, borderRadius: 10, padding: "10px 14px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ fontSize: 11, color: "#888" }}>{preview.label}</div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: preview.color, fontFamily: "'Bebas Neue',sans-serif" }}>
-                      {preview.positivo ? "+" : "-"}{Math.abs(preview.value)}M
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 10, color: "#555", marginTop: 4 }}>{preview.dettaglio}</div>
-                </div>
-              )}
-
-              {/* Validazioni */}
-              {validazioni.map((v, i) => (
-                <div key={i} style={{ fontSize: 11, color: v.tipo === 'error' ? "#ef4444" : "#f59e0b" }}>
-                  {v.tipo === 'error' ? "⛔" : "⚠️"} {v.testo}
-                </div>
-              ))}
-
-              <button onClick={confermaVincolo} disabled={!canConfermare || saving}
-                style={{ padding: "10px", borderRadius: 10, border: "none", background: canConfermare ? "#ef4444" : "#333", color: canConfermare ? "#fff" : "#555", fontSize: 13, fontWeight: 700, cursor: canConfermare ? "pointer" : "not-allowed" }}>
-                {saving ? "Elaborazione..." : `✂️ Svincola ${showForm.nome}`}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Storico svincoli stagione ── */}
-      <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 14, padding: 16 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.08em", marginBottom: 12 }}>📋 STORICO SVINCOLI STAGIONE</div>
-        {svincoli.length === 0
-          ? <div style={{ fontSize: 12, color: "#555", fontStyle: "italic" }}>Nessuno svincolo effettuato</div>
-          : svincoli.map(s => (
-            <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #ffffff08", flexWrap: "wrap", gap: 6 }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#ddd" }}>{s.giocatore}</div>
-                <div style={{ fontSize: 10, color: "#666" }}>
-                  {s.tipo === 'ordinario' ? '📋 Ordinario' : s.tipo === 'straordinario_u21_nc' ? '🆓 U21 nc' : s.estero ? '✈️ Straordinario' : '⭐ Straordinario'}
-                  {s.estero ? ' · estero' : ''} · {s.data_svincolo}
-                </div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                {s.costo_penale > 0 && <div style={{ fontSize: 11, color: "#ef4444" }}>-{s.costo_penale}M penale</div>}
-                {s.indennizzo > 0 && <div style={{ fontSize: 11, color: "#10b981" }}>+{s.indennizzo}M ind.</div>}
-                <div style={{ fontSize: 10, color: "#555" }}>Q{s.quot}</div>
-              </div>
-            </div>
-          ))
-        }
-      </div>
-
-      {/* ── Giocatori svincolati (60gg) ── */}
-      {contatori?.svincolati_history?.length > 0 && (
-        <div style={{ background: "#ffffff06", border: "1.5px solid #ffffff12", borderRadius: 14, padding: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: "0.08em", marginBottom: 10 }}>⏳ BLOCCO RIACQUISTO (60gg)</div>
-          {contatori.svincolati_history.map((h, i) => {
-            const riacq = new Date(h.riacquistabile_dal);
-            const ggMancanti = Math.ceil((riacq - new Date()) / 86400000);
-            const scaduto = ggMancanti <= 0;
-            return (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #ffffff08", opacity: scaduto ? 0.4 : 1 }}>
-                <div style={{ fontSize: 12, color: scaduto ? "#555" : "#ddd" }}>{h.nome}</div>
-                <div style={{ fontSize: 11, color: scaduto ? "#555" : "#f59e0b" }}>
-                  {scaduto ? "Riacquistabile" : `${ggMancanti}gg`}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
     </div>
   );
 }
@@ -5292,8 +4911,6 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
   }
 
   const [tasse, setTasse] = useState([]);
-  const [fairSpending, setFairSpending] = useState([]);
-  const [applicandoTassa, setApplicandoTassa] = useState(false);
   const [euroInput, setEuroInput] = useState("");
   const [savingQuote, setSavingQuote] = useState(false);
   const [contrattiSort, setContrattiSort] = useState("ruolo"); // "ruolo" | "nome" | "quot"
@@ -5319,7 +4936,6 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
 
   useEffect(() => {
     getTassePagate(team.name).then(setTasse);
-    getFairSpending(team.name).then(setFairSpending);
     refreshStatoStipendiMese();
   }, [team.name, refreshStatoStipendiMese]);
 
@@ -5475,20 +5091,13 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
   // settimane" non ha mai mostrato un dato reale finora.
   const settNeg = team.bilancioNegSettimane || 0;
   const bilancioNegDal = team.bilancioNegDal || null;
-  const penNeg = fasciaNeg ? getPenalitaNeg(bilancio, settNeg) : null;
-  const sem = getSemestreCorrente();
 
   // ── Logica Quote ──────────────────────────────────────────────────────────
 
   const euroDisponibili = Math.max(0, 10 - (team.euroBiennio || 0));
   const maxEuroInvestibili = euroDisponibili; // quelli rimasti nel biennio
   const mlnOttenuti = team.mlnExtra || 0;
-  const costoRitiro = parseFloat((mlnOttenuti * 2).toFixed(2));
-  // Finestra ritiro: 05/01 → martedì dopo 19ª (approssimato qui come 05/01-28/02)
   const oggi = new Date();
-  const meseOggi = oggi.getMonth() + 1;
-  const giornoOggi = oggi.getDate();
-  const finestraRitiroAperta = (meseOggi === 1 && giornoOggi >= 5) || meseOggi === 2;
   // Finestra investimento: dal 01/06 al 14/08 alle 23:59 (controllata anche nel backend)
   const finestraInvestimentoAperta = isFinestraExtraBudget(oggi);
 
@@ -5506,17 +5115,6 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
     finally { setSavingQuote(false); }
   }
 
-  async function handleRitira() {
-    if (!finestraRitiroAperta) { alert("La finestra di ritiro è aperta solo tra il 05/01 e il martedì dopo la 19ª giornata."); return; }
-    if (!window.confirm(`Ritirare il budget extra?\n\nRicevi: ${mlnOttenuti}M\nCosti: ${costoRitiro}M (2×)\nSaldo netto: −${mlnOttenuti}M\n\nGli €${team.euroInvestiti || 0} rimangono spesi nel biennio.`)) return;
-    setSavingQuote(true);
-    try {
-      await ritiraBudgetExtra(team.name);
-      if (onRefresh) onRefresh();
-    } catch(e) { alert(e.message); }
-    finally { setSavingQuote(false); }
-  }
-
   async function handleIscrizione() {
     if (team.iscrizionePagata) { alert("Iscrizione già applicata."); return; }
     if (!window.confirm("Applicare la quota iscrizione campionato (−30M)?\n\nDa regolamento questa operazione è automatica dal 31/07 alle 23:59.")) return;
@@ -5526,22 +5124,6 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
       if (onRefresh) onRefresh();
     } catch(e) { alert(e.message); }
     finally { setSavingQuote(false); }
-  }
-
-  async function handleApplicaTassa() {
-    const domenica = getDomenicaCorrente();
-    // Blocca se la tassa di questa domenica è già stata applicata
-    const giaApplicata = tasse.some(t => t.data_controllo === domenica);
-    if (giaApplicata) { alert(`La tassa di questa settimana (domenica ${domenica}) è già stata applicata.`); return; }
-    if (!window.confirm(`Applicare tassa del ${tassa.perc}% (−${tassa.importo}M) al bilancio di ${team.name}?`)) return;
-    setApplicandoTassa(true);
-    try {
-      await applicaTassaSettimana(team.name, bilancio, domenica);
-      await logAzione({ utente: 'admin', squadra: team.name, azione: 'tassa_settimanale', entita: 'squadre', descrizione: `Tassa settimanale ${tassa.perc}% −${tassa.importo}M (bilancio era ${bilancio.toFixed(2)}M)`, dataPrima: { bilancio }, dataDopo: { bilancio: bilancio - tassa.importo }, rollbackPossibile: true });
-      getTassePagate(team.name).then(setTasse);
-      if (onBilancioChange) onBilancioChange(parseFloat((bilancio - tassa.importo).toFixed(2)));
-    } catch(e) { alert(e.message); }
-    finally { setApplicandoTassa(false); }
   }
 
 
@@ -6415,14 +5997,6 @@ Gli obiettivi verranno azzerati.`;
     catch(e){ alert(e.message); }
     finally { setSavingAll(false); }
   }
-  async function handleApplicaMalusFinali() {
-    if (!canManageObiettivi) return;
-    if (!window.confirm('Applicare tutti i malus degli obiettivi DS/DG falliti e non ancora applicati?')) return;
-    setSavingAll(true);
-    try { const r = await applicaMalusObiettiviFinali(team.name, STAGIONE_CORRENTE); alert(`Applicati malus per ${r.totale || 0}M`); await loadAll(); }
-    catch(e){ alert(e.message); }
-    finally { setSavingAll(false); }
-  }
   async function handleIncassaObiettivo(ob) {
     if (!canManageObiettivi) return;
     setSavingAll(true);
@@ -6470,7 +6044,7 @@ Gli obiettivi verranno azzerati.`;
 
   // ── INVESTIMENTI ─────────────────────────────────────────────────────────────
   const [investimenti, setInvestimenti] = useState([]);
-  const [loadingInv, setLoadingInv] = useState(true);
+  const [, setLoadingInv] = useState(true);
   const [savingInv, setSavingInv] = useState(false);
   const [editGuad, setEditGuad] = useState(null);
   const [catFilter, setCatFilter] = useState("tutti");
@@ -7479,7 +7053,7 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
   const [contrattiScadenza, setContrattiScadenza] = useState([]);
   const [pagandoStipendi, setPagandoStipendi] = useState(false);
   const [clubIdentity, setClubIdentity] = useState(null);
-  const [obiettivi, setObiettivi] = useState([]);
+  const [, setObiettivi] = useState([]);
 
   const [scAllenatore, setScAllenatore] = useState(0);
   const [allenatoreNome, setAllenatoreNome] = useState(null);
@@ -7490,11 +7064,6 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
     cachedFetch('effetti_inv_' + team.name, () => getEffettiInvestimenti(team.name), 600000)
       .then(e => setScBonusInvestimenti(Number(e?.scBonusInvestimenti || 0)));
   }, [team.name]);
-
-  const salaryDist = 75 - team.salaryUsed;
-  const fpMax = Math.max(team.fairPlay1, team.fairPlay2);
-  const fpStatus = getFPStatus(fpMax);
-  const scColor = getSCColor(team.salaryUsed);
 
   // Salary cap: stipendi rosa + 5M staff allenatore (se carta scelta)
   const salaryCapRosa = rosaPlayers.reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
@@ -7511,11 +7080,6 @@ function PresidentePage({ team, onBack, isAdmin, mySquadra }) {
   const giorniSCNeg = team.scNegativoDal
     ? Math.floor((new Date() - new Date(team.scNegativoDal)) / 86400000)
     : 0;
-
-  // Contratti in scadenza (anni_contratto >= 2, entro 31/05)
-  const now = new Date();
-  const fine31Mag = new Date(now.getFullYear(), 4, 31); // 31 maggio
-  const alertContratti = contrattiScadenza.filter(p => !p.anni_giocatore || p.anni > 21);
 
   const loadRosaStipendi = useCallback(async ({ force = false } = {}) => {
     if (force) cacheInvalidate('rosa_' + team.name);
@@ -8990,7 +8554,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
         t.a_squadra === mySquadra
       );
       for (const t of inAttesa) {
-        try { await applicaPenalitaRitardoAuto(t); } catch(e) { /* ignora */ }
+        try { await applicaPenalitaRitardoAuto(t); } catch { /* ignora */ }
       }
     }
     const interval = setInterval(checkPenalita, 5 * 60 * 1000);
@@ -9048,7 +8612,6 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   function onGiocatoreChange(playerId) {
     const player = rosaTarget.find(p => String(p.id) === String(playerId));
     if (!player) { setForm(f => ({ ...f, giocatoreId: '', giocatoreNome: '', quot: 0, prezzo: '' })); return; }
-    const passaggi = Number(player.passaggi_sessione || 0);
     const tipoForzato = form.tipo; // art. 5.6: qualsiasi tipo consentito, max 2 passaggi per sessione
     setForm(f => ({
       ...f,
@@ -9936,7 +9499,6 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                   <div style={{ marginBottom: 12 }}>
                     <div style={{ fontSize: 10, color: "#666", marginBottom: 6 }}>3. TIPO OPERAZIONE</div>
                     {(() => {
-                      const passaggi = Number(rosaTarget.find(p=>String(p.id)===String(form.giocatoreId))?.passaggi_sessione || 0);
                       const soloP = false; // art. 5.6 aggiornato: nessun tipo forzato
                       const tipi = soloP
                         ? [["prestito_secco","🔄 Prestito Secco"],["prestito_diritto","🔄 c/Diritto"],["prestito_obbligo","🔄 c/Obbligo"]]
@@ -10773,7 +10335,7 @@ function formatCountdown(target) {
 }
 
 // ── Componente: card giocatore chiamato ───────────────────────────────────────
-function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onInteresse, onRefresh, aste, dsMasterclass }) {
+function ChiamataCard({ chiamateGiocatore, mySquadra, isAdmin, onRefresh, aste, dsMasterclass }) {
   const [saving, setSaving] = useState(false);
   const [scadOfferteAttesa, setScadOfferteAttesa] = useState(null);
 
@@ -11104,7 +10666,7 @@ function OffertaInlineForm({ asta, squadra, onRefresh, dsMasterclass }) {
 }
 
 // ── Componente risultato asta ─────────────────────────────────────────────────
-function RisultatoAstaCard({ asta, isAdmin }) {
+function RisultatoAstaCard({ asta }) {
   const [offerte, setOfferte] = useState([]);
   const [open, setOpen] = useState(false);
 
@@ -11205,7 +10767,9 @@ function ConflittiListonePage({ teams }) {
     setLoading(false);
   }, [teams]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   if (loading) return <div style={{ fontSize: 13, color: '#666', padding: 20 }}>Controllo in corso...</div>;
 
@@ -11498,6 +11062,10 @@ function ListaDesideriPage({ teams, profile, isAdmin }) {
   const [listone, setListone] = useState(null);
   const [search, setSearch] = useState("");
   const [aggiungendo, setAggiungendo] = useState(null); // nome del giocatore in corso di aggiunta
+  const [filterRuolo, setFilterRuolo] = useState("tutti");
+  const [filterProprieta, setFilterProprieta] = useState("tutti"); // tutti | svincolati | rosa
+  const [sortBy, setSortBy] = useState("aggiunta"); // aggiunta | nome | quot | ruolo
+  const [sortDir, setSortDir] = useState("desc");
 
   const loadDesideri = useCallback(() => {
     if (!mySquadra) return;
@@ -11532,6 +11100,35 @@ function ListaDesideriPage({ teams, profile, isAdmin }) {
     if (team) setPlayerPopup({ team, nome: d.giocatore });
     else setPlayerPopup({ svincolato: d.giocatore });
   }
+
+  // Arricchisce ogni voce con ruolo/proprietà/quot dal listone (per filtrare
+  // e ordinare), tenendo l'ordine di aggiunta originale come fallback per chi
+  // non è (ancora) nel listone.
+  const desideriRicchi = useMemo(() => {
+    let rows = desideri.map(d => {
+      const riga = trovaRigaListone(d.giocatore);
+      const team = trovaSquadra(riga);
+      return { ...d, riga, team, ruolo: riga?.ruolo || "", quot: riga?.quot ?? null, svincolato: !!riga && !team };
+    });
+    if (filterRuolo !== "tutti") rows = rows.filter(r => r.ruolo === filterRuolo);
+    if (filterProprieta === "svincolati") rows = rows.filter(r => r.svincolato);
+    else if (filterProprieta === "rosa") rows = rows.filter(r => !!r.team);
+
+    const roleOrder = ["Por","Dc","Dd","Ds","B","E","M","C","T","W","A","Pc"];
+    rows = [...rows].sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === "nome") cmp = a.giocatore.localeCompare(b.giocatore);
+      else if (sortBy === "quot") cmp = (a.quot ?? -1) - (b.quot ?? -1);
+      else if (sortBy === "ruolo") {
+        const ia = roleOrder.indexOf(a.ruolo.split(";")[0]), ib = roleOrder.indexOf(b.ruolo.split(";")[0]);
+        cmp = (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+      } else cmp = new Date(a.created_at || 0) - new Date(b.created_at || 0); // "aggiunta"
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return rows;
+  }, [desideri, listone, teams, filterRuolo, filterProprieta, sortBy, sortDir]);
+
+  const ruoliDisponibili = useMemo(() => [...new Set(desideri.map(d => trovaRigaListone(d.giocatore)?.ruolo).filter(Boolean))].sort(), [desideri, listone]);
 
   const giaInLista = useMemo(() => new Set(desideri.map(d => d.giocatore)), [desideri]);
   const risultatiRicerca = useMemo(() => {
@@ -11595,31 +11192,58 @@ function ListaDesideriPage({ teams, profile, isAdmin }) {
         )}
       </div>
 
+      {desideri.length > 0 && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <select value={filterRuolo} onChange={e => setFilterRuolo(e.target.value)}
+            style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}>
+            <option value="tutti">Tutti i ruoli</option>
+            {ruoliDisponibili.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+          <select value={filterProprieta} onChange={e => setFilterProprieta(e.target.value)}
+            style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}>
+            <option value="tutti">Svincolati + in rosa</option>
+            <option value="svincolati">Solo svincolati</option>
+            <option value="rosa">Solo in rosa</option>
+          </select>
+          <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+            style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 12 }}>
+            <option value="aggiunta">Ordina: data aggiunta</option>
+            <option value="nome">Ordina: nome (A-Z)</option>
+            <option value="quot">Ordina: quotazione</option>
+            <option value="ruolo">Ordina: ruolo</option>
+          </select>
+          <button onClick={() => setSortDir(d => d === "desc" ? "asc" : "desc")}
+            style={{ padding: "7px 14px", borderRadius: 999, border: "1px solid #ffffff18", background: "#ffffff08", color: "#aaa", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            {sortDir === "desc" ? "↓ Decrescente" : "↑ Crescente"}
+          </button>
+        </div>
+      )}
+
       {desideri.length === 0 ? (
         <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 10, padding: 20, textAlign: "center" }}>
           Nessun giocatore in lista. Usa la ricerca qui sopra per aggiungerne uno.
         </div>
+      ) : desideriRicchi.length === 0 ? (
+        <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 10, padding: 20, textAlign: "center" }}>
+          Nessun giocatore corrisponde ai filtri.
+        </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {desideri.map(d => {
-            const riga = trovaRigaListone(d.giocatore);
-            const team = trovaSquadra(riga);
-            return (
-              <div key={d.id} onClick={() => apriAzioni(d)}
-                style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, cursor: "pointer" }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#f0f0f0" }}>{d.giocatore}</div>
-                  <div style={{ fontSize: 11, color: "#888", marginTop: 2, display: "flex", alignItems: "center", gap: 5 }}>
-                    {riga?.ruolo && <span>{riga.ruolo} ·</span>}
-                    {team ? (<><TeamAvatar team={team} size={14} /> {team.name}</>) : riga ? <span style={{ color: "#10b981" }}>Svincolato</span> : <span style={{ color: "#666" }}>Non nel listone</span>}
-                    {d.note && <span style={{ color: "#666", fontStyle: "italic" }}>· 📝</span>}
-                  </div>
+          {desideriRicchi.map(d => (
+            <div key={d.id} onClick={() => apriAzioni(d)}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, cursor: "pointer" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#f0f0f0" }}>{d.giocatore}</div>
+                <div style={{ fontSize: 11, color: "#888", marginTop: 2, display: "flex", alignItems: "center", gap: 5 }}>
+                  {d.ruolo && <span>{d.ruolo} ·</span>}
+                  {d.team ? (<><TeamAvatar team={d.team} size={14} /> {d.team.name}</>) : d.riga ? <span style={{ color: "#10b981" }}>Svincolato</span> : <span style={{ color: "#666" }}>Non nel listone</span>}
+                  {d.note && <span style={{ color: "#666", fontStyle: "italic" }}>· 📝</span>}
                 </div>
-                {riga?.quot != null && <span style={{ fontSize: 13, fontWeight: 800, color: "#f59e0b" }}>{riga.quot}</span>}
-                <button onClick={e => rimuovi(d.id, e)} style={{ background: "none", border: "none", color: "#ef4444", fontSize: 14, cursor: "pointer", padding: 4 }} title="Rimuovi dalla lista">🗑</button>
               </div>
-            );
-          })}
+              {d.quot != null && <span style={{ fontSize: 13, fontWeight: 800, color: "#f59e0b" }}>{d.quot}</span>}
+              <button onClick={e => rimuovi(d.id, e)} style={{ background: "none", border: "none", color: "#ef4444", fontSize: 14, cursor: "pointer", padding: 4 }} title="Rimuovi dalla lista">🗑</button>
+            </div>
+          ))}
         </div>
       )}
 
@@ -11776,7 +11400,7 @@ function GiocatoreAltruiPopup({ team, playerNome, mySquadra, navigate, onClose }
         ))}
       </div>
 
-      <GraficoQuotazione nome={player.nome} quotRosa={player.quot} />
+      <GraficoQuotazione key={player.nome} nome={player.nome} quotRosa={player.quot} />
 
       <div style={{ fontSize: 10, fontWeight: 700, color: "#666", letterSpacing: "0.1em", margin: "14px 0 8px" }}>AZIONI</div>
 
@@ -11932,7 +11556,7 @@ function SvincolatoAzionePopup({ playerNome, mySquadra, isAdmin, onClose }) {
           ))}
         </div>
 
-        <GraficoQuotazione nome={player.nome} />
+        <GraficoQuotazione key={player.nome} nome={player.nome} />
 
         <div>
           <div style={{ fontSize: 10, color: "#555", marginBottom: 4 }}>SQUADRA INTERESSATA</div>
@@ -11989,7 +11613,7 @@ function SvincolatoAzionePopup({ playerNome, mySquadra, isAdmin, onClose }) {
   );
 }
 
-function SvincolatiPage({ profile, isAdmin, teams }) {
+function SvincolatiPage({ profile, isAdmin }) {
   const vivaioAperto = isVivaioAcquistiAperti();
   const location = useLocation();
   const navigate = useNavigate();
@@ -12007,7 +11631,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
   const [callVivaio, setCallVivaio]   = useState(false);
   const [investimenti, setInvestimenti] = useState([]);
   const [chiamando, setChiamando]     = useState(false);
-  const [now, setNow]                 = useState(new Date());
+  const [, setNow]                    = useState(new Date());
   const [chiamateAttiveAperto, setChiamateAttiveAperto] = useState(true);
   const [asteAttiveAperto, setAsteAttiveAperto]         = useState(true);
   const mySquadra = profile?.squadra;
@@ -12387,7 +12011,7 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
               </div>
             </div>
 
-            <GraficoQuotazione nome={showCallForm.nome} />
+            <GraficoQuotazione key={showCallForm.nome} nome={showCallForm.nome} />
 
             {/* Squadra */}
             <div>
@@ -12419,7 +12043,6 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
             <div style={{ fontSize: 10, color: "#666", background: "#ffffff06", borderRadius: 8, padding: "10px 12px", lineHeight: 1.8 }}>
               {(() => {
                 const scInt = calcolaScadenzaInteresse();
-                const scOff = calcolaScadenzaOfferte(scInt);
                 const minOfferta = parseFloat((showCallForm.quot * 0.75).toFixed(2));
                 return <>
                   📅 Interesse aperto fino a: <b style={{ color: "#f59e0b" }}>{scInt.toLocaleString("it-IT", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</b><br/>
@@ -13223,7 +12846,7 @@ const PREMI_INDIVIDUALI_DEF = [
 function PremiPage({ isAdmin, teams = [] }) {
   const [premi, setPremi] = useState([]);
   const [classifica, setClassifica] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [montepremi, setMontepremi] = useState(0);
   const [premiIndiv, setPremiIndiv] = useState({});
@@ -13253,16 +12876,6 @@ function PremiPage({ isAdmin, teams = [] }) {
     posizione: i + 1,
     importo: calcolaPremiFinali(i + 1),
   }));
-
-  // Premi in euro (art. 12.4)
-  function calcolaPremiEuro(pos, hasVintatoCoppa) {
-    const mp = montepremi;
-    if (pos === 1) return parseFloat((mp / 2).toFixed(2));
-    if (pos === 2) return parseFloat((mp / 4).toFixed(2));
-    if (pos === 3) return parseFloat((mp / 8).toFixed(2));
-    if (hasVintatoCoppa) return parseFloat((mp / 8).toFixed(2));
-    return 0;
-  }
 
   async function handleApplicaPremi19a() {
     if (!window.confirm("Applicare i premi 19ª giornata a tutte le squadre?")) return;
@@ -14846,7 +14459,7 @@ function AdminControlRoomPage({ teams }) {
               {fpfData && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {Object.entries(fpfData).sort((a,b) => b[1]-a[1]).map(([squadra, netto]) => {
-                    const { zona, multa, pt, euro } = calcolaFairSpending(netto);
+                    const { multa, pt, euro } = calcolaFairSpending(netto);
                     const colore = multa > 0 ? (multa >= 20 ? '#ef4444' : multa >= 15 ? '#f97316' : '#f59e0b') : '#10b981';
                     return (
                       <div key={squadra} style={{ background: colore + '08', border: `1px solid ${colore}25`, borderRadius: 10, padding: '9px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
@@ -16495,7 +16108,7 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, 
     try {
       const autore = profile?.nome || profile?.email || myName;
       const squadra = profile?.squadra || null;
-      const created = await insertCommento({
+      await insertCommento({
         notiziaId: notizia.id,
         autore,
         squadra,
@@ -16564,9 +16177,6 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, 
       await loadCommenti();
     } catch(e) { alert(e.message); }
   }
-
-  // count total reactions for display
-  const totalReactions = Object.values(notizia.reactions || {}).reduce((s, a) => s + a.length, 0);
 
   return (
     <article style={{ background: "#0f111a", border: "1px solid #ffffff0e", borderRadius: 16, padding: "18px 20px", position: "relative", transition: "border-color 0.15s" }}
@@ -16640,12 +16250,12 @@ function NewsCard({ notizia, myName, isAdmin, onReact, onDelete, onEdit, onPin, 
           const tooltipId = `react-${notizia.id}-${emoji}`;
           return (
             <div key={emoji} style={{ position:"relative" }}
-              onMouseEnter={e => {
+              onMouseEnter={() => {
                 if (who.length === 0) return;
                 const tip = document.getElementById(tooltipId);
                 if (tip) tip.style.display = "block";
               }}
-              onMouseLeave={e => {
+              onMouseLeave={() => {
                 const tip = document.getElementById(tooltipId);
                 if (tip) tip.style.display = "none";
               }}>
@@ -17277,10 +16887,16 @@ function AppInner() {
   const [fpfMap, setFpfMap] = useState({});
   const [clubIdentities, setClubIdentities] = useState({});
   const [offerteInAttesa, setOfferteInAttesa] = useState([]);
-  const [mercatoOverride, setMercatoOverride_state] = useState(null); // null=auto, 'aperto', 'chiuso'
+  const [, setMercatoOverride_state] = useState(null); // null=auto, 'aperto', 'chiuso' — forza re-render, letto da _mercatoOverride
   const [stagioneLabel, setStagioneLabelState] = useState('2026/27');
   const [editingStagione, setEditingStagione] = useState(false);
   const [editingStagioneVal, setEditingStagioneVal] = useState('');
+
+  async function loadProfile(userId) {
+    try { setProfile(await getProfile(userId)); }
+    catch (e) { console.warn('Caricamento profilo fallito:', e.message); }
+    setAuthLoading(false);
+  }
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -17308,11 +16924,6 @@ function AppInner() {
     });
     return () => { clearTimeout(timeout); subscription.unsubscribe(); };
   }, []);
-
-  async function loadProfile(userId) {
-    try { setProfile(await getProfile(userId)); } catch {}
-    setAuthLoading(false);
-  }
 
   // ── Controlli automatici sicuri ────────────────────────────────────────────
   // Non applichiamo più stipendi/stadio dal browser: su login multipli o più schede aperte
@@ -17450,7 +17061,6 @@ function AppInner() {
   if (authLoading) return <div style={{ minHeight:"100vh",background:"#0d0f14",display:"flex",alignItems:"center",justifyContent:"center" }}><div style={{ color:"#555",fontSize:14 }}>Caricamento...</div></div>;
   if (!session) return <LoginPage onLogin={() => {}} />;
 
-  const refreshSquadre = () => getSquadre().then(data => { if(data) setSquadreDB(data); });
 
   // ── PageContent come useMemo — NON si rimonta ad ogni re-render di AppInner
   // Le route vengono ri-renderizzate solo se le props che usano cambiano davvero
