@@ -827,7 +827,7 @@ export async function calcolaSalaryCap(squadra) {
 export async function pagaStipendi(squadra, totalStip, bilancioAttuale) {
   const rata = parseFloat((totalStip / 12).toFixed(2));
   const nuovoBilancio = parseFloat((bilancioAttuale - rata).toFixed(2));
-  const oggi = new Date().toISOString().slice(0, 10);
+  const oggi = getOggiLocale();
   const mese = new Date().toLocaleString('it-IT', { month: 'long', year: 'numeric' });
   await supabase.from('movimenti').insert({ squadra, descrizione: `Pagamento stipendi ${mese}`, entrata: null, uscita: rata, data: oggi });
   const { error } = await supabase.from('squadre').update({ bilancio: nuovoBilancio, salary_used: totalStip }).eq('name', squadra);
@@ -2613,6 +2613,17 @@ function getMeseCorrenteRange() {
   return { start, end, meseISO: start.slice(0, 7) };
 }
 
+// Data odierna in formato YYYY-MM-DD basata sul calendario LOCALE (non UTC).
+// Va usata al posto di `new Date().toISOString().slice(0,10)` per scrivere i movimenti datati:
+// toISOString() converte prima in UTC, quindi nelle prime ore dopo mezzanotte locale (l'Italia è
+// avanti rispetto a UTC) può restituire ancora il giorno precedente — un movimento registrato la
+// notte del cambio mese finisce datato al mese sbagliato e getMeseCorrenteRange() (che usa il
+// calendario locale) non lo trova più nel mese corrente.
+export function getOggiLocale() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function isPagamentoStipendiDescrizione(descrizione = '') {
   const d = String(descrizione || '')
     .normalize('NFD')
@@ -4166,7 +4177,7 @@ export async function setStadioUpgrade(squadra, attivo, stagione = getStagioneQu
 
 // Applica le entrate stadio a TUTTE le squadre (trigger manuale admin)
 export async function applicaEntrateStadioTutte(stagione = getStagioneQuota()) {
-  const oggi = new Date().toISOString().slice(0, 10);
+  const oggi = getOggiLocale();
   const { start: meseStart, end: meseEnd, meseISO } = getMeseCorrenteRange();
   const stadioDesc = `Entrate stadio ${meseISO}`;
 
@@ -4486,7 +4497,7 @@ export async function ripulisciStoricoTassePrimaDi(dataLimite = null) {
 
 // Applica stipendi mensili a TUTTE le squadre (trigger manuale admin)
 export async function applicaStipendioATutti() {
-  const oggi = new Date().toISOString().slice(0, 10);
+  const oggi = getOggiLocale();
   const { start: meseStart, end: meseEnd, meseISO } = getMeseCorrenteRange();
   const stipDesc = `Pagamento stipendi ${meseISO}`;
   const { data: squadre, error: sqErr } = await supabase.from('squadre').select('name, bilancio');
