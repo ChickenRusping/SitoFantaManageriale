@@ -8427,7 +8427,7 @@ function CompareRosePage({ teams }) {
       {loading || !datiA || !datiB ? <div style={{ color: "#555", fontSize: 12 }}>Caricamento...</div> : (
         <>
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", minWidth: 480, borderCollapse: "collapse", fontSize: 13 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid #ffffff15" }}>
                   <th style={{ padding: "8px 6px", textAlign: "left", color: "#555", fontSize: 10 }}>METRICA</th>
@@ -8452,7 +8452,7 @@ function CompareRosePage({ teams }) {
             </table>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 18 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12, marginTop: 18 }}>
             <RosaCompareTable nome={nomeA} dati={datiA} colore="#6366f1" />
             <RosaCompareTable nome={nomeB} dati={datiB} colore="#f59e0b" />
           </div>
@@ -8620,7 +8620,7 @@ function ComparePlayersPage({ teams }) {
                   <th key={p.id} style={{ padding: "8px 6px", textAlign: "center", minWidth: 130 }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
                       <span style={{ color: "#818cf8", fontWeight: 800, fontSize: 12 }}>{p.nome}</span>
-                      <button onClick={() => rimuovi(p.id)} style={{ border: "none", background: "#ef444415", color: "#ef4444", borderRadius: 5, padding: "1px 8px", fontSize: 10, cursor: "pointer" }}>rimuovi</button>
+                      <button onClick={() => rimuovi(p.id)} style={{ border: "none", background: "#ef444415", color: "#ef4444", borderRadius: 999, padding: "2px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>rimuovi</button>
                     </div>
                   </th>
                 ))}
@@ -8678,12 +8678,8 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
   const [cedFilterSquadra, setCedFilterSquadra] = useState("tutte");
   const [cedFilterRuolo, setCedFilterRuolo] = useState("tutti");
   const [cedFilterTipo, setCedFilterTipo] = useState("tutti");
-  const [cedSort, setCedSort] = useState({ key: "squadra", dir: 1 });
   const cedSquadreDisponibili = useMemo(() => [...new Set(cedibili.map(p => p.squadra))].sort(), [cedibili]);
   const cedRuoliDisponibili = useMemo(() => [...new Set(cedibili.map(p => p.ruolo))].sort(), [cedibili]);
-  function toggleCedSort(key) {
-    setCedSort(s => s.key === key ? { key, dir: -s.dir } : { key, dir: 1 });
-  }
   const cedibiliFiltrati = useMemo(() => {
     let list = cedibili.filter(p =>
       (cedFilterSquadra === "tutte" || p.squadra === cedFilterSquadra) &&
@@ -8691,14 +8687,9 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       (cedFilterTipo === "tutti" || p.cedibile_stato === cedFilterTipo) &&
       (!cedSearch || p.nome.toLowerCase().includes(cedSearch.toLowerCase()))
     );
-    const { key, dir } = cedSort;
-    list = [...list].sort((a, b) => {
-      const va = a[key], vb = b[key];
-      if (typeof va === "number" || typeof vb === "number") return (Number(va || 0) - Number(vb || 0)) * dir;
-      return String(va || "").localeCompare(String(vb || "")) * dir;
-    });
+    list = [...list].sort((a, b) => String(a.squadra || "").localeCompare(String(b.squadra || "")));
     return list;
-  }, [cedibili, cedSearch, cedFilterSquadra, cedFilterRuolo, cedFilterTipo, cedSort]);
+  }, [cedibili, cedSearch, cedFilterSquadra, cedFilterRuolo, cedFilterTipo]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showAstaForm, setShowAstaForm] = useState(false);
@@ -9599,20 +9590,14 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
       {mercatoSection === "compara-rose" && <CompareRosePage teams={teams} />}
       {mercatoSection === "compara-giocatori" && <ComparePlayersPage teams={teams} />}
 
-      {mercatoSection === "trasferimenti" && (() => {
-        const TH = ({ col, label }) => (
-          <th onClick={() => toggleCedSort(col)} style={{ padding:"8px 6px", textAlign:"left", cursor:"pointer", userSelect:"none", color: cedSort.key===col?"#f59e0b":"#888", fontSize:10, letterSpacing:"0.05em", whiteSpace:"nowrap" }}>
-            {label} {cedSort.key===col ? (cedSort.dir===1?"▲":"▼") : ""}
-          </th>
-        );
-        return (
+      {mercatoSection === "trasferimenti" && (
         <div>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8, marginBottom:14 }}>
             <div>
               <h1 style={{ fontSize: 20, fontWeight: 900, color: "#f0f0f0", fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "1px" }}>🏷️ LISTA CEDIBILI</h1>
               <p style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Giocatori dichiarati cedibili dai presidenti — puramente informativo, nessuna regola collegata.</p>
             </div>
-            <button onClick={loadCedibili} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #f59e0b30", background: "#f59e0b10", color: "#f59e0b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>🔄 Aggiorna</button>
+            <button onClick={loadCedibili} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid #f59e0b30", background: "#f59e0b10", color: "#f59e0b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>🔄 Aggiorna</button>
           </div>
 
           {/* Filtri */}
@@ -9637,51 +9622,32 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
           {loadingCedibili ? <div style={{ fontSize: 12, color: "#555" }}>Caricamento...</div>
           : cedibili.length === 0 ? <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", background:"#ffffff06", border:"1px solid #ffffff10", borderRadius:10, padding:"14px" }}>Nessun giocatore in lista trasferimenti al momento.</div>
           : cedibiliFiltrati.length === 0 ? <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", background:"#ffffff06", border:"1px solid #ffffff10", borderRadius:10, padding:"14px" }}>Nessun giocatore corrisponde ai filtri.</div>
-          : <div style={{ overflowX:"auto" }}>
-            <table style={{ width:"100%", borderCollapse:"collapse" }}>
-              <thead>
-                <tr style={{ borderBottom:"1px solid #ffffff15" }}>
-                  <TH col="squadra" label="SQUADRA" />
-                  <TH col="nome" label="GIOCATORE" />
-                  <TH col="ruolo" label="R" />
-                  <TH col="anni" label="ETÀ" />
-                  <TH col="quot" label="QUOT." />
-                  <TH col="stip" label="STIP." />
-                  <TH col="clausola" label="CLAUSOLA" />
-                  <th style={{ padding:"8px 6px", textAlign:"left", fontSize:10, color:"#888" }}>TIPO</th>
-                  <th style={{ padding:"8px 6px", textAlign:"left", fontSize:10, color:"#888" }}>RICHIESTA</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cedibiliFiltrati.map(p => {
-                  const team = teams.find(t => t.name === p.squadra);
-                  return (
-                    <tr key={p.id} onClick={() => navigate(`/mercato?section=mercato&player=${encodeURIComponent(p.nome)}&squadra=${encodeURIComponent(p.squadra)}&tipo=cessione&quot=${p.quot}`)}
-                      style={{ borderBottom:"1px solid #ffffff08", cursor:"pointer" }}
-                      onMouseEnter={e=>e.currentTarget.style.background="#ffffff08"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                      <td style={{ padding:"8px 6px" }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                          {team && <TeamAvatar team={team} size={20} />}
-                          <span style={{ fontSize:11, color:"#aaa" }}>{p.squadra}</span>
-                        </div>
-                      </td>
-                      <td style={{ padding:"8px 6px", fontSize:12, fontWeight:700, color:"#818cf8", textDecoration:"underline" }}>{p.nome}</td>
-                      <td style={{ padding:"8px 6px", fontSize:11, color:"#888" }}>{p.ruolo}</td>
-                      <td style={{ padding:"8px 6px", fontSize:11, color:"#888" }}>{p.anni}</td>
-                      <td style={{ padding:"8px 6px", fontSize:11, color:"#f59e0b", fontWeight:700 }}>{p.quot}</td>
-                      <td style={{ padding:"8px 6px", fontSize:11, color:"#888" }}>{Number(p.stip||0).toFixed(2)}M</td>
-                      <td style={{ padding:"8px 6px", fontSize:11, color:"#888" }}>{Number(p.clausola||0).toFixed(2)}M</td>
-                      <td style={{ padding:"8px 6px" }}><CedibileBadge stato={p.cedibile_stato} /></td>
-                      <td style={{ padding:"8px 6px", fontSize:10, color:"#aaa", fontStyle:"italic" }}>{p.cedibile_richiesta ? `💬 ${p.cedibile_richiesta}` : "—"}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          : <div>
+            {cedibiliFiltrati.map(p => {
+              const team = teams.find(t => t.name === p.squadra);
+              const rc = getRoleColor(p.ruolo);
+              return (
+                <div key={p.id}
+                  onClick={() => team && navigate(`/presidente/${team.id}/rosa?player=${encodeURIComponent(p.nome)}`)}
+                  style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 4px", borderBottom:"1px solid #ffffff0a", cursor: team ? "pointer" : "default" }}
+                  onMouseEnter={e=>e.currentTarget.style.background="#ffffff06"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  <span style={{ background:rc.bg, color:rc.text, border:`1px solid ${rc.border}`, borderRadius:999, padding:"3px 9px", fontSize:9.5, fontWeight:700, flexShrink:0, minWidth:42, textAlign:"center" }}>{p.ruolo}</span>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:12.5, fontWeight:700, color:"#e8e8e8", display:"flex", alignItems:"center", flexWrap:"wrap" }}>
+                      {p.nome}
+                      <CedibileBadge stato={p.cedibile_stato} compact />
+                    </div>
+                    <div style={{ fontSize:10.5, color:"#888", marginTop:1, display:"flex", alignItems:"center", gap:5, flexWrap:"wrap" }}>
+                      {team && <TeamAvatar team={team} size={14} />} {p.squadra} · Q<span style={{ color:"#f59e0b", fontWeight:700 }}>{p.quot}</span> · {Number(p.stip||0).toFixed(2)}M · claus. {Number(p.clausola||0).toFixed(2)}M
+                      {p.cedibile_richiesta && <span style={{ fontStyle:"italic" }}>· 💬 {p.cedibile_richiesta}</span>}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>}
         </div>
-        );
-      })()}
+      )}
 
       {mercatoSection === "mercato" && <>
 
@@ -11402,64 +11368,51 @@ function ListonePage({ teams, profile }) {
           {sortOptions.map(o => <option key={o.key} value={o.key}>Ordina: {o.label}</option>)}
         </select>
         <button onClick={() => setSortDir(d => d === "desc" ? "asc" : "desc")}
-          style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid #ffffff18", background: "#ffffff08", color: "#aaa", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+          style={{ padding: "7px 14px", borderRadius: 999, border: "1px solid #ffffff18", background: "#ffffff08", color: "#aaa", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
           {sortDir === "desc" ? "↓ Decrescente" : "↑ Crescente"}
         </button>
       </div>
 
-      <div style={{ overflowX: "auto", border: "1px solid #ffffff10", borderRadius: 12 }}>
-        <table style={{ width: "100%", minWidth: 980, borderCollapse: "collapse", fontSize: 11.5 }}>
-          <thead>
-            <tr style={{ background: "#ffffff06" }}>
-              {["★","Nome","Ruolo","Sq. Serie A","Proprietà","Quot","Salario","Clausola","Presenze","M.Voto","M.Fantavoto","Gol","Assist","Amm.","Esp.","Rig.parati","Rig.segn./sbagl."].map(h => (
-                <th key={h} style={{ textAlign: "left", padding: "8px 10px", color: "#666", borderBottom: "1px solid #ffffff12", whiteSpace: "nowrap", fontWeight: 700, ...(h === "Nome" ? { position: "sticky", left: 0, background: "#0d0f14", zIndex: 2 } : {}) }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtrati.slice(0, visibleCount).map(p => {
-              const team = trovaSquadra(p);
-              const mia = team && stessaSquadra(team.name, mySquadra);
-              return (
-                <tr key={p.id || p.nome}
-                  onClick={() => apriAzioniGiocatore(p)}
-                  title={mia ? "Gestisci il tuo giocatore" : team ? "Vedi la rosa e fai un'offerta" : "Vai agli svincolati per chiamarlo"}
-                  style={{ borderBottom: "1px solid #ffffff08", opacity: p.fuori_lista ? 0.5 : 1, cursor: "pointer" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                  <td style={{ padding: "7px 10px" }}>
-                    {mySquadra && (
-                      <button onClick={e => toggleDesiderio(p, e)} title={desideriMap[p.nome] ? "Rimuovi dalla lista desideri" : "Aggiungi alla lista desideri"}
-                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 15, color: desideriMap[p.nome] ? "#f59e0b" : "#444", padding: 0 }}>
-                        {desideriMap[p.nome] ? "★" : "☆"}
-                      </button>
-                    )}
-                  </td>
-                  <td style={{ padding: "7px 10px", fontWeight: 700, color: "#ddd", whiteSpace: "nowrap", position: "sticky", left: 0, background: "#0d0f14", zIndex: 1 }}>{p.nome}{p.fuori_lista && <span style={{ marginLeft: 5, fontSize: 9, color: "#ef4444" }}>FUORI</span>}</td>
-                  <td style={{ padding: "7px 10px", color: "#aaa" }}>{p.ruolo || "—"}</td>
-                  <td style={{ padding: "7px 10px", color: "#aaa" }}>{p.squadra_serie_a || "—"}</td>
-                  <td style={{ padding: "7px 10px" }} onClick={e => apriSquadraProprietaria(p, e)}>
-                    {p.fanta_squadra
-                      ? <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#818cf8", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#818cf855" }}>{team && <TeamAvatar team={team} size={16} />}{p.fanta_squadra}</span>
-                      : <span style={{ color: "#10b981", cursor: "pointer", textDecoration: "underline", textDecorationColor: "#10b98155" }}>Svincolato</span>}
-                  </td>
-                  <td style={{ padding: "7px 10px", color: "#f59e0b", fontWeight: 700 }}>{p.quot ?? "—"}</td>
-                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.salario != null ? Number(p.salario).toFixed(2) : "—"}</td>
-                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.clausola != null ? Number(p.clausola).toFixed(2) : "—"}</td>
-                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.partite_voto ?? 0}</td>
-                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.media_voto ?? 0}</td>
-                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.media_fantavoto ?? 0}</td>
-                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.gol_fatti ?? 0}</td>
-                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.assist ?? 0}</td>
-                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.ammonizioni ?? 0}</td>
-                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.espulsioni ?? 0}</td>
-                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.rigori_parati ?? 0}</td>
-                  <td style={{ padding: "7px 10px", color: "#888" }}>{p.rigori_segnati ?? 0}/{p.rigori_sbagliati ?? 0}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div style={{ border: "1px solid #ffffff10", borderRadius: 12, padding: "4px 10px" }}>
+        {filtrati.slice(0, visibleCount).map(p => {
+          const team = trovaSquadra(p);
+          const rc = getRoleColor(p.ruolo);
+          return (
+            <div key={p.id || p.nome}
+              onClick={() => apriAzioniGiocatore(p)}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 4px", borderBottom: "1px solid #ffffff0a", opacity: p.fuori_lista ? 0.5 : 1, cursor: "pointer" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#ffffff06"}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+              <span style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, borderRadius: 999, padding: "3px 9px", fontSize: 9.5, fontWeight: 700, flexShrink: 0, minWidth: 42, textAlign: "center" }}>{p.ruolo || "—"}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: "#e8e8e8" }}>
+                  {p.nome}{p.fuori_lista && <span style={{ marginLeft: 5, fontSize: 9, color: "#ef4444" }}>FUORI</span>}
+                </div>
+                <div style={{ fontSize: 10.5, color: "#888", marginTop: 1, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+                  <span>{p.squadra_serie_a || "—"}</span>
+                  <span>·</span>
+                  <span onClick={e => apriSquadraProprietaria(p, e)} style={{ display: "inline-flex", alignItems: "center", gap: 3, color: p.fanta_squadra ? "#818cf8" : "#10b981", cursor: "pointer", textDecoration: "underline", textDecorationColor: p.fanta_squadra ? "#818cf855" : "#10b98155" }}>
+                    {team && <TeamAvatar team={team} size={14} />}{p.fanta_squadra || "Svincolato"}
+                  </span>
+                  <span>
+                    · Q<span style={{ color: "#f59e0b", fontWeight: 700 }}>{p.quot ?? "—"}</span>
+                    {" "}· sal. {p.salario != null ? Number(p.salario).toFixed(2) : "—"}M
+                    {" "}· claus. {p.clausola != null ? Number(p.clausola).toFixed(2) : "—"}M
+                    {p.media_voto > 0 && <> · MV {Number(p.media_voto).toFixed(2)}</>}
+                    {p.media_fantavoto > 0 && <> · MFV {Number(p.media_fantavoto).toFixed(2)}</>}
+                    {" "}· {p.partite_voto ?? 0}pv · {p.gol_fatti ?? 0}g · {p.assist ?? 0}a
+                  </span>
+                </div>
+              </div>
+              {mySquadra && (
+                <button onClick={e => toggleDesiderio(p, e)} title={desideriMap[p.nome] ? "Rimuovi dalla lista desideri" : "Aggiungi alla lista desideri"}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 17, color: desideriMap[p.nome] ? "#f59e0b" : "#444", padding: "0 4px", flexShrink: 0 }}>
+                  {desideriMap[p.nome] ? "★" : "☆"}
+                </button>
+              )}
+            </div>
+          );
+        })}
         {filtrati.length === 0 && <div style={{ padding: 20, textAlign: "center", fontSize: 12, color: "#555", fontStyle: "italic" }}>Nessun giocatore trovato con questi filtri.</div>}
       </div>
 
