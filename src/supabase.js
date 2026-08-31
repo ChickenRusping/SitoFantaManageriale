@@ -989,6 +989,37 @@ export function subscribeObiettivi(squadra, callback) {
     .subscribe();
 }
 
+// ─── LISTA DESIDERI ─────────────────────────────────────────────────────────
+// Personale per squadra: nessun altro presidente (né l'admin) può leggerla.
+
+export async function getListaDesideri(squadra) {
+  const { data, error } = await supabase.from('lista_desideri').select('*').eq('squadra', squadra).order('created_at', { ascending: false });
+  if (error) return [];
+  return data;
+}
+
+export async function insertListaDesiderio(squadra, giocatore, note = '') {
+  const { data, error } = await supabase.from('lista_desideri').insert({ squadra, giocatore, note }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateListaDesiderioNote(id, note) {
+  const { error } = await supabase.from('lista_desideri').update({ note }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteListaDesiderio(id) {
+  const { error } = await supabase.from('lista_desideri').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export function subscribeListaDesideri(squadra, callback) {
+  return supabase.channel(`lista_desideri-${squadra}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'lista_desideri', filter: `squadra=eq.${squadra}` }, callback)
+    .subscribe();
+}
+
 // ─── TRATTATIVE ───────────────────────────────────────────────────────────────
 // Tabella: trattative (sostituisce/estende offerte con logica regolamento)
 
@@ -1612,6 +1643,10 @@ export async function eseguiRientroPrestito(playerId, squadraOriginale) {
     descrizione: `Rientro da prestito: ${player.nome}`,
     entrata: null, uscita: null, data: oggi,
   });
+
+  // Il Listone deve tornare a mostrare il cedente come proprietario.
+  try { await aggiornaFantaSquadraListone(player.nome, squadraOriginale); }
+  catch (e) { console.warn('Sync listone dopo rientro prestito fallita:', e.message); }
 }
 
 // ── Controllo e gestione prestiti scaduti (art. 5.8) ─────────────────────────
@@ -2384,6 +2419,11 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
     console.error('eseguiSvincolo: cancellazione dalla rosa fallita dopo aver già scritto tra gli svincolati:', player.nome, delErr);
     throw new Error(`${player.nome} è stato salvato tra gli svincolati ma non è stato possibile rimuoverlo dalla rosa (${delErr.message || delErr.code || 'errore sconosciuto'}). Controlla manualmente per evitare un doppione.`);
   }
+
+  // Il Listone (usato per la ricerca globale) deve riflettere subito che il
+  // giocatore è tornato svincolato, non solo dopo il prossimo import Excel.
+  try { await aggiornaFantaSquadraListone(player.nome, null); }
+  catch (e) { console.warn('Sync listone dopo svincolo fallita:', e.message); }
 
   // Bonus pendenti dell'acquisto con cui questa squadra aveva preso il giocatore:
   // decadono senza alcun pagamento, come confermato dalla lega.
@@ -5016,6 +5056,8 @@ export async function svincolaVivaio(playerId, squadra) {
   }, stagioneDaData(new Date()));
   await supabase.from('rosa').delete().eq('id', playerId);
   await logAuditVivaio(squadra, 'rosa_rimuovi', `Vivaio: svincolato ${player.nome} (costo 0)`, { giocatore: player });
+  try { await aggiornaFantaSquadraListone(player.nome, null); }
+  catch (e) { console.warn('Sync listone dopo svincolo vivaio fallita:', e.message); }
 }
 
 // Aggiorna presenze vivaio (chiamato dall'admin dopo ogni giornata)
@@ -5931,6 +5973,10 @@ export async function rivelaECompletaAsta(astaId) {
     await supabase.from('svincolati').delete()
       .eq('nome', asta.giocatore);
   }
+
+  // Il Listone deve riflettere subito il nuovo proprietario dopo l'asta.
+  try { await aggiornaFantaSquadraListone(asta.giocatore, vincitore); }
+  catch (e) { console.warn('Sync listone dopo asta svincolati fallita:', e.message); }
 
   // Scala bilancio
   const { data: sq } = await supabase.from('squadre')
