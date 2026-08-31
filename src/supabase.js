@@ -360,6 +360,10 @@ export async function impostaCedibile(giocatoreId, stato, richiesta = null) {
     cedibile_richiesta: stato ? (richiesta || null) : null,
   }).eq('id', giocatoreId);
   if (error) throw error;
+  if (stato) {
+    const { data: player } = await supabase.from('rosa').select('nome, squadra').eq('id', giocatoreId).single();
+    if (player) await notificaListaDesideri(player.nome, player.squadra, `${player.squadra} lo ha messo in lista trasferimenti`);
+  }
 }
 
 export async function getGiocatoriCedibili() {
@@ -1585,6 +1589,8 @@ export async function eseguiTrasferimento(trattativa) {
   } catch(bonusErr) {
     console.warn('Bonus clausole insert:', bonusErr.message);
   }
+
+  await notificaListaDesideri(giocatore, [squadraAcquirente, squadraCedente], `è passato da ${squadraCedente} a ${squadraAcquirente}`);
 
   return { ok: true, player, nuovoBilCedente, nuovoBilAcquirente };
 }
@@ -5978,6 +5984,8 @@ export async function rivelaECompletaAsta(astaId) {
   try { await aggiornaFantaSquadraListone(asta.giocatore, vincitore); }
   catch (e) { console.warn('Sync listone dopo asta svincolati fallita:', e.message); }
 
+  await notificaListaDesideri(asta.giocatore, vincitore, `è stato acquistato da ${vincitore} agli svincolati`);
+
   // Scala bilancio
   const { data: sq } = await supabase.from('squadre')
     .select('bilancio').eq('name', vincitore).single();
@@ -6993,6 +7001,24 @@ export async function applicaPremiCampionato(stagione = getStagioneQuota()) {
 // Message types reference (built in Edge Function):
 // ds_masterclass_offerte — private DM with all rival offers before auction reveal
 
+// Avvisa (Telegram privato + notifica in-app) ogni presidente che ha questo
+// giocatore nella propria lista_desideri, quando gli succede qualcosa
+// (chiamata dagli svincolati, cambio squadra, messa in lista trasferimenti).
+// `escludi` è la squadra (o le squadre) coinvolte nell'evento stesso, che non
+// vanno avvisate di una cosa che hanno appena causato/concluso loro stesse.
+export async function notificaListaDesideri(giocatore, escludi, messaggio) {
+  try {
+    const escludiSet = new Set([].concat(escludi).filter(Boolean));
+    const { data: rows } = await supabase.from('lista_desideri').select('squadra').eq('giocatore', giocatore);
+    const destinatari = [...new Set((rows || []).map(r => r.squadra))].filter(sq => sq && !escludiSet.has(sq));
+    for (const squadra of destinatari) {
+      await sendTelegramNotification('desiderio_evento', { giocatore, messaggio }, squadra);
+    }
+  } catch (e) {
+    console.warn('Notifica lista desideri fallita:', giocatore, e.message);
+  }
+}
+
 export async function sendTelegramNotification(type, payload = {}, squadra = null) {
   try {
     await supabase.functions.invoke('telegram-notify', {
@@ -7024,6 +7050,7 @@ function _formatNotificaApp(type, p = {}) {
     ds_masterclass_offerte: '/mercato', ds_masterclass_usato: '/mercato', svincolo: '/mercato',
     scelta_allenatore: '/squadre', investimento_acquistato: '/squadre', euro_extra_investiti: '/squadre', movimento_privato: '/squadre',
     tassa_applicata: '/squadre', stipendi_applicati: '/squadre', stadio_applicato: '/squadre',
+    desiderio_evento: '/mercato',
   };
   const link = LINK[type] || null;
   switch (type) {
@@ -7056,6 +7083,7 @@ function _formatNotificaApp(type, p = {}) {
     case 'stipendi_applicati': return { titolo: 'Stipendi mensili addebitati', corpo: `Mese: ${p.mese}`, link };
     case 'stadio_applicato': return { titolo: 'Entrate stadio accreditate', corpo: `Mese: ${p.mese}`, link };
     case 'movimento_privato': return { titolo: 'Movimento', corpo: `${p.entrata ? '+' + p.entrata : '-' + p.uscita}M — ${p.descrizione}`, link };
+    case 'desiderio_evento': return { titolo: '⭐ Un giocatore della tua lista desideri si muove', corpo: `${p.giocatore} — ${p.messaggio}`, link };
     default: return null;
   }
 }
