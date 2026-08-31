@@ -229,7 +229,7 @@ import { SURFACE, BRAND, SEMANTIC, FIELD } from "./design-system.js";
 import { IconHome, IconShield, IconTrophy, IconMarket, IconMore, IconAdmin, IconChevronRight, IconArchive, IconRefresh, IconPlus, IconEdit, IconTrash, IconClose, IconSearch, IconBack } from "./components/ui/Icons.jsx";
 import { ProgressBar } from "./components/ui/ProgressBar.jsx";
 import { HeroSurface } from "./components/ui/Surface.jsx";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, registraEventoGiornataInvestimento, getEffettiInvestimenti, getSquadreConSuperClub, getStatoGuadagniGiornata,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getOfferte, insertOfferta, updateOffertaStato, deleteOfferta, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, getChiamateByGiocatore, calcolaScadenzaInteresse, calcolaScadenzaOfferte, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeOfferte, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, rimuoviImmagineSquadra, getObiettivi, updateObiettivo, insertObiettivo, deleteObiettivo, subscribeObiettivi, getListaDesideri, insertListaDesiderio, updateListaDesiderioNote, deleteListaDesiderio, subscribeListaDesideri, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, checkEAggiornaPassaggi, resetPassaggiSessione, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, insertClausola, updateClausola, deleteClausola, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, upsertClassifica, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, applicaTassaSettimana, getDomenicaCorrente, getFasciaBilancioNeg, getPenalitaNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaNettoSpeso, calcolaFairSpending, getFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, registraEventoGiornataInvestimento, getEffettiInvestimenti, getSquadreConSuperClub, getStatoGuadagniGiornata,
   getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, usaContatoreInvestimento, registraEventoInvestimento, annullaEventoInvestimento, toggleTraguardoInvestimento, deleteInvestimento, getSponsor, insertSponsor, updateSponsor, getPenalita, insertPenalita, updatePenalita, deletePenalita, applicaMulta, countRecidive, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, calcolaPremiCoppa, applicaIscrizioneCampionato, investiEuroExtra, ritiraBudgetExtra, resetBiennio, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, getBiennioQuota, getStagioneQuota, logAzione, getAuditLog, effettuaRollback, getVivaio, acquistaVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, filtraVivaioCandidati, getSvincolatiDB, upsertSvincolato, updateSvincolatoStats, deleteSvincolato, importSvincolatiDaArray, filtraVivaioCandidatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, insertAstaSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, confermaTrasferimentoAsta, checkAsteScadute, checkScadenzeAste, subscribeAsteSvincolati, calcolaScadenzaAsta, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, getListoneBySquadra, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
@@ -3246,6 +3246,31 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
   const [cedibileStato, setCedibileStato] = useState('');
   const [cedibileRichiesta, setCedibileRichiesta] = useState('');
 
+  // Lista desideri personale del presidente che sta guardando (non della
+  // squadra visualizzata): permette di segnare un giocatore altrui mentre se
+  // ne guarda la rosa, stesso meccanismo del Listone.
+  const [desideri, setDesideri] = useState([]);
+  const loadDesideri = useCallback(() => {
+    if (!mySquadra) return;
+    getListaDesideri(mySquadra).then(setDesideri);
+  }, [mySquadra]);
+  useEffect(() => {
+    if (!mySquadra) return;
+    loadDesideri();
+    const sub = subscribeListaDesideri(mySquadra, loadDesideri);
+    return () => supabase.removeChannel(sub);
+  }, [loadDesideri, mySquadra]);
+  const desiderioDi = nome => desideri.find(d => d.giocatore === nome);
+  async function toggleDesiderioPopup(player) {
+    if (!mySquadra) return;
+    const esistente = desiderioDi(player.nome);
+    try {
+      if (esistente) await deleteListaDesiderio(esistente.id);
+      else await insertListaDesiderio(mySquadra, player.nome, "");
+      loadDesideri();
+    } catch (err) { alert(err.message); }
+  }
+
   const loadAll = useCallback(async () => {
     const [r, v, s, ct, pa] = await Promise.all([
       cachedFetch('rosa_' + teamName, () => getRosa(teamName), 600000),
@@ -3733,7 +3758,16 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                 </div>
               )}
             </div>
-            <button onClick={()=>setPopup(null)} aria-label="Chiudi dettaglio giocatore" style={{ background:"none",border:"none",color:"#555",fontSize:18,cursor:"pointer",padding:"0 4px",lineHeight:1 }}>✕</button>
+            <div style={{ display:"flex",alignItems:"center",gap:6 }}>
+              {popup.mode!=='own' && mySquadra && (
+                <button onClick={()=>toggleDesiderioPopup(popup.player)}
+                  title={desiderioDi(popup.player.nome) ? "Rimuovi dalla lista desideri" : "Aggiungi alla lista desideri"}
+                  style={{ background:"none",border:"none",cursor:"pointer",fontSize:20,color:desiderioDi(popup.player.nome)?"#f59e0b":"#555",padding:"0 4px",lineHeight:1 }}>
+                  {desiderioDi(popup.player.nome) ? "★" : "☆"}
+                </button>
+              )}
+              <button onClick={()=>setPopup(null)} aria-label="Chiudi dettaglio giocatore" style={{ background:"none",border:"none",color:"#555",fontSize:18,cursor:"pointer",padding:"0 4px",lineHeight:1 }}>✕</button>
+            </div>
           </div>
 
           {/* ── Info base + Statistiche ──
@@ -9518,6 +9552,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
                 {[
                   { key:"trasferimenti", label:"🏷️ Lista Cedibili", onClick:()=>setMercatoSection("trasferimenti") },
                   { key:"listone",            label:"📋 Listone",             onClick:()=>setMercatoSection("listone") },
+                  { key:"lista-desideri",     label:"⭐ Lista Desideri",      onClick:()=>setMercatoSection("lista-desideri") },
                   { key:"compara-rose",       label:"⚖️ Confronta rose",      onClick:()=>setMercatoSection("compara-rose") },
                   { key:"compara-giocatori",  label:"🆚 Confronta giocatori", onClick:()=>setMercatoSection("compara-giocatori") },
                   { key:"storico",            label:"📜 Storico",             onClick:()=>{setMercatoSection("mercato");setTab("storico");} },
@@ -9558,6 +9593,7 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
 
       {mercatoSection === "svincolati" && <SvincolatiPage profile={profile} isAdmin={isAdmin} teams={teams} />}
       {mercatoSection === "listone" && <ListonePage teams={teams} profile={profile} />}
+      {mercatoSection === "lista-desideri" && <ListaDesideriPage teams={teams} profile={profile} />}
       {mercatoSection === "compara-rose" && <CompareRosePage teams={teams} />}
       {mercatoSection === "compara-giocatori" && <ComparePlayersPage teams={teams} />}
 
@@ -11259,6 +11295,7 @@ function ListonePage({ teams, profile }) {
   const [sortBy, setSortBy] = useState("quot");
   const [sortDir, setSortDir] = useState("desc");
   const [visibleCount, setVisibleCount] = useState(50);
+  const [desideri, setDesideri] = useState([]);
 
   useEffect(() => {
     (async () => {
@@ -11271,6 +11308,35 @@ function ListonePage({ teams, profile }) {
       setLoading(false);
     })();
   }, []);
+
+  const loadDesideri = useCallback(() => {
+    if (!mySquadra) return;
+    getListaDesideri(mySquadra).then(setDesideri);
+  }, [mySquadra]);
+
+  useEffect(() => {
+    if (!mySquadra) return;
+    loadDesideri();
+    const sub = subscribeListaDesideri(mySquadra, loadDesideri);
+    return () => supabase.removeChannel(sub);
+  }, [loadDesideri, mySquadra]);
+
+  const desideriMap = useMemo(() => {
+    const map = {};
+    for (const d of desideri) map[d.giocatore] = d;
+    return map;
+  }, [desideri]);
+
+  async function toggleDesiderio(p, e) {
+    e.stopPropagation();
+    if (!mySquadra) return;
+    const esistente = desideriMap[p.nome];
+    try {
+      if (esistente) await deleteListaDesiderio(esistente.id);
+      else await insertListaDesiderio(mySquadra, p.nome, "");
+      loadDesideri();
+    } catch (err) { alert(err.message); }
+  }
 
   const squadreSerieA = useMemo(() => {
     if (!listone) return [];
@@ -11387,7 +11453,7 @@ function ListonePage({ teams, profile }) {
         <table style={{ width: "100%", minWidth: 980, borderCollapse: "collapse", fontSize: 11.5 }}>
           <thead>
             <tr style={{ background: "#ffffff06" }}>
-              {["Nome","Ruolo","Sq. Serie A","Proprietà","Quot","Salario","Clausola","Presenze","M.Voto","M.Fantavoto","Gol","Assist","Amm.","Esp.","Rig.parati","Rig.segn./sbagl."].map(h => (
+              {["★","Nome","Ruolo","Sq. Serie A","Proprietà","Quot","Salario","Clausola","Presenze","M.Voto","M.Fantavoto","Gol","Assist","Amm.","Esp.","Rig.parati","Rig.segn./sbagl."].map(h => (
                 <th key={h} style={{ textAlign: "left", padding: "8px 10px", color: "#666", borderBottom: "1px solid #ffffff12", whiteSpace: "nowrap", fontWeight: 700, ...(h === "Nome" ? { position: "sticky", left: 0, background: "#0d0f14", zIndex: 2 } : {}) }}>{h}</th>
               ))}
             </tr>
@@ -11403,6 +11469,14 @@ function ListonePage({ teams, profile }) {
                   style={{ borderBottom: "1px solid #ffffff08", opacity: p.fuori_lista ? 0.5 : 1, cursor: "pointer" }}
                   onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <td style={{ padding: "7px 10px" }}>
+                    {mySquadra && (
+                      <button onClick={e => toggleDesiderio(p, e)} title={desideriMap[p.nome] ? "Rimuovi dalla lista desideri" : "Aggiungi alla lista desideri"}
+                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 15, color: desideriMap[p.nome] ? "#f59e0b" : "#444", padding: 0 }}>
+                        {desideriMap[p.nome] ? "★" : "☆"}
+                      </button>
+                    )}
+                  </td>
                   <td style={{ padding: "7px 10px", fontWeight: 700, color: "#ddd", whiteSpace: "nowrap", position: "sticky", left: 0, background: "#0d0f14", zIndex: 1 }}>{p.nome}{p.fuori_lista && <span style={{ marginLeft: 5, fontSize: 9, color: "#ef4444" }}>FUORI</span>}</td>
                   <td style={{ padding: "7px 10px", color: "#aaa" }}>{p.ruolo || "—"}</td>
                   <td style={{ padding: "7px 10px", color: "#aaa" }}>{p.squadra_serie_a || "—"}</td>
@@ -11441,6 +11515,148 @@ function ListonePage({ teams, profile }) {
   );
 }
 
+// Personale per presidente: giocatori (in rosa altrui o svincolati) segnati come
+// obiettivo di mercato, con nota libera. Lo stato (proprietario attuale) non
+// viene salvato ma ricalcolato ogni volta dal listone, così resta sempre aggiornato
+// anche se il giocatore cambia squadra o viene svincolato nel frattempo.
+function ListaDesideriPage({ teams, profile }) {
+  const navigate = useNavigate();
+  const mySquadra = profile?.squadra;
+  const [desideri, setDesideri] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [listone, setListone] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
+  const [noteDraft, setNoteDraft] = useState({});
+
+  const loadDesideri = useCallback(() => {
+    if (!mySquadra) return;
+    getListaDesideri(mySquadra).then(data => { setDesideri(data || []); setLoading(false); });
+  }, [mySquadra]);
+
+  useEffect(() => {
+    if (!mySquadra) return;
+    loadDesideri();
+    const sub = subscribeListaDesideri(mySquadra, loadDesideri);
+    return () => supabase.removeChannel(sub);
+  }, [loadDesideri, mySquadra]);
+
+  useEffect(() => {
+    cachedFetch('listone', getListone, 600000).then(setListone);
+  }, []);
+
+  function trovaRigaListone(nome) {
+    return listone?.find(p => p.nome === nome) || null;
+  }
+  function trovaSquadra(riga) {
+    if (!riga?.fanta_squadra) return null;
+    return teams?.find(t => stessaSquadra(t.name, riga.fanta_squadra)) || null;
+  }
+
+  // Stesso routing di ListonePage.apriAzioniGiocatore: apre il menù azioni del
+  // giocatore nella sua rosa attuale, oppure la schermata di chiamata svincolati.
+  function apriAzioni(d) {
+    const riga = trovaRigaListone(d.giocatore);
+    const team = trovaSquadra(riga);
+    if (team) navigate(`/presidente/${team.id}/rosa?player=${encodeURIComponent(d.giocatore)}`);
+    else navigate(`/mercato?section=svincolati&player=${encodeURIComponent(d.giocatore)}`);
+  }
+
+  async function rimuovi(id, e) {
+    e.stopPropagation();
+    if (!confirm("Rimuovere questo giocatore dalla lista desideri?")) return;
+    try { await deleteListaDesiderio(id); loadDesideri(); } catch (err) { alert(err.message); }
+  }
+
+  async function salvaNota(id, e) {
+    e.stopPropagation();
+    try { await updateListaDesiderioNote(id, noteDraft[id] ?? ""); loadDesideri(); } catch (err) { alert(err.message); }
+  }
+
+  if (!mySquadra) return <div style={{ fontSize: 13, color: "#666", padding: 20 }}>Disponibile solo per i presidenti di squadra.</div>;
+  if (loading) return <div style={{ fontSize: 13, color: "#666", padding: 20 }}>Caricamento...</div>;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div>
+        <div style={{ fontSize: 22, fontWeight: 900, fontFamily: "'Bebas Neue',sans-serif", color: "#f0f0f0" }}>⭐ LISTA DESIDERI</div>
+        <div style={{ fontSize: 12, color: "#666" }}>Visibile solo a te · {desideri.length} giocator{desideri.length === 1 ? "e" : "i"} · aggiungili dal 📋 Listone toccando la ★</div>
+      </div>
+
+      {desideri.length === 0 ? (
+        <div style={{ fontSize: 12, color: "#555", fontStyle: "italic", background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 10, padding: 20, textAlign: "center" }}>
+          Nessun giocatore in lista. Vai sul 📋 Listone e tocca la ★ accanto a un giocatore per aggiungerlo.
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {desideri.map(d => {
+            const riga = trovaRigaListone(d.giocatore);
+            const team = trovaSquadra(riga);
+            const expanded = expandedId === d.id;
+            return (
+              <div key={d.id} style={{ background: "#ffffff06", border: "1px solid #ffffff10", borderRadius: 12, overflow: "hidden" }}>
+                <div onClick={() => apriAzioni(d)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", cursor: "pointer" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#f0f0f0" }}>{d.giocatore}</div>
+                    <div style={{ fontSize: 11, color: "#888", marginTop: 2, display: "flex", alignItems: "center", gap: 5 }}>
+                      {riga?.ruolo && <span>{riga.ruolo} ·</span>}
+                      {team ? (<><TeamAvatar team={team} size={14} /> {team.name}</>) : riga ? <span style={{ color: "#10b981" }}>Svincolato</span> : <span style={{ color: "#666" }}>Non nel listone</span>}
+                    </div>
+                  </div>
+                  {riga?.quot != null && <span style={{ fontSize: 13, fontWeight: 800, color: "#f59e0b" }}>{riga.quot}</span>}
+                  <button onClick={e => { e.stopPropagation(); setExpandedId(expanded ? null : d.id); }}
+                    style={{ background: "none", border: "none", color: "#888", fontSize: 14, cursor: "pointer", padding: 4 }} title="Statistiche">📊</button>
+                  <button onClick={e => rimuovi(d.id, e)} style={{ background: "none", border: "none", color: "#ef4444", fontSize: 14, cursor: "pointer", padding: 4 }} title="Rimuovi dalla lista">🗑</button>
+                </div>
+
+                {expanded && (
+                  <div onClick={e => e.stopPropagation()} style={{ padding: "0 14px 14px", borderTop: "1px solid #ffffff0a" }}>
+                    {riga ? (
+                      <>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginTop: 12 }}>
+                          {[
+                            { label: "Presenze", val: riga.partite_voto ?? 0 },
+                            { label: "M.Voto", val: riga.media_voto ?? 0 },
+                            { label: "M.Fantavoto", val: riga.media_fantavoto ?? 0 },
+                            { label: "Gol", val: riga.gol_fatti ?? 0 },
+                            { label: "Assist", val: riga.assist ?? 0 },
+                            { label: "Amm.", val: riga.ammonizioni ?? 0 },
+                            { label: "Esp.", val: riga.espulsioni ?? 0 },
+                            { label: "Clausola", val: riga.clausola ?? "—" },
+                          ].map(s => (
+                            <div key={s.label} style={{ background: "#ffffff05", borderRadius: 8, padding: "6px 8px", textAlign: "center" }}>
+                              <div style={{ fontSize: 9, color: "#666" }}>{s.label}</div>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: "#ddd" }}>{s.val}</div>
+                            </div>
+                          ))}
+                        </div>
+                        <GraficoQuotazione nome={d.giocatore} quotRosa={riga.quot} />
+                      </>
+                    ) : (
+                      <div style={{ fontSize: 11, color: "#666", fontStyle: "italic", marginTop: 10 }}>Giocatore non trovato nel listone (nome cambiato o rimosso).</div>
+                    )}
+
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 4 }}>NOTA PERSONALE</div>
+                      <textarea
+                        value={noteDraft[d.id] ?? d.note ?? ""}
+                        onChange={e => setNoteDraft(f => ({ ...f, [d.id]: e.target.value }))}
+                        onBlur={e => salvaNota(d.id, e)}
+                        placeholder="Es. offrire in prestito, aspettare fine stagione..."
+                        rows={2}
+                        style={{ width: "100%", background: "#0d0f14", border: "1px solid #ffffff18", borderRadius: 8, color: "#ddd", fontSize: 12, padding: "8px 10px", resize: "vertical", fontFamily: "inherit" }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SvincolatiPage({ profile, isAdmin, teams }) {
   const vivaioAperto = isVivaioAcquistiAperti();
   const location = useLocation();
@@ -11464,6 +11680,28 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
   const [chiamateAttiveAperto, setChiamateAttiveAperto] = useState(true);
   const [asteAttiveAperto, setAsteAttiveAperto]         = useState(true);
   const mySquadra = profile?.squadra;
+
+  const [desideri, setDesideri] = useState([]);
+  const loadDesideri = useCallback(() => {
+    if (!mySquadra) return;
+    getListaDesideri(mySquadra).then(setDesideri);
+  }, [mySquadra]);
+  useEffect(() => {
+    if (!mySquadra) return;
+    loadDesideri();
+    const sub = subscribeListaDesideri(mySquadra, loadDesideri);
+    return () => supabase.removeChannel(sub);
+  }, [loadDesideri, mySquadra]);
+  const desiderioDi = nome => desideri.find(d => d.giocatore === nome);
+  async function toggleDesiderioSvincolato(player) {
+    if (!mySquadra) return;
+    const esistente = desiderioDi(player.nome);
+    try {
+      if (esistente) await deleteListaDesiderio(esistente.id);
+      else await insertListaDesiderio(mySquadra, player.nome, "");
+      loadDesideri();
+    } catch (err) { alert(err.message); }
+  }
 
   // Tick ogni 30s per aggiornare countdown
   useEffect(() => {
@@ -11872,8 +12110,17 @@ function SvincolatiPage({ profile, isAdmin, teams }) {
                 <div style={{ fontSize: 16, fontWeight: 800, color: "#f59e0b" }}>📞 {showCallForm.nome}</div>
                 <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>Q{showCallForm.quot} · {showCallForm.ruolo} · {showCallForm.anni}aa</div>
               </div>
-              <button onClick={() => { setShowCallForm(null); setCallVivaio(false); }}
-                style={{ background: "none", border: "none", color: "#555", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: "0 4px" }}>✕</button>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {mySquadra && (
+                  <button onClick={() => toggleDesiderioSvincolato(showCallForm)}
+                    title={desiderioDi(showCallForm.nome) ? "Rimuovi dalla lista desideri" : "Aggiungi alla lista desideri"}
+                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: desiderioDi(showCallForm.nome) ? "#f59e0b" : "#555", padding: "0 4px", lineHeight: 1 }}>
+                    {desiderioDi(showCallForm.nome) ? "★" : "☆"}
+                  </button>
+                )}
+                <button onClick={() => { setShowCallForm(null); setCallVivaio(false); }}
+                  style={{ background: "none", border: "none", color: "#555", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: "0 4px" }}>✕</button>
+              </div>
             </div>
 
             <GraficoQuotazione nome={showCallForm.nome} />
