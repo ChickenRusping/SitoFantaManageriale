@@ -257,7 +257,7 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   getStagioniPassate, upsertStagione, deleteStagione, uploadMaglia,
   getRegolamentoArticoli, upsertRegolamentoArticolo, insertRegolamentoArticolo, deleteRegolamentoArticolo,
   getChangelog, upsertChangelogEntry, insertChangelogEntry, deleteChangelogEntry,
-  getOggiLocale,
+  getOggiLocale, getQuotRealeByNomi,
 } from "./supabase.js";
 
 // ─── LOCK BODY SCROLL (popup/bottom-sheet aperti) ───────────────────────────
@@ -7978,6 +7978,8 @@ function CompareRosePage({ teams }) {
     const scRosa = rosaAttiva.reduce((s, p) => s + calcolaStipCorretto(p.quot, p.anni_contratto, p.anni), 0);
     const scUsato = parseFloat((scRosa + Number(scAllenatore || 0)).toFixed(2));
     const scLimite = 75 + Number(team.scBonusObiettivi || 0) + Number(effetti?.scBonusInvestimenti || 0);
+    const quotReali = rosaAttiva.map(p => Number(p.quot_reale ?? p.quot)).filter(v => v > 0);
+    const fantamedie = rosaAttiva.map(p => Number(p.media_fantavoto || 0)).filter(v => v > 0);
     return {
       rosa: rosaAttiva,
       bilancio: Number(team.bilancio || 0),
@@ -7988,6 +7990,8 @@ function CompareRosePage({ teams }) {
       over31: rosaAttiva.filter(p => Number(p.anni || 0) >= 31).length,
       cedibili: rosaAttiva.filter(p => p.cedibile_stato).length,
       valoreRosa: rosaAttiva.reduce((s, p) => s + Number(p.quot || 0), 0),
+      quotRealeMedia: quotReali.length ? quotReali.reduce((s, v) => s + v, 0) / quotReali.length : 0,
+      fantamediaMedia: fantamedie.length ? fantamedie.reduce((s, v) => s + v, 0) / fantamedie.length : 0,
     };
   }
 
@@ -8012,6 +8016,8 @@ function CompareRosePage({ teams }) {
     { label: "31+", get: d => d.over31, direction: null },
     { label: "Valore rosa (Q totali)", get: d => d.valoreRosa.toFixed(1), val: d => d.valoreRosa, direction: "higher" },
     { label: "Quotazione media", get: d => (d.rosaTotale ? (d.valoreRosa / d.rosaTotale).toFixed(2) : "—"), val: d => d.rosaTotale ? d.valoreRosa / d.rosaTotale : 0, direction: "higher" },
+    { label: "Quotazione reale media", get: d => (d.quotRealeMedia ? d.quotRealeMedia.toFixed(2) : "—"), val: d => d.quotRealeMedia, direction: "higher" },
+    { label: "Fantamedia media", get: d => (d.fantamediaMedia ? d.fantamediaMedia.toFixed(2) : "—"), val: d => d.fantamediaMedia, direction: "higher" },
     { label: "Giocatori cedibili", get: d => d.cedibili, direction: null },
   ];
 
@@ -8141,10 +8147,15 @@ function ComparePlayersPage({ teams }) {
   const [listone, setListone] = useState(null);
   const [search, setSearch] = useState("");
   const [selezionati, setSelezionati] = useState([]); // fino a 5 righe del listone
+  const [quotReali, setQuotReali] = useState({}); // nome -> quot_reale, solo per i rostrati (vedi getQuotRealeByNomi)
 
   useEffect(() => {
     cachedFetch('listone', getListone, 600000).then(d => setListone(d || []));
   }, []);
+
+  useEffect(() => {
+    getQuotRealeByNomi(selezionati.map(p => p.nome)).then(setQuotReali);
+  }, [selezionati]);
 
   const risultatiRicerca = useMemo(() => {
     if (!listone || !search.trim()) return [];
@@ -8173,6 +8184,7 @@ function ComparePlayersPage({ teams }) {
     { label: "Età", get: p => p.anni || "—", direction: null },
     { label: "Squadra Serie A", get: p => p.squadra_serie_a || "—", direction: null },
     { label: "Quotazione", get: p => p.quot, val: p => p.quot, direction: "higher" },
+    { label: "Quotazione reale", get: p => quotReali[p.nome] ?? "— (svincolato)", val: p => quotReali[p.nome], direction: "higher" },
     { label: "Stipendio", get: p => Number(p.salario || 0).toFixed(2) + "M", val: p => Number(p.salario || 0), direction: "lower" },
     { label: "Clausola", get: p => Number(p.clausola || 0).toFixed(2) + "M", val: p => Number(p.clausola || 0), direction: "lower" },
     { label: "Partite a voto", get: p => p.partite_voto ?? "—", val: p => p.partite_voto, direction: "higher" },
