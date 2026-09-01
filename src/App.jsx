@@ -229,7 +229,7 @@ import { SURFACE, BRAND, SEMANTIC, FIELD } from "./design-system.js";
 import { IconHome, IconShield, IconTrophy, IconMarket, IconMore, IconAdmin, IconChevronRight, IconArchive, IconRefresh, IconPlus, IconEdit, IconTrash, IconClose, IconSearch, IconBack } from "./components/ui/Icons.jsx";
 import { ProgressBar } from "./components/ui/ProgressBar.jsx";
 import { HeroSurface } from "./components/ui/Surface.jsx";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, calcolaScadenzaInteresse, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, getObiettivi, subscribeObiettivi, getListaDesideri, insertListaDesiderio, updateListaDesiderioNote, deleteListaDesiderio, subscribeListaDesideri, notificaListaDesideri, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, getDomenicaCorrente, getFasciaBilancioNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, registraEventoGiornataInvestimento, getEffettiInvestimenti, getSquadreConSuperClub, getStatoGuadagniGiornata,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, calcolaScadenzaInteresse, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, getObiettivi, subscribeObiettivi, getListaDesideri, insertListaDesiderio, updateListaDesiderioNote, deleteListaDesiderio, subscribeListaDesideri, notificaListaDesideri, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, getDomenicaCorrente, getFasciaBilancioNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, registraEventoGiornataInvestimento, registraContatoreGiornataInvestimento, applicaBonusBrandingSePresente, registraVotoRientroInvestimento, registraPuntiGironeRitorno, riscattaGruppoAvvocato, getEffettiInvestimenti, getSquadreConSuperClub, getSquadreConDerogaU21, getStatoGuadagniGiornata,
   getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, usaContatoreInvestimento, registraEventoInvestimento, annullaEventoInvestimento, toggleTraguardoInvestimento, deleteInvestimento, getPenalita, insertPenalita, deletePenalita, applicaMulta, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, applicaIscrizioneCampionato, investiEuroExtra, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, logAzione, getAuditLog, effettuaRollback, getVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, getSvincolatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, checkScadenzeAste, subscribeAsteSvincolati, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
@@ -1123,7 +1123,6 @@ function CalcolatoreGiornata({ profile, teams, navigate }) {
   // caricati per sapere quali sono attivi e mostrare solo i campi extra necessari.
   const [investimentiGiornata, setInvestimentiGiornata] = useState([]);
   const [inCasa, setInCasa] = useState(false); // per Abbonamenti Premium
-  const [avversarioSotto66, setAvversarioSotto66] = useState(false); // per Clean Sheet
 
   useEffect(() => {
     if (!mySquadra) { setAllenatoreGiornata(null); setInvestimentiGiornata([]); return; }
@@ -1142,6 +1141,8 @@ function CalcolatoreGiornata({ profile, teams, navigate }) {
   const invCleanSheet = investimentiGiornata.find(i => i.nome === 'Clean Sheet');
   const invMVP = investimentiGiornata.find(i => i.nome === 'The MVP');
   const invAbbonamenti = investimentiGiornata.find(i => i.nome === 'Abbonamenti Premium');
+  const invAvvocato = investimentiGiornata.find(i => i.nome === 'Avvocato');
+  const CATALOGO_AVVOCATO = CATALOGO_INVESTIMENTI.find(c => c.nome === 'Avvocato');
 
   // Costi giocatori (cumulativi da inserire manualmente). Stringa vuota di
   // default (non 0): con 0 come valore iniziale, scrivere "1" nel campo dà
@@ -1197,7 +1198,7 @@ function CalcolatoreGiornata({ profile, teams, navigate }) {
   if (invMVP && Number(costiGiocatori.mvp) >= 1) {
     investimentiDaPagare.push({ inv: invMVP, valore: 0.5, etichetta: "The MVP" });
   }
-  if (invCleanSheet && avversarioSotto66) {
+  if (invCleanSheet && golSubiti !== "" && Number(golSubiti) === 0) {
     investimentiDaPagare.push({ inv: invCleanSheet, valore: 1.5, etichetta: "Clean Sheet" });
   }
   if (invAbbonamenti && inCasa && (risultato === 'V' || risultato === 'P')) {
@@ -1210,6 +1211,11 @@ function CalcolatoreGiornata({ profile, teams, navigate }) {
       investimentiDaPagare.push({ inv: invAbbonamenti, valore: 1, etichetta: "Abbonamenti Premium: pareggio casa", chiave: 'pareggio' });
     }
   }
+  // Avvocato: NON paga più in automatico da qui — accumula solo il contatore
+  // ammonizioni di stagione (ogni giornata, indipendentemente da soglie), e il
+  // riscatto vero e proprio (una pillola da 5 completata → +0.5M) è un'azione
+  // manuale del presidente nella tab Investimenti (vedi AltroTab / cartucce).
+  const nAmmonizioni = Number(costiGiocatori.ammonizioni) || 0;
   const totaleInvestimenti = parseFloat(investimentiDaPagare.reduce((s, x) => s + x.valore, 0).toFixed(2));
 
   // Se formazione non schierata: perdite doppie, guadagni 0
@@ -1264,6 +1270,19 @@ function CalcolatoreGiornata({ profile, teams, navigate }) {
           if (pagati.length) msgInvestimenti = ` · investimenti: +${pagati.reduce((s, r) => s + r.importo, 0).toFixed(2)}M`;
         } catch (eInv) {
           msgInvestimenti = ` · ⚠️ investimenti non registrati (${eInv.message})`;
+        }
+      }
+
+      // Avvocato: aggiorna solo il contatore ammonizioni di stagione (nessun
+      // pagamento automatico — valorePerEvento 0 — il riscatto è manuale, vedi
+      // AltroTab). Va registrato ad OGNI giornata con ammonizioni > 0, anche
+      // quando non si completa una pillola da 5, altrimenti il conteggio si
+      // ferma silenziosamente sulle giornate con 1-4 ammonizioni.
+      if (invAvvocato && nAmmonizioni > 0) {
+        try {
+          await registraContatoreGiornataInvestimento(invAvvocato.id, mySquadra, giornata, nAmmonizioni, 0, CATALOGO_AVVOCATO?.ogniNEventi || 5, 'Avvocato');
+        } catch (eAvv) {
+          msgInvestimenti += ` · ⚠️ Avvocato: contatore non aggiornato (${eAvv.message})`;
         }
       }
 
@@ -1399,7 +1418,6 @@ function CalcolatoreGiornata({ profile, teams, navigate }) {
               [rivale, setRivale, "⚔️ Partita contro rivale", "Vittoria +1M / Pareggio +0.5M"],
               [!formazione, v => setFormazione(!v), "⚠️ Formazione non schierata", "Perdite ×2 / Guadagni 0"],
               ...(invAbbonamenti ? [[inCasa, setInCasa, "🏠 Partita in casa", "Abbonamenti Premium: vittoria/pareggio in casa"]] : []),
-              ...(invCleanSheet ? [[avversarioSotto66, setAvversarioSotto66, "🛡️ Avversario <66pt fantacalcistici", "Clean Sheet: +1.5M"]] : []),
             ].map(([val, setter, lbl, hint], i) => (
               <button key={i} onClick={() => setter(!val)}
                 style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${val ? "#f59e0b" : "#ffffff15"}`, background: val ? "#f59e0b18" : "transparent", color: val ? "#f59e0b" : "#555", fontSize: 11, cursor: "pointer", textAlign: "left" }}>
@@ -2318,8 +2336,10 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
     }
     loadAll();
   }, [teamNames]);
+  const [squadreDerogaU21, setSquadreDerogaU21] = useState(new Set());
+  useEffect(() => { getSquadreConDerogaU21().then(setSquadreDerogaU21); }, []);
   const complianceMap = {};
-  Object.entries(roseMap).forEach(([name, players]) => { complianceMap[name] = checkRosaCompliance(players); });
+  Object.entries(roseMap).forEach(([name, players]) => { complianceMap[name] = checkRosaCompliance(players, { derogaU21: squadreDerogaU21.has(name) }); });
   const roseIrregolari = Object.entries(complianceMap).filter(([, c]) => !c.regolare);
 
   // ── Export CSV snapshot squadre (bilancio/SC/FPF/rosa/violazioni) ──────────
@@ -2350,7 +2370,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
         const salaryCapLimite = 75 + Number(t.scBonusObiettivi||0) + Number(effetti?.scBonusInvestimenti||0);
         const salaryCapLibero = parseFloat((salaryCapLimite - salaryCapUsato).toFixed(2));
 
-        const compliance = checkRosaCompliance(players);
+        const compliance = checkRosaCompliance(players, { derogaU21: !!effetti?.derogaU21 });
         const violazioni = compliance.issues.map(i => i.testo).join(' | ');
 
         righe.push({
@@ -2457,6 +2477,8 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
       for (const e of entries) {
         const rec = await insertPremio({ squadra: e.squadra, tipo: 'premio_coppa', importo: e.mln, posizione: e.pos, stagione: STAGIONE_CORRENTE, data_premio: new Date().toISOString().slice(0,10) });
         await applicaPremio(e.squadra, e.mln, e.label, rec.id);
+        const brandingChiave = e.pos === 1 ? 'vincitore' : e.pos === 2 ? 'finalista' : null;
+        if (brandingChiave) await applicaBonusBrandingSePresente(e.squadra, 'coppa', brandingChiave, e.label, STAGIONE_CORRENTE);
       }
       await loadPremi();
     } catch(err) { alert(err.message); }
@@ -2487,7 +2509,7 @@ function LegaPage({ teams = TEAMS, isAdmin }) {
     if (!window.confirm("Applicare i premi finali?")) return;
     setSavingPr(true);
     if (premiApp.finale) { alert('Premi finali già applicati.'); setSavingPr(false); return; }
-    try { for (const p of premiFinali) { const r = await insertPremio({squadra:p.squadra,tipo:'premio_finale',importo:p.importo,posizione:p.posizione,stagione:STAGIONE_CORRENTE,data_premio:new Date().toISOString().slice(0,10)}); await applicaPremio(p.squadra,p.importo,`Premio finale (${p.posizione}°)`,r.id); } await loadPremi(); }
+    try { for (const p of premiFinali) { const r = await insertPremio({squadra:p.squadra,tipo:'premio_finale',importo:p.importo,posizione:p.posizione,stagione:STAGIONE_CORRENTE,data_premio:new Date().toISOString().slice(0,10)}); await applicaPremio(p.squadra,p.importo,`Premio finale (${p.posizione}°)`,r.id); if (p.posizione>=1&&p.posizione<=4) await applicaBonusBrandingSePresente(p.squadra,'finale',p.posizione,`Premio finale (${p.posizione}°)`,STAGIONE_CORRENTE); } await loadPremi(); }
     catch(e){alert(e.message);} finally{setSavingPr(false);}
   }
   const inp = { padding: "4px 6px", borderRadius: 5, border: "1px solid #ffffff18", background: "#0d0f14", color: "#f0f0f0", fontSize: 11, width: "100%" };
@@ -3136,7 +3158,7 @@ function DeadlinePage() {
 
 
 /* ─── ROSA COMPLIANCE CHECK ─────────────────────────────────────────────────── */
-function checkRosaCompliance(players) {
+function checkRosaCompliance(players, { derogaU21 = false } = {}) {
   // I giocatori in vivaio NON contano nel totale rosa (art. 3.6)
   const rosaAttiva = players.filter(p => !p.in_vivaio);
   const inVivaio = players.filter(p => p.in_vivaio).length;
@@ -3156,9 +3178,14 @@ function checkRosaCompliance(players) {
 
   // art. 3.3 — U21 richiesti in base alla dimensione della rosa
   // 25-27: nessun obbligo · 28: min 1 · 29: min 2 · 30: min 3
-  if (totale === 28 && u21 < 1) issues.push({ tipo: "error", testo: `Rosa a 28: serve almeno 1 U21 (hai ${u21})` });
-  if (totale === 29 && u21 < 2) issues.push({ tipo: "error", testo: `Rosa a 29: servono almeno 2 U21 (hai ${u21})` });
-  if (totale === 30 && u21 < 3) issues.push({ tipo: "error", testo: `Rosa a 30: servono almeno 3 U21 (hai ${u21})` });
+  // Deroga U-21 (fino al 01/06): con rosa 28-30 basta 1 U21.
+  if (derogaU21 && totale >= 28) {
+    if (u21 < 1) issues.push({ tipo: "error", testo: `Rosa a ${totale} (Deroga U-21 attiva): serve almeno 1 U21 (hai ${u21})` });
+  } else {
+    if (totale === 28 && u21 < 1) issues.push({ tipo: "error", testo: `Rosa a 28: serve almeno 1 U21 (hai ${u21})` });
+    if (totale === 29 && u21 < 2) issues.push({ tipo: "error", testo: `Rosa a 29: servono almeno 2 U21 (hai ${u21})` });
+    if (totale === 30 && u21 < 3) issues.push({ tipo: "error", testo: `Rosa a 30: servono almeno 3 U21 (hai ${u21})` });
+  }
 
   // art. 3.4 — max 5 giocatori della stessa squadra SA (solo rosa attiva)
   const contaSA = {};
@@ -3169,13 +3196,15 @@ function checkRosaCompliance(players) {
     if (n > 5) issues.push({ tipo: "error", testo: `${n} giocatori del ${sq} — massimo 5 per squadra SA` });
   });
 
-  // Warnings preventivi
-  if (totale === 27 && u21 === 0)
-    issues.push({ tipo: "warn", testo: `Rosa a 27 — aggiungendo un giocatore servirà almeno 1 U21` });
-  if (totale === 28 && u21 === 1)
-    issues.push({ tipo: "warn", testo: `Rosa a 28 — aggiungendo un giocatore serviranno almeno 2 U21` });
-  if (totale === 29 && u21 === 2)
-    issues.push({ tipo: "warn", testo: `Rosa a 29 — aggiungendo un giocatore serviranno almeno 3 U21` });
+  // Warnings preventivi (non si applicano con Deroga U-21 attiva: basta 1 U21 fino a 30)
+  if (!derogaU21) {
+    if (totale === 27 && u21 === 0)
+      issues.push({ tipo: "warn", testo: `Rosa a 27 — aggiungendo un giocatore servirà almeno 1 U21` });
+    if (totale === 28 && u21 === 1)
+      issues.push({ tipo: "warn", testo: `Rosa a 28 — aggiungendo un giocatore serviranno almeno 2 U21` });
+    if (totale === 29 && u21 === 2)
+      issues.push({ tipo: "warn", testo: `Rosa a 29 — aggiungendo un giocatore serviranno almeno 3 U21` });
+  }
 
   const regolare = issues.filter(i => i.tipo === "error").length === 0;
   return { regolare, issues, totale, portieri, movimento, u21, contaSA, inVivaio };
@@ -3270,7 +3299,10 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
     return () => supabase.removeChannel(sub);
   }, [loadAll, teamName]);
 
-  const comp = checkRosaCompliance(players);
+  const [derogaU21, setDerogaU21] = useState(false);
+  useEffect(() => { getEffettiInvestimenti(teamName).then(e => setDerogaU21(!!e?.derogaU21)); }, [teamName]);
+
+  const comp = checkRosaCompliance(players, { derogaU21 });
   const roleOrder = ["Por","Dc","Dd","Ds","B","E","M","C","T","W","A","Pc"];
   const playersRich = players.map(p => {
     const stipCorretto = calcolaStipCorretto(Number(p.quot||0), Number(p.anni_contratto||0), Number(p.anni||0));
@@ -5695,11 +5727,190 @@ const CATALOGO_INVESTIMENTI = [
 
 // Investimenti il cui evento economico dipende da dati che il presidente
 // inserisce già ogni settimana nel Calcolatore Giornata (gol segnati, risultato,
-// ecc.): per questi il guadagno si registra da lì (una volta sola per giornata,
-// vedi registraEventoGiornataInvestimento), non con il bottone manuale "+1
-// evento" qui in Finanze — che resta invece per gli altri (es. Avvocato,
-// legato alle ammonizioni cumulative di stagione, non a una singola giornata).
-const INVESTIMENTI_DA_CALCOLATORE_GIORNATA = ["Accordi TV", "Clean Sheet", "The MVP", "Abbonamenti Premium"];
+// ammonizioni, ecc.): per questi il guadagno si registra da lì (una volta sola
+// per giornata, vedi registraEventoGiornataInvestimento/registraContatoreGiornataInvestimento),
+// non con il bottone manuale "+1 evento" qui in Finanze. Avvocato è cumulativo
+// sull'intera stagione (paga ogni 5 ammonizioni totali), ma le ammonizioni
+// stesse arrivano automaticamente dal Calcolatore Giornata, non da un click.
+const INVESTIMENTI_DA_CALCOLATORE_GIORNATA = ["Accordi TV", "Clean Sheet", "The MVP", "Abbonamenti Premium", "Avvocato"];
+
+// Riga "Scommessa Rendimento" per un singolo giocatore puntato: a differenza degli
+// altri selezione_giocatore (traguardo manuale), qui il traguardo si auto-completa
+// quando la quotazione reale attuale supera di almeno 7 punti la prima quotazione
+// mai registrata nello storico di quel giocatore — nessun click richiesto. Resta
+// comunque disponibile il pulsante manuale per un admin, per correggere eventuali
+// casi limite (es. giocatore mai avuto una quot_reale perché mai in una rosa).
+function ScommessaRendimentoRow({ nome, valorePerGiocatore, raggiunto, canManageInv, savingInv, onToggle }) {
+  const [baseline, setBaseline] = useState(undefined); // undefined = in caricamento
+  const [picco, setPicco] = useState(undefined); // massimo storico mai raggiunto (non solo il valore attuale)
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([getStoricoQuotazioni(nome), getQuotRealeByNomi([nome])]).then(([storico, quotReali]) => {
+      if (cancelled) return;
+      const base = storico?.[0]?.quot ?? null;
+      setBaseline(base);
+      // Il traguardo va raggiunto anche solo per un istante: basta che la quotazione
+      // sia SALITA di 7 in qualsiasi momento, anche se poi è ridiscesa — quindi il
+      // confronto usa il massimo storico registrato (storico_quotazioni), non il
+      // valore attuale, includendo comunque quest'ultimo se più recente/alto.
+      const valori = (storico || []).map(s => Number(s.quot)).filter(v => Number.isFinite(v));
+      const attualeNum = Number(quotReali?.[nome]);
+      if (Number.isFinite(attualeNum)) valori.push(attualeNum);
+      setPicco(valori.length ? Math.max(...valori) : (Number.isFinite(attualeNum) ? attualeNum : null));
+    });
+    return () => { cancelled = true; };
+  }, [nome]);
+
+  const delta = (baseline != null && picco != null) ? Number(picco) - Number(baseline) : null;
+  const completatoAuto = delta != null && delta >= 7;
+  const progressoPct = delta != null ? Math.max(0, Math.min(100, (delta / 7) * 100)) : 0;
+
+  // Auto-completamento: scatta una sola volta, quando la soglia viene superata e
+  // il traguardo non è ancora segnato — evita richieste duplicate ad ogni render.
+  // Una volta segnato raggiunto=true resta persistito sull'investimento, quindi
+  // anche se la quotazione ridiscende dopo il picco il traguardo resta valido.
+  const autoScattatoRef = useRef(false);
+  useEffect(() => {
+    if (completatoAuto && !raggiunto && !autoScattatoRef.current) {
+      autoScattatoRef.current = true;
+      onToggle();
+    }
+  }, [completatoAuto, raggiunto, onToggle]);
+
+  return (
+    <div style={{ display:"flex",flexDirection:"column",gap:4 }}>
+      <div style={{ display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
+        <span style={{ fontSize:10,color: raggiunto?"#10b981":"#888",minWidth:120 }}>{raggiunto?"✅ ":"⏳ "}{nome} (+{valorePerGiocatore}M)</span>
+        <span style={{ fontSize:9,color:"#555" }}>
+          {baseline===undefined ? "caricamento…" : baseline==null ? "nessuno storico quotazioni" :
+            picco==null ? `base ${baseline} · nessuna quot. reale (non in rosa?)` :
+            `base ${baseline} · picco ${picco} (${delta>=0?'+':''}${delta})`}
+        </span>
+        {canManageInv && !raggiunto && (
+          <button onClick={onToggle} disabled={savingInv}
+            style={{ padding:"3px 10px",borderRadius:6,border:"1px solid #10b98140",background:savingInv?"#333":"#10b98112",color:"#10b981",fontSize:10,fontWeight:700,cursor:savingInv?"wait":"pointer" }}>
+            {savingInv?"⏳...":"✓ Forza traguardo"}
+          </button>
+        )}
+        {canManageInv && raggiunto && (
+          <button onClick={onToggle} disabled={savingInv}
+            style={{ padding:"3px 8px",borderRadius:6,border:"1px solid #ffffff15",background:"transparent",color:"#666",fontSize:10,cursor:savingInv?"wait":"pointer" }}>
+            ↩ Annulla
+          </button>
+        )}
+      </div>
+      {!raggiunto && delta != null && (
+        <div style={{ display:"flex",alignItems:"center",gap:6 }}>
+          <div style={{ flex:1,maxWidth:160,height:5,borderRadius:3,background:"#ffffff10",overflow:"hidden" }}>
+            <div style={{ width:`${progressoPct}%`,height:"100%",borderRadius:3,background:"linear-gradient(90deg,#6366f1,#10b981)",transition:"width .3s" }} />
+          </div>
+          <span style={{ fontSize:9,color:"#555" }}>{Math.max(0,delta).toFixed(1)} / 7</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RientroInGrandeRow({ nome, voti, valorePerGiornata, canManageInv, savingInv, onVoto }) {
+  const [locali, setLocali] = useState({});
+  const totaleAccumulato = [1,2,3,4,5].reduce((s,i) => s + (Number(voti[`g${i}`]) >= 6 ? valorePerGiornata : 0), 0);
+  return (
+    <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+      <span style={{ fontSize:10,color:"#ccc" }}>{nome} <span style={{ color:"#555" }}>(+{valorePerGiornata}M per giornata con voto ≥6)</span>{totaleAccumulato>0?<b style={{ color:"#10b981",marginLeft:6 }}>totale +{totaleAccumulato.toFixed(1)}M</b>:null}</span>
+      <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
+        {[1,2,3,4,5].map(i => {
+          const chiave = `g${i}`;
+          const votoSalvato = voti[chiave] ?? '';
+          const valore = locali[chiave] ?? votoSalvato;
+          const raggiunto = Number(votoSalvato) >= 6;
+          return (
+            <div key={chiave} style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:3 }}>
+              <span style={{ fontSize:9,color:"#666" }}>G{i}</span>
+              <input type="number" min="0" max="10" step="0.5" value={valore} disabled={!canManageInv||savingInv}
+                onChange={e=>setLocali(l=>({...l,[chiave]:e.target.value}))}
+                onBlur={e=>{ const v=e.target.value; if (v===String(votoSalvato)||(v===''&&votoSalvato==='')) return; onVoto(i, v); }}
+                style={{ width:36,padding:"3px 4px",borderRadius:5,fontSize:11,textAlign:"center",
+                  border:`1px solid ${raggiunto?"#10b98160":"#ffffff18"}`,background:raggiunto?"#10b98112":"#0d0f14",color:raggiunto?"#10b981":"#f0f0f0" }} />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ReDelGironeRow({ punti, soglia, importo, canManageInv, savingInv, onPunti }) {
+  const [locali, setLocali] = useState({});
+  const prima = punti.prima ?? '';
+  const finali = punti.finali ?? '';
+  const delta = (punti.prima != null && punti.finali != null) ? punti.finali - punti.prima : null;
+  const raggiunto = delta != null && delta >= soglia;
+  const campoInput = (campo, salvato, label) => (
+    <div style={{ display:"flex",flexDirection:"column",gap:3 }}>
+      <span style={{ fontSize:9,color:"#666" }}>{label}</span>
+      <input type="number" value={locali[campo] ?? salvato} disabled={!canManageInv||savingInv}
+        onChange={e=>setLocali(l=>({...l,[campo]:e.target.value}))}
+        onBlur={e=>{ const v=e.target.value; if (v===String(salvato)||(v===''&&salvato==='')) return; onPunti(campo, v); }}
+        style={{ width:60,padding:"3px 5px",borderRadius:5,fontSize:11,textAlign:"center",border:"1px solid #ffffff18",background:"#0d0f14",color:"#f0f0f0" }} />
+    </div>
+  );
+  return (
+    <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+      <div style={{ display:"flex",gap:12,flexWrap:"wrap" }}>
+        {campoInput('prima', prima, 'Punti alla 19ª')}
+        {campoInput('finali', finali, 'Punti finali')}
+      </div>
+      <span style={{ fontSize:10,color: raggiunto?"#10b981":"#888" }}>
+        {delta==null ? "Inserisci entrambi i valori per calcolare lo scarto" : `Scarto: ${delta>=0?'+':''}${delta} punti (soglia ${soglia})`}
+        {raggiunto ? <b style={{ marginLeft:6 }}>✓ +{importo}M</b> : null}
+      </span>
+    </div>
+  );
+}
+
+function AvvocatoPillole({ eventi, ogniN, valorePerEvento, valoreAccumulato, canManageInv, savingInv, onRiscatta }) {
+  const gruppiCompletati = Math.floor(eventi / ogniN);
+  const gruppiPagati = Math.round(Number(valoreAccumulato || 0) / valorePerEvento);
+  const nGruppi = gruppiCompletati + 1; // mostra sempre anche il gruppo in corso di riempimento
+  return (
+    <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+      <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
+        {Array.from({ length: nGruppi }).map((_, gi) => {
+          const isCorrente = gi === gruppiCompletati;
+          const riempiti = isCorrente ? (eventi % ogniN) : ogniN;
+          const pagato = gi < gruppiPagati;
+          const riscattabile = !isCorrente && !pagato;
+          return (
+            <div key={gi} style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:4,
+              padding:"6px 8px",borderRadius:10,
+              border:`1px solid ${riscattabile?"#f59e0b60":pagato?"#10b98140":"#ffffff15"}`,
+              background: riscattabile?"#f59e0b12":pagato?"#10b98108":"transparent" }}>
+              <div style={{ display:"flex",gap:2 }}>
+                {Array.from({ length: ogniN }).map((_,i) => (
+                  <span key={i} title={i < riempiti ? "Ammonizione registrata" : "In attesa"}
+                    style={{ display:"inline-block", width:6, height:16, borderRadius:"2px 2px 1px 1px",
+                      background: i < riempiti ? (pagato?"linear-gradient(180deg,#34d399,#059669)":"linear-gradient(180deg,#fbbf24,#b45309)") : "#ffffff12",
+                      border: `1px solid ${i < riempiti ? (pagato?"#10b981":"#f59e0b") : "#ffffff18"}` }} />
+                ))}
+              </div>
+              <span style={{ fontSize:8,color:"#666" }}>#{gi+1}</span>
+              {pagato && <span style={{ fontSize:9,color:"#10b981" }}>✓ riscosso</span>}
+              {riscattabile && canManageInv && (
+                <button onClick={onRiscatta} disabled={savingInv}
+                  style={{ padding:"2px 8px",borderRadius:6,border:"1px solid #f59e0b50",background:savingInv?"#333":"#f59e0b18",color:"#f59e0b",fontSize:9,fontWeight:700,cursor:savingInv?"wait":"pointer" }}>
+                  {savingInv?"⏳":`Riscatta +${valorePerEvento}M`}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <span style={{ fontSize:10,color:"#888" }}>{eventi} ammonizioni totali <span style={{ color:"#555" }}>(paga ogni {ogniN})</span> · <b style={{ color:"#10b981" }}>+{Number(valoreAccumulato||0).toFixed(1)}M</b> riscossi finora</span>
+      <span style={{ fontSize:9,color:"#555",fontStyle:"italic" }}>📅 Contatore aggiornato in automatico dal Calcolatore Giornata — il riscatto di ogni pillola completa resta manuale</span>
+    </div>
+  );
+}
 
 /* ─── ALLENATORE TAB ─────────────────────────────────────────────────────────── */
 function AltroTab({ team, isAdmin, mySquadra, clubIdentity, onRefreshIdentity }) {
@@ -6113,6 +6324,24 @@ Gli obiettivi verranno azzerati.`;
   async function handleToggleTraguardo(inv, chiave, etichetta, raggiunto, valore) {
     setSavingInv(true);
     try { await toggleTraguardoInvestimento(inv.id, team.name, chiave, etichetta, raggiunto, valore); cacheInvalidate('investimenti_'+team.name); await loadInv(); }
+    catch(e){ alert(e.message); }
+    finally { setSavingInv(false); }
+  }
+  async function handleVotoRientro(inv, indice, voto, valorePerGiornata) {
+    setSavingInv(true);
+    try { await registraVotoRientroInvestimento(inv.id, team.name, indice, voto, valorePerGiornata); cacheInvalidate('investimenti_'+team.name); await loadInv(); }
+    catch(e){ alert(e.message); }
+    finally { setSavingInv(false); }
+  }
+  async function handlePuntiGirone(inv, campo, valore, soglia, importo) {
+    setSavingInv(true);
+    try { await registraPuntiGironeRitorno(inv.id, team.name, campo, valore, soglia, importo); cacheInvalidate('investimenti_'+team.name); await loadInv(); }
+    catch(e){ alert(e.message); }
+    finally { setSavingInv(false); }
+  }
+  async function handleRiscattaAvvocato(inv, valorePerGruppo, ogniNEventi) {
+    setSavingInv(true);
+    try { await riscattaGruppoAvvocato(inv.id, team.name, valorePerGruppo, ogniNEventi); cacheInvalidate('investimenti_'+team.name); await loadInv(); }
     catch(e){ alert(e.message); }
     finally { setSavingInv(false); }
   }
@@ -6648,6 +6877,14 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                 {meccanica==='contatore_economico' && !catInfo.varianti && (() => {
                   const eventi = Number(dati.contatori?.default||0);
                   const daGiornata = INVESTIMENTI_DA_CALCOLATORE_GIORNATA.includes(inv.nome);
+                  const isAvvocato = inv.nome === 'Avvocato';
+                  if (isAvvocato) {
+                    return (
+                      <AvvocatoPillole eventi={eventi} ogniN={catInfo.ogniNEventi||5} valorePerEvento={catInfo.valorePerEvento||0.5}
+                        valoreAccumulato={inv.valore_accumulato} canManageInv={canManageInv} savingInv={savingInv}
+                        onRiscatta={()=>handleRiscattaAvvocato(inv, catInfo.valorePerEvento||0.5, catInfo.ogniNEventi||5)} />
+                    );
+                  }
                   return (
                     <div style={{ display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
                       <span style={{ fontSize:10,color:"#888" }}>{catInfo.etichettaEvento}: <b style={{ color:"#818cf8" }}>{eventi}</b>{catInfo.ogniNEventi>1?` (paga ogni ${catInfo.ogniNEventi})`:""}</span>
@@ -6706,11 +6943,26 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                   const nomi = (inv.note||'').split(',').map(s=>s.trim()).filter(Boolean);
                   const giocatori = nomi.length ? nomi.slice(0, catInfo.nGiocatori) : Array.from({length: catInfo.nGiocatori}, (_,i)=>`Giocatore ${i+1}`);
                   const traguardi = dati.traguardi || {};
+                  const isScommessa = inv.nome === 'Scommessa Rendimento';
+                  const isRientro = inv.nome === 'Rientro in Grande';
                   return (
                     <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                      {giocatori.map((nome, idx) => {
+                      {isRientro && (
+                        <RientroInGrandeRow nome={giocatori[0]} voti={dati.voti||{}}
+                          valorePerGiornata={catInfo.valorePerGiocatore||0} canManageInv={canManageInv} savingInv={savingInv}
+                          onVoto={(idx,voto)=>handleVotoRientro(inv, idx, voto, catInfo.valorePerGiocatore||0)} />
+                      )}
+                      {!isRientro && giocatori.map((nome, idx) => {
                         const chiave = `g${idx}`;
                         const raggiunto = !!traguardi[chiave];
+                        if (isScommessa) {
+                          return (
+                            <ScommessaRendimentoRow key={chiave} nome={nome}
+                              valorePerGiocatore={catInfo.valorePerGiocatore||0} raggiunto={raggiunto}
+                              canManageInv={canManageInv} savingInv={savingInv}
+                              onToggle={()=>handleToggleTraguardo(inv, chiave, `${inv.nome}: ${nome}`, !raggiunto, catInfo.valorePerGiocatore||0)} />
+                          );
+                        }
                         return (
                           <div key={chiave} style={{ display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
                             <span style={{ fontSize:10,color: raggiunto?"#10b981":"#888",minWidth:120 }}>{raggiunto?"✅ ":"⏳ "}{nome}{catInfo.valorePerGiocatore>0?` (+${catInfo.valorePerGiocatore}M)`:""}</span>
@@ -6727,7 +6979,12 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                   );
                 })()}
 
-                {meccanica==='one_off_stagione' && (
+                {meccanica==='one_off_stagione' && inv.nome==='Re del Girone di Ritorno' && (
+                  <ReDelGironeRow punti={dati.punti||{}} soglia={8} importo={10} canManageInv={canManageInv} savingInv={savingInv}
+                    onPunti={(campo,valore)=>handlePuntiGirone(inv, campo, valore, 8, 10)} />
+                )}
+
+                {meccanica==='one_off_stagione' && inv.nome!=='Re del Girone di Ritorno' && (
                   inv.valore_accumulato>0
                     ? <div style={{ fontSize:10,color:"#10b981" }}>✓ Premio assegnato: +{Number(inv.valore_accumulato).toFixed(1)}M</div>
                     : <div style={{ fontSize:10,color:"#888" }}>⏳ In attesa dell'esito di fine stagione — l'admin assegnerà l'importo con "+M" qui sopra quando disponibile.</div>
