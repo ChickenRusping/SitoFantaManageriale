@@ -1391,7 +1391,7 @@ export async function eseguiTrasferimento(trattativa) {
     // possono far muovere la Q di un giocatore già in rosa.
     nuovaQuot = Number(player.quot_reale) > 0 ? Number(player.quot_reale) : (trattativa.quot_giocatore || player.quot);
     const nuovoStip = parseFloat((nuovaQuot / 5).toFixed(2));
-    const nuovaClausola = parseFloat((nuovaQuot * 1.75).toFixed(2));
+    const nuovaClausola = await _calcolaClausolaPerSquadra(squadraAcquirente, nuovaQuot);
 
     if (isPrestito) {
       // Prestito: aggiorna squadra temporanea, mantieni traccia del proprietario
@@ -3264,7 +3264,7 @@ async function _getInvestimentiStagione(squadra, stagione) {
   const { data } = await supabase.from('investimenti').select('*').eq('squadra', squadra).eq('stagione', stagione);
   return data || [];
 }
-async function _hasInvestimentoAttivo(squadra, nome, { stagione = getStagioneQuota(new Date()), date = new Date(), includePrecedenti = false } = {}) {
+export async function _hasInvestimentoAttivo(squadra, nome, { stagione = getStagioneQuota(new Date()), date = new Date(), includePrecedenti = false } = {}) {
   let q = supabase.from('investimenti').select('*').eq('squadra', squadra).eq('nome', nome).eq('attivo', true);
   if (!includePrecedenti) q = q.eq('stagione', stagione);
   const { data } = await q;
@@ -3305,6 +3305,18 @@ async function _getSalaryCapInvestimenti(squadra, stagione = getStagioneQuota(ne
 export async function getSquadreConSuperClub(stagione = getStagioneQuota(new Date())) {
   const { data } = await supabase.from('investimenti')
     .select('squadra').eq('nome', 'SuperClub').eq('attivo', true).eq('stagione', stagione);
+  return new Set((data || []).map(r => r.squadra));
+}
+
+// Tutte le squadre con Deroga U-21 attiva e ancora in finestra (fino al 01/06),
+// in una sola query, per le pagine di overview multi-squadra.
+export async function getSquadreConDerogaU21(stagione = getStagioneQuota(new Date())) {
+  const { data } = await supabase.from('investimenti')
+    .select('squadra').eq('nome', 'Deroga U-21').eq('attivo', true).eq('stagione', stagione);
+  const date = new Date();
+  const start = stagioneStartYear(date);
+  const fine = new Date(start + 1, 5, 1, 0, 0, 0, 0);
+  if (date >= fine) return new Set();
   return new Set((data || []).map(r => r.squadra));
 }
 async function _calcolaClausolaPerSquadra(squadra, quot, date = new Date()) {
@@ -3561,6 +3573,42 @@ export async function registraEventoGiornataInvestimento(id, squadra, giornata, 
   return { eventi, importo: valorePerEvento, giornata: giornataNum, cambiato: true };
 }
 
+// Come registraEventoGiornataInvestimento, ma per un investimento (Avvocato)
+// il cui contatore avanza di N unità in una sola giornata (il numero di
+// ammonizioni inserite nel Calcolatore Giornata), non di 1 per click, e paga
+// ogni volta che il totale cumulativo attraversa una soglia multipla di
+// ogniNEventi — anche più di una volta nella stessa giornata se n è grande
+// abbastanza da superare più soglie insieme (es. da 4 a 11 ammonizioni paga
+// due volte, per le soglie 5 e 10). Idempotente per giornata come l'altra.
+export async function registraContatoreGiornataInvestimento(id, squadra, giornata, n, valorePerEvento, ogniNEventi, etichetta, { chiave = 'default' } = {}) {
+  if (!n || n <= 0) return { skip: true, motivo: 'Nessun evento da registrare' };
+  const { data: inv, error } = await supabase.from('investimenti').select('dati, valore_accumulato').eq('id', id).single();
+  if (error) throw error;
+  const dati = inv?.dati || {};
+  const giornateProcessate = Array.isArray(dati.giornateProcessate) ? dati.giornateProcessate : [];
+  const giornataNum = Number(giornata);
+  if (giornateProcessate.includes(giornataNum)) {
+    return { skip: true, motivo: `Giornata ${giornataNum} già elaborata per questo investimento` };
+  }
+  const contatori = dati.contatori || {};
+  const vecchio = Number(contatori[chiave] || 0);
+  const nuovo = vecchio + Number(n);
+  const soglieScattate = Math.floor(nuovo / ogniNEventi) - Math.floor(vecchio / ogniNEventi);
+  const importo = parseFloat((soglieScattate * valorePerEvento).toFixed(2));
+  const tracker = Array.isArray(dati.tracker) ? dati.tracker : [];
+  tracker.push({ tipo: 'contatore_giornata', giornata: giornataNum, nota: `${etichetta}: +${n} (tot. ${nuovo})${importo > 0 ? ` → +${importo}M` : ''}`, data: new Date().toISOString() });
+  const update = { dati: { ...dati, contatori: { ...contatori, [chiave]: nuovo }, giornateProcessate: [...giornateProcessate, giornataNum], tracker } };
+  if (importo > 0) {
+    update.valore_accumulato = parseFloat((Number(inv.valore_accumulato || 0) + importo).toFixed(2));
+    const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadra).single();
+    await supabase.from('squadre').update({ bilancio: parseFloat((Number(sq?.bilancio || 0) + importo).toFixed(2)) }).eq('name', squadra);
+    await supabase.from('movimenti').insert({ squadra, descrizione: `Investimento: ${etichetta} (G${giornataNum})`, entrata: importo, data: new Date().toISOString().slice(0, 10) });
+  }
+  const { error: updErr } = await supabase.from('investimenti').update(update).eq('id', id);
+  if (updErr) throw updErr;
+  return { nuovo, importo, giornata: giornataNum, cambiato: true };
+}
+
 // Traguardo per giocatore selezionato (es. Scommessa Rendimento, Rientro in
 // Grande, Scouting Estero): toggle raggiunto/non raggiunto, con eventuale
 // importo fisso accreditato/stornato di conseguenza.
@@ -3582,6 +3630,94 @@ export async function toggleTraguardoInvestimento(id, squadra, chiave, etichetta
       delta >= 0
         ? { squadra, descrizione: `Investimento: ${etichetta}`, entrata: Math.abs(delta), data: new Date().toISOString().slice(0, 10) }
         : { squadra, descrizione: `Storno: ${etichetta}`, uscita: Math.abs(delta), data: new Date().toISOString().slice(0, 10) }
+    );
+  }
+  const { error: updErr } = await supabase.from('investimenti').update(update).eq('id', id);
+  if (updErr) throw updErr;
+}
+
+// "Avvocato": il contatore ammonizioni (dati.contatori.default) si accumula da
+// solo, giornata per giornata, senza mai pagare in automatico (vedi
+// registraContatoreGiornataInvestimento chiamata con valorePerEvento 0). Ogni
+// gruppo di 5 ammonizioni completato va riscattato manualmente una volta sola:
+// il numero di gruppi già pagati si deduce da valore_accumulato/valorePerGruppo
+// (ogni riscatto paga esattamente valorePerGruppo), così non serve un contatore
+// separato per "gruppi riscattati".
+export async function riscattaGruppoAvvocato(id, squadra, valorePerGruppo, ogniNEventi) {
+  const { data: inv, error } = await supabase.from('investimenti').select('dati, valore_accumulato').eq('id', id).single();
+  if (error) throw error;
+  const dati = inv?.dati || {};
+  const totale = Number(dati.contatori?.default || 0);
+  const gruppiCompletati = Math.floor(totale / ogniNEventi);
+  const gruppiPagati = Math.round(Number(inv.valore_accumulato || 0) / valorePerGruppo);
+  if (gruppiCompletati <= gruppiPagati) return { skip: true, motivo: 'Nessun gruppo da riscattare' };
+  const importo = valorePerGruppo;
+  const tracker = Array.isArray(dati.tracker) ? dati.tracker : [];
+  tracker.push({ tipo: 'riscatto_avvocato', nota: `Riscattato gruppo ${gruppiPagati + 1} (${ogniNEventi} ammonizioni) → +${importo}M`, data: new Date().toISOString() });
+  const nuovoAccumulato = parseFloat((Number(inv.valore_accumulato || 0) + importo).toFixed(2));
+  const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadra).single();
+  await supabase.from('squadre').update({ bilancio: parseFloat((Number(sq?.bilancio || 0) + importo).toFixed(2)) }).eq('name', squadra);
+  await supabase.from('movimenti').insert({ squadra, descrizione: `Investimento: Avvocato (gruppo ${gruppiPagati + 1})`, entrata: importo, data: new Date().toISOString().slice(0, 10) });
+  const { error: updErr } = await supabase.from('investimenti').update({ dati: { ...dati, tracker }, valore_accumulato: nuovoAccumulato }).eq('id', id);
+  if (updErr) throw updErr;
+  return { importo, gruppo: gruppiPagati + 1, cambiato: true };
+}
+
+// "Rientro in Grande": 5 box indipendenti (una per giornata dal rientro), in ognuna
+// si registra il voto preso; voto >= 6 paga valorePerGiornata per quella giornata.
+export async function registraVotoRientroInvestimento(id, squadra, indice, voto, valorePerGiornata) {
+  const { data: inv, error } = await supabase.from('investimenti').select('dati, valore_accumulato').eq('id', id).single();
+  if (error) throw error;
+  const dati = inv?.dati || {};
+  const voti = dati.voti || {};
+  const traguardi = dati.traguardi || {};
+  const chiave = `g${indice}`;
+  const votoNum = (voto === '' || voto === null || voto === undefined) ? null : Number(voto);
+  const nuovoRaggiunto = votoNum !== null && votoNum >= 6;
+  const eraRaggiunto = !!traguardi[chiave];
+  const tracker = Array.isArray(dati.tracker) ? dati.tracker : [];
+  tracker.push({ tipo: 'voto_rientro', nota: `Giornata ${indice}: voto ${votoNum ?? '—'}${nuovoRaggiunto ? ` → +${valorePerGiornata}M` : ''}`, data: new Date().toISOString() });
+  const update = { dati: { ...dati, voti: { ...voti, [chiave]: votoNum }, traguardi: { ...traguardi, [chiave]: nuovoRaggiunto }, tracker } };
+  if (nuovoRaggiunto !== eraRaggiunto) {
+    const delta = nuovoRaggiunto ? valorePerGiornata : -valorePerGiornata;
+    update.valore_accumulato = parseFloat((Number(inv.valore_accumulato || 0) + delta).toFixed(2));
+    const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadra).single();
+    await supabase.from('squadre').update({ bilancio: parseFloat((Number(sq?.bilancio || 0) + delta).toFixed(2)) }).eq('name', squadra);
+    await supabase.from('movimenti').insert(
+      delta >= 0
+        ? { squadra, descrizione: `Investimento: Rientro in Grande (G${indice})`, entrata: Math.abs(delta), data: new Date().toISOString().slice(0, 10) }
+        : { squadra, descrizione: `Storno: Rientro in Grande (G${indice})`, uscita: Math.abs(delta), data: new Date().toISOString().slice(0, 10) }
+    );
+  }
+  const { error: updErr } = await supabase.from('investimenti').update(update).eq('id', id);
+  if (updErr) throw updErr;
+}
+
+// "Re del Girone di Ritorno": 2 box (punti alla 19ª giornata, punti finali di stagione).
+// Se finali - prima >= soglia (8), paga importo (10M) una tantum a fine anno.
+export async function registraPuntiGironeRitorno(id, squadra, campo, valore, soglia, importo) {
+  const { data: inv, error } = await supabase.from('investimenti').select('dati, valore_accumulato').eq('id', id).single();
+  if (error) throw error;
+  const dati = inv?.dati || {};
+  const punti = dati.punti || {};
+  const valoreNum = (valore === '' || valore === null || valore === undefined) ? null : Number(valore);
+  const nuoviPunti = { ...punti, [campo]: valoreNum };
+  const traguardi = dati.traguardi || {};
+  const delta = (nuoviPunti.prima != null && nuoviPunti.finali != null) ? nuoviPunti.finali - nuoviPunti.prima : null;
+  const nuovoRaggiunto = delta != null && delta >= soglia;
+  const eraRaggiunto = !!traguardi.default;
+  const tracker = Array.isArray(dati.tracker) ? dati.tracker : [];
+  tracker.push({ tipo: 'punti_girone_ritorno', nota: `${campo === 'prima' ? 'Punti alla 19ª' : 'Punti finali'}: ${valoreNum ?? '—'}${nuovoRaggiunto ? ` → +${importo}M` : ''}`, data: new Date().toISOString() });
+  const update = { dati: { ...dati, punti: nuoviPunti, traguardi: { ...traguardi, default: nuovoRaggiunto }, tracker } };
+  if (nuovoRaggiunto !== eraRaggiunto) {
+    const deltaBil = nuovoRaggiunto ? importo : -importo;
+    update.valore_accumulato = parseFloat((Number(inv.valore_accumulato || 0) + deltaBil).toFixed(2));
+    const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadra).single();
+    await supabase.from('squadre').update({ bilancio: parseFloat((Number(sq?.bilancio || 0) + deltaBil).toFixed(2)) }).eq('name', squadra);
+    await supabase.from('movimenti').insert(
+      deltaBil >= 0
+        ? { squadra, descrizione: `Investimento: Re del Girone di Ritorno`, entrata: Math.abs(deltaBil), data: new Date().toISOString().slice(0, 10) }
+        : { squadra, descrizione: `Storno: Re del Girone di Ritorno`, uscita: Math.abs(deltaBil), data: new Date().toISOString().slice(0, 10) }
     );
   }
   const { error: updErr } = await supabase.from('investimenti').update(update).eq('id', id);
@@ -3678,6 +3814,33 @@ export async function applicaPremio(squadra, importoMln, tipo, premioId) {
   await supabase.from('movimenti').insert({ squadra, descrizione: `Premio ${tipo}`, entrata: importoMln, data: oggi });
   await supabase.from('premi').update({ applicato: true }).eq('id', premioId);
   return nuovoBilancio;
+}
+
+// Bonus "Branding Internazionale": se la squadra che incassa un premio finale/Coppa
+// ha questo investimento attivo, aggiunge un importo extra (tabella dedicata, distinta
+// dai premi base) e lo registra sia nello storico premi che nel tracker dell'investimento.
+const BONUS_BRANDING = {
+  finale: { 1: 20, 2: 15, 3: 12, 4: 8 },
+  coppa: { vincitore: 5, finalista: 1 },
+};
+
+export async function applicaBonusBrandingSePresente(squadra, categoria, chiave, etichettaBase, stagione) {
+  const importo = BONUS_BRANDING[categoria]?.[chiave];
+  if (!importo) return null;
+  const attivo = await _hasInvestimentoAttivo(squadra, 'Branding Internazionale', { stagione });
+  if (!attivo) return null;
+  const etichetta = `Branding Internazionale (${etichettaBase})`;
+  const rec = await insertPremio({ squadra, tipo: 'premio_branding', importo, posizione: null, stagione, data_premio: new Date().toISOString().slice(0, 10) });
+  await applicaPremio(squadra, importo, etichetta, rec.id);
+  const { data: inv } = await supabase.from('investimenti').select('id, dati, valore_accumulato')
+    .eq('squadra', squadra).eq('nome', 'Branding Internazionale').eq('attivo', true).eq('stagione', stagione).single();
+  if (inv) {
+    const dati = inv.dati || {};
+    const tracker = Array.isArray(dati.tracker) ? dati.tracker : [];
+    tracker.push({ tipo: 'bonus_premio', nota: `${etichettaBase} → +${importo}M`, data: new Date().toISOString() });
+    await supabase.from('investimenti').update({ dati: { ...dati, tracker }, valore_accumulato: parseFloat((Number(inv.valore_accumulato || 0) + importo).toFixed(2)) }).eq('id', inv.id);
+  }
+  return importo;
 }
 
 // Calcola premio 19a giornata (art. 12.1)
@@ -4187,11 +4350,11 @@ export async function applicaEntrateStadioTutte(stagione = getStagioneQuota()) {
 
   const currentStart = _stagioneStartFromLabel(stagione);
   const { data: invAll, error: invErr } = await supabase.from('investimenti')
-    .select('squadra, stagione').eq('nome', 'Ristrutturazione Stadio').eq('attivo', true);
+    .select('id, squadra, stagione, dati, valore_accumulato').eq('nome', 'Ristrutturazione Stadio').eq('attivo', true);
   if (invErr) throw invErr;
-  const potenziate = new Set((invAll || [])
+  const potenziateInv = new Map((invAll || [])
     .filter(i => _stagioneStartFromLabel(i.stagione) < currentStart)
-    .map(i => i.squadra));
+    .map(i => [i.squadra, i]));
 
   const results = [];
   for (const sq of squadre) {
@@ -4209,12 +4372,26 @@ export async function applicaEntrateStadioTutte(stagione = getStagioneQuota()) {
         continue;
       }
 
-      const entrata = potenziate.has(sq.name) ? 5.5 : 4;
+      const invStadio = potenziateInv.get(sq.name);
+      const entrata = invStadio ? 5.5 : 4;
       const nuovoBilancio = parseFloat((Number(sq.bilancio || 0) + entrata).toFixed(2));
       const { error: movErr } = await supabase.from('movimenti').insert({ squadra: sq.name, descrizione: stadioDesc, entrata, data: oggi });
       if (movErr) throw movErr;
       const { error: updErr } = await supabase.from('squadre').update({ bilancio: nuovoBilancio }).eq('name', sq.name);
       if (updErr) throw updErr;
+      // Il bonus di Ristrutturazione Stadio è la differenza sull'entrata base (1,5M/mese):
+      // va accreditata anche a valore_accumulato dell'investimento, altrimenti il
+      // "guadagno totale dagli investimenti" non riflette mai questo bonus passivo.
+      if (invStadio) {
+        const bonus = parseFloat((entrata - 4).toFixed(2));
+        const dati = invStadio.dati || {};
+        const tracker = Array.isArray(dati.tracker) ? dati.tracker : [];
+        tracker.push({ tipo: 'entrata_stadio', nota: `Entrate stadio ${meseISO}: +${bonus}M rispetto alla base`, data: new Date().toISOString() });
+        await supabase.from('investimenti').update({
+          dati: { ...dati, tracker },
+          valore_accumulato: parseFloat((Number(invStadio.valore_accumulato || 0) + bonus).toFixed(2)),
+        }).eq('id', invStadio.id);
+      }
       results.push({ squadra: sq.name, entrata, ok: true });
     } catch(e) {
       results.push({ squadra: sq.name, ok: false, error: e.message });
@@ -5302,7 +5479,7 @@ export async function applicaTop5Rialzo(playerId, squadra, stagione = getStagion
   // Lo stipendio segue la nuova quotazione ma mantiene il moltiplicatore
   // dell'anno di contratto attuale (art. 4.8), non solo la base Q/5.
   const nuovoStip = _calcolaStipCorretto(nuovaQuot, p.anni_contratto, p.anni);
-  const nuovaClausola = parseFloat((nuovaQuot * 1.75).toFixed(2));
+  const nuovaClausola = await _calcolaClausolaPerSquadra(squadra, nuovaQuot);
 
   await supabase.from('rosa').update({
     quot: nuovaQuot,
@@ -5354,7 +5531,7 @@ export async function applicaTop5Ribasso(playerId, squadra, ridurre, stagione = 
   // Lo stipendio segue la nuova quotazione ma mantiene il moltiplicatore
   // dell'anno di contratto attuale (art. 4.8), non solo la base Q/5.
   const nuovoStip = _calcolaStipCorretto(nuovaQuot, p.anni_contratto, p.anni);
-  const nuovaClausola = parseFloat((nuovaQuot * 1.75).toFixed(2));
+  const nuovaClausola = await _calcolaClausolaPerSquadra(squadra, nuovaQuot);
   const deveCedere = p.anni >= 22 && p.anni <= 30;
 
   await supabase.from('rosa').update({
@@ -5455,7 +5632,7 @@ export async function applicaAggiornamentoQuote(diff, tipo = '01/06') {
       quot: p.quotDopo,
       stip: p.stipDopo,
       stip_originale: p.stipDopo,
-      clausola: parseFloat((p.quotDopo * 1.75).toFixed(2)),
+      clausola: await _calcolaClausolaPerSquadra(p.squadra, p.quotDopo),
       quot_precedente: p.quotPrima, // salva per art. 4.5 (top-5 incrementi/decrementi)
     }).eq('id', p.id);
     aggiornati++;
@@ -7378,8 +7555,9 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
           // moltiplicatore dell'anno di contratto attuale (art. 4.8) — non va
           // azzerato a Q/5 puro se il giocatore è già al 2°/3° anno.
           const stipRosa = _calcolaStipCorretto(quot, p.anni_contratto, anni);
+          const clausolaRosa = await _calcolaClausolaPerSquadra(p.squadra, quot);
           Object.assign(updatePayload, {
-            quot, stip: stipRosa, stip_originale: stipRosa, clausola,
+            quot, stip: stipRosa, stip_originale: stipRosa, clausola: clausolaRosa,
             quot_precedente: p.quot || quot,
           });
         }
@@ -7493,7 +7671,7 @@ export async function applica01GiugnoAgosto(stagione = getStagioneQuota()) {
       // dell'anno di contratto attuale (art. 4.8) — un giocatore al 2°/3° anno
       // non deve tornare alla base solo perché la quotazione si aggiorna.
       const nuovoStip = _calcolaStipCorretto(nuovaQuot, p.anni_contratto, p.anni);
-      const nuovaClausola = parseFloat((nuovaQuot * 1.75).toFixed(2));
+      const nuovaClausola = await _calcolaClausolaPerSquadra(p.squadra, nuovaQuot);
       await supabase.from('rosa').update({
         quot: nuovaQuot,
         stip: nuovoStip,
