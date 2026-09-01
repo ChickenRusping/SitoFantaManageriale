@@ -11615,7 +11615,6 @@ function SvincolatoAzionePopup({ playerNome, mySquadra, isAdmin, onClose }) {
 }
 
 function SvincolatiPage({ profile, isAdmin }) {
-  const vivaioAperto = isVivaioAcquistiAperti();
   const location = useLocation();
   const navigate = useNavigate();
   const [search, setSearch]           = useState("");
@@ -11627,37 +11626,11 @@ function SvincolatiPage({ profile, isAdmin }) {
   const [aste, setAste]               = useState([]);
   const [loading, setLoading]         = useState(true);
   const [showCallForm, setShowCallForm] = useState(null);
-  useLockBodyScroll(!!showCallForm);
-  const [callTeam, setCallTeam]       = useState(profile?.squadra || TEAMS[0].name);
-  const [callVivaio, setCallVivaio]   = useState(false);
   const [investimenti, setInvestimenti] = useState([]);
-  const [chiamando, setChiamando]     = useState(false);
   const [, setNow]                    = useState(new Date());
   const [chiamateAttiveAperto, setChiamateAttiveAperto] = useState(true);
   const [asteAttiveAperto, setAsteAttiveAperto]         = useState(true);
   const mySquadra = profile?.squadra;
-
-  const [desideri, setDesideri] = useState([]);
-  const loadDesideri = useCallback(() => {
-    if (!mySquadra) return;
-    getListaDesideri(mySquadra).then(setDesideri);
-  }, [mySquadra]);
-  useEffect(() => {
-    if (!mySquadra) return;
-    loadDesideri();
-    const sub = subscribeListaDesideri(mySquadra, loadDesideri);
-    return () => supabase.removeChannel(sub);
-  }, [loadDesideri, mySquadra]);
-  const desiderioDi = nome => desideri.find(d => d.giocatore === nome);
-  async function toggleDesiderioSvincolato(player) {
-    if (!mySquadra) return;
-    const esistente = desiderioDi(player.nome);
-    try {
-      if (esistente) await deleteListaDesiderio(esistente.id);
-      else await insertListaDesiderio(mySquadra, player.nome, "");
-      loadDesideri();
-    } catch (err) { alert(err.message); }
-  }
 
   // Tick ogni 30s per aggiornare countdown
   useEffect(() => {
@@ -11734,23 +11707,6 @@ function SvincolatiPage({ profile, isAdmin }) {
       .filter(g => g.length > 0 && g[0]?.giocatore)
       .map(g => g[0].giocatore)
   );
-
-  async function chiamaGiocatore(player, perVivaio = false) {
-    const squadra = isAdmin ? callTeam : mySquadra;
-    if (!window.confirm(`Manifestare interesse per ${player.nome} (Q${player.quot})${perVivaio ? ' per il vivaio' : ''}?`)) return;
-
-    setChiamando(true);
-    try {
-      await eseguiChiamataSvincolato(player, squadra, perVivaio, isAdmin);
-      setShowCallForm(null);
-      setCallVivaio(false);
-      await loadAll();
-    } catch (e) {
-      alert(`❌ Chiamata NON registrata: ${e.message}`);
-    } finally {
-      setChiamando(false);
-    }
-  }
 
   // Filtri lista
   const gruppoRuoli = {
@@ -11987,82 +11943,14 @@ function SvincolatiPage({ profile, isAdmin }) {
         />
       </div>
 
-      {/* ── FORM CHIAMATA (modal overlay) ── */}
+      {/* Stesso popup usato in Lista Desideri: mostra anche statistiche e storico quotazioni */}
       {showCallForm && (
-        <div onClick={() => { setShowCallForm(null); setCallVivaio(false); }}
-          style={{ position: "fixed", inset: 0, zIndex: 9000, background: "#00000088", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-          <div onClick={e => e.stopPropagation()}
-            style={{ background: "#1a1d26", border: "1.5px solid #f59e0b44", borderRadius: 16, padding: 22, width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 14, boxShadow: "0 12px 48px #00000099" }}>
-            {/* Header */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#f59e0b" }}>📞 {showCallForm.nome}</div>
-                <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>Q{showCallForm.quot} · {showCallForm.ruolo} · {showCallForm.anni}aa</div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                {mySquadra && (
-                  <button onClick={() => toggleDesiderioSvincolato(showCallForm)}
-                    title={desiderioDi(showCallForm.nome) ? "Rimuovi dalla lista desideri" : "Aggiungi alla lista desideri"}
-                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: desiderioDi(showCallForm.nome) ? "#f59e0b" : "#555", padding: "0 4px", lineHeight: 1 }}>
-                    {desiderioDi(showCallForm.nome) ? "★" : "☆"}
-                  </button>
-                )}
-                <button onClick={() => { setShowCallForm(null); setCallVivaio(false); }}
-                  style={{ background: "none", border: "none", color: "#555", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: "0 4px" }}>✕</button>
-              </div>
-            </div>
-
-            <GraficoQuotazione key={showCallForm.nome} nome={showCallForm.nome} />
-
-            {/* Squadra */}
-            <div>
-              <div style={{ fontSize: 10, color: "#555", marginBottom: 4 }}>SQUADRA INTERESSATA</div>
-              {isAdmin
-                ? <select style={{ ...inpStyle, width: "100%" }} value={callTeam} onChange={e => setCallTeam(e.target.value)}>
-                    {TEAMS.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
-                  </select>
-                : <span style={{ fontSize: 13, color: "#f59e0b", fontWeight: 700 }}>{mySquadra}</span>}
-            </div>
-            {/* Destinazione: Rosa o Vivaio */}
-            {showCallForm.isVivaio && (
-              <div>
-                <div style={{ fontSize: 10, color: "#555", marginBottom: 6 }}>DESTINAZIONE</div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => setCallVivaio(false)}
-                    style={{ flex: 1, padding: "9px", borderRadius: 9, border: `1.5px solid ${!callVivaio ? "#f59e0b" : "#ffffff15"}`, background: !callVivaio ? "#f59e0b18" : "#ffffff08", color: !callVivaio ? "#f59e0b" : "#666", fontSize: 12, fontWeight: !callVivaio ? 700 : 400, cursor: "pointer" }}>
-                    ⚽ Rosa
-                  </button>
-                  <button onClick={() => vivaioAperto && setCallVivaio(true)} disabled={!vivaioAperto}
-                    title={vivaioAperto ? "Inserisci nel vivaio" : "Vivaio disponibile dal 01/09 al 31/05"}
-                    style={{ flex: 1, padding: "9px", borderRadius: 9, border: `1.5px solid ${callVivaio ? "#10b981" : "#ffffff15"}`, background: callVivaio ? "#10b98118" : "#ffffff08", color: callVivaio ? "#10b981" : "#666", fontSize: 12, fontWeight: callVivaio ? 700 : 400, cursor: vivaioAperto ? "pointer" : "not-allowed", opacity: vivaioAperto ? 1 : 0.45 }}>
-                    🌱 Vivaio{!vivaioAperto ? " (dal 01/09)" : ""}
-                  </button>
-                </div>
-              </div>
-            )}
-            {/* Preview scadenze */}
-            <div style={{ fontSize: 10, color: "#666", background: "#ffffff06", borderRadius: 8, padding: "10px 12px", lineHeight: 1.8 }}>
-              {(() => {
-                const scInt = calcolaScadenzaInteresse();
-                const minOfferta = parseFloat((showCallForm.quot * 0.75).toFixed(2));
-                return <>
-                  📅 Interesse aperto fino a: <b style={{ color: "#f59e0b" }}>{scInt.toLocaleString("it-IT", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</b><br/>
-                  🏷️ Se più interessati → asta busta chiusa<br/>
-                  <span style={{ color: "#10b981" }}>✓ Se solo tu → giocatore a <b>¾Q = {minOfferta}M</b> automaticamente</span>
-                </>;
-              })()}
-            </div>
-            {/* Azioni */}
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => chiamaGiocatore(showCallForm, callVivaio)} disabled={chiamando}
-                style={{ flex: 1, padding: "11px", borderRadius: 10, border: "none", background: chiamando ? "#8a670f" : "#f59e0b", color: "#000", fontSize: 13, fontWeight: 700, cursor: chiamando ? "wait" : "pointer" }}>
-                {chiamando ? "⏳ Attendere..." : "✓ Manifesta interesse"}
-              </button>
-              <button onClick={() => { setShowCallForm(null); setCallVivaio(false); }} disabled={chiamando}
-                style={{ padding: "11px 16px", borderRadius: 10, border: "none", background: "#ffffff10", color: "#888", fontSize: 13, cursor: chiamando ? "wait" : "pointer" }}>✕</button>
-            </div>
-          </div>
-        </div>
+        <SvincolatoAzionePopup
+          playerNome={showCallForm.nome}
+          mySquadra={mySquadra}
+          isAdmin={isAdmin}
+          onClose={() => setShowCallForm(null)}
+        />
       )}
 
     </div>
