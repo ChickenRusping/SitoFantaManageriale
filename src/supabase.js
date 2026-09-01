@@ -234,7 +234,7 @@ export async function getRosaLeggeraTutte() {
 // servono i dati completi di getRosa, non per sostituirla ovunque.
 export async function getRosaLight(squadra) {
   const { data, error } = await supabase.from('rosa')
-    .select('id, nome, ruolo, anni, quot, stip, clausola, anni_contratto, in_vivaio, in_prestito, cedibile_stato')
+    .select('id, nome, ruolo, anni, quot, quot_reale, media_fantavoto, stip, clausola, anni_contratto, in_vivaio, in_prestito, cedibile_stato')
     .eq('squadra', squadra).order('ruolo');
   if (error) return [];
   return data;
@@ -6164,6 +6164,19 @@ export async function getListone() {
     .order('quot', { ascending: false });
   if (error) return [];
   return data;
+}
+
+// quot_reale vive solo sulla tabella rosa (aggiornata per-squadra dopo trattative/interessi),
+// non sul listone globale: per mostrarla nel comparatore giocatori (che pesca dal listone,
+// quindi include anche gli svincolati che non hanno mai una quot_reale) serve una query separata,
+// per nome, solo per i giocatori effettivamente rostrati.
+export async function getQuotRealeByNomi(nomi) {
+  if (!nomi?.length) return {};
+  const { data, error } = await supabase.from('rosa').select('nome, quot_reale').in('nome', nomi);
+  if (error) return {};
+  const map = {};
+  for (const r of data || []) map[r.nome] = r.quot_reale;
+  return map;
 }
 
 export async function getListoneBySquadra(fantaSquadra) {
