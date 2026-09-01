@@ -3699,12 +3699,18 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
         </div>
       )}
 
-      {players.length>0&&(
-        <div style={{ marginTop:10,paddingTop:10,borderTop:"1px solid #ffffff10",display:"flex",gap:16,flexWrap:"wrap" }}>
-          <span style={{ fontSize:11,color:"#888" }}>Stipendi: <b style={{ color:"#ccc" }}>{playersRich.reduce((s,p)=>s+p._stipCorretto,0).toFixed(2)}M</b></span>
-          <span style={{ fontSize:11,color:"#888" }}>Q media: <b style={{ color:"#ccc" }}>{(players.reduce((s,p)=>s+Number(p.quot),0)/players.length).toFixed(1)}</b></span>
-        </div>
-      )}
+      {players.length>0&&(() => {
+        const quotReali = players.map(p=>Number(p.quot_reale ?? p.quot)).filter(v=>v>0);
+        const fantamedie = playersRich.map(p=>p._mfvNum).filter(v=>v>0);
+        return (
+          <div style={{ marginTop:10,paddingTop:10,borderTop:"1px solid #ffffff10",display:"flex",gap:16,flexWrap:"wrap" }}>
+            <span style={{ fontSize:11,color:"#888" }}>Stipendi: <b style={{ color:"#ccc" }}>{playersRich.reduce((s,p)=>s+p._stipCorretto,0).toFixed(2)}M</b></span>
+            <span style={{ fontSize:11,color:"#888" }}>Q media: <b style={{ color:"#ccc" }}>{(players.reduce((s,p)=>s+Number(p.quot),0)/players.length).toFixed(1)}</b></span>
+            <span style={{ fontSize:11,color:"#888" }}>Q reale media: <b style={{ color:"#ccc" }}>{quotReali.length ? (quotReali.reduce((s,v)=>s+v,0)/quotReali.length).toFixed(1) : "—"}</b></span>
+            <span style={{ fontSize:11,color:"#888" }}>Fantamedia media: <b style={{ color:"#ccc" }}>{fantamedie.length ? (fantamedie.reduce((s,v)=>s+v,0)/fantamedie.length).toFixed(2) : "—"}</b></span>
+          </div>
+        );
+      })()}
 
       {/* ── POPUP CONTESTUALE ──
           Desktop: comportamento invariato (ancorato alle coordinate del
