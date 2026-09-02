@@ -1223,7 +1223,8 @@ async function _liquidaBonusPendentiAllaRivendita(giocatoreNome, squadraCedente)
     .from('trattative_bonus')
     .select('*')
     .eq('trattativa_id', acquisto.id)
-    .eq('completato', false);
+    .eq('completato', false)
+    .is('data_completamento', null);
   if (!bonusPendenti?.length) return [];
 
   const oggi = new Date().toISOString().slice(0, 10);
@@ -1265,14 +1266,76 @@ async function _liquidaBonusPendentiAllaRivendita(giocatoreNome, squadraCedente)
   return liquidati;
 }
 
-// Svincolo e clausola rescissoria: i bonus pendenti dell'acquisto con cui
-// squadraCedente aveva preso questo giocatore decadono senza alcun pagamento
-// (a differenza della cessione a titolo definitivo, che li liquida al 50% —
-// vedi _liquidaBonusPendentiAllaRivendita). Vanno comunque rimossi esplicitamente
-// da trattative_bonus/clausole, altrimenti resterebbero "pendenti" per sempre e
-// checkECompletaBonus (che non verifica la proprietà attuale del giocatore)
-// potrebbe pagarli anche a distanza di tempo, dopo che il giocatore ha cambiato
-// squadra per una strada che avrebbe dovuto farli decadere.
+// Svincolo estero: come una rivendita, i bonus pendenti decadono ma vengono
+// liquidati al 50% forfettario — con una differenza fondamentale rispetto a
+// _liquidaBonusPendentiAllaRivendita: il 50% è "preso dalla lega" (non viene
+// mai addebitato a chi avrebbe dovuto pagarlo), quindi entrambe le squadre
+// coinvolte nell'accordo originale incassano la loro quota senza che l'altra
+// ci rimetta nulla dal proprio bilancio.
+async function _liquidaBonusPendentiSvincoloEstero(giocatoreNome, squadraCedente) {
+  const { data: acquisti } = await supabase
+    .from('trattative')
+    .select('id, da_squadra, a_squadra')
+    .ilike('giocatore', giocatoreNome)
+    .eq('da_squadra', squadraCedente)
+    .in('stato', ['completata', 'accettata', 'clausola_eseguita'])
+    .order('updated_at', { ascending: false })
+    .limit(1);
+  const acquisto = acquisti?.[0];
+  if (!acquisto) return [];
+
+  const { data: bonusPendenti } = await supabase
+    .from('trattative_bonus')
+    .select('*')
+    .eq('trattativa_id', acquisto.id)
+    .eq('completato', false)
+    .is('data_completamento', null);
+  if (!bonusPendenti?.length) return [];
+
+  const oggi = new Date().toISOString().slice(0, 10);
+  const liquidati = [];
+  for (const bonus of bonusPendenti) {
+    const importo = parseFloat((Number(bonus.valore_mln || 0) * 0.5).toFixed(2));
+    if (importo <= 0) continue;
+    // Stessa convenzione delle altre funzioni bonus: chi avrebbe incassato se
+    // il traguardo fosse stato raggiunto normalmente.
+    const squadraRiceve = bonus.direzione === 'acquirente_paga' ? acquisto.a_squadra : acquisto.da_squadra;
+
+    const { data: sq } = await supabase.from('squadre').select('bilancio').eq('name', squadraRiceve).single();
+    await supabase.from('squadre').update({ bilancio: parseFloat((Number(sq?.bilancio || 0) + importo).toFixed(2)) }).eq('name', squadraRiceve);
+
+    const descBonus = _labelBonus(bonus.tipo_bonus);
+    await supabase.from('movimenti').insert({
+      squadra: squadraRiceve, descrizione: `Liquidazione 50% bonus (svincolo estero, a carico della lega): ${giocatoreNome} — ${descBonus} ≥${bonus.soglia}`, entrata: importo, data: oggi,
+    });
+
+    await supabase.from('trattative_bonus').update({
+      completato: true,
+      data_completamento: oggi,
+    }).eq('id', bonus.id);
+
+    // Come nella rivendita: non è stato "raggiunto" per davvero, quindi va
+    // rimosso dalla pagina Clausole di entrambe le squadre coinvolte.
+    await supabase.from('clausole').delete().eq('trattativa_bonus_id', bonus.id);
+
+    liquidati.push({ bonus: bonus.id, giocatore: giocatoreNome, importo, squadraRiceve });
+  }
+  return liquidati;
+}
+
+// Svincolo (ordinario/straordinario, non estero) e clausola rescissoria: i
+// bonus pendenti dell'acquisto con cui squadraCedente aveva preso questo
+// giocatore decadono senza alcun pagamento (a differenza della cessione a
+// titolo definitivo o dello svincolo estero, che li liquidano al 50% — vedi
+// _liquidaBonusPendentiAllaRivendita / _liquidaBonusPendentiSvincoloEstero).
+// NON vengono più cancellati da trattative_bonus: devono restare visibili
+// nello storico della trattativa originale (con cui erano stati negoziati),
+// solo "chiusi" — completato resta false (non sono stati pagati) ma
+// data_completamento viene valorizzata per segnare che sono stati chiusi/decaduti
+// e per farli escludere da checkECompletaBonus (che altrimenti, non verificando
+// la proprietà attuale del giocatore, potrebbe pagarli anche a distanza di
+// tempo). Vengono invece rimossi da clausole, che traccia solo gli obblighi
+// ancora davvero pendenti nella pagina Club > Bonus.
 async function _annullaBonusPendenti(giocatoreNome, squadraCedente) {
   const { data: acquisti } = await supabase
     .from('trattative')
@@ -1289,12 +1352,14 @@ async function _annullaBonusPendenti(giocatoreNome, squadraCedente) {
     .from('trattative_bonus')
     .select('id')
     .eq('trattativa_id', acquisto.id)
-    .eq('completato', false);
+    .eq('completato', false)
+    .is('data_completamento', null);
   if (!bonusPendenti?.length) return [];
 
   const ids = bonusPendenti.map(b => b.id);
+  const oggi = new Date().toISOString().slice(0, 10);
   await supabase.from('clausole').delete().in('trattativa_bonus_id', ids);
-  await supabase.from('trattative_bonus').delete().in('id', ids);
+  await supabase.from('trattative_bonus').update({ data_completamento: oggi }).in('id', ids);
   return ids;
 }
 
@@ -2432,9 +2497,14 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
   catch (e) { console.warn('Sync listone dopo svincolo fallita:', e.message); }
 
   // Bonus pendenti dell'acquisto con cui questa squadra aveva preso il giocatore:
-  // decadono senza alcun pagamento, come confermato dalla lega.
-  try { await _annullaBonusPendenti(player.nome, squadra); }
-  catch (e) { console.warn('Annullamento bonus pendenti allo svincolo fallito:', e.message); }
+  // per uno svincolo ordinario/straordinario decadono senza alcun pagamento
+  // (come confermato dalla lega); per uno svincolo estero vengono invece
+  // liquidati al 50% a carico della lega (vedi _liquidaBonusPendentiSvincoloEstero).
+  try {
+    if (isStraordinarioEstero) await _liquidaBonusPendentiSvincoloEstero(player.nome, squadra);
+    else await _annullaBonusPendenti(player.nome, squadra);
+  }
+  catch (e) { console.warn('Gestione bonus pendenti allo svincolo fallita:', e.message); }
 
   // ── 3. Aggiorna bilancio ──────────────────────────────────────────────────
   const nuovoBilancio = parseFloat((bilancioAttuale - costoTotale).toFixed(2));
@@ -6586,7 +6656,12 @@ export async function checkECompletaBonus() {
   const { data: bonusList } = await supabase
     .from('trattative_bonus')
     .select('*, trattative(id, giocatore, da_squadra, a_squadra, stato)')
-    .eq('completato', false);
+    .eq('completato', false)
+    // Esclude i bonus già chiusi (decaduti per svincolo/clausola, o liquidati al
+    // 50% per rivendita/svincolo estero): hanno data_completamento valorizzata
+    // pur restando completato=false, per non essere più rivalutati qui — solo
+    // i bonus davvero ancora aperti hanno data_completamento null.
+    .is('data_completamento', null);
 
   if (!bonusList?.length) return risultati;
 
