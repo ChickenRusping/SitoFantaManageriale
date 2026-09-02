@@ -3300,7 +3300,10 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
   }, [loadAll, teamName]);
 
   const [derogaU21, setDerogaU21] = useState(false);
-  useEffect(() => { getEffettiInvestimenti(teamName).then(e => setDerogaU21(!!e?.derogaU21)); }, [teamName]);
+  // getSquadreConDerogaU21 (1 query) invece di getEffettiInvestimenti (4 query
+  // in parallelo): qui serve solo il flag deroga, non tutto il resto — la tab
+  // Rosa è tra le più visitate dell'app, non ha senso pagare 4 query ogni volta.
+  useEffect(() => { getSquadreConDerogaU21().then(set => setDerogaU21(set.has(teamName))); }, [teamName]);
 
   const comp = checkRosaCompliance(players, { derogaU21 });
   const roleOrder = ["Por","Dc","Dd","Ds","B","E","M","C","T","W","A","Pc"];
@@ -11970,11 +11973,16 @@ function SvincolatiPage({ profile, isAdmin }) {
     return () => { supabase.removeChannel(sub1); supabase.removeChannel(sub2); };
   }, [loadAll]);
 
-  // Check scadenze ogni minuto
+  // Check scadenze: rete di sicurezza, non la fonte primaria
   useEffect(() => {
-    // checkScadenzeAste: controlla ogni 3 minuti invece di 1 (le aste hanno
-    // scadenza prevedibile — il watcher delle deadline invaliderà prima se serve)
-    const t = setInterval(() => checkScadenzeAste().then(r => { if (r.length) loadAll(); }), 3 * 60 * 1000);
+    // checkScadenzeAste duplica lo stesso lavoro del cron server-side
+    // (supabase/functions/cron-check-aste, schedulato ogni 2-3 minuti via
+    // pg_cron): quel cron è la fonte di verità, questo polling client serve
+    // solo a coprire l'eventualità che il cron smetta di girare. Intervallo
+    // allungato a 15 minuti (da 3) per non raddoppiare inutilmente il carico
+    // di query su ogni tab aperta — il lock (elaborazione_lock) resta comunque
+    // a evitare doppie assegnazioni se i due dovessero sovrapporsi.
+    const t = setInterval(() => checkScadenzeAste().then(r => { if (r.length) loadAll(); }), 15 * 60 * 1000);
     return () => clearInterval(t);
   }, []);
 
