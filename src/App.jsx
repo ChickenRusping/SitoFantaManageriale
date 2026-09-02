@@ -17118,6 +17118,15 @@ function AppInner() {
     return () => { clearTimeout(timeout); subscription.unsubscribe(); };
   }, []);
 
+  // session è un NUOVO oggetto ad ogni onAuthStateChange, compreso il refresh
+  // automatico del token (silenzioso, periodico, stesso utente): usarlo intero
+  // come dipendenza fa smontare e rimontare ad ogni refresh le subscription
+  // realtime qui sotto, con relative query di setup (insert in
+  // realtime.subscription, scan di pg_publication_tables, controllo dello slot
+  // di replica) — inutili dato che l'utente non è cambiato. sessionUserId
+  // cambia solo su login/logout/cambio utente reale.
+  const sessionUserId = session?.user?.id;
+
   // ── Controlli automatici sicuri ────────────────────────────────────────────
   // Non applichiamo più stipendi/stadio dal browser: su login multipli o più schede aperte
   // il client può eseguire la stessa operazione più volte prima che il DB sia aggiornato.
@@ -17131,7 +17140,8 @@ function AppInner() {
         getSquadre().then(data => { if (data) setSquadreDB(data); });
       }
     }).catch(e => console.warn('⚠️ Errore sync quote:', e.message));
-  }, [session]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionUserId]);
 
   // ── Squadre realtime ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -17139,7 +17149,8 @@ function AppInner() {
     getSquadre().then(data => { if (data) setSquadreDB(data); });
     const sub = subscribeSquadre(() => getSquadre().then(data => { if (data) setSquadreDB(data); }));
     return () => supabase.removeChannel(sub);
-  }, [session]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionUserId]);
 
   // ── Mercato override ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -17149,7 +17160,8 @@ function AppInner() {
     getStagioneLabel().then(v => { setStagioneLabelState(v); }).catch(() => {});
     getModalitaSvincolati().then(v => { _modalitaSvincolati = v; }).catch(() => { _modalitaSvincolati = 'normale'; });
     getModalitaTassazione().then(v => { _modalitaTassazione = v; }).catch(() => { _modalitaTassazione = 'auto'; });
-  }, [session]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionUserId]);
 
   // ── Offerte in attesa: solo realtime, nessun polling ─────────────────────
   const offerteRef = useRef([]);
@@ -17168,7 +17180,8 @@ function AppInner() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'trattative' }, load)
       .subscribe();
     return () => supabase.removeChannel(sub);
-  }, [session, profile?.squadra]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionUserId, profile?.squadra]);
 
   // ── FPF: aggiorna solo su eventi reali (movimenti DB) ────────────────────
   const fpfRef = useRef({});
@@ -17185,7 +17198,8 @@ function AppInner() {
     // Nessun interval: si aggiorna solo quando cambiano i movimenti nel DB
     const sub = subscribeMovimentiAll(load);
     return () => supabase.removeChannel(sub);
-  }, [session]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionUserId]);
 
   // ── Deadline watcher: aggiorna stato mercato e invalida cache ─────────────
   const statoMercato = useDeadlineWatcher(useCallback((def) => {
@@ -17216,7 +17230,8 @@ function AppInner() {
     loadCI();
     const sub = supabase.channel('ci-all').on('postgres_changes', { event: '*', schema: 'public', table: 'club_identity' }, loadCI).subscribe();
     return () => supabase.removeChannel(sub);
-  }, [session]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionUserId]);
 
   // ── Screen resize ─────────────────────────────────────────────────────────
   useEffect(() => {
