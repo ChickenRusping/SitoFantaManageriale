@@ -5942,20 +5942,27 @@ function _durataAstaMinuti(nInteressati) {
 }
 
 // ── Calcola l'offset in minuti dallo slot base del venerdì per una nuova asta ──
-// Prima asta del venerdì → offset 0 (slot base, vedi calcolaScadenzaOfferteAttesa);
-// ogni asta successiva slitta della SOMMA delle durate (15 o 30 min, vedi
-// _durataAstaMinuti) di tutte le aste che la precedono in coda — non più un
-// fisso "slot*30", perché un'asta con un solo interessato libera il posto dopo
-// solo 15 minuti invece di 30.
+// Le aste del venerdì corrono in sequenza, una dopo l'altra, a partire dallo
+// slot base (vedi calcolaScadenzaOfferteAttesa): la prima è sempre allo slot
+// base, e ognuna delle successive inizia esattamente dove finisce quella
+// prima di lei nella coda e dura 15 o 30 minuti (vedi _durataAstaMinuti) IN
+// BASE AI PROPRI interessati — non a quelli di chi la precede. Esempio con 3
+// aste, la prima con più interessati, la seconda con un solo interessato:
+//   Asta1 → slot base (es. 11:00)               [la sua durata non conta:
+//                                                 nulla la precede]
+//   Asta2 → base + durata(Asta2) = +15 min       (Asta2 ha 1 solo interessato)
+//   Asta3 → base + durata(Asta2) + durata(Asta3) (dipende SOLO da Asta3 stessa)
+// Quindi l'offset di un'asta = somma delle durate di TUTTE le aste in coda
+// prima di lei, ESCLUSA la primissima della giornata (che parte sempre allo
+// slot base, qualunque sia la sua durata) ma INCLUSA lei stessa.
 // L'ordine è determinato dall'ORDINE DI CHIAMATA (scadenza_interesse della
 // chiamata principale), non dall'ordine in cui le aste vengono create: contare
 // semplicemente le aste già create per quel venerdì è fragile, perché se
 // un admin crea le aste manualmente in un ordine diverso da quello delle
 // chiamate (o se automatico e manuale si mescolano), l'ordine non rispecchia
-// più chi ha chiamato per primo. Qui invece si guarda quali chiamate
-// principali di quello stesso venerdì hanno una scadenza_interesse precedente
-// alla chiamata corrente: è deterministico e indipendente da quando/come
-// viene creata l'asta.
+// più chi ha chiamato per primo. Qui invece si ordinano tutte le chiamate
+// principali di quello stesso venerdì per data di chiamata: deterministico e
+// indipendente da quando/come viene creata l'asta.
 export async function calcolaSlotVenerdì(venerdìUTC, primaria) {
   // Tutte le chiamate la cui scadenza_interesse cade nel giorno (giovedì) che
   // porta a QUESTO venerdì di aste: stessa finestra di 24h usata per calcolare
@@ -5973,43 +5980,48 @@ export async function calcolaSlotVenerdì(venerdìUTC, primaria) {
     .gte('scadenza_interesse', giornoChiamate.toISOString())
     .lte('scadenza_interesse', fineGiornoChiamate.toISOString());
 
-  // "Precedenti" = quante chiamate di questo stesso venerdì sono state fatte
-  // prima della chiamata corrente. scadenza_interesse è quasi sempre IDENTICA
-  // per tutte le chiamate della settimana (è fissa al giovedì 20:00 per tutti,
-  // art. 6.4): usarla da sola come chiave d'ordinamento metterebbe tutte le
-  // chiamate pari-merito allo stesso posto. created_at (l'istante reale della
-  // chiamata) rompe il pareggio e dà a ognuna il proprio posto progressivo.
-  // IMPORTANTE: confrontare come numeri (getTime()), mai come stringhe — il
-  // formato timestamp restituito da Postgres ("2026-08-20 20:00:00+02") e
-  // quello normalizzato da .toISOString() ("2026-08-20T18:00:00.000Z")
-  // rappresentano lo stesso istante ma sono stringhe diverse: un confronto
-  // testuale tra i due format non riflette l'ordine cronologico reale, anche
-  // quando gli istanti sono identici o addirittura per la stessa identica riga.
-  const targetScad = new Date(primaria.scadenza_interesse).getTime();
-  const targetCreated = new Date(primaria.created_at).getTime();
-  const vieneNPrima = c => {
-    const cScad = new Date(c.scadenza_interesse).getTime();
-    if (cScad !== targetScad) return cScad < targetScad;
-    const cCreated = new Date(c.created_at).getTime();
-    if (cCreated !== targetCreated) return cCreated < targetCreated;
-    return String(c.id) < String(primaria.id);
-  };
-  const precedenti = (chiamateStessoVenerdi || []).filter(vieneNPrima);
-  if (!precedenti.length) return 0;
+  // Ordine di coda per l'intera giornata (comprende anche primaria, che
+  // rientra nella stessa finestra di 24h). scadenza_interesse è quasi sempre
+  // IDENTICA per tutte le chiamate della settimana (è fissa al giovedì 20:00
+  // per tutti, art. 6.4): usarla da sola come chiave d'ordinamento metterebbe
+  // tutte le chiamate pari-merito allo stesso posto. created_at (l'istante
+  // reale della chiamata) rompe il pareggio e dà a ognuna il proprio posto
+  // progressivo. IMPORTANTE: confrontare come numeri (getTime()), mai come
+  // stringhe — il formato timestamp restituito da Postgres
+  // ("2026-08-20 20:00:00+02") e quello normalizzato da .toISOString()
+  // ("2026-08-20T18:00:00.000Z") rappresentano lo stesso istante ma sono
+  // stringhe diverse: un confronto testuale tra i due format non riflette
+  // l'ordine cronologico reale, anche quando gli istanti sono identici o
+  // addirittura per la stessa identica riga.
+  const tutte = [...(chiamateStessoVenerdi || [])];
+  if (!tutte.some(c => String(c.id) === String(primaria.id))) tutte.push(primaria);
+  tutte.sort((a, b) => {
+    const aScad = new Date(a.scadenza_interesse).getTime(), bScad = new Date(b.scadenza_interesse).getTime();
+    if (aScad !== bScad) return aScad - bScad;
+    const aCreated = new Date(a.created_at).getTime(), bCreated = new Date(b.created_at).getTime();
+    if (aCreated !== bCreated) return aCreated - bCreated;
+    return String(a.id) < String(b.id) ? -1 : 1;
+  });
+  const idx = tutte.findIndex(c => String(c.id) === String(primaria.id));
+  if (idx <= 0) return 0; // prima della coda: sempre allo slot base
 
-  // Numero di interessati per ciascun giocatore in coda prima del target:
-  // determina se la SUA asta occupa 15 o 30 minuti nella griglia. Una sola
-  // query in batch invece di una per giocatore.
-  const giocatoriPrecedenti = [...new Set(precedenti.map(c => c.giocatore))];
+  // Tutte le aste dalla SECONDA (idx 1) fino al target incluso (idx compreso):
+  // la primissima della coda non contribuisce mai, la sua durata non conta.
+  const daContare = tutte.slice(1, idx + 1);
+
+  // Numero di interessati per ciascun giocatore coinvolto: determina se la SUA
+  // asta occupa 15 o 30 minuti nella griglia. Una sola query in batch invece
+  // di una per giocatore.
+  const giocatoriDaContare = [...new Set(daContare.map(c => c.giocatore))];
   const { data: interessi } = await supabase
     .from('chiamate')
     .select('giocatore')
-    .in('giocatore', giocatoriPrecedenti)
+    .in('giocatore', giocatoriDaContare)
     .in('stato', ['aperta', 'in_asta']);
   const conteggio = {};
   for (const r of interessi || []) conteggio[r.giocatore] = (conteggio[r.giocatore] || 0) + 1;
 
-  return precedenti.reduce((somma, c) => somma + _durataAstaMinuti(conteggio[c.giocatore] || 1), 0);
+  return daContare.reduce((somma, c) => somma + _durataAstaMinuti(conteggio[c.giocatore] || 1), 0);
 }
 
 // ── Crea asta da chiamate esistenti ──────────────────────────────────────────
