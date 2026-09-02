@@ -6506,19 +6506,26 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
             const notes = notePerGiocatore[giocatore] || [];
             const riscatti = riscattoPerGiocatore[giocatore] || [];
             const aperto = bonusGiocatoreAperto === giocatore;
-            const tuttiCompletati = items.length>0 && items.every(({bonus,valoreAttuale})=>bonus.completato||(valoreAttuale??0)>=Number(bonus.soglia));
+            // Un bonus "decaduto" (svincolo/clausola, o liquidato al 50% per
+            // rivendita/svincolo estero) ha completato=false ma data_completamento
+            // valorizzata: è chiuso, non più in corso, ma non è stato "raggiunto"
+            // per davvero — va distinto sia dai completati che dai pendenti.
+            const isDecaduto = bonus => !bonus.completato && !!bonus.data_completamento;
+            const isPendente = ({bonus}) => !bonus.completato && !isDecaduto(bonus);
+            const tuttiRisolti = items.length>0 && items.every(item=>!isPendente(item));
             const nCompletati = items.filter(({bonus,valoreAttuale})=>bonus.completato||(valoreAttuale??0)>=Number(bonus.soglia)).length;
+            const nDecaduti = items.filter(({bonus})=>isDecaduto(bonus)).length;
             const etichette = [
-              items.length>0 ? `${items.length} bonus${nCompletati>0?` · ${nCompletati} completat${nCompletati===1?"o":"i"}`:""}` : null,
+              items.length>0 ? `${items.length} bonus${nCompletati>0?` · ${nCompletati} completat${nCompletati===1?"o":"i"}`:""}${nDecaduti>0?` · ${nDecaduti} decadut${nDecaduti===1?"o":"i"}`:""}` : null,
               notes.length>0 ? `${notes.length} nota${notes.length===1?"":"e"}` : null,
               riscatti.length>0 ? `${riscatti.length} riscatto${riscatti.length===1?"":"i"}` : null,
             ].filter(Boolean).join(" · ");
             return (
-              <div key={giocatore} style={{ background:"#ffffff08",border:`1.5px solid ${tuttiCompletati?"#10b98130":"#ffffff12"}`,borderRadius:12,overflow:"hidden" }}>
+              <div key={giocatore} style={{ background:"#ffffff08",border:`1.5px solid ${tuttiRisolti?"#ffffff20":"#ffffff12"}`,borderRadius:12,overflow:"hidden" }}>
                 <div onClick={()=>setBonusGiocatoreAperto(v=>v===giocatore?null:giocatore)}
                   style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",cursor:"pointer" }}>
-                  <div style={{ fontSize:13,fontWeight:700,color:tuttiCompletati?"#10b981":"#e0e0e0" }}>
-                    {tuttiCompletati&&"✅ "}{giocatore}
+                  <div style={{ fontSize:13,fontWeight:700,color:nCompletati>0&&tuttiRisolti?"#10b981":"#e0e0e0" }}>
+                    {nCompletati>0&&tuttiRisolti&&"✅ "}{giocatore}
                     <span style={{ fontSize:10,color:"#555",fontWeight:400,marginLeft:6 }}>{etichette}</span>
                   </div>
                   <span style={{ fontSize:11,color:"#666" }}>{aperto?"▲":"▼"}</span>
@@ -6550,24 +6557,25 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                     {items.map(({bonus,trattativa,valoreAttuale})=>{
                       const soglia=Number(bonus.soglia),val=valoreAttuale??0;
                       const pct=soglia>0?Math.min(100,Math.round((val/soglia)*100)):0;
-                      const completato=bonus.completato||val>=soglia;
+                      const decaduto=isDecaduto(bonus);
+                      const completato=!decaduto&&(bonus.completato||val>=soglia);
                       // Convenzione trattative: da_squadra = acquirente, a_squadra = cedente.
                       const ioPago =
                         (bonus.direzione === 'acquirente_paga' && trattativa.da_squadra === team.name) ||
                         (bonus.direzione === 'cedente_paga' && trattativa.a_squadra === team.name);
                       return (
-                        <div key={bonus.id} style={{ background:completato?"#10b98110":"#ffffff06",border:`1.5px solid ${completato?"#10b98130":"#ffffff12"}`,borderRadius:10,padding:"10px 12px" }}>
+                        <div key={bonus.id} style={{ background:decaduto?"#ffffff04":completato?"#10b98110":"#ffffff06",border:`1.5px solid ${decaduto?"#ffffff10":completato?"#10b98130":"#ffffff12"}`,borderRadius:10,padding:"10px 12px",opacity:decaduto?0.6:1 }}>
                           <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8,gap:8,flexWrap:"wrap" }}>
                             <div>
-                              <div style={{ fontSize:11,color:"#888" }}>{completato&&"✅ "}{getLabelBonus(bonus.tipo_bonus)} ≥ {soglia} · {ioPago?"⬆️ Tu paghi":"⬇️ Tu ricevi"}</div>
-                              <div style={{ fontSize:9,color:"#555",marginTop:2 }}>({trattativa.a_squadra} → {trattativa.da_squadra})</div>
+                              <div style={{ fontSize:11,color:"#888" }}>{completato&&"✅ "}{decaduto&&"❌ "}{getLabelBonus(bonus.tipo_bonus)} ≥ {soglia} · {ioPago?"⬆️ Tu paghi":"⬇️ Tu ricevi"}</div>
+                              <div style={{ fontSize:9,color:"#555",marginTop:2 }}>({trattativa.a_squadra} → {trattativa.da_squadra}){decaduto?" · decaduto (giocatore ceduto/svincolato)":""}</div>
                             </div>
                             <div style={{ textAlign:"right",flexShrink:0 }}>
-                              <div style={{ fontSize:16,fontWeight:900,color:ioPago?"#ef4444":"#10b981",fontFamily:"'Bebas Neue',sans-serif" }}>{ioPago?"-":"+"}{Number(bonus.valore_mln).toFixed(1)}M</div>
-                              {valoreAttuale!==null&&<div style={{ fontSize:10,color:"#555" }}>{val}/{soglia}</div>}
+                              <div style={{ fontSize:16,fontWeight:900,color:decaduto?"#666":ioPago?"#ef4444":"#10b981",fontFamily:"'Bebas Neue',sans-serif",textDecoration:decaduto?"line-through":"none" }}>{ioPago?"-":"+"}{Number(bonus.valore_mln).toFixed(1)}M</div>
+                              {valoreAttuale!==null&&!decaduto&&<div style={{ fontSize:10,color:"#555" }}>{val}/{soglia}</div>}
                             </div>
                           </div>
-                          {valoreAttuale!==null&&!completato&&(
+                          {valoreAttuale!==null&&!completato&&!decaduto&&(
                             <div>
                               <div style={{ display:"flex",justifyContent:"space-between",marginBottom:3 }}>
                                 <span style={{ fontSize:9,color:"#555" }}>Progressione</span>
@@ -10549,12 +10557,15 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
           {bonusRows.length > 0 ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 10 }}>
               <div style={{ fontSize: 9, color: "#666", fontWeight: 800, letterSpacing: "0.08em" }}>DETTAGLIO BONUS</div>
-              {bonusRows.map((b, idx) => (
-                <div key={b.id || idx} style={{ display: "flex", justifyContent: "space-between", gap: 8, background: "#ffffff05", borderRadius: 7, padding: "6px 8px", fontSize: 10, color: "#aaa" }}>
-                  <span>🎯 {getLabelBonus(b.tipo_bonus)} ≥ {b.soglia}{b.completato ? " · ✅ completato" : ""}</span>
-                  <span style={{ color: "#f59e0b", fontWeight: 800 }}>+{formatMln(b.valore_mln)} · {b.direzione === 'acquirente_paga' ? "paga l'acquirente" : 'paga il cedente'}</span>
-                </div>
-              ))}
+              {bonusRows.map((b, idx) => {
+                const decaduto = !b.completato && !!b.data_completamento;
+                return (
+                  <div key={b.id || idx} style={{ display: "flex", justifyContent: "space-between", gap: 8, background: "#ffffff05", borderRadius: 7, padding: "6px 8px", fontSize: 10, color: decaduto ? "#666" : "#aaa", opacity: decaduto ? 0.7 : 1 }}>
+                    <span>🎯 {getLabelBonus(b.tipo_bonus)} ≥ {b.soglia}{b.completato ? " · ✅ completato" : decaduto ? " · ❌ decaduto" : ""}</span>
+                    <span style={{ color: decaduto ? "#666" : "#f59e0b", fontWeight: 800, textDecoration: decaduto ? "line-through" : "none" }}>+{formatMln(b.valore_mln)} · {b.direzione === 'acquirente_paga' ? "paga l'acquirente" : 'paga il cedente'}</span>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div style={{ fontSize: 10, color: "#555", marginBottom: 10 }}>Nessun bonus collegato a questa offerta.</div>
