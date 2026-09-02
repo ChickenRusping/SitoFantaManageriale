@@ -3499,7 +3499,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
   async function handleSvincolaVivaio(p) {
     if(!window.confirm(`Svincolare ${p.nome} dal vivaio? (gratuito)`))return;
     setSaving(true);
-    try{await svincolaVivaio(p.id,teamName);await loadAll();}
+    try{await svincolaVivaio(p.id,teamName);await loadAll();setPopup(null);}
     catch(e){alert(e.message);}finally{setSaving(false);}
   }
 
@@ -3877,6 +3877,23 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                 </>
               )}
             </div>
+          ) : popup.mode==='own' && popup.player.in_vivaio ? (
+            // Giocatore del vivaio: niente pannello di svincolo a pagamento
+            // (tipo/estero/preview/costi) — non si applica (art. 3.4.2, svincolo
+            // sempre gratuito) — solo promozione in rosa o svincolo gratuito.
+            <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+              <div style={{ background:"#10b98112",border:"1px solid #10b98130",borderRadius:9,padding:"9px 12px",fontSize:11,color:"#6ee7b7",lineHeight:1.5 }}>
+                🌱 Giocatore del vivaio · svincolo sempre gratuito (nessun costo né guadagno, art. 3.4.2) · acquisti/cessioni possibili tutto l'anno.
+              </div>
+              <button onClick={()=>handlePromuoviVivaio(popup.player)} disabled={saving}
+                style={{ padding:"9px",borderRadius:9,border:"none",background:saving?"#0d6b4c":"#10b98122",color:"#10b981",fontSize:12,fontWeight:700,cursor:saving?"wait":"pointer" }}>
+                {saving ? "⏳ Attendere..." : "↑ Promuovi in Rosa"}
+              </button>
+              <button onClick={()=>handleSvincolaVivaio(popup.player)} disabled={saving}
+                style={{ padding:"9px",borderRadius:9,border:"1px solid #ffffff20",background:"transparent",color:"#aaa",fontSize:12,fontWeight:700,cursor:saving?"wait":"pointer" }}>
+                {saving ? "⏳ Attendere..." : "✂️ Svincola dal vivaio (gratuito)"}
+              </button>
+            </div>
           ) : popup.mode==='own'?(
             <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
               {/* Contatori */}
@@ -3931,18 +3948,10 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                   </button>
                 </div>
               )}
-              {/* ── Vivaio ── */}
+              {/* ── Vivaio (solo ROSA → VIVAIO: il caso VIVAIO → ROSA è gestito
+                  dal ramo dedicato in cima, per popup.player.in_vivaio) ── */}
               {canEdit && (() => {
                 const p = popup.player;
-                if (p.in_vivaio) return (
-                  <div style={{ borderTop:"1px solid #ffffff10",paddingTop:10 }}>
-                    <div style={{ fontSize:9,color:"#10b981",marginBottom:5 }}>VIVAIO → ROSA</div>
-                    <button onClick={()=>handlePromuoviVivaio(p)} disabled={saving}
-                      style={{ width:"100%",padding:"8px",borderRadius:8,border:"none",background:saving?"#0d6b4c":"#10b98122",color:"#10b981",fontSize:12,fontWeight:700,cursor:saving?"wait":"pointer" }}>
-                      {saving ? "⏳ Attendere..." : "↑ Promuovi in Rosa"}
-                    </button>
-                  </div>
-                );
                 const eligibile = p.anni > 0 && p.anni <= 23 && Number(p.quot||0) <= 3 && (p.partite||0) === 0 && vivaio.length < maxVivaio;
                 if (!eligibile) return null;
                 return (
@@ -4024,7 +4033,8 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
           :vivaio.map(p=>{
             const rc=getRoleColor(p.ruolo), na=needsDecisioneVivaio(p);
             return (
-              <div key={p.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:10,background:na?"#ef444410":"#ffffff08",border:`1px solid ${na?"#ef444430":"#ffffff10"}`,marginBottom:6,flexWrap:"wrap" }}>
+              <div key={p.id} onClick={canClickPlayer?(e)=>openPopup(e,p,isOwn?'own':'other'):undefined}
+                style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:10,background:na?"#ef444410":"#ffffff08",border:`1px solid ${na?"#ef444430":"#ffffff10"}`,marginBottom:6,flexWrap:"wrap",cursor:canClickPlayer?"pointer":"default" }}>
                 <span style={{ background:rc.bg,color:rc.text,border:`1px solid ${rc.border}`,borderRadius:5,padding:"2px 5px",fontSize:9,fontWeight:700 }}>{p.ruolo}</span>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:12,fontWeight:700,color:na?"#fca5a5":"#e0e0e0" }}>{p.nome}</div>
@@ -4044,7 +4054,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                   })()}
                 </div>
                 {canEdit&&(
-                  <div style={{ display:"flex",gap:5 }}>
+                  <div style={{ display:"flex",gap:5 }} onClick={e=>e.stopPropagation()}>
                     <button onClick={()=>handlePromuoviVivaio(p)} disabled={saving} style={{ padding:"4px 10px",borderRadius:6,border:"none",background:"#10b98122",color:"#10b981",fontSize:10,fontWeight:700,cursor:"pointer" }}>↑ Promuovi</button>
                     <button onClick={()=>handleSvincolaVivaio(p)} disabled={saving} style={{ padding:"4px 10px",borderRadius:6,border:"none",background:"#ffffff10",color:"#888",fontSize:10,cursor:saving?"wait":"pointer" }}>{saving?"⏳...":"Svincola"}</button>
                   </div>
