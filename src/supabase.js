@@ -3394,6 +3394,25 @@ async function _calcolaClausolaPerSquadra(squadra, quot, date = new Date()) {
   const moltiplicatore = segreta ? 2.0 : 1.75;
   return parseFloat((Number(quot || 0) * moltiplicatore).toFixed(2));
 }
+
+// Tutte le squadre con Clausola Segreta attiva e ancora in finestra (fino al
+// 01/06), in una sola query — da usare al posto di _calcolaClausolaPerSquadra
+// dentro un ciclo su molti giocatori (import listone, aggiornamento quote di
+// massa): interrogare il DB una volta per squadra invece che una volta per
+// OGNI giocatore evita un N+1 che pesa inutilmente sul Disk IO quando il
+// ciclo tocca centinaia di righe.
+export async function getSquadreConClausolaSegreta(stagione = getStagioneQuota(new Date()), date = new Date()) {
+  const { data } = await supabase.from('investimenti')
+    .select('squadra').eq('nome', 'Clausola Segreta').eq('attivo', true).eq('stagione', stagione);
+  const start = stagioneStartYear(date);
+  const fine = new Date(start + 1, 5, 1, 0, 0, 0, 0);
+  if (date >= fine) return new Set();
+  return new Set((data || []).map(r => r.squadra));
+}
+function _calcolaClausolaConSet(squadra, quot, squadreConClausolaSegreta) {
+  const moltiplicatore = squadreConClausolaSegreta.has(squadra) ? 2.0 : 1.75;
+  return parseFloat((Number(quot || 0) * moltiplicatore).toFixed(2));
+}
 export async function getEffettiInvestimenti(squadra, stagione = getStagioneQuota(new Date())) {
   const date = new Date();
   const [vivaioLimit, scBonusInvestimenti, derogaU21, clausolaSegreta] = await Promise.all([
@@ -5693,6 +5712,9 @@ export async function calcolaAnteprimaAggiornamentoQuote(rows) {
 export async function applicaAggiornamentoQuote(diff, tipo = '01/06') {
   // Aggiorna ogni giocatore in batch
   const oggi = new Date().toISOString().slice(0, 10);
+  // Una sola query per tutte le squadre con Clausola Segreta, non una per
+  // ogni giocatore del ciclo sotto (vedi getSquadreConClausolaSegreta).
+  const squadreConClausolaSegreta = await getSquadreConClausolaSegreta();
   let aggiornati = 0;
   for (const p of diff) {
     const isU21 = p.anni > 0 && p.anni <= 21;
@@ -5702,7 +5724,7 @@ export async function applicaAggiornamentoQuote(diff, tipo = '01/06') {
       quot: p.quotDopo,
       stip: p.stipDopo,
       stip_originale: p.stipDopo,
-      clausola: await _calcolaClausolaPerSquadra(p.squadra, p.quotDopo),
+      clausola: _calcolaClausolaConSet(p.squadra, p.quotDopo, squadreConClausolaSegreta),
       quot_precedente: p.quotPrima, // salva per art. 4.5 (top-5 incrementi/decrementi)
     }).eq('id', p.id);
     aggiornati++;
@@ -7629,6 +7651,10 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
   const validRows = [...validRowsMap.values()];
   const nomiExcel = new Set(validRows.map(r => normPlayerName(r['Nome'])));
 
+  // Una sola query per tutte le squadre con Clausola Segreta attiva, non una
+  // per ogni giocatore aggiornato nel ciclo sotto (vedi getSquadreConClausolaSegreta).
+  const squadreConClausolaSegreta = await getSquadreConClausolaSegreta();
+
   for (let i = 0; i < validRows.length; i += BATCH) {
     await Promise.all(validRows.slice(i, i + BATCH).map(async r => {
       const nome = (r['Nome'] || '').trim();
@@ -7671,7 +7697,7 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
           // moltiplicatore dell'anno di contratto attuale (art. 4.8) — non va
           // azzerato a Q/5 puro se il giocatore è già al 2°/3° anno.
           const stipRosa = _calcolaStipCorretto(quot, p.anni_contratto, anni);
-          const clausolaRosa = await _calcolaClausolaPerSquadra(p.squadra, quot);
+          const clausolaRosa = _calcolaClausolaConSet(p.squadra, quot, squadreConClausolaSegreta);
           Object.assign(updatePayload, {
             quot, stip: stipRosa, stip_originale: stipRosa, clausola: clausolaRosa,
             quot_precedente: p.quot || quot,
@@ -7779,6 +7805,9 @@ export async function applica01GiugnoAgosto(stagione = getStagioneQuota()) {
   let aggiornati = 0;
   const BATCH = 50;
   const players = (data || []).filter(p => Number(p.quot_reale) > 0);
+  // Una sola query per tutte le squadre con Clausola Segreta, non una per
+  // ogni giocatore del ciclo sotto (vedi getSquadreConClausolaSegreta).
+  const squadreConClausolaSegreta = await getSquadreConClausolaSegreta(stagione);
 
   for (let i = 0; i < players.length; i += BATCH) {
     await Promise.all(players.slice(i, i + BATCH).map(async p => {
@@ -7787,7 +7816,7 @@ export async function applica01GiugnoAgosto(stagione = getStagioneQuota()) {
       // dell'anno di contratto attuale (art. 4.8) — un giocatore al 2°/3° anno
       // non deve tornare alla base solo perché la quotazione si aggiorna.
       const nuovoStip = _calcolaStipCorretto(nuovaQuot, p.anni_contratto, p.anni);
-      const nuovaClausola = await _calcolaClausolaPerSquadra(p.squadra, nuovaQuot);
+      const nuovaClausola = _calcolaClausolaConSet(p.squadra, nuovaQuot, squadreConClausolaSegreta);
       await supabase.from('rosa').update({
         quot: nuovaQuot,
         stip: nuovoStip,
