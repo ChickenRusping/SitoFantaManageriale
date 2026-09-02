@@ -491,13 +491,13 @@ export function _oraItaliaInUTC(dataRef, oraItalia) {
   return oraItalia - offset;
 }
 
-// Sempre: venerdì della stessa settimana, slot base 13:00 Italia (ora locale
+// Sempre: venerdì della stessa settimana, slot base 11:00 Italia (ora locale
 // vera, non un offset UTC fisso — vedi _oraItaliaInUTC)
 export function calcolaScadenzaOfferte(scadenzaInteresse) {
   const d = new Date(scadenzaInteresse); // giovedì 20:00 UTC
   const ven = new Date(d);
   ven.setUTCDate(d.getUTCDate() + 1); // giovedì → venerdì
-  ven.setUTCHours(_oraItaliaInUTC(ven, 13), 0, 0, 0); // 13:00 Italia (slot base)
+  ven.setUTCHours(_oraItaliaInUTC(ven, 11), 0, 0, 0); // 11:00 Italia (slot base)
   return ven;
 }
 
@@ -5933,14 +5933,26 @@ export function calcolaScadenzaAsta(dataPrimaChiamata = new Date()) {
   return calcolaScadenzaOfferte(scInt);
 }
 
-// ── Calcola slot scalare venerdì per una nuova asta ──────────────────────────
-// Prima asta del venerdì → 13:00 UTC (14:00 Italia); ogni asta successiva +30min.
-// Lo slot è determinato dall'ORDINE DI CHIAMATA (scadenza_interesse della
+// Durata di un'asta nella griglia del venerdì: 30 minuti normalmente, ridotta
+// a 15 se il giocatore ha un solo interessato (nessuna vera gara tra offerte,
+// il prezzo resta comunque fissato a ¾Q — vedi rivelaECompletaAsta), per non
+// far attendere inutilmente chi è più indietro in coda.
+function _durataAstaMinuti(nInteressati) {
+  return nInteressati <= 1 ? 15 : 30;
+}
+
+// ── Calcola l'offset in minuti dallo slot base del venerdì per una nuova asta ──
+// Prima asta del venerdì → offset 0 (slot base, vedi calcolaScadenzaOfferteAttesa);
+// ogni asta successiva slitta della SOMMA delle durate (15 o 30 min, vedi
+// _durataAstaMinuti) di tutte le aste che la precedono in coda — non più un
+// fisso "slot*30", perché un'asta con un solo interessato libera il posto dopo
+// solo 15 minuti invece di 30.
+// L'ordine è determinato dall'ORDINE DI CHIAMATA (scadenza_interesse della
 // chiamata principale), non dall'ordine in cui le aste vengono create: contare
 // semplicemente le aste già create per quel venerdì è fragile, perché se
 // un admin crea le aste manualmente in un ordine diverso da quello delle
-// chiamate (o se automatico e manuale si mescolano), lo slot non rispecchia
-// più chi ha chiamato per primo. Qui invece si conta quante chiamate
+// chiamate (o se automatico e manuale si mescolano), l'ordine non rispecchia
+// più chi ha chiamato per primo. Qui invece si guarda quali chiamate
 // principali di quello stesso venerdì hanno una scadenza_interesse precedente
 // alla chiamata corrente: è deterministico e indipendente da quando/come
 // viene creata l'asta.
@@ -5956,17 +5968,17 @@ export async function calcolaSlotVenerdì(venerdìUTC, primaria) {
 
   const { data: chiamateStessoVenerdi } = await supabase
     .from('chiamate')
-    .select('id, scadenza_interesse, created_at')
+    .select('id, giocatore, scadenza_interesse, created_at')
     .eq('tipo', 'prima')
     .gte('scadenza_interesse', giornoChiamate.toISOString())
     .lte('scadenza_interesse', fineGiornoChiamate.toISOString());
 
-  // Slot = quante chiamate di questo stesso venerdì sono state fatte prima
-  // della chiamata corrente. scadenza_interesse è quasi sempre IDENTICA per
-  // tutte le chiamate della settimana (è fissa al giovedì 20:00 per tutti,
-  // art. 6.4): usarla da sola come chiave d'ordinamento mette tutte le
-  // chiamate pari-merito allo STESSO slot. created_at (l'istante reale della
-  // chiamata) rompe il pareggio e dà a ognuna il proprio slot progressivo.
+  // "Precedenti" = quante chiamate di questo stesso venerdì sono state fatte
+  // prima della chiamata corrente. scadenza_interesse è quasi sempre IDENTICA
+  // per tutte le chiamate della settimana (è fissa al giovedì 20:00 per tutti,
+  // art. 6.4): usarla da sola come chiave d'ordinamento metterebbe tutte le
+  // chiamate pari-merito allo stesso posto. created_at (l'istante reale della
+  // chiamata) rompe il pareggio e dà a ognuna il proprio posto progressivo.
   // IMPORTANTE: confrontare come numeri (getTime()), mai come stringhe — il
   // formato timestamp restituito da Postgres ("2026-08-20 20:00:00+02") e
   // quello normalizzato da .toISOString() ("2026-08-20T18:00:00.000Z")
@@ -5982,7 +5994,22 @@ export async function calcolaSlotVenerdì(venerdìUTC, primaria) {
     if (cCreated !== targetCreated) return cCreated < targetCreated;
     return String(c.id) < String(primaria.id);
   };
-  return (chiamateStessoVenerdi || []).filter(vieneNPrima).length;
+  const precedenti = (chiamateStessoVenerdi || []).filter(vieneNPrima);
+  if (!precedenti.length) return 0;
+
+  // Numero di interessati per ciascun giocatore in coda prima del target:
+  // determina se la SUA asta occupa 15 o 30 minuti nella griglia. Una sola
+  // query in batch invece di una per giocatore.
+  const giocatoriPrecedenti = [...new Set(precedenti.map(c => c.giocatore))];
+  const { data: interessi } = await supabase
+    .from('chiamate')
+    .select('giocatore')
+    .in('giocatore', giocatoriPrecedenti)
+    .in('stato', ['aperta', 'in_asta']);
+  const conteggio = {};
+  for (const r of interessi || []) conteggio[r.giocatore] = (conteggio[r.giocatore] || 0) + 1;
+
+  return precedenti.reduce((somma, c) => somma + _durataAstaMinuti(conteggio[c.giocatore] || 1), 0);
 }
 
 // ── Crea asta da chiamate esistenti ──────────────────────────────────────────
@@ -6005,12 +6032,14 @@ export async function calcolaScadenzaOfferteAttesa(primaria) {
     // solo le aste già esistenti.
     return await _calcolaScadenzaOfferteLiberoConCoda(primaria);
   }
-  // Sempre: venerdì = giovedì + 1 giorno, slot base 13:00 Italia + 30min per ogni chiamata precedente
+  // Sempre: venerdì = giovedì + 1 giorno, slot base 11:00 Italia + 15/30min per
+  // ogni chiamata precedente (durata ridotta per chi ha un solo interessato —
+  // vedi _durataAstaMinuti/calcolaSlotVenerdì)
   const ven = new Date(scadenzaInteresse);
   ven.setUTCDate(scadenzaInteresse.getUTCDate() + 1);
-  ven.setUTCHours(_oraItaliaInUTC(ven, 13), 0, 0, 0);
-  const slot = await calcolaSlotVenerdì(ven, primaria);
-  ven.setUTCMinutes(slot * 30);
+  ven.setUTCHours(_oraItaliaInUTC(ven, 11), 0, 0, 0);
+  const offsetMinuti = await calcolaSlotVenerdì(ven, primaria);
+  ven.setUTCMinutes(offsetMinuti);
   return ven;
 }
 
