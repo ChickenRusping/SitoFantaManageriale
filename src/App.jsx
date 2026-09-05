@@ -7752,11 +7752,12 @@ function ClubIdentityRight({ team, clubIdentity, isAdmin, mySquadra, onRefresh }
   const TEAMS_LIST = TEAMS.map(t => t.name);
   const altreSquadre = TEAMS_LIST.filter(n => n !== team.name);
 
-  // Rivale e Gemellato: bloccati se lock globale attivo OPPURE già scelti — solo admin può sempre modificare
+  // Rivale e Gemellato: bloccati solo se il lock globale è attivo — l'admin può sempre modificare.
+  // (già scelti in passato NON blocca più di per sé: quando l'admin sblocca, i presidenti devono poter CAMBIARE scelta, non solo sceglierla da vuoto)
   const rivaleGiaScelto    = !!(clubIdentity?.rivali);
   const gemellataGiaScelto = !!(clubIdentity?.gemellato);
-  const canEditRivale    = isAdmin || (!_rivalitaBloccata && !rivaleGiaScelto);
-  const canEditGemellato = isAdmin || (!_rivalitaBloccata && !gemellataGiaScelto);
+  const canEditRivale    = isAdmin || !_rivalitaBloccata;
+  const canEditGemellato = isAdmin || !_rivalitaBloccata;
 
   const inp = { ...FIELD, width: "100%" };
 
@@ -7847,13 +7848,13 @@ function ClubIdentityRight({ team, clubIdentity, isAdmin, mySquadra, onRefresh }
                       <div style={{ fontSize: 12, color: "#a78bfa", fontWeight: 700 }}>
                         {val || <span style={{ color: "#444", fontWeight: 400 }}>—</span>}
                       </div>
-                      {gemellataGiaScelto && !isAdmin && (
+                      {gemellataGiaScelto && !canEditGemellato && (
                         <span style={{ fontSize: 9, color: "#555", background: "#ffffff08", border: "1px solid #ffffff12", borderRadius: 4, padding: "1px 5px" }}>🔒 fisso</span>
                       )}
                     </div>
                 }
                 {editing && !canEditGemellato && (
-                  <div style={{ fontSize: 9, color: "#555", marginTop: 2 }}>Il gemellato è già stato scelto e non può essere modificato (solo admin)</div>
+                  <div style={{ fontSize: 9, color: "#555", marginTop: 2 }}>Le scelte di rivale/gemellato sono bloccate dall'admin</div>
                 )}
               </div>
             );
@@ -7871,13 +7872,13 @@ function ClubIdentityRight({ team, clubIdentity, isAdmin, mySquadra, onRefresh }
                   <div style={{ fontSize: 12, color: team.color, fontWeight: 700 }}>
                     {clubIdentity?.rivali || <span style={{ color: "#444", fontWeight: 400 }}>—</span>}
                   </div>
-                  {rivaleGiaScelto && !isAdmin && (
+                  {rivaleGiaScelto && !canEditRivale && (
                     <span style={{ fontSize: 9, color: "#555", background: "#ffffff08", border: "1px solid #ffffff12", borderRadius: 4, padding: "1px 5px" }}>🔒 fisso</span>
                   )}
                 </div>
             }
             {editing && !canEditRivale && (
-              <div style={{ fontSize: 9, color: "#555", marginTop: 2 }}>Il rivale è già stato scelto e non può essere modificato (solo admin)</div>
+              <div style={{ fontSize: 9, color: "#555", marginTop: 2 }}>Le scelte di rivale/gemellato sono bloccate dall'admin</div>
             )}
             {!editing && clubIdentity?.rivali && <RivalTracker squadra={team.name} rivale={clubIdentity.rivali} />}
           </div>
