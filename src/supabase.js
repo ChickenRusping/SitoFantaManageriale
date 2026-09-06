@@ -3725,6 +3725,24 @@ export async function toggleTraguardoInvestimento(id, squadra, chiave, etichetta
   if (updErr) throw updErr;
 }
 
+// Base manuale per "Scommessa Rendimento": la base calcolata automaticamente da
+// storico_quotazioni può essere inaffidabile (dati residui di stagioni passate,
+// nomi ambigui, ecc.). Questa funzione permette all'admin di forzare a mano la
+// quotazione di partenza per un giocatore puntato, sovrascrivendo il calcolo
+// automatico. Passare valore=null per tornare al calcolo automatico.
+export async function setBaseManualeInvestimento(id, chiave, nome, valore) {
+  const { data: inv, error } = await supabase.from('investimenti').select('dati').eq('id', id).single();
+  if (error) throw error;
+  const dati = inv?.dati || {};
+  const baseManuale = { ...(dati.baseManuale || {}) };
+  if (valore == null) delete baseManuale[chiave];
+  else baseManuale[chiave] = Number(valore);
+  const tracker = Array.isArray(dati.tracker) ? dati.tracker : [];
+  tracker.push({ tipo: 'base_manuale', nota: valore == null ? `Base manuale rimossa per ${nome}` : `Base manuale impostata per ${nome}: ${valore}`, data: new Date().toISOString() });
+  const { error: updErr } = await supabase.from('investimenti').update({ dati: { ...dati, baseManuale, tracker } }).eq('id', id);
+  if (updErr) throw updErr;
+}
+
 // "Avvocato": il contatore ammonizioni (dati.contatori.default) si accumula da
 // solo, giornata per giornata, senza mai pagare in automatico (vedi
 // registraContatoreGiornataInvestimento chiamata con valorePerEvento 0). Ogni
