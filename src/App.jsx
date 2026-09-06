@@ -257,7 +257,7 @@ import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, ese
   getStagioniPassate, upsertStagione, deleteStagione, uploadMaglia,
   getRegolamentoArticoli, upsertRegolamentoArticolo, insertRegolamentoArticolo, deleteRegolamentoArticolo,
   getChangelog, upsertChangelogEntry, insertChangelogEntry, deleteChangelogEntry,
-  getOggiLocale, getQuotRealeByNomi,
+  getOggiLocale, getQuotRealeByNomi, setBaseManualeInvestimento,
 } from "./supabase.js";
 
 // ─── LOCK BODY SCROLL (popup/bottom-sheet aperti) ───────────────────────────
@@ -5753,28 +5753,49 @@ const INVESTIMENTI_DA_CALCOLATORE_GIORNATA = ["Accordi TV", "Clean Sheet", "The 
 // mai registrata nello storico di quel giocatore — nessun click richiesto. Resta
 // comunque disponibile il pulsante manuale per un admin, per correggere eventuali
 // casi limite (es. giocatore mai avuto una quot_reale perché mai in una rosa).
-function ScommessaRendimentoRow({ nome, valorePerGiocatore, raggiunto, canManageInv, savingInv, onToggle }) {
-  const [baseline, setBaseline] = useState(undefined); // undefined = in caricamento
-  const [picco, setPicco] = useState(undefined); // massimo storico mai raggiunto (non solo il valore attuale)
+function ScommessaRendimentoRow({ nome, valorePerGiocatore, raggiunto, canManageInv, savingInv, onToggle, baseManuale, onSetBaseManuale }) {
+  const [baseAuto, setBaseAuto] = useState(undefined); // undefined = in caricamento; base calcolata automaticamente
+  const [picco, setPicco] = useState(undefined); // massimo raggiunto in stagione (non solo il valore attuale)
+  const [editingBase, setEditingBase] = useState(false);
+  const [inputBase, setInputBase] = useState("");
 
   useEffect(() => {
     let cancelled = false;
     Promise.all([getStoricoQuotazioni(nome), getQuotRealeByNomi([nome])]).then(([storico, quotReali]) => {
       if (cancelled) return;
-      const base = storico?.[0]?.quot ?? null;
-      setBaseline(base);
+      // storico_quotazioni accumula TUTTI gli import mai fatti, di ogni stagione, senza
+      // reset: storico[0] (il primissimo mai registrato) può quindi risalire a una
+      // stagione precedente e non essere affatto "la prima quotazione disponibile" di
+      // quest'anno. La base corretta è il valore in vigore all'inizio della stagione
+      // corrente (01/06) — cioè l'ultima variazione registrata PRIMA di quella data
+      // (se esiste); solo se il giocatore non ha proprio storico precedente si usa
+      // la sua primissima variazione in assoluto, ovunque sia registrata. Se il calcolo
+      // automatico è comunque sbagliato (dati sporchi), l'admin può forzare una base
+      // manuale con l'editor qui sotto — vedi baseManuale/onSetBaseManuale.
+      const lista = storico || [];
+      const oggi = new Date();
+      const inizioStagioneStr = `${stagioneStartYearLocal(oggi)}-06-01`;
+      const primaStagione = lista.filter(s => s.registrato_il < inizioStagioneStr);
+      const listaStagione = lista.filter(s => s.registrato_il >= inizioStagioneStr);
+      const base = primaStagione.length ? primaStagione[primaStagione.length - 1].quot : (lista[0]?.quot ?? null);
+      setBaseAuto(base);
       // Il traguardo va raggiunto anche solo per un istante: basta che la quotazione
-      // sia SALITA di 7 in qualsiasi momento, anche se poi è ridiscesa — quindi il
-      // confronto usa il massimo storico registrato (storico_quotazioni), non il
-      // valore attuale, includendo comunque quest'ultimo se più recente/alto.
-      const valori = (storico || []).map(s => Number(s.quot)).filter(v => Number.isFinite(v));
+      // sia SALITA di 7 in qualsiasi momento della stagione, anche se poi è ridiscesa —
+      // quindi il confronto usa il massimo registrato in stagione (non il valore
+      // attuale soltanto), includendo comunque quest'ultimo se più recente/alto.
+      const valori = listaStagione.map(s => Number(s.quot)).filter(v => Number.isFinite(v));
       const attualeNum = Number(quotReali?.[nome]);
       if (Number.isFinite(attualeNum)) valori.push(attualeNum);
+      if (base != null) valori.push(Number(base)); // il picco non può essere sotto la base
       setPicco(valori.length ? Math.max(...valori) : (Number.isFinite(attualeNum) ? attualeNum : null));
     });
     return () => { cancelled = true; };
   }, [nome]);
 
+  // La base manuale (se impostata dall'admin) sovrascrive completamente quella
+  // calcolata automaticamente — utile quando storico_quotazioni ha dati sporchi
+  // o ambigui e il calcolo automatico continua a sbagliare.
+  const baseline = baseManuale != null ? Number(baseManuale) : baseAuto;
   const delta = (baseline != null && picco != null) ? Number(picco) - Number(baseline) : null;
   const completatoAuto = delta != null && delta >= 7;
   const progressoPct = delta != null ? Math.max(0, Math.min(100, (delta / 7) * 100)) : 0;
@@ -5791,22 +5812,59 @@ function ScommessaRendimentoRow({ nome, valorePerGiocatore, raggiunto, canManage
     }
   }, [completatoAuto, raggiunto, onToggle]);
 
+  function apriEditor() {
+    setInputBase(baseline != null ? String(baseline) : "");
+    setEditingBase(true);
+  }
+  function salvaBase() {
+    const n = Number(inputBase);
+    if (!Number.isFinite(n)) { alert("Inserisci un numero valido"); return; }
+    onSetBaseManuale(n);
+    setEditingBase(false);
+  }
+  function rimuoviBase() {
+    onSetBaseManuale(null);
+    setEditingBase(false);
+  }
+
   return (
     <div style={{ display:"flex",flexDirection:"column",gap:4 }}>
       <div style={{ display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
         <span style={{ fontSize:10,color: raggiunto?"#10b981":"#888",minWidth:120 }}>{raggiunto?"✅ ":"⏳ "}{nome} (+{valorePerGiocatore}M)</span>
-        <span style={{ fontSize:9,color:"#555" }}>
-          {baseline===undefined ? "caricamento…" : baseline==null ? "nessuno storico quotazioni" :
-            picco==null ? `base ${baseline} · nessuna quot. reale (non in rosa?)` :
-            `base ${baseline} · picco ${picco} (${delta>=0?'+':''}${delta})`}
-        </span>
-        {canManageInv && !raggiunto && (
+        {!editingBase && (
+          <span style={{ fontSize:9,color:"#555" }}>
+            {baseAuto===undefined ? "caricamento…" : baseline==null ? "nessuno storico quotazioni" :
+              picco==null ? `base ${baseline}${baseManuale!=null?' (manuale)':' (inizio stagione)'} · nessuna quot. reale (non in rosa?)` :
+              `base ${baseline}${baseManuale!=null?' (manuale)':' (inizio stagione)'} · picco ${picco} (${delta>=0?'+':''}${delta})`}
+          </span>
+        )}
+        {canManageInv && !editingBase && baseAuto!==undefined && (
+          <button onClick={apriEditor} disabled={savingInv}
+            style={{ padding:"2px 6px",borderRadius:5,border:"1px solid #ffffff15",background:"transparent",color:"#666",fontSize:9,cursor:"pointer" }}>
+            ✏️ base
+          </button>
+        )}
+        {canManageInv && editingBase && (
+          <span style={{ display:"flex",alignItems:"center",gap:4 }}>
+            <input type="number" value={inputBase} onChange={e=>setInputBase(e.target.value)} autoFocus
+              style={{ width:50,fontSize:10,padding:"2px 4px",borderRadius:5,border:"1px solid #ffffff20",background:"#00000040",color:"#eee" }} />
+            <button onClick={salvaBase} disabled={savingInv}
+              style={{ padding:"2px 8px",borderRadius:5,border:"none",background:"#10b981",color:"#000",fontSize:9,fontWeight:700,cursor:"pointer" }}>✓</button>
+            {baseManuale!=null && (
+              <button onClick={rimuoviBase} disabled={savingInv}
+                style={{ padding:"2px 8px",borderRadius:5,border:"1px solid #ffffff15",background:"transparent",color:"#666",fontSize:9,cursor:"pointer" }} title="Torna al calcolo automatico">↺ auto</button>
+            )}
+            <button onClick={()=>setEditingBase(false)} disabled={savingInv}
+              style={{ padding:"2px 6px",borderRadius:5,border:"none",background:"#ffffff10",color:"#888",fontSize:9,cursor:"pointer" }}>✕</button>
+          </span>
+        )}
+        {canManageInv && !raggiunto && !editingBase && (
           <button onClick={onToggle} disabled={savingInv}
             style={{ padding:"3px 10px",borderRadius:6,border:"1px solid #10b98140",background:savingInv?"#333":"#10b98112",color:"#10b981",fontSize:10,fontWeight:700,cursor:savingInv?"wait":"pointer" }}>
             {savingInv?"⏳...":"✓ Forza traguardo"}
           </button>
         )}
-        {canManageInv && raggiunto && (
+        {canManageInv && raggiunto && !editingBase && (
           <button onClick={onToggle} disabled={savingInv}
             style={{ padding:"3px 8px",borderRadius:6,border:"1px solid #ffffff15",background:"transparent",color:"#666",fontSize:10,cursor:savingInv?"wait":"pointer" }}>
             ↩ Annulla
@@ -6337,6 +6395,12 @@ Gli obiettivi verranno azzerati.`;
   async function handleToggleTraguardo(inv, chiave, etichetta, raggiunto, valore) {
     setSavingInv(true);
     try { await toggleTraguardoInvestimento(inv.id, team.name, chiave, etichetta, raggiunto, valore); cacheInvalidate('investimenti_'+team.name); await loadInv(); }
+    catch(e){ alert(e.message); }
+    finally { setSavingInv(false); }
+  }
+  async function handleSetBaseManuale(inv, chiave, nome, valore) {
+    setSavingInv(true);
+    try { await setBaseManualeInvestimento(inv.id, chiave, nome, valore); cacheInvalidate('investimenti_'+team.name); await loadInv(); }
     catch(e){ alert(e.message); }
     finally { setSavingInv(false); }
   }
@@ -6981,6 +7045,8 @@ Per rimborsare clicca Annulla e usa "Rimborsa" dal bilancio`
                             <ScommessaRendimentoRow key={chiave} nome={nome}
                               valorePerGiocatore={catInfo.valorePerGiocatore||0} raggiunto={raggiunto}
                               canManageInv={canManageInv} savingInv={savingInv}
+                              baseManuale={dati.baseManuale?.[chiave]}
+                              onSetBaseManuale={(valore)=>handleSetBaseManuale(inv, chiave, nome, valore)}
                               onToggle={()=>handleToggleTraguardo(inv, chiave, `${inv.nome}: ${nome}`, !raggiunto, catInfo.valorePerGiocatore||0)} />
                           );
                         }
