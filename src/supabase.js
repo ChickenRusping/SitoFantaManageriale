@@ -1688,8 +1688,12 @@ export async function eseguiRientroPrestito(playerId, squadraOriginale) {
   // come se fosse un nuovo arrivo al 1° anno; se non viene riscattato torna
   // al cedente "invecchiato" di una stagione) — stipendio ricalcolato di
   // conseguenza con la formula vera (art. 4.8), non semplicemente Q/5.
+  // La quotazione in rosa torna allineata alla quotazione reale attuale (può
+  // essere cambiata durante il prestito): non resta congelata al valore che
+  // aveva quando è partito in prestito.
+  const nuovoQuot = Number(player.quot_reale ?? player.quot ?? 0);
   const nuovoAnniContratto = 2;
-  const nuovoStip = _calcolaStipCorretto(player.quot, nuovoAnniContratto, player.anni);
+  const nuovoStip = _calcolaStipCorretto(nuovoQuot, nuovoAnniContratto, player.anni);
   await supabase.from('rosa').update({
     squadra: squadraOriginale,
     in_prestito: false,
@@ -1700,6 +1704,7 @@ export async function eseguiRientroPrestito(playerId, squadraOriginale) {
     rescissione_prestito_attiva: false,
     rescissione_prestito_scadenza: null,
     rescissione_prestito_da: null,
+    quot: nuovoQuot,
     stip: nuovoStip,
     stip_prestito_cedente: 0,
     anni_contratto: nuovoAnniContratto,
@@ -5306,7 +5311,15 @@ export async function promuoviDaVivaio(playerId, squadra) {
   }
 
   // Calcola stipendio normale (Q/5) e verifica salary cap base/attivo.
-  const stipNormale = parseFloat((player.quot / 5).toFixed(2));
+  // Quotazione di rientro in rosa: resta quella con cui era entrato in vivaio
+  // (quot_iniziale_vivaio), A MENO CHE nel frattempo la quotazione reale non
+  // l'abbia superata — in quel caso sale alla quot_reale attuale (mai il contrario:
+  // non scende mai sotto il valore di ingresso).
+  const quotPromozione = Math.max(
+    Number(player.quot_iniziale_vivaio ?? player.quot ?? 0),
+    Number(player.quot_reale ?? player.quot ?? 0)
+  );
+  const stipNormale = parseFloat((quotPromozione / 5).toFixed(2));
   const scGiocatori = (rosaAttuale || []).reduce((sum, p) => sum + Number(p.stip || 0), 0) + stipNormale;
   const { data: sqCap } = await supabase.from('squadre').select('sc_bonus_obiettivi').eq('name', squadra).single();
   const cap = 75 + await _getSalaryCapInvestimenti(squadra, getStagioneQuota(new Date())) + Number(sqCap?.sc_bonus_obiettivi || 0);
@@ -5315,6 +5328,7 @@ export async function promuoviDaVivaio(playerId, squadra) {
   await supabase.from('rosa').update({
     in_vivaio: false,
     vivaio_promosso: true,
+    quot: quotPromozione,
     stip: stipNormale,
     stip_originale: stipNormale,
     anni_contratto: 1,
@@ -5325,7 +5339,7 @@ export async function promuoviDaVivaio(playerId, squadra) {
     vivaio_motivo_decisione: null,
   }).eq('id', playerId);
 
-  await logAuditVivaio(squadra, 'rosa_modifica', `Vivaio → Rosa: promosso ${player.nome} (stipendio ora ${stipNormale}M)`, { giocatore: player });
+  await logAuditVivaio(squadra, 'rosa_modifica', `Vivaio → Rosa: promosso ${player.nome} (Q${quotPromozione}, stipendio ora ${stipNormale}M)`, { giocatore: player });
 }
 
 // Svincola giocatore dal vivaio (costo 0, art. 3.6.1)
