@@ -3370,6 +3370,7 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
       if (!estero&&periodoStraord==='estivo'&&contatori.count_straord_estivi>=5) w.push({tipo:'error',testo:'Esauriti straord. estivi (5/5)'});
       if (!estero&&periodoStraord==='invernale'&&contatori.count_straord_invernali>=4) w.push({tipo:'error',testo:'Esauriti straord. invernali (4/4)'});
     }
+    if (isStraordEstero && !player.fuori_lista) w.push({tipo:'error',testo:'Svincolo estero non consentito: il giocatore non ha il badge "fuori rosa"'});
     if (!estero&&tipo!=='straordinario_u21_nc'&&contatori.count_totale>=14) w.push({tipo:'warning',testo:'⚠️ Oltre 14 svincoli: penale +2M'});
     return w;
   }
@@ -3923,11 +3924,15 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                   </button>
                 ))}
               </div>
-              {(tipoSvincolo==='straordinario'||tipoSvincolo==='straordinario_u21')&&(
-                <label style={{ display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:11,color:"#ccc" }}>
-                  <input type="checkbox" checked={estero} onChange={e=>setEstero(e.target.checked)}/> Trasferito all'estero (rimb. ¾)
-                </label>
-              )}
+              {(tipoSvincolo==='straordinario'||tipoSvincolo==='straordinario_u21')&&(() => {
+                const puoEstero = !!popup?.player?.fuori_lista;
+                return (
+                  <label style={{ display:"flex",alignItems:"center",gap:8,cursor:puoEstero?"pointer":"not-allowed",fontSize:11,color:puoEstero?"#ccc":"#555" }}>
+                    <input type="checkbox" checked={estero} disabled={!puoEstero} onChange={e=>setEstero(e.target.checked)}/>
+                    Trasferito all'estero (rimb. ¾){!puoEstero && <span style={{ marginLeft:6,fontSize:9,color:"#f87171" }}>— richiede badge "fuori rosa"</span>}
+                  </label>
+                );
+              })()}
               {preview&&(
                 <div style={{ background:preview.positivo?"#10b98112":"#ef444412",border:`1px solid ${preview.positivo?"#10b98133":"#ef444430"}`,borderRadius:9,padding:"9px 12px" }}>
                   <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
