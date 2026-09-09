@@ -2362,6 +2362,10 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
   // dall'acquisto, validi quindi per qualsiasi giocatore in qualsiasi momento.
   const isStraordinarioEstero = (tipo === 'straordinario' || tipo === 'straordinario_u21') && estero;
 
+  if (isStraordinarioEstero && !player.fuori_lista) {
+    throw new Error(`${player.nome} non ha il badge "fuori rosa": lo svincolo estero è consentito solo per giocatori trasferiti all'estero e segnati fuori lista.`);
+  }
+
   if (!isStraordinarioEstero && !_isPeriodoSvincoliConsentito(oggi)) {
     throw new Error('Svincoli non consentiti a giugno/luglio: sono ammessi solo dal 01/08 al 31/05.');
   }
@@ -2525,12 +2529,21 @@ export async function eseguiSvincolo({ squadra, player, tipo, estero = false, bi
   });
 
   // ── 5. Record svincolo ────────────────────────────────────────────────────
-  await supabase.from('svincoli').insert({
+  // CRITICO: se questo insert fallisce silenziosamente (come accaduto in
+  // passato), il record dello svincolo non finisce nello storico e la pagina
+  // "Svincoli stagionali" — che periodicamente RICOSTRUISCE i contatori dallo
+  // storico — può poi silenziosamente riportare indietro anche l'incremento
+  // fatto correttamente al passo 6. Va quindi sempre controllato l'errore.
+  const { error: svincoliInsErr } = await supabase.from('svincoli').insert({
     squadra, giocatore: player.nome, quot, anni: player.anni,
     tipo, costo_penale: costoPenale, indennizzo,
     mesi_rimborsati: mesiRimborsati, estero,
     data_svincolo: oggiStr,
   });
+  if (svincoliInsErr) {
+    console.error('eseguiSvincolo: insert in svincoli fallito:', player.nome, svincoliInsErr);
+    throw new Error(`${player.nome} è stato rimosso dalla rosa e il movimento finanziario è stato registrato, ma la registrazione nello storico svincoli è FALLITA (${svincoliInsErr.message || svincoliInsErr.code || 'errore sconosciuto'}). I contatori "svincoli stagionali" NON sono stati aggiornati per evitare disallineamenti — serve un intervento manuale per completare la registrazione.`);
+  }
 
   // ── 6. Aggiorna contatori stagione ────────────────────────────────────────
   const contatori = contatoriPre;
