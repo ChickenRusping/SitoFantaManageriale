@@ -3469,7 +3469,10 @@ Passa all'anno 3.`))return;
     if (!window.confirm(`Spostare ${player.nome} al Vivaio?\n\nRequisiti: Under-23, Q≤3, 0 presenze.`)) return;
     setSaving(true);
     try {
-      await supabase.from('rosa').update({ in_vivaio: true, vivaio_presenze: 0, quot_iniziale_vivaio: player.quot, data_entrata_vivaio: new Date().toISOString().slice(0,10) }).eq('id', player.id);
+      // Quotazione di ingresso in vivaio: usa quot_reale se presente (valore vero e
+      // aggiornato) — stesso pattern di eleggibilità sopra — altrimenti quot ufficiale.
+      const quotIngresso = Number(player.quot_reale ?? player.quot);
+      await supabase.from('rosa').update({ in_vivaio: true, vivaio_presenze: 0, quot_iniziale_vivaio: quotIngresso, data_entrata_vivaio: new Date().toISOString().slice(0,10) }).eq('id', player.id);
       await loadAll(); setPopup(null);
     } catch(e) { alert(e.message); }
     finally { setSaving(false); }
@@ -3637,7 +3640,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                     {!fuori&&p.anni>0&&p.anni<=21&&<U21Badge compact />}
                     {!fuori&&p.anni>=31&&<Over31Badge compact />}
                     {p.in_prestito&&<span title={`Prestito${p.squadra_originale ? ` da ${p.squadra_originale}` : ""}${p.scadenza_prestito ? ` · scad. ${p.scadenza_prestito}` : ""}`} style={{ marginLeft:4,fontSize:9,background:"#6366f122",color:"#a5b4fc",border:"1px solid #6366f144",borderRadius:4,padding:"1px 4px",fontWeight:800 }}>{p.tag_rosa || (p.prestito_tipo === 'prestito_obbligo' ? 'PREST. OBBL.' : p.prestito_tipo === 'prestito_secco' ? 'PREST. SECCO' : 'PREST. DIR.')}</span>}
-                    {!p.in_vivaio&&p.anni>0&&p.anni<=23&&Number(p.quot||0)<=3&&(p.partite||0)===0&&vivaio.length<maxVivaio&&<span title="Eleggibile vivaio" style={{ marginLeft:4,fontSize:11 }}>🌱</span>}
+                    {!p.in_vivaio&&p.anni>0&&p.anni<=23&&Number(p.quot_reale ?? p.quot ?? 0)<=3&&(p.partite||0)===0&&vivaio.length<maxVivaio&&<span title="Eleggibile vivaio" style={{ marginLeft:4,fontSize:11 }}>🌱</span>}
                   </td>
                   <td style={{ padding:"7px 8px",color:"#666",fontSize:11 }}>{p.squadra_serie_a||"—"}</td>
                   <td style={{ padding:"7px 6px",textAlign:"center",fontWeight:800,color:p.quot>=20?"#f59e0b":"#ccc",fontFamily:"'Bebas Neue',sans-serif",fontSize:14 }}>
@@ -3710,7 +3713,7 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                           {!fuori&&p.anni>0&&p.anni<=21&&<U21Badge compact />}
                           {!fuori&&p.anni>=31&&<Over31Badge compact />}
                           {p.in_prestito&&<span style={{ marginLeft:4,fontSize:8,background:"#6366f122",color:"#a5b4fc",border:"1px solid #6366f144",borderRadius:4,padding:"1px 4px",fontWeight:800 }}>{p.tag_rosa || (p.prestito_tipo === 'prestito_obbligo' ? 'PREST. OBBL.' : p.prestito_tipo === 'prestito_secco' ? 'PREST. SECCO' : 'PREST. DIR.')}</span>}
-                          {!p.in_vivaio&&p.anni>0&&p.anni<=23&&Number(p.quot||0)<=3&&(p.partite||0)===0&&vivaio.length<maxVivaio&&<span title="Eleggibile vivaio" style={{ marginLeft:4,fontSize:10 }}>🌱</span>}
+                          {!p.in_vivaio&&p.anni>0&&p.anni<=23&&Number(p.quot_reale ?? p.quot ?? 0)<=3&&(p.partite||0)===0&&vivaio.length<maxVivaio&&<span title="Eleggibile vivaio" style={{ marginLeft:4,fontSize:10 }}>🌱</span>}
                         </div>
                         <div style={{ fontSize:10.5,color:"#888",marginTop:1 }}>
                           {p.squadra_serie_a||"—"} · Q{p.quot}
@@ -3955,7 +3958,11 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
                   dal ramo dedicato in cima, per popup.player.in_vivaio) ── */}
               {canEdit && (() => {
                 const p = popup.player;
-                const eligibile = p.anni > 0 && p.anni <= 23 && Number(p.quot||0) <= 3 && (p.partite||0) === 0 && vivaio.length < maxVivaio;
+                // La quotazione "vera" è quot_reale se presente (aggiornata dalle
+                // statistiche settimanali), non la p.quot ufficiale che può essere
+                // rimasta indietro finché non viene applicato l'Aggiornamento —
+                // stesso pattern usato ovunque altrove nell'app (stipendi, trasferimenti...).
+                const eligibile = p.anni > 0 && p.anni <= 23 && Number(p.quot_reale ?? p.quot ?? 0) <= 3 && (p.partite||0) === 0 && vivaio.length < maxVivaio;
                 if (!eligibile) return null;
                 return (
                   <div style={{ borderTop:"1px solid #ffffff10",paddingTop:10 }}>
