@@ -2059,14 +2059,21 @@ function _conteggiaSvincoliDaStorico(svincoli = []) {
   // Gli svincoli esteri non contano più nella quota straordinari né nel tetto
   // dei 14 annuali (art. 6.1 aggiornato) — restano solo nello storico/cooldown.
   const straord = svincoli.filter(s => ['straordinario', 'straordinario_u21'].includes(s.tipo) && !s.estero);
-  const estivi = straord.filter(s => {
+  // Il periodo (estivo/invernale) si deduce normalmente dal mese di
+  // data_svincolo, MA può essere forzato con periodo_override (valori
+  // 'estivo'/'invernale') per i casi patteggiati tra i presidenti in cui lo
+  // svincolo resta storicamente datato in un periodo ma va contato nella
+  // quota dell'altro — senza questo override, ogni ricostruzione (che gira
+  // ad ogni apertura della pagina) cancellerebbe silenziosamente l'accordo.
+  const periodoDi = s => {
+    if (s.periodo_override === 'estivo' || s.periodo_override === 'invernale') return s.periodo_override;
     const m = new Date(s.data_svincolo).getMonth() + 1;
-    return [6, 7, 8, 9].includes(m);
-  }).length;
-  const invernali = straord.filter(s => {
-    const m = new Date(s.data_svincolo).getMonth() + 1;
-    return [1, 2].includes(m);
-  }).length;
+    if ([6, 7, 8, 9].includes(m)) return 'estivo';
+    if ([1, 2].includes(m)) return 'invernale';
+    return null;
+  };
+  const estivi = straord.filter(s => periodoDi(s) === 'estivo').length;
+  const invernali = straord.filter(s => periodoDi(s) === 'invernale').length;
   const countTotale = svincoli.filter(s => s.tipo !== 'straordinario_u21_nc' && !s.estero).length;
   const history = svincoli
     .filter(s => s.tipo !== 'straordinario_u21_nc')
