@@ -2104,6 +2104,11 @@ function _conteggiaSvincoliExtra(svincoli = []) {
   return {
     count_estero: svincoli.filter(s => s.estero).length,
     count_u21_nc: svincoli.filter(s => s.tipo === 'straordinario_u21_nc').length,
+    // Svincoli con periodo forzato a mano (accordi tra presidenti) — utile da
+    // vedere in Control Room per non dimenticarsene in caso di contestazioni.
+    overrides: svincoli
+      .filter(s => s.periodo_override === 'estivo' || s.periodo_override === 'invernale')
+      .map(s => ({ nome: s.giocatore, data_svincolo: s.data_svincolo, periodo_override: s.periodo_override })),
   };
 }
 
