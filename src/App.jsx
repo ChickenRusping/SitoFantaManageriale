@@ -14868,7 +14868,7 @@ function AdminControlRoomPage({ teams }) {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid #ffffff15' }}>
-                        {['Squadra', 'Totale', 'Ordinari', 'Straord.', 'Esteri', 'U21 (gratis)', 'Stato'].map(h => (
+                        {['Squadra', 'Totale', 'Ordinari', 'Straord. Estivi', 'Straord. Invernali', 'Esteri', 'U21 (gratis)', 'Override', 'Stato'].map(h => (
                           <th key={h} style={{ padding: '6px 10px', textAlign: 'left', color: '#555', fontWeight: 700, fontSize: 10 }}>{h}</th>
                         ))}
                       </tr>
@@ -14892,9 +14892,18 @@ function AdminControlRoomPage({ teams }) {
                               </td>
                               <td style={{ padding: '8px 10px', fontWeight: 900, color, fontFamily: "'Bebas Neue',sans-serif", fontSize: 16 }}>{tot}<span style={{ fontSize: 10, color: '#444' }}>/14</span></td>
                               <td style={{ padding: '8px 10px', color: '#888' }}>{d.count_ordinari || 0}</td>
-                              <td style={{ padding: '8px 10px', color: '#888' }}>{(d.count_straord_estivi || 0) + (d.count_straord_invernali || 0)}</td>
+                              <td style={{ padding: '8px 10px', color: '#888' }}>{d.count_straord_estivi || 0}</td>
+                              <td style={{ padding: '8px 10px', color: '#888' }}>{d.count_straord_invernali || 0}</td>
                               <td style={{ padding: '8px 10px', color: '#666' }} title="Non incide sul totale/quota (art. 6.1 aggiornato)">{d.count_estero || 0}</td>
                               <td style={{ padding: '8px 10px', color: '#666' }} title="Straord. U21 gratuito — non incide sul totale/quota">{d.count_u21_nc || 0}</td>
+                              <td style={{ padding: '8px 10px' }}>
+                                {(d.overrides?.length || 0) > 0
+                                  ? <span style={{ fontSize: 10, fontWeight: 700, color: '#a78bfa', background: '#a78bfa15', border: '1px solid #a78bfa30', borderRadius: 6, padding: '2px 7px', cursor: 'help' }}
+                                      title={d.overrides.map(o => `${o.nome} (${o.data_svincolo}) → conteggiato come ${o.periodo_override}`).join('\n')}>
+                                      ⚙️ {d.overrides.length}
+                                    </span>
+                                  : <span style={{ fontSize: 10, color: '#444' }}>—</span>}
+                              </td>
                               <td style={{ padding: '8px 10px' }}>
                                 {overLimit
                                   ? <span style={{ fontSize: 10, fontWeight: 700, color: '#ef4444', background: '#ef444415', border: '1px solid #ef444430', borderRadius: 6, padding: '2px 7px' }}>⚠️ Penale +{(tot - 14) * 2}M</span>
