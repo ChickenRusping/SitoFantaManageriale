@@ -6361,7 +6361,7 @@ export async function rivelaECompletaAsta(astaId) {
       squadra: vincitore, nome: asta.giocatore, ruolo: asta.ruolo,
       anni: asta.anni, quot: asta.quot, stip: 0, stip_originale: stip, clausola: claus,
       squadra_serie_a: asta.squadra_serie_a,
-      in_vivaio: true, vivaio_presenze: 0, quot_iniziale_vivaio: asta.quot, vivaio_pagato: false,
+      in_vivaio: true, vivaio_presenze: 0, quot_iniziale_vivaio: asta.quot,
       anni_contratto: 1, data_acquisto: oggi,
     });
     // Se l'inserimento in rosa fallisce, l'asta NON va comunque considerata
