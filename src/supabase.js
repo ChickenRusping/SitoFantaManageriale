@@ -448,7 +448,39 @@ export async function getChiamateByGiocatore(nomeGiocatore) {
 // ── Calcola scadenza interesse lato JS (art. 6.4) ─────────────────────────
 // La scadenza per manifestare interesse è sempre giovedì alle 20:00 ora
 // italiana. Calcoliamo il giorno civile e l'ora usando esplicitamente il fuso
-// Europe/Rome (vedi _oraItaliaInUTC) invece di getDay()/setHours() locali:
+// Europe/Rome (vedi _oraItaliaInUTC) invece di getDay()/setHours() locali,
+// gestendo automaticamente il cambio ora legale/solare (CEST/CET) — usare un
+// offset fisso (es. sempre UTC+1) sbaglia di un'ora per metà dell'anno.
+//
+// NOTA: la vecchia implementazione usava Intl/toLocaleString con
+// timeZone:'Europe/Rome', che richiede i dati IANA delle timezone
+// (full-ICU) nel runtime Node. In ambienti di deploy senza full-ICU questa
+// chiamata fallisce silenziosamente e ritorna l'ora UTC invariata, facendo
+// collassare l'offset calcolato a 0 — il bug è rimasto invisibile per
+// mesi perché "oraItalia - 0" produce comunque un numero plausibile,
+// semplicemente sbagliato di 1-2 ore (vedi bug aste del venerdì:
+// scadenze salvate 2h avanti). Questa versione calcola l'ora legale UE
+// con pura aritmetica (ultima domenica di marzo/ottobre, 01:00 UTC),
+// senza alcuna dipendenza da dati timezone del runtime.
+function _ultimaDomenicaUTC(year, monthOneIndexed) {
+  // Giorno 0 del mese SUCCESSIVO = ultimo giorno del mese richiesto.
+  const ultimoGiorno = new Date(Date.UTC(year, monthOneIndexed, 0, 0, 0, 0));
+  const giornoSettimana = ultimoGiorno.getUTCDay(); // 0 = domenica
+  ultimoGiorno.setUTCDate(ultimoGiorno.getUTCDate() - giornoSettimana);
+  return ultimoGiorno;
+}
+export function _oraItaliaInUTC(dataRef, oraItalia) {
+  const year = dataRef.getUTCFullYear();
+  const inizioCEST = _ultimaDomenicaUTC(year, 3); // ultima domenica di marzo
+  inizioCEST.setUTCHours(1, 0, 0, 0);
+  const fineCEST = _ultimaDomenicaUTC(year, 10); // ultima domenica di ottobre
+  fineCEST.setUTCHours(1, 0, 0, 0);
+  const inCEST = dataRef >= inizioCEST && dataRef < fineCEST;
+  const offset = inCEST ? 2 : 1; // +2 CEST (estate), +1 CET (inverno)
+  return oraItalia - offset;
+}
+
+
 // questi ultimi usano il fuso del dispositivo di chi chiama, che se diverso da
 // quello italiano (telefono con fuso sbagliato, dispositivo non in Italia,
 // ecc.) sposta la scadenza salvata di un'ora o più rispetto a quella attesa.
@@ -479,17 +511,8 @@ export function calcolaScadenzaInteresse(dataChiamata = new Date()) {
 }
 
 // Restituisce l'ora UTC (può essere negativa/>23, va bene per setUTCHours) che
-// corrisponde a una certa ora locale italiana in quella data specifica,
-// gestendo automaticamente il cambio ora legale/solare (CEST/CET) — usare un
-// offset fisso (es. sempre UTC+1) sbaglia di un'ora per metà dell'anno.
-export function _oraItaliaInUTC(dataRef, oraItalia) {
-  const mezzogiornoUTC = new Date(Date.UTC(dataRef.getUTCFullYear(), dataRef.getUTCMonth(), dataRef.getUTCDate(), 12, 0, 0));
-  const oraLocale = parseInt(
-    mezzogiornoUTC.toLocaleString('en-US', { timeZone: 'Europe/Rome', hour: '2-digit', hour12: false }), 10
-  );
-  const offset = oraLocale - 12; // +1 CET (inverno), +2 CEST (estate)
-  return oraItalia - offset;
-}
+// corrisponde a una certa ora locale italiana in quella data specifica —
+// vedi _oraItaliaInUTC sopra, che gestisce già CEST/CET con pura aritmetica.
 
 // Sempre: venerdì della stessa settimana, slot base 11:00 Italia (ora locale
 // vera, non un offset UTC fisso — vedi _oraItaliaInUTC)
