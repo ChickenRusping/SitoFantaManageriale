@@ -6157,8 +6157,44 @@ export async function calcolaScadenzaOfferteAttesa(primaria) {
   return ven;
 }
 
-export async function creaAstaDaChiamate(nomeGiocatore) {
-  // Evita la doppia creazione se checkScadenzeAste parte quasi in contemporanea
+// ── Notifiche admin (Telegram privato) ──────────────────────────────────────
+// Per errori di sistema (asta bloccata dal circuit breaker, cron fallito):
+// non un singolo team fisso "admin", ma tutti gli utenti con ruolo admin/
+// founder in questo momento — ognuno riceve la notifica sul proprio chat
+// Telegram privato registrato (stessa tabella telegram_registrations usata
+// per le notifiche squadra-specifiche di sempre).
+async function _getSquadreAdmin() {
+  const { data } = await supabase.from('profiles').select('squadra, ruolo').in('ruolo', ['admin', 'founder']);
+  return [...new Set((data || []).map(r => r.squadra).filter(Boolean))];
+}
+async function _notificaAdmin(type, payload) {
+  const squadreAdmin = await _getSquadreAdmin();
+  await Promise.all(squadreAdmin.map(squadra => sendTelegramNotification(type, payload, squadra)));
+}
+
+// ── Circuit breaker per aste che falliscono ripetutamente ──────────────────
+// Un'asta che fallisce sempre allo stesso passo (bug applicativo, dato
+// sporco, ecc.) veniva ritentata AD OGNI GIRO sia dal polling client che dal
+// cron server — decine di tentativi falliti ogni ora, indefinitamente, finché
+// qualcuno non se ne accorgeva e sistemava a mano. Oltre a essere inutile,
+// query fallite ripetute per ore hanno contribuito concretamente a esaurire
+// il budget di I/O del database durante un incidente reale (11/09/2026).
+// Da MAX_TENTATIVI_ASTA fallimenti in poi, l'asta viene ignorata dai cicli
+// automatici (non ritentata) finché un admin non la sblocca a mano
+// (resettando tentativi_falliti=0, es. dopo aver corretto il bug che la
+// bloccava) — una sola notifica quando si raggiunge la soglia, non una ad ogni giro.
+const MAX_TENTATIVI_ASTA = 3;
+async function _registraFallimentoAsta(astaId, giocatore, erroreMsg, tentativiPrima, notificaFn) {
+  const nuovoTentativi = (tentativiPrima || 0) + 1;
+  await supabase.from('aste_svincolati').update({
+    tentativi_falliti: nuovoTentativi, ultimo_errore: String(erroreMsg || '').slice(0, 500),
+  }).eq('id', astaId);
+  if (nuovoTentativi === MAX_TENTATIVI_ASTA && notificaFn) {
+    await notificaFn(giocatore, erroreMsg);
+  }
+}
+
+export async function creaAstaDaChiamate(nomeGiocatore) {  // Evita la doppia creazione se checkScadenzeAste parte quasi in contemporanea
   // da due tab/presidenti diversi (race condition): senza questo controllo
   // entrambe le chiamate potevano superare il check "chiamate aperte" prima
   // che una delle due avesse già inserito l'asta, creandone due per lo stesso
@@ -6517,8 +6553,12 @@ export async function checkScadenzeAste() {
   // originale), non nell'ordine arbitrario in cui il database le restituisce.
   // Importante per il bilancio: se una squadra vince più aste scadute insieme,
   // ora "spende" prima su quella chiamata per prima, in modo prevedibile.
+  // Esclude le aste già bloccate dal circuit breaker (vedi
+  // _registraFallimentoAsta) — non vengono ritentate automaticamente oltre
+  // MAX_TENTATIVI_ASTA fallimenti consecutivi.
   const { data: asteScadute } = await supabase.from('aste_svincolati')
     .select('*').eq('stato', 'raccolta_offerte').lte('scadenza', oraISO)
+    .or(`tentativi_falliti.is.null,tentativi_falliti.lt.${MAX_TENTATIVI_ASTA}`)
     .order('scadenza', { ascending: true });
 
   for (const a of asteScadute || []) {
@@ -6531,7 +6571,12 @@ export async function checkScadenzeAste() {
       if (!pronta) { risultati.push({ tipo: 'masterclass_in_corso', giocatore: a.giocatore }); continue; }
       const r = await rivelaECompletaAsta(a.id);
       risultati.push({ tipo: 'asta_completata', giocatore: a.giocatore, ...r });
-    } catch(e) { risultati.push({ tipo: 'errore', id: a.id, error: e.message }); }
+    } catch(e) {
+      risultati.push({ tipo: 'errore', id: a.id, error: e.message });
+      await _registraFallimentoAsta(a.id, a.giocatore, e.message, a.tentativi_falliti, async (giocatore, err) => {
+        await _notificaAdmin('asta_bloccata_admin', { giocatore, errore: err });
+      });
+    }
   }
 
   return risultati;
