@@ -6494,6 +6494,17 @@ export async function checkScadenzeAste() {
   const oraISO = ora.toISOString();
   const risultati = [];
 
+  // Sblocco lock orfani (vedi stesso meccanismo nel cron server-side,
+  // cron_check_aste.ts): se una scheda con questa pagina aperta viene chiusa
+  // o ricaricata a metà rivelazione, elaborazione_lock resta impostato per
+  // sempre e nessuno può più rivelare quell'asta finché qualcuno non se ne
+  // accorge e lo sblocca a mano. Un lock più vecchio di 60s è quasi certamente
+  // orfano (una rivelazione reale non dovrebbe mai impiegarci così tanto).
+  const lockScadutoPrima = new Date(ora.getTime() - 60000).toISOString();
+  await supabase.from('aste_svincolati')
+    .update({ elaborazione_lock: null })
+    .eq('stato', 'raccolta_offerte').lt('elaborazione_lock', lockScadutoPrima);
+
   // 1. Chiamate con scadenza_interesse scaduta → crea SEMPRE l'asta, anche con
   // un solo interessato (il prezzo resta comunque fissato a ¾Q, vedi
   // rivelaECompletaAsta). Prima un unico interessato veniva assegnato
