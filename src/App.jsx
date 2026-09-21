@@ -230,7 +230,7 @@ import { IconHome, IconShield, IconTrophy, IconMarket, IconMore, IconAdmin, Icon
 import { ProgressBar } from "./components/ui/ProgressBar.jsx";
 import { HeroSurface } from "./components/ui/Surface.jsx";
 import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, calcolaScadenzaInteresse, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, getObiettivi, subscribeObiettivi, getListaDesideri, insertListaDesiderio, updateListaDesiderioNote, deleteListaDesiderio, subscribeListaDesideri, notificaListaDesideri, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, getDomenicaCorrente, getFasciaBilancioNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, registraEventoGiornataInvestimento, registraContatoreGiornataInvestimento, applicaBonusBrandingSePresente, registraVotoRientroInvestimento, registraPuntiGironeRitorno, riscattaGruppoAvvocato, getEffettiInvestimenti, getSquadreConSuperClub, getSquadreConDerogaU21, getStatoGuadagniGiornata,
-  getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, usaContatoreInvestimento, registraEventoInvestimento, annullaEventoInvestimento, toggleTraguardoInvestimento, deleteInvestimento, getPenalita, insertPenalita, deletePenalita, applicaMulta, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, applicaIscrizioneCampionato, investiEuroExtra, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, logAzione, getAuditLog, effettuaRollback, getVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, getSvincolatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, checkScadenzeAste, subscribeAsteSvincolati, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
+  getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, usaContatoreInvestimento, registraEventoInvestimento, annullaEventoInvestimento, toggleTraguardoInvestimento, deleteInvestimento, getPenalita, insertPenalita, deletePenalita, applicaMulta, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, applicaIscrizioneCampionato, investiEuroExtra, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, logAzione, getAuditLog, effettuaRollback, getVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, getSvincolatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, subscribeAsteSvincolati, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
   getBonusTrattativa, getBonusTrattativeBatch, insertBonusTrattativa, checkECompletaBonus, getLabelBonus,
@@ -12052,18 +12052,9 @@ function SvincolatiPage({ profile, isAdmin }) {
     return () => { supabase.removeChannel(sub1); supabase.removeChannel(sub2); };
   }, [loadAll]);
 
-  // Check scadenze: rete di sicurezza, non la fonte primaria
-  useEffect(() => {
-    // checkScadenzeAste duplica lo stesso lavoro del cron server-side
-    // (supabase/functions/cron-check-aste, schedulato ogni 2-3 minuti via
-    // pg_cron): quel cron è la fonte di verità, questo polling client serve
-    // solo a coprire l'eventualità che il cron smetta di girare. Intervallo
-    // allungato a 15 minuti (da 3) per non raddoppiare inutilmente il carico
-    // di query su ogni tab aperta — il lock (elaborazione_lock) resta comunque
-    // a evitare doppie assegnazioni se i due dovessero sovrapporsi.
-    const t = setInterval(() => checkScadenzeAste().then(r => { if (r.length) loadAll(); }), 15 * 60 * 1000);
-    return () => clearInterval(t);
-  }, []);
+  // Le scadenze delle aste svincolati vengono elaborate esclusivamente dal cron
+  // server-side. Nessun polling client: evita di moltiplicare lo stesso workload
+  // per ogni browser/tab aperto e mantiene una sola fonte automatica di verità.
 
   // Raggruppa chiamate per giocatore (solo quelle non concluse con giocatore valido)
   const chiamatePerGiocatore = Object.values(
@@ -12227,7 +12218,7 @@ function SvincolatiPage({ profile, isAdmin }) {
                   {isAdmin && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
                       {/* Il DS Masterclass è ora interamente automatico e silenzioso (attivato
-                          dai presidenti stessi, elaborato da checkScadenzeAste alla scadenza):
+                          dai presidenti stessi, elaborato dal cron server-side alla scadenza):
                           l'admin non deve poter vedere né innescare chi lo sta usando. */}
                       <button
                         onClick={async () => {
@@ -17181,29 +17172,98 @@ function AppInner() {
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   useEffect(() => {
-    let risolto = false;
-    // Se il refresh del token resta bloccato (sessione salvata corrotta/scaduta e
-    // la richiesta di rete non risponde mai), non lasciare l'app bloccata in eterno
-    // sulla schermata di caricamento: dopo 8s puliamo la sessione locale (senza
-    // rete, "scope: local") e ricarichiamo, così il login riparte da zero.
+    let mounted = true;
+    let bootstrapTimedOut = false;
+    let profileUserId = null;
+
+    // Pulisce SOLO la sessione Supabase salvata da questa app. Non usa signOut()
+    // perché durante un outage Auth una chiamata di rete può a sua volta restare
+    // appesa. Soprattutto: niente window.location.reload(), così una sessione
+    // corrotta non può creare un loop refresh -> timeout -> reload -> refresh.
+    function clearLocalSupabaseAuth() {
+      try {
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key?.startsWith('sb-') && key.includes('-auth-token')) {
+            localStorage.removeItem(key);
+          }
+        }
+      } catch (e) {
+        console.warn('Pulizia sessione Supabase locale fallita:', e);
+      }
+    }
+
+    function applySession(event, nextSession) {
+      if (!mounted) return;
+
+      // Dopo un timeout ignoriamo eventuali risposte tardive del vecchio refresh.
+      // Un nuovo login esplicito invece riattiva normalmente la sessione.
+      if (bootstrapTimedOut && event !== 'SIGNED_IN') return;
+      if (event === 'SIGNED_IN') bootstrapTimedOut = false;
+
+      setSession(nextSession);
+      const nextUserId = nextSession?.user?.id || null;
+
+      if (!nextUserId) {
+        profileUserId = null;
+        setProfile(null);
+        setAuthLoading(false);
+        return;
+      }
+
+      // TOKEN_REFRESHED crea una nuova session object ma non cambia utente:
+      // non ricarichiamo il profilo dal DB ad ogni refresh del JWT.
+      if (profileUserId !== nextUserId || event === 'USER_UPDATED') {
+        profileUserId = nextUserId;
+        loadProfile(nextUserId);
+      } else {
+        setAuthLoading(false);
+      }
+    }
+
     const timeout = setTimeout(() => {
-      if (risolto) return;
-      console.warn('⚠️ Timeout nel recupero sessione: pulizia sessione locale e reload...');
-      supabase.auth.signOut({ scope: 'local' }).finally(() => window.location.reload());
+      if (!mounted) return;
+      bootstrapTimedOut = true;
+      console.warn('⚠️ Timeout nel recupero sessione: sessione locale scartata, senza reload.');
+      clearLocalSupabaseAuth();
+      setSession(null);
+      setProfile(null);
+      setAuthLoading(false);
     }, 8000);
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      risolto = true; clearTimeout(timeout);
-      setSession(session); if (session) loadProfile(session.user.id); else setAuthLoading(false);
-    }).catch(() => {
-      risolto = true; clearTimeout(timeout);
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (!mounted || bootstrapTimedOut) return;
+      clearTimeout(timeout);
+      if (error) {
+        console.warn('Recupero sessione fallito:', error.message);
+        clearLocalSupabaseAuth();
+        setSession(null);
+        setProfile(null);
+        setAuthLoading(false);
+        return;
+      }
+      applySession('INITIAL_SESSION', session);
+    }).catch((e) => {
+      if (!mounted || bootstrapTimedOut) return;
+      clearTimeout(timeout);
+      console.warn('Bootstrap Auth fallito:', e?.message || e);
+      clearLocalSupabaseAuth();
+      setSession(null);
+      setProfile(null);
       setAuthLoading(false);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      risolto = true; clearTimeout(timeout);
-      setSession(session); if (session) loadProfile(session.user.id); else { setProfile(null); setAuthLoading(false); }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!mounted) return;
+      clearTimeout(timeout);
+      applySession(event, nextSession);
     });
-    return () => { clearTimeout(timeout); subscription.unsubscribe(); };
+
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   // session è un NUOVO oggetto ad ogni onAuthStateChange, compreso il refresh
