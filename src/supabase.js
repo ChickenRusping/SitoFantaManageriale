@@ -3379,7 +3379,7 @@ function _inRangeDateTime(date, start, end) {
 }
 export function isFinestraInvestimentiEstiva(date = new Date()) {
   const start = stagioneStartYear(date);
-  return _inRangeDateTime(date, new Date(start, 7, 1, 9, 0, 0, 0), new Date(start, 8, 20, 23, 59, 59, 999));
+  return _inRangeDateTime(date, new Date(start, 7, 1, 9, 0, 0, 0), new Date(start, 8, 21, 23, 59, 59, 999));
 }
 export function isFinestraInvestimentiInvernale(date = new Date()) {
   const y = date.getFullYear();
@@ -3515,7 +3515,7 @@ export async function acquistaInvestimento({ squadra, nome, categoria, costo, st
       throw new Error('Investimenti invernali consentiti solo dal 24/12 al 31/12.');
     }
     if (!isInvernale && !isFinestraInvestimentiEstiva(now)) {
-      throw new Error('Investimenti estivi consentiti solo dal 01/08 alle 09:00 al 20/09 alle 23:59.');
+      throw new Error('Investimenti estivi consentiti solo dal 01/08 alle 09:00 al 21/09 alle 23:59.');
     }
   }
 
