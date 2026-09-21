@@ -53,7 +53,7 @@ const DEADLINE_DEFS = [
   { label: "Scelta obiettivo — 2° classificato",   month: 8,  day: 9,  section: "Obiettivi", type: "annual", note: "Entro le 15:00" },
   { label: "Scelta obiettivo — 1° classificato",   month: 8,  day: 10, section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
   { label: "Apertura comunicazione investimenti",  month: 8,  day: 1,  section: "Investimenti", type: "annual", note: "Ore 09:00 — budget max 30M" },
-  { label: "Chiusura comunicazione investimenti",  month: 9,  day: 20, section: "Investimenti", type: "annual", note: "Entro le 23:59" },
+  { label: "Chiusura comunicazione investimenti",  month: 9,  day: 21, section: "Investimenti", type: "annual", note: "Entro le 23:59" },
   { label: "Scadenza Ricapitalizzazione",          month: 9,  day: 5,  section: "Investimenti", type: "annual", note: "Ultimo giorno per attivarla — entro le 24:00" },
   { label: "Apertura investimenti invernali",      month: 12, day: 24, section: "Investimenti", type: "annual", note: "Max 10M — entro le 24:00" },
   { label: "Chiusura investimenti invernali",      month: 12, day: 31, section: "Investimenti", type: "annual", note: "Ultimo giorno utile — entro le 24:00" },
@@ -2916,7 +2916,7 @@ function DeadlinePage() {
     { label: "Scelta obiettivo — 1° classificato",   month: 8,  day: 10, section: "Obiettivi", type: "annual", note: "Entro le 03:00" },
     // INVESTIMENTI (art. 10)
     { label: "Apertura comunicazione investimenti",  month: 8,  day: 1,  section: "Investimenti", type: "annual", note: "Ore 09:00 — budget max 30M" },
-    { label: "Chiusura comunicazione investimenti",  month: 9,  day: 20, section: "Investimenti", type: "annual", note: "Entro le 23:59" },
+    { label: "Chiusura comunicazione investimenti",  month: 9,  day: 21, section: "Investimenti", type: "annual", note: "Entro le 23:59" },
     { label: "Scadenza Ricapitalizzazione",          month: 9,  day: 5,  section: "Investimenti", type: "annual", note: "Ultimo giorno per attivarla — entro le 24:00" },
     { label: "Apertura investimenti invernali",      month: 12, day: 24, section: "Investimenti", type: "annual", note: "Max 10M — entro le 24:00" },
     { label: "Chiusura investimenti invernali",      month: 12, day: 31, section: "Investimenti", type: "annual", note: "Ultimo giorno utile — entro le 24:00" },
@@ -5725,7 +5725,7 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
 // automatico         → gestito altrove nel codice, qui solo lettura (DS Masterclass)
 const CATALOGO_INVESTIMENTI = [
   // Piccoli (art. 10.2)
-  { nome: "Scouting Estero",         categoria: "piccolo",   costo: 2,    desc: "Diritto esclusivo su 1 giocatore estero se arriva in Serie A entro 2 anni. Periodo 01/09–20/09.", richiedeNote: true, notePlaceholder: "Nome del giocatore estero selezionato:", meccanica: "selezione_giocatore", nGiocatori: 1, valorePerGiocatore: 0 },
+  { nome: "Scouting Estero",         categoria: "piccolo",   costo: 2,    desc: "Diritto esclusivo su 1 giocatore estero se arriva in Serie A entro 2 anni. Periodo 01/09–21/09.", richiedeNote: true, notePlaceholder: "Nome del giocatore estero selezionato:", meccanica: "selezione_giocatore", nGiocatori: 1, valorePerGiocatore: 0 },
   { nome: "Scommessa Rendimento",     categoria: "piccolo",   costo: 2,    desc: "Seleziona 2 giocatori della tua rosa: se uno migliora Q di ≥7, ottieni +2.5M per ognuno.", richiedeNote: true, notePlaceholder: "Nomi dei 2 giocatori puntati (es. Barella, Vlahovic):", meccanica: "selezione_giocatore", nGiocatori: 2, valorePerGiocatore: 2.5 },
   { nome: "Avvocato",                 categoria: "piccolo",   costo: 3,    desc: "Ogni 5 ammonizioni dei tuoi giocatori titolari o subentrati → +0.5M. Doppio giallo = 1 ammonizione.", meccanica: "contatore_economico", valorePerEvento: 0.5, ogniNEventi: 5, etichettaEvento: "ammonizione" },
   { nome: "Vice Allenatore Premium",  categoria: "piccolo",   costo: 5,    desc: "3 volte/stagione puoi modificare un giocatore dopo il fischio d'inizio (il sostituto non deve aver giocato).", meccanica: "contatore_utilizzo", max: 3 },
