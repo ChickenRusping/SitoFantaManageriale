@@ -135,7 +135,9 @@ export async function signIn(email, password) {
 }
 
 export async function signOut() {
-  await supabase.auth.signOut();
+  // Logout solo dal browser/dispositivo corrente: evita di revocare inutilmente
+  // le altre sessioni dello stesso account e riduce refresh token invalidi.
+  await supabase.auth.signOut({ scope: 'local' });
 }
 
 export async function getProfile(userId) {
@@ -7501,12 +7503,23 @@ export async function notificaListaDesideri(giocatore, escludi, messaggio) {
 }
 
 export async function sendTelegramNotification(type, payload = {}, squadra = null) {
+  // Una notifica esterna non deve poter bloccare un'azione dell'app a tempo
+  // indefinito. Promise.race limita l'attesa percepita; l'insert in-app resta
+  // indipendente, così la campanella continua a funzionare anche se Telegram è giù.
+  let timer;
   try {
-    await supabase.functions.invoke('telegram-notify', {
-      body: { type, payload, ...(squadra ? { squadra } : {}) },
-    });
+    await Promise.race([
+      supabase.functions.invoke('telegram-notify', {
+        body: { type, payload, ...(squadra ? { squadra } : {}) },
+      }),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('telegram-notify timeout (5s)')), 5000);
+      }),
+    ]);
   } catch (e) {
     console.warn('[Telegram] notification failed silently:', type, e);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
   try {
     await _insertNotificaApp(type, payload, squadra);
