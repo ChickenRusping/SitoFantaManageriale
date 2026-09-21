@@ -5302,8 +5302,9 @@ export async function acquistaVivaio({ squadra, giocatore, bilancioAttuale }) {
   // Conta vivaio attuale: art. 3.4 consente massimo 2 giocatori nel vivaio.
   await assertVivaioDopoAggiunta(squadra, giocatore);
 
-  // Costo: normale asta svincolati (gestita esternamente)
-  // Qui inseriamo il giocatore direttamente
+  // Costo: normale asta svincolati (gestita esternamente).
+  // Inserimento + rimozione dagli svincolati con rollback applicativo: il
+  // giocatore non deve mai risultare contemporaneamente in vivaio e libero.
   const { data: inserted, error } = await supabase.from('rosa').insert({
     squadra,
     nome: giocatore.nome,
@@ -5322,6 +5323,19 @@ export async function acquistaVivaio({ squadra, giocatore, bilancioAttuale }) {
     vivaio_motivo_decisione: null,
   }).select().single();
   if (error) throw error;
+
+  let deleteQuery = supabase.from('svincolati').delete();
+  if (giocatore.id !== undefined && giocatore.id !== null) {
+    deleteQuery = deleteQuery.eq('id', giocatore.id);
+  } else {
+    deleteQuery = deleteQuery.eq('stagione', getStagioneQuota(now)).ilike('nome', giocatore.nome.trim());
+  }
+  const { error: svinErr } = await deleteQuery;
+  if (svinErr) {
+    // Evita lo stato incoerente "in vivaio + ancora svincolato".
+    await supabase.from('rosa').delete().eq('id', inserted.id);
+    throw new Error(`Acquisto vivaio annullato: impossibile rimuovere ${giocatore.nome} dagli svincolati (${svinErr.message})`);
+  }
 
   await logAuditVivaio(squadra, 'rosa_aggiungi', `Vivaio: acquistato ${giocatore.nome} (Q${giocatore.quot}, ${giocatore.anni}aa)`, { giocatore_id: inserted.id });
   return inserted;
@@ -6395,63 +6409,31 @@ export async function rivelaECompletaAsta(astaId) {
 
   if (asta.per_vivaio) {
     await assertVivaioDopoAggiunta(vincitore, { nome: asta.giocatore, anni: asta.anni, quot: asta.quot, presenze_voto: asta.presenze_voto || 0 });
-    const { error: rosaErr } = await supabase.from('rosa').insert({
-      squadra: vincitore, nome: asta.giocatore, ruolo: asta.ruolo,
-      anni: asta.anni, quot: asta.quot, stip: 0, stip_originale: stip, clausola: claus,
-      squadra_serie_a: asta.squadra_serie_a,
-      in_vivaio: true, vivaio_presenze: 0, quot_iniziale_vivaio: asta.quot,
-      anni_contratto: 1, data_acquisto: oggi,
-    });
-    // Se l'inserimento in rosa fallisce, l'asta NON va comunque considerata
-    // assegnata (niente addebito, niente chiusura): altrimenti il giocatore
-    // sparisce nel nulla — pagato ma mai arrivato né in vivaio né in rosa.
-    if (rosaErr) throw new Error(`Inserimento in vivaio fallito per ${asta.giocatore}: ${rosaErr.message}`);
-    await supabase.from('svincolati').delete().eq('nome', asta.giocatore);
   } else {
     await assertRosaDopoAggiunta(vincitore, { nome: asta.giocatore, ruolo: asta.ruolo, anni: asta.anni, quot: asta.quot, squadra_serie_a: asta.squadra_serie_a, in_vivaio: false });
-    // Art. 5.6: essere svincolato conta come una squadra nella catena dei
-    // passaggi — quindi l'acquisto da svincolati È il primo passaggio (non
-    // uno stato "zero" da cui il ricevente potrebbe ancora fare altri 2
-    // passaggi pieni, che violerebbe il limite di 3 squadre totali).
-    const { error: rosaErr } = await supabase.from('rosa').insert({
-      squadra: vincitore, nome: asta.giocatore, ruolo: asta.ruolo,
-      anni: asta.anni, quot: asta.quot, stip, clausola: claus,
-      squadra_serie_a: asta.squadra_serie_a,
-      in_vivaio: false, anni_contratto: 1, data_acquisto: oggi,
-      passaggi_sessione: 1, ultima_sessione_mercato: stagioneDaData(new Date()),
-    });
-    if (rosaErr) throw new Error(`Inserimento in rosa fallito per ${asta.giocatore}: ${rosaErr.message}`);
-    await supabase.from('svincolati').delete()
-      .eq('nome', asta.giocatore);
   }
 
-  // Il Listone deve riflettere subito il nuovo proprietario dopo l'asta.
+  // Finalizzazione atomica lato database: inserimento in rosa/vivaio, rimozione
+  // dagli svincolati, addebito, movimento, eliminazione chiamate e chiusura asta
+  // avvengono nella STESSA transazione. Se una singola operazione fallisce,
+  // PostgreSQL annulla tutto: niente doppioni o aste "mezze completate" dopo retry.
+  const { data: finalizzazione, error: finalizzaErr } = await supabase.rpc('finalizza_asta_svincolati_atomic', {
+    p_asta_id: astaId,
+    p_vincitore: vincitore,
+    p_prezzo: prezzoFinale,
+    p_stip: stip,
+    p_clausola: claus,
+    p_oggi: oggi,
+    p_ultima_sessione: stagioneDaData(new Date()),
+  });
+  if (finalizzaErr) throw new Error(`Finalizzazione asta fallita per ${asta.giocatore}: ${finalizzaErr.message}`);
+
+  // Il Listone e la lista desideri sono effetti secondari: partono solo DOPO
+  // che la transazione DB principale è stata completata con successo.
   try { await aggiornaFantaSquadraListone(asta.giocatore, vincitore); }
   catch (e) { console.warn('Sync listone dopo asta svincolati fallita:', e.message); }
 
   await notificaListaDesideri(asta.giocatore, vincitore, `è stato acquistato da ${vincitore} agli svincolati`);
-
-  // Scala bilancio
-  const { data: sq } = await supabase.from('squadre')
-    .select('bilancio').eq('name', vincitore).single();
-  await supabase.from('squadre')
-    .update({ bilancio: parseFloat((Number(sq.bilancio) - prezzoFinale).toFixed(2)) })
-    .eq('name', vincitore);
-
-  // Movimento
-  await supabase.from('movimenti').insert({
-    squadra: vincitore,
-    descrizione: `Acquisto ${asta.giocatore} da Svincolati${asta.per_vivaio ? ' (Vivaio)' : ''}`,
-    uscita: prezzoFinale, data: oggi,
-  });
-
-  // Elimina chiamate del giocatore
-  await supabase.from('chiamate').delete().eq('giocatore', asta.giocatore);
-
-  // Chiudi asta
-  await updateAstaSvincolati(astaId, {
-    stato: 'assegnata', vincitore, prezzo_finale: prezzoFinale,
-  });
 
   // Notifica Telegram: centralizzata qui così parte SEMPRE, sia che il reveal
   // avvenga in automatico (checkScadenzeAste, ogni 3 minuti) sia che lo
