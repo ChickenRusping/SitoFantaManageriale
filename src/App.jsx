@@ -3496,8 +3496,16 @@ Passa all'anno 3.`))return;
 
   async function handlePromuoviVivaio(p) {
     if(players.length>=30){alert(`Rosa piena (${players.length}/30)`);return;}
+    // La promozione usa la stessa Q del backend: mai sotto la Q di ingresso,
+    // ma sale alla Q reale se nel frattempo il giocatore si e' rivalutato.
+    const quotPromozione = Math.max(
+      Number(p.quot_iniziale_vivaio ?? p.quot ?? 0),
+      Number(p.quot_reale ?? p.quot ?? 0)
+    );
+    const stipPromozione = parseFloat((quotPromozione / 5).toFixed(2));
     if(!window.confirm(`Promuovere ${p.nome} in rosa?
-Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
+Quotazione: Q${quotPromozione}
+Stipendio: ${stipPromozione.toFixed(2)}M`))return;
     setSaving(true);
     try{cacheInvalidate('rosa_'+teamName);cacheInvalidate('vivaio_'+teamName);await promuoviDaVivaio(p.id,teamName);await loadAll();setPopup(null);}
     catch(e){alert(e.message);}finally{setSaving(false);}
@@ -3546,7 +3554,19 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
   }
 
   const maxVivaio=2;
-  const needsDecisioneVivaio = (p) => Boolean(p.vivaio_decisione_richiesta) || (p.vivaio_presenze||0)>=2 || (Number(p.quot_iniziale_vivaio || p.quot || 0) > 0 && Number(p.quot || 0) - Number(p.quot_iniziale_vivaio || p.quot || 0) >= 2);
+  // Il vivaio deve riflettere subito l'ultimo aggiornamento settimanale.
+  // `quot` resta volutamente congelata al valore contrattuale/di ingresso,
+  // mentre quot_reale e partite vengono aggiornati dal database Fanta.
+  const vivaioPresenzeAttuali = (p) => Math.max(
+    Number(p.vivaio_presenze || 0),
+    Number(p.presenze_voto || 0),
+    Number(p.partite || 0)
+  );
+  const vivaioQuotAttuale = (p) => Number(p.quot_reale ?? p.quot ?? 0);
+  const vivaioQuotIngresso = (p) => Number(p.quot_iniziale_vivaio ?? p.quot ?? 0);
+  const vivaioDeltaQuot = (p) => vivaioQuotAttuale(p) - vivaioQuotIngresso(p);
+  const needsDecisioneVivaio = (p) => Boolean(p.vivaio_decisione_richiesta) || vivaioPresenzeAttuali(p) >= 2 || (vivaioQuotIngresso(p) > 0 && vivaioDeltaQuot(p) >= 2);
+  const isVivaioVicinoSoglia = (p) => !needsDecisioneVivaio(p) && (vivaioPresenzeAttuali(p) >= 1 || vivaioDeltaQuot(p) >= 1);
   const decisioneScadenzaLabel = (p) => p.vivaio_decisione_scadenza ? new Date(p.vivaio_decisione_scadenza).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : 'entro 3 giorni';
   const alertProm=vivaio.filter(needsDecisioneVivaio);
 
@@ -4041,19 +4061,26 @@ Stipendio: ${(p.quot/5).toFixed(2)}M`))return;
           {alertProm.length>0&&(
             <div style={{ background:"#ef444412",border:"1.5px solid #ef444433",borderRadius:10,padding:"10px 14px",marginBottom:10 }}>
               <div style={{ fontSize:11,fontWeight:700,color:"#ef4444",marginBottom:4 }}>⚠️ AZIONE RICHIESTA (art. 3.4.1)</div>
-              {alertProm.map(p=>{ const qi=Number(p.quot_iniziale_vivaio||p.quot||0), aq=Number(p.quot||0)-qi; const motivo=p.vivaio_motivo_decisione || `${(p.vivaio_presenze||0)>=2 ? `${p.vivaio_presenze} presenze` : ""}${(p.vivaio_presenze||0)>=2 && aq>=2 ? " · " : ""}${aq>=2 ? `quotazione +${aq}` : ""}`; return <div key={p.id} style={{ fontSize:11,color:"#fca5a5" }}><b>{p.nome}</b> — {motivo || "requisiti superati"} · scegli entro {decisioneScadenzaLabel(p)} o verrà svincolato automaticamente</div>; })}
+              {alertProm.map(p=>{ const pres=vivaioPresenzeAttuali(p), aq=vivaioDeltaQuot(p); const motivo=p.vivaio_motivo_decisione || `${pres>=2 ? `${pres} presenze` : ""}${pres>=2 && aq>=2 ? " · " : ""}${aq>=2 ? `quotazione +${parseFloat(aq.toFixed(2))}` : ""}`; return <div key={p.id} style={{ fontSize:11,color:"#fca5a5" }}><b>{p.nome}</b> — {motivo || "requisiti superati"} · scegli entro {decisioneScadenzaLabel(p)} o verrà svincolato automaticamente</div>; })}
             </div>
           )}
           {vivaio.length===0?<div style={{ fontSize:11,color:"#555",fontStyle:"italic" }}>Nessun giocatore in vivaio</div>
           :vivaio.map(p=>{
-            const rc=getRoleColor(p.ruolo), na=needsDecisioneVivaio(p);
+            const rc=getRoleColor(p.ruolo), na=needsDecisioneVivaio(p), vicino=isVivaioVicinoSoglia(p);
+            const presenzeLive=vivaioPresenzeAttuali(p), qAttuale=vivaioQuotAttuale(p), qIngresso=vivaioQuotIngresso(p), deltaQ=vivaioDeltaQuot(p);
+            const deltaLabel = deltaQ === 0 ? "" : ` ${deltaQ > 0 ? "↑" : "↓"}${parseFloat(Math.abs(deltaQ).toFixed(2))}`;
             return (
               <div key={p.id} onClick={canClickPlayer?(e)=>openPopup(e,p,isOwn?'own':'other'):undefined}
-                style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:10,background:na?"#ef444410":"#ffffff08",border:`1px solid ${na?"#ef444430":"#ffffff10"}`,marginBottom:6,flexWrap:"wrap",cursor:canClickPlayer?"pointer":"default" }}>
+                style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:10,background:na?"#ef444410":vicino?"#f59e0b0d":"#ffffff08",border:`1px solid ${na?"#ef444430":vicino?"#f59e0b35":"#ffffff10"}`,marginBottom:6,flexWrap:"wrap",cursor:canClickPlayer?"pointer":"default" }}>
                 <span style={{ background:rc.bg,color:rc.text,border:`1px solid ${rc.border}`,borderRadius:5,padding:"2px 5px",fontSize:9,fontWeight:700 }}>{p.ruolo}</span>
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:12,fontWeight:700,color:na?"#fca5a5":"#e0e0e0" }}>{p.nome}</div>
-                  <div style={{ fontSize:10,color:"#666" }}>{p.anni}aa · Q{p.quot}{p.quot_iniziale_vivaio ? ` (ingresso Q${p.quot_iniziale_vivaio})` : ""} · {p.vivaio_presenze||0} presenze</div>
+                  <div style={{ fontSize:12,fontWeight:700,color:na?"#fca5a5":vicino?"#fbbf24":"#e0e0e0" }}>
+                    {p.nome}
+                    {na && <span style={{ fontSize:8,color:"#ef4444",marginLeft:6,background:"#ef444420",borderRadius:4,padding:"1px 5px" }}>AZIONE RICHIESTA</span>}
+                    {!na && vicino && <span style={{ fontSize:8,color:"#f59e0b",marginLeft:6,background:"#f59e0b18",borderRadius:4,padding:"1px 5px" }}>VICINO ALLA SOGLIA</span>}
+                  </div>
+                  <div style={{ fontSize:10,color:"#666" }}>{p.anni}aa · Q attuale <b style={{ color:deltaQ>0?"#10b981":deltaQ<0?"#f97316":"#888" }}>Q{qAttuale}{deltaLabel}</b> · ingresso Q{qIngresso} · {presenzeLive} presenze</div>
+                  {!na && vicino && <div style={{ fontSize:9,color:"#f59e0b",fontWeight:700 }}>⚠️ Soglia vicina · {presenzeLive}/2 presenze · {deltaQ>0?`+${parseFloat(deltaQ.toFixed(2))}/+2 Q`:'nessun aumento Q'}</div>}
                   {na && <div style={{ fontSize:9,color:"#ef4444",fontWeight:700 }}>Scelta entro {decisioneScadenzaLabel(p)} · poi svincolo automatico</div>}
                   {na && p.vivaio_decisione_da && p.vivaio_decisione_scadenza && (() => {
                     const inizioMs = new Date(p.vivaio_decisione_da).getTime();
@@ -7178,12 +7205,25 @@ function VivaiTab({ team, isAdmin }) {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
+  // Valori live del vivaio: Q reale e presenze vengono aggiornati ad ogni
+  // import settimanale, mentre p.quot rimane il valore congelato di ingresso.
+  function presenzeVivaioLive(p) {
+    return Math.max(Number(p.vivaio_presenze || 0), Number(p.presenze_voto || 0), Number(p.partite || 0));
+  }
+  function quotVivaioLive(p) { return Number(p.quot_reale ?? p.quot ?? 0); }
+  function quotVivaioIngresso(p) { return Number(p.quot_iniziale_vivaio ?? p.quot ?? 0); }
+  function deltaQuotVivaio(p) { return quotVivaioLive(p) - quotVivaioIngresso(p); }
+
   // Verifica se un giocatore deve essere promosso/svincolato (art. 3.4.1)
   function needsAction(p) {
-    const presenze = Number(p.vivaio_presenze || 0);
-    const quotIniziale = Number(p.quot_iniziale_vivaio || p.quot || 0);
-    const aumentoQuot = Number(p.quot || 0) - quotIniziale;
-    return Boolean(p.vivaio_decisione_richiesta) || presenze >= 2 || aumentoQuot >= 2;
+    const presenze = presenzeVivaioLive(p);
+    const quotIniziale = quotVivaioIngresso(p);
+    const aumentoQuot = deltaQuotVivaio(p);
+    return Boolean(p.vivaio_decisione_richiesta) || presenze >= 2 || (quotIniziale > 0 && aumentoQuot >= 2);
+  }
+
+  function vicinoAllaSoglia(p) {
+    return !needsAction(p) && (presenzeVivaioLive(p) >= 1 || deltaQuotVivaio(p) >= 1);
   }
 
   function scadenzaDecisioneLabel(p) {
@@ -7195,11 +7235,10 @@ function VivaiTab({ team, isAdmin }) {
   function motivoAzioneVivaio(p) {
     if (p.vivaio_motivo_decisione) return p.vivaio_motivo_decisione;
     const motivi = [];
-    const presenze = Number(p.vivaio_presenze || 0);
-    const quotIniziale = Number(p.quot_iniziale_vivaio || p.quot || 0);
-    const aumentoQuot = Number(p.quot || 0) - quotIniziale;
+    const presenze = presenzeVivaioLive(p);
+    const aumentoQuot = deltaQuotVivaio(p);
     if (presenze >= 2) motivi.push(`${presenze} presenze a voto`);
-    if (aumentoQuot >= 2) motivi.push(`quotazione +${aumentoQuot} da ingresso`);
+    if (aumentoQuot >= 2) motivi.push(`quotazione +${parseFloat(aumentoQuot.toFixed(2))} da ingresso`);
     return motivi.join(' e ') || 'requisiti superati';
   }
 
@@ -7208,7 +7247,9 @@ function VivaiTab({ team, isAdmin }) {
       alert(`Rosa piena (${rosaCount}/30) — libera uno slot prima di promuovere ${p.nome}`);
       return;
     }
-    if (!window.confirm(`Promuovere ${p.nome} dalla vivaio alla rosa?\n\nIl suo stipendio diventerà ${(p.quot/5).toFixed(2)}M (Q${p.quot}/5) e verrà conteggiato nel salary cap.`)) return;
+    const quotPromozione = Math.max(quotVivaioIngresso(p), quotVivaioLive(p));
+    const stipPromozione = parseFloat((quotPromozione / 5).toFixed(2));
+    if (!window.confirm(`Promuovere ${p.nome} dal vivaio alla rosa?\n\nQuotazione applicata: Q${quotPromozione}\nStipendio: ${stipPromozione.toFixed(2)}M\nVerrà conteggiato nel salary cap.`)) return;
     setSaving(true);
     try {
       await promuoviDaVivaio(p.id, team.name);
@@ -7319,19 +7360,27 @@ function VivaiTab({ team, isAdmin }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {vivaio.map(p => {
             const needAct = needsAction(p);
+            const nearAct = vicinoAllaSoglia(p);
             const rc = getRoleColor(p.ruolo);
+            const presenzeLive = presenzeVivaioLive(p);
+            const qAttuale = quotVivaioLive(p);
+            const qIngresso = quotVivaioIngresso(p);
+            const deltaQ = deltaQuotVivaio(p);
+            const deltaLabel = deltaQ === 0 ? "" : ` ${deltaQ > 0 ? "↑" : "↓"}${parseFloat(Math.abs(deltaQ).toFixed(2))}`;
             return (
-              <div key={p.id} style={{ background: needAct ? "#ef444410" : "#ffffff08", border: `1.5px solid ${needAct ? "#ef444430" : "#ffffff12"}`, borderRadius: 12, padding: "12px 14px" }}>
+              <div key={p.id} style={{ background: needAct ? "#ef444410" : nearAct ? "#f59e0b0d" : "#ffffff08", border: `1.5px solid ${needAct ? "#ef444430" : nearAct ? "#f59e0b35" : "#ffffff12"}`, borderRadius: 12, padding: "12px 14px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                   <span style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, borderRadius: 5, padding: "2px 6px", fontSize: 10, fontWeight: 700 }}>{p.ruolo}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: needAct ? "#fca5a5" : "#f0f0f0" }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: needAct ? "#fca5a5" : nearAct ? "#fbbf24" : "#f0f0f0" }}>
                       {p.nome}
                       {needAct && <span style={{ fontSize: 9, color: "#ef4444", marginLeft: 6, background: "#ef444420", borderRadius: 4, padding: "1px 5px" }}>AZIONE RICHIESTA</span>}
+                      {!needAct && nearAct && <span style={{ fontSize: 9, color: "#f59e0b", marginLeft: 6, background: "#f59e0b18", borderRadius: 4, padding: "1px 5px" }}>VICINO ALLA SOGLIA</span>}
                     </div>
                     <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>
-                      {p.anni}aa · Q{p.quot}{p.quot_iniziale_vivaio ? ` (ingresso Q${p.quot_iniziale_vivaio})` : ""} · Entrato: {p.data_entrata_vivaio || "—"}
+                      {p.anni}aa · Q attuale <b style={{ color: deltaQ > 0 ? "#10b981" : deltaQ < 0 ? "#f97316" : "#888" }}>Q{qAttuale}{deltaLabel}</b> · ingresso Q{qIngresso} · Entrato: {p.data_entrata_vivaio || "—"}
                     </div>
+                    {!needAct && nearAct && <div style={{ fontSize: 9, color: "#f59e0b", fontWeight: 700, marginTop: 2 }}>⚠️ Soglia vicina · {presenzeLive}/2 presenze · {deltaQ > 0 ? `+${parseFloat(deltaQ.toFixed(2))}/+2 Q` : 'nessun aumento Q'}</div>}
                     {needAct && <div style={{ fontSize: 9, color: "#ef4444", fontWeight: 700, marginTop: 2 }}>Scelta entro {scadenzaDecisioneLabel(p)} · poi svincolo automatico</div>}
                     {needAct && p.vivaio_decisione_da && p.vivaio_decisione_scadenza && (() => {
                       const inizioMs = new Date(p.vivaio_decisione_da).getTime();
@@ -7359,9 +7408,9 @@ function VivaiTab({ team, isAdmin }) {
                         <button onClick={() => setEditPresenze(null)} style={{ padding: "2px 5px", borderRadius: 4, border: "none", background: "#ffffff10", color: "#888", fontSize: 9, cursor: "pointer" }}>✕</button>
                       </div>
                     ) : (
-                      <div style={{ fontSize: 16, fontWeight: 900, color: (p.vivaio_presenze||0) >= 2 ? "#ef4444" : "#10b981", fontFamily: "'Bebas Neue',sans-serif", cursor: isAdmin ? "pointer" : "default" }}
-                        onClick={() => isAdmin && setEditPresenze({ id: p.id, val: p.vivaio_presenze || 0 })}>
-                        {p.vivaio_presenze || 0}
+                      <div style={{ fontSize: 16, fontWeight: 900, color: presenzeLive >= 2 ? "#ef4444" : presenzeLive >= 1 ? "#f59e0b" : "#10b981", fontFamily: "'Bebas Neue',sans-serif", cursor: isAdmin ? "pointer" : "default" }}
+                        onClick={() => isAdmin && setEditPresenze({ id: p.id, val: presenzeLive })}>
+                        {presenzeLive}
                         {isAdmin && <span style={{ fontSize: 8, color: "#444", marginLeft: 2 }}>✏️</span>}
                       </div>
                     )}
@@ -14509,11 +14558,15 @@ function AdminControlRoomPage({ teams }) {
 
               {vivaioAdmin && <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                 {vivaioAdmin.length === 0 ? <div style={{ color:'#666', fontSize:12 }}>Nessun giocatore in vivaio.</div> : vivaioAdmin.map(p => {
-                  const aumento = Number(p.quot||0) - Number(p.quot_iniziale_vivaio ?? p.quot ?? 0);
-                  const alertV = p.vivaio_decisione_richiesta || Number(p.vivaio_presenze || p.presenze_voto || 0) >= 2 || aumento >= 2;
-                  return <div key={p.id} style={{ background: alertV ? '#f59e0b10' : '#ffffff06', border:`1px solid ${alertV ? '#f59e0b35' : '#ffffff12'}`, borderRadius:10, padding:'9px 12px', display:'flex', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
-                    <div><b style={{ color:'#f0f0f0' }}>{p.nome}</b> <span style={{ color:'#666' }}>· {p.squadra}</span><div style={{ fontSize:11, color:'#888' }}>Q {p.quot} · Q iniziale {p.quot_iniziale_vivaio ?? '—'} · presenze {p.vivaio_presenze ?? p.presenze_voto ?? 0}</div></div>
-                    <div style={{ fontSize:11, color: alertV ? '#f59e0b' : '#10b981', fontWeight:700 }}>{p.vivaio_decisione_richiesta ? `Decisione entro ${p.vivaio_decisione_scadenza || '—'}` : 'OK'}</div>
+                  const qAttuale = Number(p.quot_reale ?? p.quot ?? 0);
+                  const qIngresso = Number(p.quot_iniziale_vivaio ?? p.quot ?? 0);
+                  const aumento = qAttuale - qIngresso;
+                  const presenzeLive = Math.max(Number(p.vivaio_presenze || 0), Number(p.presenze_voto || 0), Number(p.partite || 0));
+                  const alertV = p.vivaio_decisione_richiesta || presenzeLive >= 2 || aumento >= 2;
+                  const vicinoV = !alertV && (presenzeLive >= 1 || aumento >= 1);
+                  return <div key={p.id} style={{ background: alertV ? '#ef444410' : vicinoV ? '#f59e0b10' : '#ffffff06', border:`1px solid ${alertV ? '#ef444435' : vicinoV ? '#f59e0b35' : '#ffffff12'}`, borderRadius:10, padding:'9px 12px', display:'flex', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
+                    <div><b style={{ color:'#f0f0f0' }}>{p.nome}</b> <span style={{ color:'#666' }}>· {p.squadra}</span><div style={{ fontSize:11, color:'#888' }}>Q attuale {qAttuale} · Q ingresso {qIngresso} · presenze {presenzeLive}</div></div>
+                    <div style={{ fontSize:11, color: alertV ? '#ef4444' : vicinoV ? '#f59e0b' : '#10b981', fontWeight:700 }}>{p.vivaio_decisione_richiesta ? `Decisione entro ${p.vivaio_decisione_scadenza || '—'}` : vicinoV ? 'Vicino alla soglia' : 'OK'}</div>
                   </div>;
                 })}
               </div>}
@@ -15124,6 +15177,7 @@ function AdminControlRoomPage({ teams }) {
                         cacheInvalidate('listone');
                         cacheInvalidate('svincolati_');
                         cacheInvalidate('rosa_');
+                        cacheInvalidate('vivaio_');
                         setDbImportDone(result);
                         setDbImportPreview(null);
                       } catch(err) { alert('Errore: ' + err.message); }

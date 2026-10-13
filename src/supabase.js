@@ -343,7 +343,7 @@ async function assertVivaioDopoAggiunta(squadra, giocatore) {
 export async function updateGiocatore(id, fields) {
   const { error } = await supabase.from('rosa').update(fields).eq('id', id);
   if (error) throw error;
-  if ('quot' in (fields || {}) || 'vivaio_presenze' in (fields || {}) || 'presenze_voto' in (fields || {}) || 'partite' in (fields || {})) {
+  if ('quot' in (fields || {}) || 'quot_reale' in (fields || {}) || 'vivaio_presenze' in (fields || {}) || 'presenze_voto' in (fields || {}) || 'partite' in (fields || {})) {
     try {
       const { data: player } = await supabase.from('rosa').select('*').eq('id', id).single();
       if (player?.in_vivaio) await processaDecisioniVivaio(player.squadra);
@@ -5169,7 +5169,13 @@ const VIVAIO_DECISIONE_GIORNI = 3;
 
 function getMotiviDecisioneVivaio(player = {}) {
   const motivi = [];
-  const presenze = Number(player.vivaio_presenze ?? player.presenze_voto ?? player.partite ?? 0);
+  // Usa il valore piu' alto tra contatore vivaio e statistiche reali. Con ??,
+  // un vecchio vivaio_presenze=0 avrebbe nascosto partite=1/2 appena importate.
+  const presenze = Math.max(
+    Number(player.vivaio_presenze || 0),
+    Number(player.presenze_voto || 0),
+    Number(player.partite || 0)
+  );
   // Confronta la quotazione REALE di mercato (aggiornata ad ogni import anche
   // per il vivaio — vedi _importDatabaseCore), non player.quot: quella resta
   // sempre congelata al valore d'ingresso per i giocatori in vivaio, quindi
@@ -7828,6 +7834,10 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
           // se era stato marcato in un import precedente e ora è rientrato).
           fuori_lista: fuoriListaRiga,
           ...statsRosa,
+          // Per il vivaio "Partite a voto" e' il contatore reale che decide
+          // la soglia delle 2 presenze. All'ingresso il requisito e' 0, quindi
+          // il totale stagionale coincide con le presenze maturate in vivaio.
+          ...(p.in_vivaio ? { vivaio_presenze: statsRosa.partite } : {}),
         };
         if (aggiornaQuotazioneRosa && !p.in_vivaio) {
           // Lo stipendio segue la quotazione aggiornata MA mantiene il
@@ -7910,6 +7920,12 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
     ...usciti.map(p => ({ nome: p.nome, squadra: p.squadra })),
     ...svinUsciti.map(s => ({ nome: s.nome, squadra: null })),
   ];
+
+  // L'import settimanale puo' far raggiungere a un vivaio la seconda presenza
+  // o +2 di quotazione. Avvia subito la finestra di 3 giorni, senza aspettare
+  // che un presidente apra successivamente la pagina Rosa/Vivaio.
+  try { await processaDecisioniVivaio(); }
+  catch (e) { console.warn('Controllo decisioni vivaio post-import fallito:', e.message); }
 
   return { rosaAggiornati, svinAggiornati, nuoviCreati, nuoviCreatiNomi, nonTrovati, fuoriListaSegnati: usciti.length + svinUsciti.length, fuoriListaNomi, totale: validRows.length };
 }
