@@ -2806,8 +2806,8 @@ export async function applicaPagamentiAutomatici() {
   const ora = oggi.getHours();
   const results = { tasse: [], stipendi: [], stadio: [], vivaio: [], vivaioDecisioni: [], errori: [] };
   try {
-    const vivaioCheck = await processaDecisioniVivaio();
-    if (vivaioCheck?.richieste?.length || vivaioCheck?.svincolati?.length) results.vivaioDecisioni.push(vivaioCheck);
+    const vivaioCheck = await processaDecisioniVivaio(null, { consentiSvincoloAutomatico: true });
+    if (vivaioCheck?.richieste?.length || vivaioCheck?.svincolati?.length || vivaioCheck?.scadute?.length) results.vivaioDecisioni.push(vivaioCheck);
   } catch(e) { results.errori.push(`Decisioni vivaio: ${e.message}`); }
   try {
     const rientri = await processaRientriPrestitoProgrammato();
@@ -5194,20 +5194,45 @@ function addDays(date, days) {
   return d;
 }
 
-async function richiediDecisioneVivaio(player, now = new Date()) {
+async function richiediDecisioneVivaio(player, now = new Date(), { forzaNuovaFinestra = false } = {}) {
   const motivi = getMotiviDecisioneVivaio(player);
   if (!motivi.length) return { richiesta: false };
 
+  // Una NUOVA violazione deve sempre concedere 72 ore piene al presidente.
+  // In passato eventuali timestamp rimasti valorizzati da una precedente
+  // violazione potevano essere riutilizzati: se gia' scaduti, il giocatore
+  // veniva svincolato immediatamente al successivo aggiornamento.
+  const daEsistente = player.vivaio_decisione_da ? new Date(player.vivaio_decisione_da) : null;
+  const scadenzaEsistente = player.vivaio_decisione_scadenza ? new Date(player.vivaio_decisione_scadenza) : null;
+  const finestraEsistenteValida = Boolean(
+    daEsistente && scadenzaEsistente &&
+    Number.isFinite(daEsistente.getTime()) && Number.isFinite(scadenzaEsistente.getTime()) &&
+    scadenzaEsistente.getTime() > daEsistente.getTime()
+  );
+
+  const nuovaFinestra = forzaNuovaFinestra || !player.vivaio_decisione_richiesta || !finestraEsistenteValida;
   const update = {
     vivaio_decisione_richiesta: true,
     vivaio_motivo_decisione: motivi.join(' e '),
   };
-  if (!player.vivaio_decisione_da) update.vivaio_decisione_da = now.toISOString();
-  if (!player.vivaio_decisione_scadenza) update.vivaio_decisione_scadenza = addDays(now, VIVAIO_DECISIONE_GIORNI).toISOString();
+  if (nuovaFinestra) {
+    update.vivaio_decisione_da = now.toISOString();
+    update.vivaio_decisione_scadenza = addDays(now, VIVAIO_DECISIONE_GIORNI).toISOString();
+  }
 
   const { error } = await supabase.from('rosa').update(update).eq('id', player.id);
   if (error) throw error;
-  return { richiesta: true, motivi };
+  return { richiesta: true, motivi, nuovaFinestra };
+}
+
+async function azzeraDecisioneVivaio(playerId) {
+  const { error } = await supabase.from('rosa').update({
+    vivaio_decisione_richiesta: false,
+    vivaio_decisione_da: null,
+    vivaio_decisione_scadenza: null,
+    vivaio_motivo_decisione: null,
+  }).eq('id', playerId);
+  if (error) throw error;
 }
 
 async function svincolaVivaioAutomatico(player, motivo = 'Scadenza scelta vivaio superata') {
@@ -5245,34 +5270,59 @@ async function svincolaVivaioAutomatico(player, motivo = 'Scadenza scelta vivaio
   );
 }
 
-export async function processaDecisioniVivaio(squadra = null) {
+export async function processaDecisioniVivaio(squadra = null, { consentiSvincoloAutomatico = false } = {}) {
   let query = supabase.from('rosa').select('*').eq('in_vivaio', true);
   if (squadra) query = query.eq('squadra', squadra);
   const { data, error } = await query;
   if (error) throw error;
 
   const now = new Date();
-  const results = { richieste: [], svincolati: [], errori: [] };
+  const results = { richieste: [], scadute: [], svincolati: [], ripulite: [], errori: [] };
 
   for (const player of data || []) {
     try {
-      const scadenza = player.vivaio_decisione_scadenza ? new Date(player.vivaio_decisione_scadenza) : null;
+      // IMPORTANTISSIMO: prima si ricalcola la condizione ATTUALE, poi si
+      // guarda l'eventuale scadenza. Una vecchia scadenza non deve mai poter
+      // svincolare un giocatore se la condizione era rientrata nel frattempo.
+      const motivi = getMotiviDecisioneVivaio(player);
 
-      if (player.vivaio_decisione_richiesta && scadenza && scadenza <= now) {
-        await svincolaVivaioAutomatico(player, 'mancata decisione entro 3 giorni');
-        results.svincolati.push(player.nome);
+      if (!motivi.length) {
+        if (player.vivaio_decisione_richiesta || player.vivaio_decisione_da || player.vivaio_decisione_scadenza || player.vivaio_motivo_decisione) {
+          await azzeraDecisioneVivaio(player.id);
+          results.ripulite.push(player.nome);
+        }
         continue;
       }
 
-      const motivi = getMotiviDecisioneVivaio(player);
-      if (motivi.length && !player.vivaio_decisione_richiesta) {
-        await richiediDecisioneVivaio(player, now);
+      const da = player.vivaio_decisione_da ? new Date(player.vivaio_decisione_da) : null;
+      const scadenza = player.vivaio_decisione_scadenza ? new Date(player.vivaio_decisione_scadenza) : null;
+      const finestraValida = Boolean(
+        player.vivaio_decisione_richiesta && da && scadenza &&
+        Number.isFinite(da.getTime()) && Number.isFinite(scadenza.getTime()) &&
+        scadenza.getTime() > da.getTime()
+      );
+
+      if (!finestraValida) {
+        // Mancano timestamp coerenti: e' una nuova finestra, mai uno svincolo.
+        await richiediDecisioneVivaio(player, now, { forzaNuovaFinestra: true });
         results.richieste.push(player.nome);
-      } else if (motivi.length && player.vivaio_decisione_richiesta) {
-        // Aggiorna solo il motivo se nel frattempo si è aggiunta una seconda causa.
-        const motivo = motivi.join(' e ');
-        if (motivo !== player.vivaio_motivo_decisione) {
-          await supabase.from('rosa').update({ vivaio_motivo_decisione: motivo }).eq('id', player.id);
+        continue;
+      }
+
+      const motivo = motivi.join(' e ');
+      if (motivo !== player.vivaio_motivo_decisione) {
+        await supabase.from('rosa').update({ vivaio_motivo_decisione: motivo }).eq('id', player.id);
+      }
+
+      if (scadenza <= now) {
+        // Le normali letture della rosa/vivaio NON devono avere side-effect
+        // distruttivi. Lo svincolo scaduto e' consentito solo al processo
+        // amministrativo esplicito che passa consentiSvincoloAutomatico=true.
+        if (consentiSvincoloAutomatico) {
+          await svincolaVivaioAutomatico(player, 'mancata decisione entro 3 giorni');
+          results.svincolati.push(player.nome);
+        } else {
+          results.scadute.push(player.nome);
         }
       }
     } catch (e) {
@@ -7759,7 +7809,7 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
   // non si accorge mai se un giocatore cresce troppo o gioca titolare). Il
   // ramo aggiornaQuotazioneRosa più sotto resta comunque bloccato per loro:
   // quot/stipendio del vivaio non vanno mai toccati da qui.
-  const { data: rosaAll } = await supabase.from('rosa').select('id, nome, anni, anni_contratto, stip, fuori_lista, in_vivaio');
+  const { data: rosaAll } = await supabase.from('rosa').select('id, nome, squadra, anni, anni_contratto, stip, fuori_lista, in_vivaio, quot, quot_reale, quot_iniziale_vivaio, vivaio_presenze, partite, vivaio_decisione_richiesta, vivaio_decisione_da, vivaio_decisione_scadenza, vivaio_motivo_decisione');
   const { data: svinAll }  = await supabase.from('svincolati').select('id, nome, fuori_lista').eq('stagione', stagione);
 
   // Normalizza accenti e spazi multipli (non la punteggiatura, per non fondere
@@ -7839,6 +7889,38 @@ async function _importDatabaseCore(rows, stagione, { aggiornaQuotazioneRosa }) {
           // il totale stagionale coincide con le presenze maturate in vivaio.
           ...(p.in_vivaio ? { vivaio_presenze: statsRosa.partite } : {}),
         };
+        if (p.in_vivaio) {
+          const prima = getMotiviDecisioneVivaio(p);
+          const dopo = getMotiviDecisioneVivaio({
+            ...p,
+            quot_reale: quot,
+            partite: statsRosa.partite,
+            vivaio_presenze: statsRosa.partite,
+          });
+
+          if (!dopo.length) {
+            // Se la soglia non e' piu' soddisfatta, qualsiasi vecchia finestra
+            // viene annullata: non deve poter "riapparire" gia' scaduta in futuro.
+            Object.assign(updatePayload, {
+              vivaio_decisione_richiesta: false,
+              vivaio_decisione_da: null,
+              vivaio_decisione_scadenza: null,
+              vivaio_motivo_decisione: null,
+            });
+          } else if (!prima.length || !p.vivaio_decisione_richiesta) {
+            // Transizione reale sotto-soglia -> sopra-soglia: concede SEMPRE
+            // 72 ore nuove, anche se nel record erano rimasti timestamp vecchi.
+            const decisioneDa = new Date();
+            Object.assign(updatePayload, {
+              vivaio_decisione_richiesta: true,
+              vivaio_decisione_da: decisioneDa.toISOString(),
+              vivaio_decisione_scadenza: addDays(decisioneDa, VIVAIO_DECISIONE_GIORNI).toISOString(),
+              vivaio_motivo_decisione: dopo.join(' e '),
+            });
+          } else {
+            updatePayload.vivaio_motivo_decisione = dopo.join(' e ');
+          }
+        }
         if (aggiornaQuotazioneRosa && !p.in_vivaio) {
           // Lo stipendio segue la quotazione aggiornata MA mantiene il
           // moltiplicatore dell'anno di contratto attuale (art. 4.8) — non va
