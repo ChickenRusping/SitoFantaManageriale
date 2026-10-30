@@ -211,14 +211,40 @@ export async function cercaGiocatoriInRose(query, squadre) {
 }
 
 export async function getRosa(squadra) {
-  // Applica eventuali scadenze vivaio prima di restituire la rosa.
-  // Se il SQL di migrazione non è ancora stato eseguito, non blocchiamo il caricamento.
-  try { await processaDecisioniVivaio(squadra); } catch {}
-  try { await processaRientriPrestitoProgrammato(); } catch {}
+  // Mantiene le automazioni storiche, ma con un gate globale: al massimo una
+  // manutenzione vivaio/prestiti ogni 5 minuti per tab, non a ogni lettura.
+  try { await runRosaMaintenance(); } catch {}
   const { data, error } = await supabase.from('rosa').select('*').eq('squadra', squadra).order('ruolo');
   if (error) throw error;
   return data;
 }
+
+// Manutenzione leggera condivisa: evita che OGNI getRosa/getVivaio scateni
+// query aggiuntive. Single-flight + TTL impediscono duplicati nella stessa tab.
+let _rosaMaintenancePromise = null;
+let _rosaMaintenanceAt = 0;
+const ROSA_MAINTENANCE_TTL_MS = 5 * 60 * 1000;
+export async function runRosaMaintenance({ force = false } = {}) {
+  const now = Date.now();
+  if (!force && _rosaMaintenanceAt && now - _rosaMaintenanceAt < ROSA_MAINTENANCE_TTL_MS) {
+    return { skipped: true };
+  }
+  if (_rosaMaintenancePromise) return _rosaMaintenancePromise;
+
+  _rosaMaintenancePromise = (async () => {
+    const result = { vivaio: null, rientri: [], errori: [] };
+    try { result.vivaio = await processaDecisioniVivaio(); }
+    catch (e) { result.errori.push(`Decisioni vivaio: ${e.message}`); }
+    try { result.rientri = await processaRientriPrestitoProgrammato(); }
+    catch (e) { result.errori.push(`Rientri prestito: ${e.message}`); }
+    _rosaMaintenanceAt = Date.now();
+    return result;
+  })();
+
+  try { return await _rosaMaintenancePromise; }
+  finally { _rosaMaintenancePromise = null; }
+}
+
 
 // Riepilogo leggero di TUTTE le rose in un'unica query (niente side-effect
 // vivaio/prestiti per squadra): usato per pagine di overview multi-squadra
@@ -3358,6 +3384,27 @@ export async function getFpfTutteSquadre() {
   return map;
 }
 
+
+// Variante mirata per Realtime: quando cambia un solo movimento, evita di
+// riscaricare i movimenti semestrali di tutte le squadre.
+export async function getFpfSquadra(squadra) {
+  if (!squadra) return 0;
+  const sem = getSemestreCorrente();
+  const { data: movs, error } = await supabase.from('movimenti')
+    .select('descrizione, entrata, uscita, data')
+    .eq('squadra', squadra)
+    .gte('data', sem.inizioStr)
+    .lte('data', sem.fineStr);
+  if (error) throw error;
+  let totale = 0;
+  for (const m of movs || []) {
+    if (isFPFEscluso(m.descrizione)) continue;
+    if (m.uscita) totale += Number(m.uscita);
+    if (m.entrata) totale -= Number(m.entrata);
+  }
+  return parseFloat(totale.toFixed(2));
+}
+
 // Salary cap allenatore: aggiunge 5M fissi al SC se la squadra ha una carta allenatore
 export async function getSCAllenatore(squadra) {
   const { data } = await supabase.from('allenatori_carte')
@@ -3470,13 +3517,36 @@ function _calcolaClausolaConSet(squadra, quot, squadreConClausolaSegreta) {
 }
 export async function getEffettiInvestimenti(squadra, stagione = getStagioneQuota(new Date())) {
   const date = new Date();
-  const [vivaioLimit, scBonusInvestimenti, derogaU21, clausolaSegreta] = await Promise.all([
-    _getVivaioLimit(squadra, date),
-    _getSalaryCapInvestimenti(squadra, stagione),
-    _hasInvestimentoAttivo(squadra, 'Deroga U-21', { stagione, date }),
-    _hasInvestimentoAttivo(squadra, 'Clausola Segreta', { stagione, date }),
-  ]);
-  return { vivaioLimit, scBonusInvestimenti, derogaU21, clausolaSegreta, clausolaMoltiplicatore: clausolaSegreta ? 2.0 : 1.75 };
+  const nomi = ['Settore Giovanile Avanzato', 'SuperClub', 'Deroga U-21', 'Clausola Segreta'];
+  const { data, error } = await supabase.from('investimenti')
+    .select('nome, stagione, attivo')
+    .eq('squadra', squadra)
+    .eq('attivo', true)
+    .in('nome', nomi);
+  if (error) return { vivaioLimit: 2, scBonusInvestimenti: 0, derogaU21: false, clausolaSegreta: false, clausolaMoltiplicatore: 1.75 };
+
+  const rows = data || [];
+  const currentStart = _stagioneStartFromLabel(stagione);
+  const fineStagione = new Date(stagioneStartYear(date) + 1, 5, 1, 0, 0, 0, 0);
+  const inFinestra = date < fineStagione;
+
+  const vivaioAvanzato = rows.some(inv => {
+    if (inv.nome !== 'Settore Giovanile Avanzato') return false;
+    const invStart = _stagioneStartFromLabel(inv.stagione);
+    return currentStart >= invStart + 1 && currentStart <= invStart + 2;
+  });
+  const corrente = nome => rows.some(inv => inv.nome === nome && inv.stagione === stagione);
+  const scBonusInvestimenti = corrente('SuperClub') ? 3 : 0;
+  const derogaU21 = inFinestra && corrente('Deroga U-21');
+  const clausolaSegreta = inFinestra && corrente('Clausola Segreta');
+
+  return {
+    vivaioLimit: vivaioAvanzato ? 4 : 2,
+    scBonusInvestimenti,
+    derogaU21,
+    clausolaSegreta,
+    clausolaMoltiplicatore: clausolaSegreta ? 2.0 : 1.75,
+  };
 }
 
 export async function getInvestimenti(squadra, stagione = getStagioneQuota(new Date())) {
@@ -4344,11 +4414,22 @@ export async function applicaIscrizioneATutti(opts = {}) {
   if (!opts.force && now < getScadenzaIscrizioneCampionato(now)) {
     throw new Error(`L'iscrizione campionato ${stagione} si applica automaticamente dal 31/07 alle 23:59.`);
   }
-  await sincronizzaQuoteStagione({ data: now, stagione, biennio: opts.biennio });
-  const { data: squadre } = await supabase.from('squadre').select('name');
+  if (!opts.skipSync) await sincronizzaQuoteStagione({ data: now, stagione, biennio: opts.biennio });
+
+  const { data: squadre } = await supabase.from('squadre')
+    .select('name, iscrizione_pagata, iscrizione_stagione_pagata');
   if (!squadre) return [];
+
+  // Nella normalita', dopo il primo pagamento stagionale, questo evita 8 SELECT
+  // individuali a ogni login: interroghiamo nel dettaglio solo chi risulta non pagato.
+  const daApplicare = squadre.filter(sq => !(
+    sq.iscrizione_stagione_pagata === stagione ||
+    (!sq.iscrizione_stagione_pagata && sq.iscrizione_pagata === true)
+  ));
+  if (!daApplicare.length) return [];
+
   const results = [];
-  for (const sq of squadre) {
+  for (const sq of daApplicare) {
     const r = await applicaIscrizioneCampionato(sq.name, { data: now, stagione, force: true });
     results.push({ squadra: sq.name, ...r });
   }
@@ -4453,7 +4534,7 @@ export async function applicaQuoteAutomatiche(opts = {}) {
   try { results.sync = await sincronizzaQuoteStagione({ data: now }); }
   catch(e) { results.errori.push(e.message); }
   if (now >= getScadenzaIscrizioneCampionato(now)) {
-    try { results.iscrizioni = await applicaIscrizioneATutti({ data: now, force: true }); }
+    try { results.iscrizioni = await applicaIscrizioneATutti({ data: now, force: true, skipSync: true }); }
     catch(e) { results.errori.push(e.message); }
   }
   return results;
@@ -5335,7 +5416,7 @@ export async function processaDecisioniVivaio(squadra = null, { consentiSvincolo
 // ─── VIVAIO (art. 3.6) ────────────────────────────────────────────────────────
 
 export async function getVivaio(squadra) {
-  try { await processaDecisioniVivaio(squadra); } catch {}
+  try { await runRosaMaintenance(); } catch {}
   const { data, error } = await supabase.from('rosa')
     .select('*').eq('squadra', squadra).eq('in_vivaio', true).order('quot', { ascending: false });
   if (error) return [];
