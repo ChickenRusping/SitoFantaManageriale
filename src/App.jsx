@@ -215,13 +215,63 @@ function useDeadlineWatcher(onDeadlineScattata) {
   return statoMercato;
 }
 
+const _pendingFetches = new Map();
 async function cachedFetch(key, fetcher, ttl = 600000) {
   const cached = cacheGet(key);
   if (cached !== null) return cached;
-  const data = await fetcher();
-  cacheSet(key, data, ttl);
-  return data;
+  if (_pendingFetches.has(key)) return _pendingFetches.get(key);
+
+  const request = (async () => {
+    const data = await fetcher();
+    cacheSet(key, data, ttl);
+    return data;
+  })();
+  _pendingFetches.set(key, request);
+  try { return await request; }
+  finally {
+    if (_pendingFetches.get(key) === request) _pendingFetches.delete(key);
+  }
 }
+
+// Accorpa raffiche Realtime ravvicinate e impedisce due refresh concorrenti
+// dello stesso blocco dati. Un evento arrivato durante il refresh ne programma
+// al massimo uno aggiuntivo alla fine, invece di avviare N query in parallelo.
+function useDebouncedAsyncTrigger(fn, delay = 300) {
+  const fnRef = useRef(fn);
+  const timerRef = useRef(null);
+  const runningRef = useRef(false);
+  const queuedRef = useRef(false);
+  useEffect(() => { fnRef.current = fn; }, [fn]);
+
+  const trigger = useCallback(() => {
+    if (runningRef.current) {
+      queuedRef.current = true;
+      return;
+    }
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(async () => {
+      timerRef.current = null;
+      if (runningRef.current) { queuedRef.current = true; return; }
+      runningRef.current = true;
+      try { await fnRef.current(); }
+      finally {
+        runningRef.current = false;
+        if (queuedRef.current) {
+          queuedRef.current = false;
+          trigger();
+        }
+      }
+    }, delay);
+  }, [delay]);
+
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    queuedRef.current = false;
+  }, []);
+
+  return trigger;
+}
+
 
 
 import { TEAMS, getRoleColor, FREE_AGENTS } from "./data.js";
@@ -229,7 +279,7 @@ import { SURFACE, BRAND, SEMANTIC, FIELD } from "./design-system.js";
 import { IconHome, IconShield, IconTrophy, IconMarket, IconMore, IconAdmin, IconChevronRight, IconArchive, IconRefresh, IconPlus, IconEdit, IconTrash, IconClose, IconSearch, IconBack } from "./components/ui/Icons.jsx";
 import { ProgressBar } from "./components/ui/ProgressBar.jsx";
 import { HeroSurface } from "./components/ui/Surface.jsx";
-import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, calcolaScadenzaInteresse, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, getObiettivi, subscribeObiettivi, getListaDesideri, insertListaDesiderio, updateListaDesiderioNote, deleteListaDesiderio, subscribeListaDesideri, notificaListaDesideri, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, getDomenicaCorrente, getFasciaBilancioNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, registraEventoGiornataInvestimento, registraContatoreGiornataInvestimento, applicaBonusBrandingSePresente, registraVotoRientroInvestimento, registraPuntiGironeRitorno, riscattaGruppoAvvocato, getEffettiInvestimenti, getSquadreConSuperClub, getSquadreConDerogaU21, getStatoGuadagniGiornata,
+import { supabase, signIn, signOut, toggleFPFEsclusione, getPrestitiScaduti, eseguiScadenzaPrestito, getProfile, getSquadre, updateSquadra, getRosa, runRosaMaintenance, getRosaLeggeraTutte, getRosaLight, cercaGiocatoriInRose, updateGiocatore, insertGiocatore, deleteGiocatore, impostaCedibile, getGiocatoriCedibili, subscribeRosa, getChiamate, insertChiamata, deleteChiamata, aggiungiInteresse, calcolaScadenzaInteresse, creaAstaDaChiamate, calcolaScadenzaOfferteAttesa, getMovimenti, getMovimentiFPF, insertMovimento, updateMovimento, deleteMovimento, subscribeChiamate, subscribeSquadre, subscribeMovimenti, subscribeMovimentiAll, aggiornaSCNegativo, getContrattiInScadenza, getClubIdentity, updateClubIdentity, getAllClubIdentities, uploadImmagineSquadra, getObiettivi, subscribeObiettivi, getListaDesideri, insertListaDesiderio, updateListaDesiderioNote, deleteListaDesiderio, subscribeListaDesideri, notificaListaDesideri, getTrattative, insertTrattativa, updateTrattativa, deleteTrattativa, subscribeTrattative, getAste, insertAsta, updateAsta, piazzaOffertaRialzo, assegnaAsta, scadeAstaSenzaVincitore, subscribeAste, eseguiTrasferimento, eseguiRescissioneAnticipataPrestito, eseguiRiscattoAnticipatoDiritto, calcolaStatoNotificaOfferta, getOfferteInAttesa, getClausole, subscribeClausole, getPrestitiAttivi, getClassifica, updateClassificaSquadra, subscribeClassifica, getSvincoli, getStagioneSvincoli, getDettaglioSvincoliStagione, eseguiSvincolo, calcolaTassa, isTassaAttiva, getTassePagate, getDomenicaCorrente, getFasciaBilancioNeg, aggiornaStatoBilancioNeg, getSemestreCorrente, calcolaFairSpending, getAllenatori, getAllenatoreBySquadra, getObiettiviCarta, getProgressoObiettivi, upsertProgresso, incassaObiettivo, incassaObiettiviFinali, applicaMalusObiettivo, applicaMalusObiettiviFinali, getModuloTracker, upsertModuloTracker, conteggioModuliAllenatore, scegliAllenatore, rimuoviAllenatore, getFpfTutteSquadre, getFpfSquadra, getSCAllenatore, getInvestimenti, acquistaInvestimento, registraGuadagnoInvestimento, registraEventoGiornataInvestimento, registraContatoreGiornataInvestimento, applicaBonusBrandingSePresente, registraVotoRientroInvestimento, registraPuntiGironeRitorno, riscattaGruppoAvvocato, getEffettiInvestimenti, getSquadreConSuperClub, getSquadreConDerogaU21, getStatoGuadagniGiornata,
   getNotificheApp, segnaNotificaLetta, segnaTutteNotificheLette, nascondiNotifica, subscribeNotificheApp, usaContatoreInvestimento, registraEventoInvestimento, annullaEventoInvestimento, toggleTraguardoInvestimento, deleteInvestimento, getPenalita, insertPenalita, deletePenalita, applicaMulta, getPremi, insertPremio, applicaPremio, calcolaPremio19a, calcolaPremiFinali, applicaIscrizioneCampionato, investiEuroExtra, segnaQuotaPagata, applicaIscrizioneATutti, applicaQuoteAutomatiche, getStatoIscrizioneTutte, annullaIscrizioneATutti, ripulisciDuplicatiIscrizione, isFinestraExtraBudget, logAzione, getAuditLog, effettuaRollback, getVivaio, promuoviDaVivaio, svincolaVivaio, aggiornaPresenzeVivaio, pagaCostoVivaio, applicaCostoVivaioATutti, getSvincolatiDB, calcolaTop5Aggiornamenti, calcolaAnteprimaAggiornamentoQuote, applicaAggiornamentoQuote, applicaTop5Rialzo, applicaTop5Ribasso, isFinestraRibasso, getAggiornamenti, getFinestraChiamate, getAsteSvincolati, updateAstaSvincolati, getOfferteAsta, upsertOffertaAsta, attivaMasterclass, getMasterclassRichiesta, rivelaAsta, subscribeAsteSvincolati, isVivaioAcquistiAperti, MAX_EURO_EXTRA_BIENNIO, getModalitaSvincolati, setModalitaSvincolati,
   // Nuove funzioni mercato
   getListone, importListoneDaExcel, aggiornaFantaSquadraListone, aggiornaStipendioDopoTrasferimento, getStoricoQuotazioni, getConflittiListone,
@@ -1511,7 +1561,7 @@ function HomePage({ teams = TEAMS, mySquadra, offerteInAttesa = [], navigate, pr
     // (colonna DB aggiornata solo periodicamente da aggiornaSCNegativo) — per
     // evitare che Home mostri un valore disallineato rispetto a Finanze.
     Promise.all([
-      cachedFetch('rosa_' + team.name, () => getRosa(team.name), 600000),
+      cachedFetch('rosa_light_' + team.name, () => getRosaLight(team.name), 600000),
       getSCAllenatore(team.name),
     ]).then(([rosa, scAll]) => {
       const rosaAttiva = (rosa || []).filter(p => !p.in_vivaio);
@@ -3275,29 +3325,32 @@ function RosaVivaiTab({ team, isAdmin, mySquadra }) {
   }
 
   const loadAll = useCallback(async () => {
-    const [r, v, s, ct, pa] = await Promise.all([
+    const [r, s, ct, pa] = await Promise.all([
       cachedFetch('rosa_' + teamName, () => getRosa(teamName), 600000),
-      cachedFetch('vivaio_' + teamName, () => getVivaio(teamName), 600000),
       getSvincoli(teamName),
       getStagioneSvincoli(teamName),
       getPrestitiAttivi(teamName),
     ]);
-    setPlayers((r||[]).filter(p => !p.in_vivaio));
-    setVivaio(v||[]);
-    setSvincoli(s||[]);
+    const roster = r || [];
+    setPlayers(roster.filter(p => !p.in_vivaio));
+    setVivaio(roster.filter(p => p.in_vivaio).sort((a, b) => Number(b.quot || 0) - Number(a.quot || 0)));
+    setSvincoli(s || []);
     setContatori(ct);
-    // Giocatori ceduti in prestito da questa squadra: nella loro riga rosa lo
-    // squadra attuale è quella del ricevente, quindi non compaiono in "players"
-    // (filtrato su squadra===teamName) — vanno recuperati a parte.
-    setPrestitiCeduti((pa||[]).filter(p => p.squadra_originale === teamName));
+    setPrestitiCeduti((pa || []).filter(p => p.squadra_originale === teamName));
     setLoading(false);
   }, [teamName]);
 
+  const scheduleLoadAll = useDebouncedAsyncTrigger(loadAll, 300);
   useEffect(() => {
     loadAll();
-    const sub = subscribeRosa(teamName, loadAll);
+    const sub = subscribeRosa(teamName, () => {
+      cacheInvalidate('rosa_' + teamName);
+      cacheInvalidate('rosa_light_' + teamName);
+      scheduleLoadAll();
+    });
     return () => supabase.removeChannel(sub);
-  }, [loadAll, teamName]);
+  }, [loadAll, scheduleLoadAll, teamName]);
+
 
   const [derogaU21, setDerogaU21] = useState(false);
   // getSquadreConDerogaU21 (1 query) invece di getEffettiInvestimenti (4 query
@@ -5053,11 +5106,15 @@ function FinanzeTab({ team, salaryCapUsato, salaryCapRosa = 0, scAllenatore = 0,
     setLoadingMovimenti(false);
   }, [team.name]);
 
+  const scheduleMovimentiRefresh = useDebouncedAsyncTrigger(loadMovimenti, 250);
   useEffect(() => {
     loadMovimenti();
-    const sub = subscribeMovimenti(team.name, loadMovimenti);
+    const sub = subscribeMovimenti(team.name, () => {
+      cacheInvalidate('movimenti_' + team.name);
+      scheduleMovimentiRefresh();
+    });
     return () => supabase.removeChannel(sub);
-  }, [loadMovimenti, team.name]);
+  }, [loadMovimenti, scheduleMovimentiRefresh, team.name]);
 
   const valoreMovimento = (m) => Number(m?.entrata || 0) - Number(m?.uscita || 0);
   const resetMovForm = () => {
@@ -7194,12 +7251,10 @@ function VivaiTab({ team, isAdmin }) {
   const [editPresenze, setEditPresenze] = useState(null); // { id, val }
 
   const loadAll = useCallback(async () => {
-    const [v, r] = await Promise.all([
-      getVivaio(team.name),
-      getRosa(team.name),
-    ]);
-    setVivaio(v || []);
-    setRosaCount((r || []).filter(p => !p.in_vivaio).length);
+    const r = await cachedFetch('rosa_' + team.name, () => getRosa(team.name), 600000);
+    const roster = r || [];
+    setVivaio(roster.filter(p => p.in_vivaio).sort((a, b) => Number(b.quot || 0) - Number(a.quot || 0)));
+    setRosaCount(roster.filter(p => !p.in_vivaio).length);
     setLoading(false);
   }, [team.name]);
 
@@ -8869,17 +8924,18 @@ function MercatoPage({ profile, isAdmin, teams, offerteInAttesa = [], statoMerca
     setLoading(false);
   }, []);
 
+  const scheduleMercatoRefresh = useDebouncedAsyncTrigger(loadAll, 300);
   useEffect(() => {
     loadAll();
-    const s1 = subscribeTrattative(loadAll);
-    const s2 = subscribeAste(loadAll);
-    const s3 = subscribeAsteSvincolati(loadAll);
+    const s1 = subscribeTrattative(scheduleMercatoRefresh);
+    const s2 = subscribeAste(scheduleMercatoRefresh);
+    const s3 = subscribeAsteSvincolati(scheduleMercatoRefresh);
     return () => { supabase.removeChannel(s1); supabase.removeChannel(s2); supabase.removeChannel(s3); };
-  }, [loadAll]);
+  }, [loadAll, scheduleMercatoRefresh]);
 
   useEffect(() => {
     if (!mySquadra) return;
-    getRosa(mySquadra).then(r => setMyRosa((r || []).filter(p => !p.in_vivaio).sort((a,b) => a.nome.localeCompare(b.nome))));
+    getRosaLight(mySquadra).then(r => setMyRosa((r || []).filter(p => !p.in_vivaio).sort((a,b) => a.nome.localeCompare(b.nome))));
   }, [mySquadra]);
 
 
@@ -12094,12 +12150,13 @@ function SvincolatiPage({ profile, isAdmin }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
+  const scheduleSvincolatiRefresh = useDebouncedAsyncTrigger(loadAll, 300);
   useEffect(() => {
     loadAll();
-    const sub1 = subscribeChiamate(loadAll);
-    const sub2 = subscribeAsteSvincolati(loadAll);
+    const sub1 = subscribeChiamate(scheduleSvincolatiRefresh);
+    const sub2 = subscribeAsteSvincolati(scheduleSvincolatiRefresh);
     return () => { supabase.removeChannel(sub1); supabase.removeChannel(sub2); };
-  }, [loadAll]);
+  }, [loadAll, scheduleSvincolatiRefresh]);
 
   // Le scadenze delle aste svincolati vengono elaborate esclusivamente dal cron
   // server-side. Nessun polling client: evita di moltiplicare lo stesso workload
@@ -17335,22 +17392,45 @@ function AppInner() {
   // Stipendi e stadio vanno confermati dalla Control Room; qui restano solo controlli idempotenti.
   useEffect(() => {
     if (!session) return;
-    applicaQuoteAutomatiche().then(q => {
-      if (q.iscrizioni?.filter(x => x.ok).length) { console.log(`✅ Iscrizioni campionato auto: ${q.iscrizioni.filter(x => x.ok).length} squadre`); }
-      if (q.errori?.length) console.warn('⚠️ Errori quote auto:', q.errori);
-      if (q.sync?.length || q.iscrizioni?.filter(x => x.ok).length) {
-        getSquadre().then(data => { if (data) setSquadreDB(data); });
+    // Questi controlli non servono per renderizzare la Home: li sfalsiamo di
+    // poco e li eseguiamo in sequenza, evitando un burst DB insieme al login.
+    const timer = setTimeout(async () => {
+      try {
+        const r = await runRosaMaintenance();
+        if (r?.errori?.length) console.warn('Rosa maintenance:', r.errori);
+      } catch (e) {
+        console.warn('Rosa maintenance error:', e.message);
       }
-    }).catch(e => console.warn('⚠️ Errore sync quote:', e.message));
+
+      try {
+        const q = await applicaQuoteAutomatiche();
+        if (q.iscrizioni?.filter(x => x.ok).length) {
+          console.log(`Iscrizioni campionato auto: ${q.iscrizioni.filter(x => x.ok).length} squadre`);
+        }
+        if (q.errori?.length) console.warn('Errori quote auto:', q.errori);
+        if (q.sync?.length || q.iscrizioni?.filter(x => x.ok).length) {
+          getSquadre().then(data => { if (data) setSquadreDB(data); });
+        }
+      } catch (e) {
+        console.warn('Errore sync quote:', e.message);
+      }
+    }, 1200);
+    return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionUserId]);
 
   // ── Squadre realtime ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!session) return;
-    getSquadre().then(data => { if (data) setSquadreDB(data); });
-    const sub = subscribeSquadre(() => getSquadre().then(data => { if (data) setSquadreDB(data); }));
-    return () => supabase.removeChannel(sub);
+    let timer = null;
+    const load = () => getSquadre().then(data => { if (data) setSquadreDB(data); });
+    const schedule = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(load, 250);
+    };
+    load();
+    const sub = subscribeSquadre(schedule);
+    return () => { if (timer) clearTimeout(timer); supabase.removeChannel(sub); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionUserId]);
 
@@ -17389,17 +17469,44 @@ function AppInner() {
   const fpfRef = useRef({});
   useEffect(() => {
     if (!session) return;
-    const load = async () => {
+    let timer = null;
+    let forceFull = false;
+    const pendingSquadre = new Set();
+
+    const loadAllFpf = async () => {
       const map = await getFpfTutteSquadre().catch(() => ({}));
-      if (JSON.stringify(map) !== JSON.stringify(fpfRef.current)) {
-        fpfRef.current = map;
-        setFpfMap(map);
-      }
+      fpfRef.current = map;
+      setFpfMap(map);
     };
-    load();
-    // Nessun interval: si aggiorna solo quando cambiano i movimenti nel DB
-    const sub = subscribeMovimentiAll(load);
-    return () => supabase.removeChannel(sub);
+
+    const flush = async () => {
+      timer = null;
+      const squadre = [...pendingSquadre];
+      pendingSquadre.clear();
+      if (forceFull || squadre.length !== 1) {
+        forceFull = false;
+        await loadAllFpf();
+        return;
+      }
+      const squadra = squadre[0];
+      const valore = await getFpfSquadra(squadra).catch(() => null);
+      if (valore === null) { await loadAllFpf(); return; }
+      const next = { ...fpfRef.current, [squadra]: valore };
+      fpfRef.current = next;
+      setFpfMap(next);
+    };
+
+    const schedule = payload => {
+      const squadra = payload?.new?.squadra || payload?.old?.squadra;
+      if (squadra) pendingSquadre.add(squadra);
+      else forceFull = true;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(flush, 350);
+    };
+
+    loadAllFpf();
+    const sub = subscribeMovimentiAll(schedule);
+    return () => { if (timer) clearTimeout(timer); supabase.removeChannel(sub); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionUserId]);
 
